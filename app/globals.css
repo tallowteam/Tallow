@@ -1,52 +1,31 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@custom-variant dark (&:is(.dark *));
+/* Ensure sr-only works correctly for skip links */
+@layer utilities {
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter);
-  --font-mono: var(--font-geist-mono);
-  --font-serif: var(--font-cormorant);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --color-hero-bg: var(--hero-bg);
-  --color-hero-fg: var(--hero-fg);
-  --color-hero-muted: var(--hero-muted);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
+  .focus\:not-sr-only:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
 }
 
 /* ===============================================
@@ -119,6 +98,10 @@
   --sidebar-accent-foreground: #4B4536;
   --sidebar-border: rgba(10, 10, 10, 0.06);
   --sidebar-ring: #101585;
+
+  /* Accessibility - Disabled and Placeholder States */
+  --disabled-foreground: #8A8A8A;
+  --placeholder: #4D4D4D;
 }
 
 .dark {
@@ -184,6 +167,10 @@
   --sidebar-accent-foreground: #D4D4C8;
   --sidebar-border: rgba(254, 253, 251, 0.06);
   --sidebar-ring: #101585;
+
+  /* Accessibility - Disabled and Placeholder States */
+  --disabled-foreground: #6B6B6B;
+  --placeholder: #B8B8B8;
 }
 
 /* ===============================================
@@ -1785,4 +1772,110 @@ button:hover svg,
 /* Focus trap indicator */
 .focus-trap-active {
   box-shadow: inset 0 0 0 2px var(--ring);
+}
+
+/* ===============================================
+   TV & LARGE SCREEN OPTIMIZATIONS
+   =============================================== */
+
+/* Large Desktop / TV (1920px+) */
+@media (min-width: 1920px) {
+  /* Increase base font size for readability from distance */
+  html {
+    font-size: 18px;
+  }
+
+  .container {
+    max-width: 1600px;
+  }
+
+  /* Larger touch/click targets for TV remotes */
+  button, [role="button"], a {
+    min-height: 56px;
+    min-width: 56px;
+  }
+
+  /* Larger cards for TV viewing */
+  .card-feature, .card-dark {
+    padding: 2.5rem;
+  }
+
+  /* Larger nav items */
+  .nav-minimal {
+    padding: 2rem 3rem;
+  }
+
+  .nav-logo {
+    font-size: 2rem;
+  }
+
+  .nav-link {
+    font-size: 0.9rem;
+  }
+}
+
+/* 4K TV (2560px+) */
+@media (min-width: 2560px) {
+  html {
+    font-size: 20px;
+  }
+
+  .container {
+    max-width: 2000px;
+  }
+
+  button, [role="button"], a {
+    min-height: 64px;
+    min-width: 64px;
+  }
+}
+
+/* Foldable devices (320px - 400px when folded) */
+@media (max-width: 319px) {
+  html {
+    font-size: 12px;
+  }
+
+  .container {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  .nav-minimal {
+    padding: 0.5rem;
+  }
+
+  .nav-logo {
+    font-size: 1rem;
+  }
+}
+
+/* Landscape phone optimization */
+@media (max-height: 500px) and (orientation: landscape) {
+  .section-hero-dark {
+    min-height: auto;
+    padding-top: 5rem;
+    padding-bottom: 3rem;
+  }
+
+  .section-content, .section-dark {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+
+  .display-xl {
+    font-size: 2rem;
+  }
+}
+
+/* Tablet in portrait mode specific */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
+  .container {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
+
+  .grid-cols-1.md\:grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
