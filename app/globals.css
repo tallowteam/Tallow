@@ -1526,10 +1526,98 @@ button:hover svg,
   }
 }
 
-/* Small Desktop (1024px - 1279px) */
+/* Small Desktop / Laptop (1024px - 1279px) */
 @media (min-width: 1024px) and (max-width: 1279px) {
+  html {
+    font-size: 15px;
+  }
+
   .container {
     max-width: 960px;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
+  /* Scale down hero section for laptops */
+  .display-xl {
+    font-size: 4.5rem;
+  }
+
+  .display-lg {
+    font-size: 3.25rem;
+  }
+
+  /* Reduce nav spacing */
+  .nav-minimal-inner {
+    gap: 1.5rem;
+  }
+
+  .nav-link {
+    font-size: 0.7rem;
+  }
+}
+
+/* Standard Desktop / Small Laptop (1280px - 1439px) */
+@media (min-width: 1280px) and (max-width: 1439px) {
+  html {
+    font-size: 15.5px;
+  }
+
+  .container {
+    max-width: 1140px;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+
+  .display-xl {
+    font-size: 5rem;
+  }
+
+  .display-lg {
+    font-size: 3.5rem;
+  }
+
+  /* Optimal reading width for content */
+  .prose-container {
+    max-width: 65ch;
+  }
+
+  /* Reduce nav spacing for better fit */
+  .nav-minimal-inner {
+    gap: 2rem;
+  }
+}
+
+/* Large Desktop (1440px - 1919px) */
+@media (min-width: 1440px) and (max-width: 1919px) {
+  html {
+    font-size: 17px;
+  }
+
+  .container {
+    max-width: 1320px;
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+
+  .display-xl {
+    font-size: 6rem;
+  }
+
+  /* Section spacing scales up */
+  .section-content {
+    padding-top: 7rem;
+    padding-bottom: 7rem;
+  }
+
+  .section-dark {
+    padding-top: 7rem;
+    padding-bottom: 7rem;
+  }
+
+  /* Cards get more breathing room */
+  .card-feature, .card-dark {
+    padding: 2rem;
   }
 }
 
@@ -1775,11 +1863,325 @@ button:hover svg,
 }
 
 /* ===============================================
+   SPACING SYSTEM - Consistent 8pt Grid
+   =============================================== */
+
+/* Spacing scale based on 8pt grid */
+.space-xs { gap: 0.5rem; }   /* 8px */
+.space-sm { gap: 1rem; }     /* 16px */
+.space-md { gap: 1.5rem; }   /* 24px */
+.space-lg { gap: 2rem; }     /* 32px */
+.space-xl { gap: 3rem; }     /* 48px */
+.space-2xl { gap: 4rem; }    /* 64px */
+.space-3xl { gap: 6rem; }    /* 96px */
+
+/* ===============================================
+   FOOTER STYLES - Premium Design
+   =============================================== */
+
+.footer {
+  @apply border-t py-12;
+  border-color: var(--border);
+  background: var(--background);
+}
+
+.footer-container {
+  @apply container mx-auto px-6;
+}
+
+.footer-grid {
+  @apply grid gap-8;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .footer-grid {
+    grid-template-columns: 1fr 2fr 1fr;
+    gap: 2rem;
+    align-items: center;
+  }
+}
+
+.footer-logo {
+  font-family: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
+  @apply text-xl tracking-tight lowercase;
+  color: var(--foreground);
+  transition: color 0.3s ease;
+}
+
+.footer-logo:hover {
+  color: var(--accent);
+}
+
+.footer-nav {
+  @apply flex flex-wrap justify-center gap-x-6 gap-y-3;
+}
+
+@media (min-width: 768px) {
+  .footer-nav {
+    @apply justify-center;
+  }
+}
+
+.footer-link {
+  @apply text-xs font-medium uppercase tracking-widest;
+  color: var(--muted-foreground);
+  transition: color 0.3s ease;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.5rem;
+}
+
+.footer-link:hover {
+  color: var(--foreground);
+}
+
+.footer-tagline {
+  @apply text-sm text-center;
+  color: var(--muted-foreground);
+}
+
+@media (min-width: 768px) {
+  .footer-tagline {
+    @apply text-right;
+  }
+}
+
+/* Footer in dark sections */
+.footer-dark {
+  background: var(--hero-bg);
+  border-color: rgba(254, 253, 251, 0.08);
+}
+
+.footer-dark .footer-logo {
+  color: var(--hero-fg);
+}
+
+.footer-dark .footer-logo:hover {
+  color: var(--accent);
+}
+
+.footer-dark .footer-link {
+  color: var(--hero-muted);
+}
+
+.footer-dark .footer-link:hover {
+  color: var(--hero-fg);
+}
+
+.footer-dark .footer-tagline {
+  color: var(--hero-muted);
+}
+
+/* ===============================================
+   NAVIGATION ENHANCEMENTS
+   =============================================== */
+
+/* Mobile menu animation improvements */
+.mobile-menu {
+  @apply fixed inset-0 z-[100];
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              visibility 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mobile-menu.closed {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.mobile-menu.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.mobile-menu-backdrop {
+  @apply absolute inset-0;
+  background: var(--foreground);
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mobile-menu.closed .mobile-menu-backdrop {
+  transform: translateY(-100%);
+}
+
+.mobile-menu.open .mobile-menu-backdrop {
+  transform: translateY(0);
+}
+
+.mobile-menu-content {
+  @apply relative z-10 h-full flex flex-col p-8;
+  color: var(--background);
+}
+
+.mobile-menu-link {
+  font-family: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
+  @apply text-4xl sm:text-5xl font-light;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  transform: translateX(0);
+}
+
+.mobile-menu-link:hover {
+  transform: translateX(1rem);
+  opacity: 1 !important;
+}
+
+/* Staggered menu animation */
+.mobile-menu.open .mobile-menu-link {
+  animation: slide-in-left 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.mobile-menu.open .mobile-menu-link:nth-child(1) { animation-delay: 0.1s; }
+.mobile-menu.open .mobile-menu-link:nth-child(2) { animation-delay: 0.15s; }
+.mobile-menu.open .mobile-menu-link:nth-child(3) { animation-delay: 0.2s; }
+.mobile-menu.open .mobile-menu-link:nth-child(4) { animation-delay: 0.25s; }
+.mobile-menu.open .mobile-menu-link:nth-child(5) { animation-delay: 0.3s; }
+
+/* Nav scroll behavior enhancement */
+.nav-minimal {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-minimal:not(.scrolled) {
+  background: transparent;
+}
+
+.nav-minimal.scrolled {
+  @apply shadow-sm;
+}
+
+/* ===============================================
+   VISUAL HIERARCHY HELPERS
+   =============================================== */
+
+/* Text emphasis */
+.text-emphasis {
+  font-style: italic;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Subtle highlight */
+.highlight-subtle {
+  background: linear-gradient(180deg, transparent 60%, rgba(16, 21, 133, 0.1) 60%);
+}
+
+/* Badge styles */
+.badge {
+  @apply inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium;
+  border: 1px solid var(--border);
+  background: var(--card);
+}
+
+.badge-success {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #10B981;
+}
+
+.badge-info {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #3B82F6;
+}
+
+.badge-warning {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #F59E0B;
+}
+
+/* Section divider */
+.section-divider {
+  @apply w-full h-px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+
+/* Gradient text utility */
+.gradient-text {
+  background: linear-gradient(135deg, var(--foreground) 0%, var(--muted-foreground) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-accent {
+  background: linear-gradient(135deg, #10B981 0%, #06B6D4 50%, #3B82F6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ===============================================
+   DARK MODE REFINEMENTS
+   =============================================== */
+
+.dark {
+  /* Ensure proper contrast on dark backgrounds */
+  --shadow-color: 0 0% 0%;
+}
+
+.dark .card-clean {
+  background: var(--card);
+  border-color: var(--border);
+}
+
+.dark .card-clean:hover {
+  border-color: rgba(254, 253, 251, 0.15);
+}
+
+/* Dark mode gradient adjustments */
+.dark .gradient-text-accent {
+  background: linear-gradient(135deg, #34D399 0%, #22D3EE 50%, #60A5FA 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ===============================================
+   PRINT STYLES
+   =============================================== */
+
+@media print {
+  .nav-minimal,
+  .mobile-menu,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white;
+    color: black;
+  }
+
+  .container {
+    max-width: 100%;
+    padding: 0;
+  }
+
+  a {
+    color: black;
+    text-decoration: underline;
+  }
+
+  .section-dark,
+  .section-hero-dark {
+    background: #f5f5f5;
+    color: black;
+  }
+}
+
+/* ===============================================
    TV & LARGE SCREEN OPTIMIZATIONS
    =============================================== */
 
-/* Large Desktop / TV (1920px+) */
-@media (min-width: 1920px) {
+/* Full HD / Large Desktop (1920px - 2559px) */
+@media (min-width: 1920px) and (max-width: 2559px) {
   /* Increase base font size for readability from distance */
   html {
     font-size: 18px;
@@ -1787,6 +2189,8 @@ button:hover svg,
 
   .container {
     max-width: 1600px;
+    padding-left: 4rem;
+    padding-right: 4rem;
   }
 
   /* Larger touch/click targets for TV remotes */
@@ -1811,22 +2215,257 @@ button:hover svg,
 
   .nav-link {
     font-size: 0.9rem;
+    letter-spacing: 0.2em;
+  }
+
+  /* Section spacing for large screens */
+  .section-content, .section-dark {
+    padding-top: 8rem;
+    padding-bottom: 8rem;
+  }
+
+  .section-hero-dark {
+    padding-top: 10rem;
+    padding-bottom: 8rem;
+  }
+
+  /* Typography scales up */
+  .display-xl {
+    font-size: 7rem;
+  }
+
+  .display-lg {
+    font-size: 5rem;
+  }
+
+  .display-md {
+    font-size: 3.5rem;
+  }
+
+  .heading-xl {
+    font-size: 4rem;
+  }
+
+  .heading-lg {
+    font-size: 2.75rem;
+  }
+
+  .body-xl {
+    font-size: 1.375rem;
+  }
+
+  .body-lg {
+    font-size: 1.25rem;
   }
 }
 
-/* 4K TV (2560px+) */
-@media (min-width: 2560px) {
+/* QHD / 2K (2560px - 3439px) */
+@media (min-width: 2560px) and (max-width: 3439px) {
   html {
     font-size: 20px;
   }
 
   .container {
     max-width: 2000px;
+    padding-left: 5rem;
+    padding-right: 5rem;
   }
 
   button, [role="button"], a {
     min-height: 64px;
     min-width: 64px;
+  }
+
+  .card-feature, .card-dark {
+    padding: 3rem;
+  }
+
+  .nav-minimal {
+    padding: 2.5rem 4rem;
+  }
+
+  .nav-logo {
+    font-size: 2.25rem;
+  }
+
+  .display-xl {
+    font-size: 8rem;
+  }
+
+  .display-lg {
+    font-size: 6rem;
+  }
+
+  /* Grid gaps scale up */
+  .grid {
+    gap: 2rem;
+  }
+}
+
+/* 4K UHD (3440px - 3839px) */
+@media (min-width: 3440px) and (max-width: 3839px) {
+  html {
+    font-size: 22px;
+  }
+
+  .container {
+    max-width: 2800px;
+    padding-left: 6rem;
+    padding-right: 6rem;
+  }
+
+  button, [role="button"], a {
+    min-height: 72px;
+    min-width: 72px;
+  }
+
+  .card-feature, .card-dark {
+    padding: 3.5rem;
+    border-radius: 2rem;
+  }
+
+  .nav-minimal {
+    padding: 3rem 5rem;
+  }
+
+  .nav-logo {
+    font-size: 2.5rem;
+  }
+
+  .display-xl {
+    font-size: 9rem;
+  }
+
+  .section-content, .section-dark {
+    padding-top: 10rem;
+    padding-bottom: 10rem;
+  }
+}
+
+/* 4K TV / Cinema (3840px+) */
+@media (min-width: 3840px) {
+  html {
+    font-size: 24px;
+  }
+
+  .container {
+    max-width: 3200px;
+    padding-left: 8rem;
+    padding-right: 8rem;
+  }
+
+  button, [role="button"], a {
+    min-height: 80px;
+    min-width: 80px;
+  }
+
+  .card-feature, .card-dark {
+    padding: 4rem;
+    border-radius: 2.5rem;
+  }
+
+  .nav-minimal {
+    padding: 3.5rem 6rem;
+  }
+
+  .nav-logo {
+    font-size: 3rem;
+  }
+
+  .nav-link {
+    font-size: 1rem;
+  }
+
+  .display-xl {
+    font-size: 10rem;
+  }
+
+  .display-lg {
+    font-size: 7rem;
+  }
+
+  .display-md {
+    font-size: 5rem;
+  }
+
+  .heading-xl {
+    font-size: 5.5rem;
+  }
+
+  .heading-lg {
+    font-size: 4rem;
+  }
+
+  .heading-md {
+    font-size: 3rem;
+  }
+
+  .body-xl {
+    font-size: 1.75rem;
+  }
+
+  .body-lg {
+    font-size: 1.5rem;
+  }
+
+  .body-md {
+    font-size: 1.25rem;
+  }
+
+  /* Section spacing for cinema displays */
+  .section-content, .section-dark {
+    padding-top: 12rem;
+    padding-bottom: 12rem;
+  }
+
+  .section-hero-dark {
+    padding-top: 14rem;
+    padding-bottom: 10rem;
+  }
+
+  /* Larger grid gaps */
+  .grid {
+    gap: 3rem;
+  }
+}
+
+/* 8K Support (7680px+) */
+@media (min-width: 7680px) {
+  html {
+    font-size: 32px;
+  }
+
+  .container {
+    max-width: 6400px;
+    padding-left: 12rem;
+    padding-right: 12rem;
+  }
+
+  button, [role="button"], a {
+    min-height: 96px;
+    min-width: 96px;
+  }
+
+  .card-feature, .card-dark {
+    padding: 6rem;
+    border-radius: 3rem;
+  }
+
+  .nav-minimal {
+    padding: 5rem 8rem;
+  }
+
+  .nav-logo {
+    font-size: 4rem;
+  }
+
+  .display-xl {
+    font-size: 14rem;
+  }
+
+  .section-content, .section-dark {
+    padding-top: 16rem;
+    padding-bottom: 16rem;
   }
 }
 
