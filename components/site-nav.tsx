@@ -39,44 +39,53 @@ export function SiteNav() {
 
     return (
         <>
-            {/* Minimal Fixed Navigation - Euveka Style */}
+            {/* Minimal Fixed Navigation - Responsive */}
             <nav className={`nav-minimal ${scrolled ? "scrolled" : ""}`}>
-                <div className="nav-minimal-inner container mx-auto">
-                    {/* Logo - Lowercase serif */}
-                    <Link href="/" className="nav-logo hover:opacity-60 transition-opacity">
+                <div className="nav-minimal-inner container mx-auto flex items-center justify-between px-4 sm:px-6">
+                    {/* Logo */}
+                    <Link href="/" className="nav-logo hover:opacity-60 transition-opacity shrink-0">
                         tallow
                     </Link>
 
-                    {/* Desktop Links - Uppercase tracking */}
-                    <div className="hidden md:flex items-center gap-10">
+                    {/* Desktop Links - Hidden on mobile/tablet */}
+                    <div className="hidden lg:flex items-center gap-6 xl:gap-8">
                         {navLinks.map((link) => (
                             <Link
                                 key={link.href}
                                 href={link.href}
-                                className={`nav-link ${pathname === link.href ? "opacity-100" : "opacity-70"}`}
+                                className={`nav-link whitespace-nowrap ${pathname === link.href ? "opacity-100" : "opacity-70"}`}
                             >
                                 {t(link.labelKey)}
                             </Link>
                         ))}
                     </div>
 
-                    {/* CTA & Mobile Menu */}
-                    <div className="flex items-center gap-2 sm:gap-4">
+                    {/* Right side actions */}
+                    <div className="flex items-center gap-1 sm:gap-2">
+                        {/* Keyboard shortcuts - desktop only */}
                         <KeyboardShortcutsTrigger />
+
+                        {/* Language dropdown - always visible but compact on mobile */}
                         <LanguageDropdown />
+
+                        {/* Theme toggle */}
                         <ThemeToggle />
+
+                        {/* Mobile menu button */}
                         <button
                             onClick={() => setIsMenuOpen(true)}
-                            className="md:hidden p-1.5 sm:p-2 hover:opacity-60 transition-opacity"
-                            aria-label="Menu"
+                            className="lg:hidden p-2 hover:opacity-60 transition-opacity min-w-[44px] min-h-[44px] flex items-center justify-center"
+                            aria-label="Open menu"
                         >
                             <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
                         </button>
-                        <Link href="/app">
+
+                        {/* Get Started button - hidden on very small screens */}
+                        <Link href="/app" className="hidden xs:block">
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="border-current hover:bg-background/10 hover:text-inherit text-xs sm:text-sm px-2 sm:px-3 h-7 sm:h-9"
+                                className="border-current hover:bg-background/10 hover:text-inherit text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9"
                             >
                                 {t("nav.getStarted")}
                             </Button>
@@ -87,56 +96,72 @@ export function SiteNav() {
 
             {/* Full Screen Mobile Menu */}
             <div
-                className={`fixed inset-0 z-[100] md:hidden transition-all duration-500 ${isMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+                className={`mobile-menu lg:hidden ${isMenuOpen ? "open" : "closed"}`}
+                role="dialog"
+                aria-modal="true"
+                aria-label="Navigation menu"
             >
-                {/* Background - Uses inverted theme colors */}
-                <div className="absolute inset-0 bg-foreground" />
+                {/* Background */}
+                <div className="mobile-menu-backdrop bg-foreground" />
 
                 {/* Content */}
-                <div className="relative z-10 h-full flex flex-col p-8 text-background">
+                <div className="mobile-menu-content safe-area-all">
                     {/* Header */}
-                    <div className="flex items-center justify-between">
-                        <Link href="/" className="nav-logo !text-background" onClick={() => setIsMenuOpen(false)}>
+                    <div className="flex items-center justify-between mb-8">
+                        <Link
+                            href="/"
+                            className="nav-logo !text-background hover:opacity-70 transition-opacity"
+                            onClick={() => setIsMenuOpen(false)}
+                        >
                             tallow
                         </Link>
                         <button
                             onClick={() => setIsMenuOpen(false)}
-                            className="p-2 hover:opacity-60 transition-opacity text-background"
-                            aria-label="Close"
+                            className="p-3 -mr-3 hover:opacity-60 transition-opacity text-background rounded-full hover:bg-background/10 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                            aria-label="Close menu"
                         >
                             <X className="w-6 h-6" />
                         </button>
                     </div>
 
                     {/* Links */}
-                    <div className="flex-1 flex flex-col justify-center gap-8">
+                    <nav className="flex-1 flex flex-col justify-center gap-6">
                         <Link
                             href="/"
                             onClick={() => setIsMenuOpen(false)}
-                            className={`display-md transition-all duration-300 hover:translate-x-4 ${pathname === "/" ? "opacity-100" : "opacity-60 hover:opacity-100"}`}
+                            className={`mobile-menu-link ${pathname === "/" ? "opacity-100" : "opacity-60"}`}
                         >
                             Home
                         </Link>
-                        {navLinks.map((link) => (
+                        {navLinks.map((link, index) => (
                             <Link
                                 key={link.href}
                                 href={link.href}
                                 onClick={() => setIsMenuOpen(false)}
-                                className={`display-md transition-all duration-300 hover:translate-x-4 ${pathname === link.href ? "opacity-100" : "opacity-60 hover:opacity-100"}`}
+                                className={`mobile-menu-link ${pathname === link.href ? "opacity-100" : "opacity-60"}`}
+                                style={{ animationDelay: `${(index + 2) * 0.05}s` }}
                             >
                                 {t(link.labelKey)}
                             </Link>
                         ))}
-                    </div>
+                    </nav>
 
                     {/* Footer CTA */}
-                    <div className="pt-8">
+                    <div className="pt-8 safe-area-bottom">
                         <Link href="/app" onClick={() => setIsMenuOpen(false)} className="block">
-                            <Button variant="outline" size="lg" className="w-full border-background text-background hover:bg-background hover:text-foreground">
+                            <Button
+                                variant="outline"
+                                size="lg"
+                                className="w-full border-background text-background hover:bg-background hover:text-foreground transition-all duration-300"
+                            >
                                 {t("nav.getStarted")}
                                 <ArrowUpRight className="w-5 h-5 ml-2" />
                             </Button>
                         </Link>
+
+                        <p className="text-center text-background/50 text-xs mt-6 uppercase tracking-widest">
+                            Secure File Transfer
+                        </p>
                     </div>
                 </div>
             </div>

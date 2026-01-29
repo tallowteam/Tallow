@@ -158,7 +158,7 @@ export function KeyboardShortcutsDialog({
   );
 }
 
-// Export a trigger button component
+// Export a trigger button component - icon only for header
 export function KeyboardShortcutsTrigger() {
   const [open, setOpen] = useState(false);
 
@@ -166,14 +166,13 @@ export function KeyboardShortcutsTrigger() {
     <>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
             onClick={() => setOpen(true)}
-            aria-label="Keyboard Shortcuts (?)"
+            aria-label="Keyboard shortcuts (press ? key)"
+            className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full hover:bg-muted transition-colors"
           >
             <Keyboard className="w-5 h-5" aria-hidden="true" />
-          </Button>
+          </button>
         </TooltipTrigger>
         <TooltipContent>Keyboard Shortcuts (?)</TooltipContent>
       </Tooltip>
