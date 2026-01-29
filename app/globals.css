@@ -2,6 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===============================================
+   FLUID LAYOUT - Adjusts to Browser Window Size
+   Content scales smoothly with viewport width
+   =============================================== */
+@layer components {
+  .container {
+    width: 100%;
+    max-width: 100% !important;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+/* Fluid typography - scales with viewport width */
+html {
+  /* Base font scales from 14px at 320px to 18px at 1920px */
+  font-size: clamp(0.875rem, 0.8rem + 0.25vw, 1.125rem);
+}
+
+/* Fluid heading sizes based on viewport */
+h1, .display-xl {
+  font-size: clamp(2.5rem, 2rem + 3vw, 5rem) !important;
+}
+
+h2, .display-lg {
+  font-size: clamp(1.75rem, 1.5rem + 2vw, 3.5rem) !important;
+}
+
+h3, .heading-xl {
+  font-size: clamp(1.25rem, 1rem + 1.5vw, 2.5rem) !important;
+}
+
+/* Fluid spacing based on viewport */
+.section-hero,
+[class*="py-20"],
+[class*="py-24"],
+[class*="py-28"],
+[class*="py-32"] {
+  padding-top: clamp(5rem, 4rem + 4vw, 10rem);
+  padding-bottom: clamp(5rem, 4rem + 4vw, 10rem);
+}
+
+/* Fluid container padding */
+.container,
+[class*="px-4"],
+[class*="px-6"] {
+  padding-left: clamp(1rem, 0.5rem + 2vw, 3rem);
+  padding-right: clamp(1rem, 0.5rem + 2vw, 3rem);
+}
+
+/* Fluid gaps */
+[class*="gap-4"],
+[class*="gap-6"],
+[class*="gap-8"] {
+  gap: clamp(1rem, 0.5rem + 1.5vw, 2.5rem);
+}
+
 /* Ensure sr-only works correctly for skip links */
 @layer utilities {
   .sr-only {
