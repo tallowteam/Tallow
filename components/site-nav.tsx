@@ -7,6 +7,7 @@ import { Menu, X, ArrowUpRight } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageDropdown } from "@/components/language-dropdown";
+import { KeyboardShortcutsTrigger } from "@/components/accessibility/keyboard-shortcuts-dialog";
 import { useLanguage } from "@/lib/i18n/language-context";
 
 export function SiteNav() {
@@ -33,6 +34,7 @@ export function SiteNav() {
     const navLinks = [
         { href: "/features", labelKey: "nav.features" },
         { href: "/how-it-works", labelKey: "nav.howItWorks" },
+        { href: "/help", labelKey: "nav.help" },
     ];
 
     return (
@@ -59,21 +61,22 @@ export function SiteNav() {
                     </div>
 
                     {/* CTA & Mobile Menu */}
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4">
+                        <KeyboardShortcutsTrigger />
                         <LanguageDropdown />
                         <ThemeToggle />
                         <button
                             onClick={() => setIsMenuOpen(true)}
-                            className="md:hidden p-2 hover:opacity-60 transition-opacity"
+                            className="md:hidden p-1.5 sm:p-2 hover:opacity-60 transition-opacity"
                             aria-label="Menu"
                         >
-                            <Menu className="w-6 h-6" />
+                            <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
                         </button>
-                        <Link href="/app" className="hidden sm:block">
+                        <Link href="/app">
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="border-current hover:bg-background/10 hover:text-inherit"
+                                className="border-current hover:bg-background/10 hover:text-inherit text-xs sm:text-sm px-2 sm:px-3 h-7 sm:h-9"
                             >
                                 {t("nav.getStarted")}
                             </Button>

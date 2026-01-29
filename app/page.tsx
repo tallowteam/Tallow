@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
-  Send,
   Shield,
   Globe,
   Users,
@@ -11,20 +10,31 @@ import {
   MessageSquare,
   ArrowRight,
   Zap,
-  Lock,
   Wifi,
+  ShieldCheck,
+  Monitor,
+  Lock,
+  Eye,
 } from "lucide-react";
 import { SiteNav } from "@/components/site-nav";
 import { DonationSection } from "@/components/donate/donation-section";
 import { useLanguage } from "@/lib/i18n/language-context";
+import { FeatureCarousel } from "@/components/features/feature-carousel";
+import { topFeatures } from "@/lib/features/sample-features";
 
 export default function Home() {
   const { t } = useLanguage();
 
   const features = [
     { icon: Zap, titleKey: "home.features.fast.title", descKey: "home.features.fast.desc" },
+    { icon: ShieldCheck, titleKey: "home.features.pqc.title", descKey: "home.features.pqc.desc" },
     { icon: Shield, titleKey: "home.features.encrypted.title", descKey: "home.features.encrypted.desc" },
+    { icon: Eye, titleKey: "home.features.privacy.title", descKey: "home.features.privacy.desc" },
+    { icon: Users, titleKey: "home.features.group.title", descKey: "home.features.group.desc" },
+    { icon: Monitor, titleKey: "home.features.screen.title", descKey: "home.features.screen.desc" },
+    { icon: MessageSquare, titleKey: "home.features.chat.title", descKey: "home.features.chat.desc" },
     { icon: Globe, titleKey: "home.features.anywhere.title", descKey: "home.features.anywhere.desc" },
+    { icon: Lock, titleKey: "home.features.tor.title", descKey: "home.features.tor.desc" },
     { icon: Users, titleKey: "home.features.friends.title", descKey: "home.features.friends.desc" },
     { icon: Folder, titleKey: "home.features.folders.title", descKey: "home.features.folders.desc" },
     { icon: MessageSquare, titleKey: "home.features.text.title", descKey: "home.features.text.desc" },
@@ -32,12 +42,14 @@ export default function Home() {
 
   const stats = [
     { number: "0", labelKey: "home.stats.storage", suffix: "KB" },
-    { number: "256", labelKey: "home.stats.encryption", suffix: "" },
+    { number: "", labelKey: "home.stats.encryption", suffix: "" },
     { number: "∞", labelKey: "home.stats.limit", suffix: "" },
   ];
 
   const securityTags = [
+    "home.security.tags.pqc",
     "home.security.tags.aes",
+    "home.security.tags.nist",
     "home.security.tags.e2e",
     "home.security.tags.nocloud",
     "home.security.tags.opensource",
@@ -48,16 +60,23 @@ export default function Home() {
       <SiteNav />
 
       {/* Hero Section - Dark */}
+      <main id="main-content" tabIndex={-1}>
       <section className="section-hero-dark grid-pattern">
         <div className="container mx-auto px-6 py-32 relative z-10">
           <div className="max-w-5xl mx-auto text-center">
+            {/* PQC Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 border border-green-500/20 mb-6 animate-fade-up">
+              <ShieldCheck className="w-4 h-4 text-green-500" />
+              <span className="text-sm font-medium text-green-500">{t("home.hero.badge")}</span>
+            </div>
+
             {/* Eyebrow */}
-            <p className="label mb-8 animate-fade-up text-hero-muted">
+            <p className="label mb-8 animate-fade-up stagger-1 text-hero-muted">
               {t("home.hero.eyebrow")}
             </p>
 
             {/* Main Headline - Serif */}
-            <h1 className="display-xl mb-8 animate-fade-up stagger-1">
+            <h1 className="display-xl mb-8 animate-fade-up stagger-2">
               {t("home.hero.title1")}
               <br />
               <span className="italic">{t("home.hero.title2")}</span> {t("home.hero.title3")}
@@ -107,6 +126,14 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Feature Highlights Carousel */}
+      <FeatureCarousel
+        features={topFeatures.slice(0, 21)}
+        autoPlay={true}
+        interval={6000}
+        showControls={true}
+      />
 
       {/* Why Section */}
       <section className="section-content">
@@ -232,20 +259,65 @@ export default function Home() {
           </div>
         </div>
       </section>
+      </main>
 
       {/* Footer */}
       <footer className="border-t border-border py-12 bg-background">
         <div className="container mx-auto px-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-between md:gap-6">
+            {/* Logo - Row 1 on mobile */}
             <Link href="/" className="text-xl tracking-tight lowercase font-serif text-foreground">
               tallow
             </Link>
-            <div className="flex items-center gap-6">
-              <Link href="/privacy" className="text-xs font-medium uppercase tracking-widest text-foreground hover:opacity-70 transition-opacity">Privacy</Link>
-              <Link href="/security" className="text-xs font-medium uppercase tracking-widest text-foreground hover:opacity-70 transition-opacity">Security</Link>
-              <Link href="/terms" className="text-xs font-medium uppercase tracking-widest text-foreground hover:opacity-70 transition-opacity">Terms</Link>
-            </div>
-            <p className="text-sm text-muted-foreground">
+
+            {/* Links - Row 2 on mobile, wrapped flex layout */}
+            <nav aria-label="Footer navigation" className="w-full md:w-auto">
+              <ul className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 md:justify-start">
+                <li>
+                  <Link
+                    href="/features"
+                    className="inline-flex items-center justify-center min-h-[44px] px-2 text-xs font-medium uppercase tracking-widest text-foreground hover:opacity-70 transition-opacity"
+                  >
+                    Features
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/screen-share-demo"
+                    className="inline-flex items-center justify-center min-h-[44px] px-2 text-xs font-medium uppercase tracking-widest text-foreground hover:opacity-70 transition-opacity"
+                  >
+                    Screen Share
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/privacy"
+                    className="inline-flex items-center justify-center min-h-[44px] px-2 text-xs font-medium uppercase tracking-widest text-foreground hover:opacity-70 transition-opacity"
+                  >
+                    Privacy
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/security"
+                    className="inline-flex items-center justify-center min-h-[44px] px-2 text-xs font-medium uppercase tracking-widest text-foreground hover:opacity-70 transition-opacity"
+                  >
+                    Security
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/terms"
+                    className="inline-flex items-center justify-center min-h-[44px] px-2 text-xs font-medium uppercase tracking-widest text-foreground hover:opacity-70 transition-opacity"
+                  >
+                    Terms
+                  </Link>
+                </li>
+              </ul>
+            </nav>
+
+            {/* Tagline - Row 3 on mobile */}
+            <p className="text-sm text-muted-foreground text-center md:text-left">
               {t("footer.tagline")}
             </p>
           </div>
