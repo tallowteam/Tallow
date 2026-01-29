@@ -2,61 +2,191 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ===============================================
-   FLUID LAYOUT - Adjusts to Browser Window Size
-   Content scales smoothly with viewport width
-   =============================================== */
-@layer components {
-  .container {
-    width: 100%;
-    max-width: 100% !important;
-    margin-left: auto;
-    margin-right: auto;
-  }
+/* =====================================================================
+   VIEWPORT-RELATIVE FLUID SCALING SYSTEM
+   All content scales proportionally with browser window width
+   ===================================================================== */
+
+:root {
+  /* === VIEWPORT SCALE MULTIPLIER === */
+  --fluid-scale: 1;
+
+  /* === FLUID BASE FONT SIZE - Clamped for desktop readability === */
+  --fluid-base-size: clamp(14px, calc(12px + 0.25vw), 18px);
+
+  /* === FLUID TYPOGRAPHY SCALE - Desktop optimized with min/max bounds === */
+  --fluid-text-3xs: clamp(0.625rem, calc(0.5rem + 0.1vw), 0.75rem);
+  --fluid-text-2xs: clamp(0.688rem, calc(0.6rem + 0.1vw), 0.813rem);
+  --fluid-text-xs: clamp(0.75rem, calc(0.7rem + 0.1vw), 0.875rem);
+  --fluid-text-sm: clamp(0.813rem, calc(0.75rem + 0.1vw), 0.938rem);
+  --fluid-text-base: clamp(0.938rem, calc(0.875rem + 0.15vw), 1.063rem);
+  --fluid-text-lg: clamp(1rem, calc(0.938rem + 0.2vw), 1.188rem);
+  --fluid-text-xl: clamp(1.125rem, calc(1rem + 0.25vw), 1.375rem);
+  --fluid-text-2xl: clamp(1.25rem, calc(1.125rem + 0.35vw), 1.625rem);
+  --fluid-text-3xl: clamp(1.5rem, calc(1.25rem + 0.5vw), 2rem);
+  --fluid-text-4xl: clamp(1.75rem, calc(1.5rem + 0.6vw), 2.5rem);
+  --fluid-text-5xl: clamp(2rem, calc(1.75rem + 0.8vw), 3rem);
+  --fluid-text-6xl: clamp(2.5rem, calc(2rem + 1vw), 3.75rem);
+  --fluid-text-7xl: clamp(3rem, calc(2.5rem + 1.2vw), 4.5rem);
+  --fluid-text-8xl: clamp(3.5rem, calc(3rem + 1.5vw), 5.5rem);
+  --fluid-text-9xl: clamp(4rem, calc(3.5rem + 2vw), 7rem);
+
+  /* === FLUID SPACING SCALE - Desktop optimized with bounds === */
+  --fluid-space-3xs: clamp(0.125rem, calc(0.1rem + 0.05vw), 0.25rem);
+  --fluid-space-2xs: clamp(0.25rem, calc(0.2rem + 0.1vw), 0.5rem);
+  --fluid-space-xs: clamp(0.5rem, calc(0.375rem + 0.15vw), 0.75rem);
+  --fluid-space-sm: clamp(0.75rem, calc(0.5rem + 0.25vw), 1.25rem);
+  --fluid-space-md: clamp(1rem, calc(0.75rem + 0.35vw), 1.5rem);
+  --fluid-space-lg: clamp(1.5rem, calc(1rem + 0.5vw), 2.25rem);
+  --fluid-space-xl: clamp(2rem, calc(1.5rem + 0.6vw), 3rem);
+  --fluid-space-2xl: clamp(2.5rem, calc(2rem + 0.75vw), 4rem);
+  --fluid-space-3xl: clamp(3rem, calc(2.5rem + 1vw), 5rem);
+  --fluid-space-4xl: clamp(4rem, calc(3rem + 1.25vw), 6rem);
+  --fluid-space-5xl: clamp(5rem, calc(4rem + 1.5vw), 7.5rem);
+  --fluid-space-6xl: clamp(6rem, calc(5rem + 2vw), 9rem);
+  --fluid-space-7xl: clamp(7rem, calc(6rem + 2.5vw), 11rem);
+
+  /* === FLUID CONTAINER PADDING - Desktop Optimized === */
+  --fluid-container-padding: clamp(1.5rem, 5vw, 8rem);
+
+  /* === DESKTOP MAX-WIDTH === */
+  --content-max-width: min(1400px, 90vw);
+
+  /* === FLUID COMPONENT SIZES - Desktop optimized === */
+  --fluid-button-height: clamp(2.5rem, calc(2.25rem + 0.25vw), 3.25rem);
+  --fluid-button-padding-x: clamp(1.25rem, calc(1rem + 0.35vw), 2rem);
+  --fluid-button-padding-y: clamp(0.5rem, calc(0.4rem + 0.15vw), 0.875rem);
+  --fluid-icon-sm: clamp(1rem, calc(0.875rem + 0.1vw), 1.25rem);
+  --fluid-icon-md: clamp(1.25rem, calc(1.125rem + 0.15vw), 1.5rem);
+  --fluid-icon-lg: clamp(1.5rem, calc(1.375rem + 0.2vw), 2rem);
+
+  /* === FLUID BORDER RADIUS === */
+  --fluid-radius-sm: clamp(0.25rem, calc(0.2rem + 0.05vw), 0.375rem);
+  --fluid-radius-md: clamp(0.375rem, calc(0.3rem + 0.075vw), 0.5rem);
+  --fluid-radius-lg: clamp(0.5rem, calc(0.4rem + 0.1vw), 0.75rem);
+  --fluid-radius-xl: clamp(0.75rem, calc(0.625rem + 0.15vw), 1rem);
+
+  /* === FLUID GRID GAPS - Desktop optimized === */
+  --fluid-gap-xs: clamp(0.5rem, calc(0.375rem + 0.15vw), 0.875rem);
+  --fluid-gap-sm: clamp(0.75rem, calc(0.625rem + 0.2vw), 1.25rem);
+  --fluid-gap-md: clamp(1rem, calc(0.875rem + 0.25vw), 1.5rem);
+  --fluid-gap-lg: clamp(1.5rem, calc(1.25rem + 0.35vw), 2.25rem);
+  --fluid-gap-xl: clamp(2rem, calc(1.75rem + 0.5vw), 3rem);
 }
 
-/* Fluid typography - scales with viewport width */
+/* HTML ROOT - Base font size for desktop/laptop */
 html {
-  /* Base font scales from 14px at 320px to 18px at 1920px */
-  font-size: clamp(0.875rem, 0.8rem + 0.25vw, 1.125rem);
+  font-size: 16px;
 }
 
-/* Fluid heading sizes based on viewport */
+/* Body content wrapper */
+body {
+  font-size: var(--fluid-text-base);
+  line-height: 1.6;
+}
+
+/* DESKTOP/LAPTOP CONTAINER - Constrained width with proper padding */
+.container {
+  width: 100% !important;
+  max-width: var(--content-max-width) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: var(--fluid-container-padding) !important;
+  padding-right: var(--fluid-container-padding) !important;
+}
+
+/* Main content wrapper for full-width sections */
+main, .main-content {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Content sections should be constrained */
+main > section,
+main > div:not(.full-width),
+.content-wrapper {
+  max-width: var(--content-max-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--fluid-container-padding);
+  padding-right: var(--fluid-container-padding);
+}
+
+/* FLUID TYPOGRAPHY - All text scales with viewport */
 h1, .display-xl {
-  font-size: clamp(2.5rem, 2rem + 3vw, 5rem) !important;
+  font-size: var(--fluid-text-7xl) !important;
 }
 
 h2, .display-lg {
-  font-size: clamp(1.75rem, 1.5rem + 2vw, 3.5rem) !important;
+  font-size: var(--fluid-text-5xl) !important;
 }
 
 h3, .heading-xl {
-  font-size: clamp(1.25rem, 1rem + 1.5vw, 2.5rem) !important;
+  font-size: var(--fluid-text-4xl) !important;
 }
 
-/* Fluid spacing based on viewport */
-.section-hero,
-[class*="py-20"],
-[class*="py-24"],
-[class*="py-28"],
-[class*="py-32"] {
-  padding-top: clamp(5rem, 4rem + 4vw, 10rem);
-  padding-bottom: clamp(5rem, 4rem + 4vw, 10rem);
+p {
+  font-size: var(--fluid-text-base) !important;
 }
 
-/* Fluid container padding */
-.container,
-[class*="px-4"],
-[class*="px-6"] {
-  padding-left: clamp(1rem, 0.5rem + 2vw, 3rem);
-  padding-right: clamp(1rem, 0.5rem + 2vw, 3rem);
+/* Tailwind text overrides with fluid values */
+[class*="text-xs"] { font-size: var(--fluid-text-xs) !important; }
+[class*="text-sm"] { font-size: var(--fluid-text-sm) !important; }
+[class*="text-base"] { font-size: var(--fluid-text-base) !important; }
+[class*="text-lg"] { font-size: var(--fluid-text-lg) !important; }
+[class*="text-xl"]:not([class*="text-2xl"]):not([class*="text-3xl"]):not([class*="text-4xl"]):not([class*="text-5xl"]):not([class*="text-6xl"]):not([class*="text-7xl"]) { font-size: var(--fluid-text-xl) !important; }
+[class*="text-2xl"] { font-size: var(--fluid-text-2xl) !important; }
+[class*="text-3xl"] { font-size: var(--fluid-text-3xl) !important; }
+[class*="text-4xl"] { font-size: var(--fluid-text-4xl) !important; }
+[class*="text-5xl"] { font-size: var(--fluid-text-5xl) !important; }
+[class*="text-6xl"] { font-size: var(--fluid-text-6xl) !important; }
+[class*="text-7xl"] { font-size: var(--fluid-text-7xl) !important; }
+
+/* FLUID SPACING */
+section, [class*="py-20"], [class*="py-24"], [class*="py-28"], [class*="py-32"] {
+  padding-top: var(--fluid-space-5xl) !important;
+  padding-bottom: var(--fluid-space-5xl) !important;
 }
 
-/* Fluid gaps */
-[class*="gap-4"],
-[class*="gap-6"],
-[class*="gap-8"] {
-  gap: clamp(1rem, 0.5rem + 1.5vw, 2.5rem);
+[class*="px-4"], [class*="px-6"], [class*="px-8"] {
+  padding-left: var(--fluid-container-padding) !important;
+  padding-right: var(--fluid-container-padding) !important;
+}
+
+[class*="gap-4"], [class*="gap-6"] { gap: var(--fluid-gap-md) !important; }
+[class*="gap-8"], [class*="gap-10"] { gap: var(--fluid-gap-lg) !important; }
+
+/* DESKTOP MAX-WIDTH - Constrained for readability */
+.max-w-3xl { max-width: min(48rem, 90vw) !important; }
+.max-w-4xl { max-width: min(56rem, 90vw) !important; }
+.max-w-5xl { max-width: min(64rem, 90vw) !important; }
+.max-w-6xl { max-width: min(72rem, 92vw) !important; }
+.max-w-7xl { max-width: min(80rem, 94vw) !important; }
+
+/* Page wrapper for full-bleed backgrounds with constrained content */
+.page-section {
+  width: 100%;
+  padding-left: var(--fluid-container-padding);
+  padding-right: var(--fluid-container-padding);
+}
+
+.page-section > * {
+  max-width: var(--content-max-width);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* FLUID NAVIGATION */
+.nav-minimal {
+  padding: var(--fluid-space-md) var(--fluid-space-lg);
+}
+
+.nav-logo {
+  font-size: var(--fluid-text-xl);
+}
+
+.nav-link {
+  font-size: var(--fluid-text-xs);
 }
 
 /* Ensure sr-only works correctly for skip links */
@@ -271,74 +401,111 @@ h3, .heading-xl {
 }
 
 /* ===============================================
-   TYPOGRAPHY - Euveka Style
-   Elegant serif for display, clean sans for body
+   TYPOGRAPHY - Euveka Style with FLUID SCALING
+   No breakpoints - uses clamp() for smooth scaling
    =============================================== */
 
-/* Display Headlines - Serif */
+/* Display Headlines - Serif - FLUID */
 .display-xl {
   font-family: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
-  @apply text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-normal tracking-[-0.02em] leading-[0.95];
+  font-size: clamp(2.5rem, 2rem + 5vw, 8rem) !important;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 0.95;
 }
 
 .display-lg {
   font-family: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
-  @apply text-5xl sm:text-6xl md:text-7xl font-light tracking-[-0.02em] leading-[1];
+  font-size: clamp(2rem, 1.5rem + 4vw, 6rem) !important;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1;
 }
 
 .display-md {
   font-family: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
-  @apply text-4xl sm:text-5xl font-light tracking-[-0.01em] leading-[1.05];
+  font-size: clamp(1.75rem, 1.25rem + 3vw, 4.5rem) !important;
+  font-weight: 300;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
 }
 
 .display-sm {
   font-family: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
-  @apply text-3xl sm:text-4xl font-light leading-[1.1];
+  font-size: clamp(1.5rem, 1rem + 2.5vw, 3.5rem) !important;
+  font-weight: 300;
+  line-height: 1.1;
 }
 
-/* Heading - Sans Serif */
+/* Heading - Sans Serif - FLUID */
 .heading-xl {
-  @apply text-4xl sm:text-5xl md:text-6xl font-semibold tracking-[-0.02em] leading-[1.1];
+  font-size: clamp(1.75rem, 1.25rem + 3vw, 5rem) !important;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
 }
 
 .heading-lg {
-  @apply text-3xl sm:text-4xl font-semibold tracking-[-0.01em] leading-[1.15];
+  font-size: clamp(1.5rem, 1rem + 2.5vw, 3.5rem) !important;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
 }
 
 .heading-md {
-  @apply text-2xl sm:text-3xl font-semibold leading-[1.2];
+  font-size: clamp(1.25rem, 1rem + 1.5vw, 2.5rem) !important;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .heading-sm {
-  @apply text-xl sm:text-2xl font-semibold leading-[1.25];
+  font-size: clamp(1.125rem, 0.9rem + 1vw, 2rem) !important;
+  font-weight: 600;
+  line-height: 1.25;
 }
 
-/* Body Text */
+/* Body Text - FLUID */
 .body-xl {
-  @apply text-xl text-muted-foreground leading-relaxed;
+  font-size: clamp(1.125rem, 1rem + 0.75vw, 1.75rem) !important;
+  color: var(--muted-foreground);
+  line-height: 1.7;
 }
 
 .body-lg {
-  @apply text-lg text-muted-foreground leading-relaxed;
+  font-size: clamp(1rem, 0.9rem + 0.5vw, 1.5rem) !important;
+  color: var(--muted-foreground);
+  line-height: 1.7;
 }
 
 .body-md {
-  @apply text-base text-muted-foreground leading-relaxed;
+  font-size: clamp(0.9rem, 0.85rem + 0.35vw, 1.25rem) !important;
+  color: var(--muted-foreground);
+  line-height: 1.7;
 }
 
-/* Labels - Uppercase tracking */
+/* Labels - Uppercase tracking - FLUID */
 .label {
-  @apply text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground;
+  font-size: clamp(0.65rem, 0.6rem + 0.2vw, 0.875rem) !important;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--muted-foreground);
 }
 
 .label-lg {
-  @apply text-sm font-medium uppercase tracking-[0.15em] text-muted-foreground;
+  font-size: clamp(0.75rem, 0.7rem + 0.25vw, 1rem) !important;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--muted-foreground);
 }
 
-/* Stats/Numbers - Bold display */
+/* Stats/Numbers - Bold display - FLUID */
 .stat-number {
   font-family: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
-  @apply text-5xl sm:text-6xl md:text-7xl font-light tracking-tight;
+  font-size: clamp(2.5rem, 2rem + 4vw, 7rem) !important;
+  font-weight: 300;
+  letter-spacing: -0.02em;
 }
 
 /* ===============================================
@@ -968,127 +1135,39 @@ footer p {
 }
 
 /* ===============================================
-   RESPONSIVE DESIGN - Mobile & Tablet
+   RESPONSIVE DESIGN - Fluid Adjustments Only
+   No fixed breakpoints - uses clamp() scaling
    =============================================== */
 
-/* Mobile (< 640px) */
-@media (max-width: 639px) {
-
-  /* Typography scaling */
-  .display-xl {
-    font-size: 2.5rem;
-    line-height: 1.1;
-  }
-
-  .display-lg {
-    font-size: 2rem;
-    line-height: 1.15;
-  }
-
-  .display-md {
-    font-size: 1.5rem;
-    line-height: 1.2;
-  }
-
-  .heading-xl {
-    font-size: 2rem;
-  }
-
-  .heading-lg {
-    font-size: 1.5rem;
-  }
-
-  .heading-md {
-    font-size: 1.25rem;
-  }
-
-  .heading-sm {
-    font-size: 1.1rem;
-  }
-
-  /* Hero section spacing */
-  .section-hero {
-    padding-top: 8rem;
-    padding-bottom: 4rem;
-  }
-
-  .section-content {
-    padding-top: 3rem;
-    padding-bottom: 3rem;
-  }
-
-  .section-dark {
-    padding-top: 3rem;
-    padding-bottom: 3rem;
-  }
-
-  /* Navigation */
-  .nav-minimal {
-    padding: 1rem 1.25rem;
-  }
-
-  .nav-logo {
-    font-size: 1.25rem;
-  }
-
-  /* Cards */
-  .card-feature {
-    padding: 1.25rem;
-  }
-
-  .card-dark {
-    padding: 1.25rem;
-  }
-
-  /* Container padding */
-  .container {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-
-  /* Stats section */
-  .stat-number {
-    font-size: 2rem;
-  }
+/* Navigation fluid scaling */
+.nav-minimal {
+  padding: clamp(0.75rem, 0.5rem + 1vw, 2rem) clamp(1rem, 0.5rem + 2vw, 3rem);
 }
 
-/* Tablet (640px - 1023px) */
-@media (min-width: 640px) and (max-width: 1023px) {
+.nav-logo {
+  font-size: clamp(1.125rem, 1rem + 0.5vw, 2rem);
+}
 
-  /* Typography scaling */
-  .display-xl {
-    font-size: 3.5rem;
-  }
+/* Cards fluid scaling */
+.card-feature,
+.card-dark {
+  padding: clamp(1rem, 0.75rem + 1.5vw, 2.5rem);
+}
 
-  .display-lg {
-    font-size: 2.5rem;
-  }
+/* Stats section fluid */
+.stat-number {
+  font-size: clamp(1.75rem, 1.5rem + 3vw, 5rem);
+}
 
-  .heading-xl {
-    font-size: 2.5rem;
-  }
+/* Section content fluid spacing */
+.section-content {
+  padding-top: clamp(2.5rem, 2rem + 4vw, 10rem);
+  padding-bottom: clamp(2.5rem, 2rem + 4vw, 10rem);
+}
 
-  /* Hero section */
-  .section-hero {
-    padding-top: 10rem;
-    padding-bottom: 5rem;
-  }
-
-  .section-content {
-    padding-top: 4rem;
-    padding-bottom: 4rem;
-  }
-
-  /* Navigation */
-  .nav-minimal {
-    padding: 1.25rem 1.5rem;
-  }
-
-  /* Container */
-  .container {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
+.section-dark {
+  padding-top: clamp(2.5rem, 2rem + 4vw, 10rem);
+  padding-bottom: clamp(2.5rem, 2rem + 4vw, 10rem);
 }
 
 /* ===============================================
@@ -1485,197 +1564,42 @@ button:hover svg,
 }
 
 /* ===============================================
-   ENHANCED RESPONSIVE BREAKPOINTS
+   FLUID RESPONSIVE UTILITIES
+   No fixed breakpoints - scaling handled by clamp()
    =============================================== */
 
-/* Extra Small (phones, <375px) */
-@media (max-width: 374px) {
-  html {
-    font-size: 14px;
-  }
-
-  .container {
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
-  }
-
-  .display-xl {
-    font-size: 2rem;
-  }
-
-  .display-lg {
-    font-size: 1.75rem;
-  }
-
-  .heading-xl {
-    font-size: 1.5rem;
-  }
-
-  .heading-lg {
-    font-size: 1.25rem;
-  }
-
-  .card-feature,
-  .card-dark {
-    padding: 1rem;
-  }
-
-  /* Stack buttons on very small screens */
-  .btn-group-responsive {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .btn-group-responsive>* {
-    width: 100%;
-  }
+/* Button group stacking on narrow viewports */
+.btn-group-responsive {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(0.5rem, 0.25rem + 1vw, 1rem);
 }
 
-/* Small phones (375px - 424px) */
-@media (min-width: 375px) and (max-width: 424px) {
-  .container {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-
-  .display-xl {
-    font-size: 2.25rem;
-  }
+/* Fluid grid column helpers */
+.grid-cols-fluid-2 {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
 }
 
-/* Large phones (425px - 639px) */
-@media (min-width: 425px) and (max-width: 639px) {
-  .container {
-    padding-left: 1.25rem;
-    padding-right: 1.25rem;
-  }
-
-  .display-xl {
-    font-size: 2.5rem;
-  }
-
-  .grid-cols-2-mobile {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.grid-cols-fluid-3 {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
 }
 
-/* Tablet Portrait (640px - 767px) */
-@media (min-width: 640px) and (max-width: 767px) {
-  .container {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
-
-  .grid-cols-2-tablet {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.grid-cols-fluid-4 {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
 }
 
-/* Tablet Landscape (768px - 1023px) */
-@media (min-width: 768px) and (max-width: 1023px) {
-  .container {
-    padding-left: 2rem;
-    padding-right: 2rem;
-  }
-
-  .grid-cols-3-tablet {
-    grid-template-columns: repeat(3, 1fr);
-  }
+/* Nav inner spacing - fluid */
+.nav-minimal-inner {
+  gap: clamp(1rem, 0.5rem + 2vw, 3rem);
 }
 
-/* Small Desktop / Laptop (1024px - 1279px) */
-@media (min-width: 1024px) and (max-width: 1279px) {
-  html {
-    font-size: 15px;
-  }
-
-  .container {
-    max-width: 960px;
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
-
-  /* Scale down hero section for laptops */
-  .display-xl {
-    font-size: 4.5rem;
-  }
-
-  .display-lg {
-    font-size: 3.25rem;
-  }
-
-  /* Reduce nav spacing */
-  .nav-minimal-inner {
-    gap: 1.5rem;
-  }
-
-  .nav-link {
-    font-size: 0.7rem;
-  }
+.nav-link {
+  font-size: clamp(0.65rem, 0.6rem + 0.25vw, 0.9rem);
 }
 
-/* Standard Desktop / Small Laptop (1280px - 1439px) */
-@media (min-width: 1280px) and (max-width: 1439px) {
-  html {
-    font-size: 15.5px;
-  }
-
-  .container {
-    max-width: 1140px;
-    padding-left: 2rem;
-    padding-right: 2rem;
-  }
-
-  .display-xl {
-    font-size: 5rem;
-  }
-
-  .display-lg {
-    font-size: 3.5rem;
-  }
-
-  /* Optimal reading width for content */
-  .prose-container {
-    max-width: 65ch;
-  }
-
-  /* Reduce nav spacing for better fit */
-  .nav-minimal-inner {
-    gap: 2rem;
-  }
-}
-
-/* Large Desktop (1440px - 1919px) */
-@media (min-width: 1440px) and (max-width: 1919px) {
-  html {
-    font-size: 17px;
-  }
-
-  .container {
-    max-width: 1320px;
-    padding-left: 3rem;
-    padding-right: 3rem;
-  }
-
-  .display-xl {
-    font-size: 6rem;
-  }
-
-  /* Section spacing scales up */
-  .section-content {
-    padding-top: 7rem;
-    padding-bottom: 7rem;
-  }
-
-  .section-dark {
-    padding-top: 7rem;
-    padding-bottom: 7rem;
-  }
-
-  /* Cards get more breathing room */
-  .card-feature, .card-dark {
-    padding: 2rem;
-  }
+/* Prose container - fluid reading width */
+.prose-container {
+  max-width: clamp(45ch, 60vw, 75ch);
 }
 
 
@@ -1954,7 +1878,7 @@ button:hover svg,
 @media (min-width: 768px) {
   .footer-grid {
     grid-template-columns: 1fr 2fr 1fr;
-    gap: 2rem;
+    gap: var(--fluid-gap-xl);
     align-items: center;
   }
 }
@@ -2234,344 +2158,46 @@ button:hover svg,
 }
 
 /* ===============================================
-   TV & LARGE SCREEN OPTIMIZATIONS
+   LARGE SCREEN & TV OPTIMIZATIONS
+   Uses fluid scaling with extended clamp() ranges
    =============================================== */
 
-/* Full HD / Large Desktop (1920px - 2559px) */
-@media (min-width: 1920px) and (max-width: 2559px) {
-  /* Increase base font size for readability from distance */
-  html {
-    font-size: 18px;
-  }
-
-  .container {
-    max-width: 1600px;
-    padding-left: 4rem;
-    padding-right: 4rem;
-  }
-
-  /* Larger touch/click targets for TV remotes */
-  button, [role="button"], a {
-    min-height: 56px;
-    min-width: 56px;
-  }
-
-  /* Larger cards for TV viewing */
-  .card-feature, .card-dark {
-    padding: 2.5rem;
-  }
-
-  /* Larger nav items */
-  .nav-minimal {
-    padding: 2rem 3rem;
-  }
-
-  .nav-logo {
-    font-size: 2rem;
-  }
-
-  .nav-link {
-    font-size: 0.9rem;
-    letter-spacing: 0.2em;
-  }
-
-  /* Section spacing for large screens */
-  .section-content, .section-dark {
-    padding-top: 8rem;
-    padding-bottom: 8rem;
-  }
-
-  .section-hero-dark {
-    padding-top: 10rem;
-    padding-bottom: 8rem;
-  }
-
-  /* Typography scales up */
-  .display-xl {
-    font-size: 7rem;
-  }
-
-  .display-lg {
-    font-size: 5rem;
-  }
-
-  .display-md {
-    font-size: 3.5rem;
-  }
-
-  .heading-xl {
-    font-size: 4rem;
-  }
-
-  .heading-lg {
-    font-size: 2.75rem;
-  }
-
-  .body-xl {
-    font-size: 1.375rem;
-  }
-
-  .body-lg {
-    font-size: 1.25rem;
-  }
+/* Fluid touch targets - scale with viewport */
+button, [role="button"], a {
+  min-height: clamp(44px, 3vw + 32px, 96px);
+  min-width: clamp(44px, 3vw + 32px, 96px);
 }
 
-/* QHD / 2K (2560px - 3439px) */
-@media (min-width: 2560px) and (max-width: 3439px) {
-  html {
-    font-size: 20px;
-  }
-
-  .container {
-    max-width: 2000px;
-    padding-left: 5rem;
-    padding-right: 5rem;
-  }
-
-  button, [role="button"], a {
-    min-height: 64px;
-    min-width: 64px;
-  }
-
-  .card-feature, .card-dark {
-    padding: 3rem;
-  }
-
-  .nav-minimal {
-    padding: 2.5rem 4rem;
-  }
-
-  .nav-logo {
-    font-size: 2.25rem;
-  }
-
-  .display-xl {
-    font-size: 8rem;
-  }
-
-  .display-lg {
-    font-size: 6rem;
-  }
-
-  /* Grid gaps scale up */
-  .grid {
-    gap: 2rem;
-  }
+/* Grid gaps - fluid scaling */
+.grid {
+  gap: clamp(1rem, 0.5rem + 1.5vw, 4rem);
 }
 
-/* 4K UHD (3440px - 3839px) */
-@media (min-width: 3440px) and (max-width: 3839px) {
-  html {
-    font-size: 22px;
-  }
-
-  .container {
-    max-width: 2800px;
-    padding-left: 6rem;
-    padding-right: 6rem;
-  }
-
-  button, [role="button"], a {
-    min-height: 72px;
-    min-width: 72px;
-  }
-
-  .card-feature, .card-dark {
-    padding: 3.5rem;
-    border-radius: 2rem;
-  }
-
-  .nav-minimal {
-    padding: 3rem 5rem;
-  }
-
-  .nav-logo {
-    font-size: 2.5rem;
-  }
-
-  .display-xl {
-    font-size: 9rem;
-  }
-
-  .section-content, .section-dark {
-    padding-top: 10rem;
-    padding-bottom: 10rem;
-  }
+/* Hero section fluid spacing */
+.section-hero-dark {
+  padding-top: clamp(4rem, 3rem + 5vw, 16rem);
+  padding-bottom: clamp(3rem, 2rem + 5vw, 12rem);
 }
 
-/* 4K TV / Cinema (3840px+) */
-@media (min-width: 3840px) {
-  html {
-    font-size: 24px;
-  }
-
-  .container {
-    max-width: 3200px;
-    padding-left: 8rem;
-    padding-right: 8rem;
-  }
-
-  button, [role="button"], a {
-    min-height: 80px;
-    min-width: 80px;
-  }
-
-  .card-feature, .card-dark {
-    padding: 4rem;
-    border-radius: 2.5rem;
-  }
-
-  .nav-minimal {
-    padding: 3.5rem 6rem;
-  }
-
-  .nav-logo {
-    font-size: 3rem;
-  }
-
-  .nav-link {
-    font-size: 1rem;
-  }
-
-  .display-xl {
-    font-size: 10rem;
-  }
-
-  .display-lg {
-    font-size: 7rem;
-  }
-
-  .display-md {
-    font-size: 5rem;
-  }
-
-  .heading-xl {
-    font-size: 5.5rem;
-  }
-
-  .heading-lg {
-    font-size: 4rem;
-  }
-
-  .heading-md {
-    font-size: 3rem;
-  }
-
-  .body-xl {
-    font-size: 1.75rem;
-  }
-
-  .body-lg {
-    font-size: 1.5rem;
-  }
-
-  .body-md {
-    font-size: 1.25rem;
-  }
-
-  /* Section spacing for cinema displays */
-  .section-content, .section-dark {
-    padding-top: 12rem;
-    padding-bottom: 12rem;
-  }
-
-  .section-hero-dark {
-    padding-top: 14rem;
-    padding-bottom: 10rem;
-  }
-
-  /* Larger grid gaps */
-  .grid {
-    gap: 3rem;
-  }
+/* Border radius scales with viewport */
+.card-feature, .card-dark {
+  border-radius: clamp(0.75rem, 0.5rem + 1vw, 3rem);
 }
 
-/* 8K Support (7680px+) */
-@media (min-width: 7680px) {
-  html {
-    font-size: 32px;
-  }
-
-  .container {
-    max-width: 6400px;
-    padding-left: 12rem;
-    padding-right: 12rem;
-  }
-
-  button, [role="button"], a {
-    min-height: 96px;
-    min-width: 96px;
-  }
-
-  .card-feature, .card-dark {
-    padding: 6rem;
-    border-radius: 3rem;
-  }
-
-  .nav-minimal {
-    padding: 5rem 8rem;
-  }
-
-  .nav-logo {
-    font-size: 4rem;
-  }
-
-  .display-xl {
-    font-size: 14rem;
-  }
-
-  .section-content, .section-dark {
-    padding-top: 16rem;
-    padding-bottom: 16rem;
-  }
-}
-
-/* Foldable devices (320px - 400px when folded) */
-@media (max-width: 319px) {
-  html {
-    font-size: 12px;
-  }
-
-  .container {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-  }
-
-  .nav-minimal {
-    padding: 0.5rem;
-  }
-
-  .nav-logo {
-    font-size: 1rem;
-  }
-}
-
-/* Landscape phone optimization */
+/* Landscape phone optimization - reduced vertical spacing */
 @media (max-height: 500px) and (orientation: landscape) {
   .section-hero-dark {
     min-height: auto;
-    padding-top: 5rem;
-    padding-bottom: 3rem;
   }
 
-  .section-content, .section-dark {
-    padding-top: 2rem;
-    padding-bottom: 2rem;
-  }
-
-  .display-xl {
-    font-size: 2rem;
-  }
-}
-
-/* Tablet in portrait mode specific */
-@media (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
-  .container {
-    padding-left: 2.5rem;
-    padding-right: 2.5rem;
-  }
-
-  .grid-cols-1.md\:grid-cols-2 {
-    grid-template-columns: repeat(2, 1fr);
+  /* Override clamp minimums for landscape phones */
+  [class*="py-20"],
+  [class*="py-24"],
+  [class*="py-28"],
+  [class*="py-32"],
+  .section-content,
+  .section-dark {
+    padding-top: clamp(1.5rem, 3vh, 4rem) !important;
+    padding-bottom: clamp(1.5rem, 3vh, 4rem) !important;
   }
 }
