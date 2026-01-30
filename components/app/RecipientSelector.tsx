@@ -12,7 +12,7 @@
  * - Accessible with ARIA labels and focus management
  */
 
-import { useState, useCallback, useEffect, useRef, memo } from 'react';
+import { useState, useCallback, useEffect, useRef, memo, useDeferredValue, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Dialog,
@@ -125,16 +125,25 @@ export const RecipientSelector = memo(function RecipientSelector({
   const listRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Filter devices based on search query
-  const filteredDevices = availableDevices.filter((device) => {
-    if (!searchQuery) {return true;}
-    const query = searchQuery.toLowerCase();
-    return (
-      device.name.toLowerCase().includes(query) ||
-      device.platform.toLowerCase().includes(query) ||
-      device.id.toLowerCase().includes(query)
-    );
-  });
+  // Defer search query for non-blocking filtering
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+
+  // Filter devices based on deferred search query
+  const filteredDevices = useMemo(() =>
+    availableDevices.filter((device) => {
+      if (!deferredSearchQuery) {return true;}
+      const query = deferredSearchQuery.toLowerCase();
+      return (
+        device.name.toLowerCase().includes(query) ||
+        device.platform.toLowerCase().includes(query) ||
+        device.id.toLowerCase().includes(query)
+      );
+    }),
+    [availableDevices, deferredSearchQuery]
+  );
+
+  // Track if search is stale for visual feedback
+  const isSearchStale = searchQuery !== deferredSearchQuery;
 
   // Toggle device selection
   const toggleDevice = useCallback(
@@ -356,7 +365,7 @@ export const RecipientSelector = memo(function RecipientSelector({
           </AnimatePresence>
 
           {/* Device list */}
-          <ScrollArea className="flex-1 -mx-6 px-6" ref={listRef}>
+          <ScrollArea className="flex-1 -mx-6 px-6" ref={listRef} style={{ opacity: isSearchStale ? 0.7 : 1, transition: 'opacity 150ms' }}>
             <AnimatePresence mode="popLayout">
               {filteredDevices.length === 0 ? (
                 <motion.div
