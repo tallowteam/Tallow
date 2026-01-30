@@ -208,12 +208,12 @@ export function TransferOptionsDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleCancel}>
+          <Button variant="outline" onClick={handleCancel} disabled={isPending}>
             Cancel
           </Button>
-          <Button onClick={handleConfirm}>
+          <Button onClick={handleConfirm} disabled={isPending}>
             <Settings2 className="w-4 h-4 mr-2" />
-            Continue
+            {isPending ? 'Processing...' : 'Continue'}
           </Button>
         </DialogFooter>
       </DialogContent>
