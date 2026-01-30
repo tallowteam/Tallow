@@ -1,14 +1,11 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import { generateUUID } from '@/lib/utils/uuid';
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+// Button and Progress available but using custom Euveka components
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
@@ -19,46 +16,86 @@ import {
     Settings,
     History,
     Send,
-    ArrowRight,
     Loader2,
-    Zap,
-    Shield,
     Check,
     Copy,
     FileDown,
-    Clipboard,
     RefreshCw,
     Users,
-    Mail,
+    ArrowLeft,
+    X,
+    File,
+    Image,
+    Video,
+    Music,
+    FileText,
+    Archive,
+    QrCode,
+    Shield,
+    AlertTriangle,
+    Zap,
+    ChevronRight,
+    Clock,
 } from "lucide-react";
-import { FileSelector, FileWithData } from "@/components/transfer/file-selector";
-import { TransferQueue } from "@/components/transfer/transfer-queue";
-import { DeviceList } from "@/components/devices/device-list";
-import { ManualConnect } from "@/components/devices/manual-connect";
+import { FileSelectorWithPrivacy, FileWithData } from "@/components/transfer/file-selector-with-privacy";
+import { DeviceListAnimated } from "@/components/devices/device-list-animated";
 import { Device, Transfer } from "@/lib/types";
 import { getConnectionManager, ConnectionManager } from "@/lib/signaling/connection-manager";
 import { downloadFile, formatFileSize } from "@/lib/hooks/use-file-transfer";
 import { getDeviceId } from "@/lib/auth/user-identity";
-import { generateWordPhrase, generateShortCode, formatCode, detectCodeType } from "@/lib/transfer/word-phrase-codes";
-import { addTransferRecord } from "@/lib/storage/transfer-history";
+import { formatCode } from "@/lib/transfer/word-phrase-codes";
+import { addTransferRecord, getRecentTransfers } from "@/lib/storage/transfer-history";
 import { migrateSensitiveData } from "@/lib/storage/secure-storage";
 import { getLocalDiscovery, DiscoveredDevice } from "@/lib/discovery/local-discovery";
-import { readClipboard, writeClipboard, addToClipboardHistory } from "@/lib/features/clipboard-sync";
-import { TransferConfirmDialog } from "@/components/transfer/transfer-confirm-dialog";
-import { TransferProgress } from "@/components/transfer/transfer-progress";
+import { writeClipboard, addToClipboardHistory } from "@/lib/features/clipboard-sync";
 import { FriendsList } from "@/components/friends/friends-list";
-import { PasswordInputDialog } from "@/components/transfer/password-input-dialog";
-import { Friend, getTrustedFriends, isFriend, requiresPasscode, updateFriendConnection, getPendingFriendRequests, initFriendsCache } from "@/lib/storage/friends";
-import { encryptFileWithPassword, decryptFileWithPassword } from "@/lib/transfer/file-encryption";
-import { VerificationDialog, VerificationBadge } from "@/components/security/verification-dialog";
+import { Friend, getFriends, updateFriendConnection, getPendingFriendRequests, initFriendsCache } from "@/lib/storage/friends";
+import { LazyVerificationDialog } from "@/components/lazy-components";
 import { VerificationSession, createVerificationSession, markSessionVerified, markSessionFailed, markSessionSkipped, isPeerVerified, initVerificationCache } from "@/lib/crypto/peer-authentication";
+import { useResumableTransfer } from '@/lib/hooks/use-resumable-transfer';
+import { transferMetadata } from '@/lib/transfer/transfer-metadata';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { LanguageDropdown } from '@/components/language-dropdown';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { getPrivateTransport } from '@/lib/transport/private-webrtc';
 import { PQCTransferManager } from '@/lib/transfer/pqc-transfer-manager';
-import { io } from 'socket.io-client';
+import { preloadOnMount } from '@/lib/crypto/preload-pqc';
 import { secureLog } from '@/lib/utils/secure-logger';
+import { initializePrivacyFeatures, PrivacyInitResult } from '@/lib/init/privacy-init';
+import { registerServiceWorker } from '@/lib/pwa/service-worker-registration';
+import { announce } from '@/components/accessibility/live-region-provider';
+import { cn } from '@/lib/utils';
+
+// ============================================================================
+// EUVEKA DESIGN SYSTEM - BLACK & WHITE DARK MODE
+// ============================================================================
+
+const EUVEKA = {
+    bg: {
+        primary: '#0a0a08',
+        card: '#141414',
+        cardHover: '#1a1a1a',
+        elevated: '#0f0f0f',
+    },
+    border: {
+        default: '#262626',
+        hover: 'rgba(254, 254, 252, 0.2)',
+        active: '#fefefc',
+    },
+    text: {
+        primary: '#fefefc',
+        secondary: 'rgba(254, 254, 252, 0.6)',
+        muted: 'rgba(254, 254, 252, 0.4)',
+    },
+    accent: {
+        success: '#22c55e',
+        warning: '#f59e0b',
+        error: '#ef4444',
+    }
+};
+
+// ============================================================================
+// INTERFACES
+// ============================================================================
 
 interface ReceivedFile {
     name: string;
@@ -69,215 +106,441 @@ interface ReceivedFile {
     relativePath?: string;
 }
 
-export default function AppPage() {
-    // Translation
-    const { t } = useLanguage();
+interface RecentTransfer {
+    id: string;
+    direction: 'send' | 'receive';
+    fileName: string;
+    fileSize: number;
+    peerName: string;
+    completedAt: Date;
+    status: 'completed' | 'failed';
+}
 
-    // User-friendly error message mapping
-    const getUserFriendlyError = (error: string): string => {
-        if (error.includes('signaling') || error.includes('WebSocket')) {
-            return 'Unable to connect to the signaling server. Please check your internet connection.';
+type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'transferring';
+type TransferMode = 'local' | 'internet' | 'friends' | null;
+
+// ============================================================================
+// ANIMATION VARIANTS - Euveka Style
+// ============================================================================
+
+const pageVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            duration: 0.5,
+            ease: [0.22, 1, 0.36, 1] as const,
+            staggerChildren: 0.1
         }
-        if (error.includes('timeout') || error.includes('Timeout')) {
-            return 'Connection timed out. The peer may be unreachable.';
+    }
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            duration: 0.5,
+            ease: [0.22, 1, 0.36, 1] as const
         }
-        if (error.includes('ICE') || error.includes('ice')) {
-            return 'Unable to establish peer connection. Try a different connection mode.';
+    }
+};
+
+const tabSwitchVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: {
+        opacity: 1,
+        x: 0,
+        transition: {
+            duration: 0.4,
+            ease: [0.22, 1, 0.36, 1] as const
         }
-        if (error.includes('rate') || error.includes('Rate')) {
-            return 'Too many connection attempts. Please wait a moment and try again.';
+    },
+    exit: {
+        opacity: 0,
+        x: 20,
+        transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] as const }
+    }
+};
+
+const cardHoverVariants = {
+    rest: {
+        y: 0,
+        scale: 1,
+        boxShadow: '0 0 0 rgba(254, 254, 252, 0)'
+    },
+    hover: {
+        y: -4,
+        scale: 1.01,
+        boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.5)',
+        transition: {
+            duration: 0.3,
+            ease: [0.22, 1, 0.36, 1] as const
         }
-        return 'Connection failed. Please try again.';
+    },
+    tap: {
+        y: 0,
+        scale: 0.99,
+        transition: {
+            duration: 0.1
+        }
+    }
+};
+
+const buttonVariants = {
+    rest: { scale: 1 },
+    hover: { scale: 1.02 },
+    tap: { scale: 0.98 }
+};
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+function getFileIcon(type: string) {
+    if (type.startsWith('image/')) return Image;
+    if (type.startsWith('video/')) return Video;
+    if (type.startsWith('audio/')) return Music;
+    if (type.includes('zip') || type.includes('rar') || type.includes('7z') || type.includes('tar')) return Archive;
+    if (type.includes('pdf') || type.includes('doc') || type.includes('text')) return FileText;
+    return File;
+}
+
+function getUserFriendlyError(error: string): string {
+    if (error.includes('signaling') || error.includes('WebSocket')) {
+        return 'Unable to connect to the signaling server. Please check your internet connection.';
+    }
+    if (error.includes('timeout') || error.includes('Timeout')) {
+        return 'Connection timed out. The peer may be unreachable.';
+    }
+    if (error.includes('ICE') || error.includes('ice')) {
+        return 'Unable to establish peer connection. Try a different connection mode.';
+    }
+    if (error.includes('rate') || error.includes('Rate')) {
+        return 'Too many connection attempts. Please wait a moment and try again.';
+    }
+    return 'Connection failed. Please try again.';
+}
+
+// ============================================================================
+// EUVEKA GLASS CARD COMPONENT
+// ============================================================================
+
+interface EuvekaCardProps {
+    children: React.ReactNode;
+    className?: string;
+    interactive?: boolean;
+    onClick?: () => void;
+    glow?: boolean;
+}
+
+function EuvekaCard({ children, className, interactive = false, onClick, glow = false }: EuvekaCardProps) {
+    const baseStyles = cn(
+        'relative rounded-2xl overflow-hidden',
+        'bg-[#141414] border border-[#262626]',
+        'backdrop-blur-xl',
+        glow && 'shadow-[0_0_60px_-12px_rgba(254,254,252,0.1)]',
+        className
+    );
+
+    if (interactive) {
+        return (
+            <motion.div
+                variants={cardHoverVariants}
+                initial="rest"
+                whileHover="hover"
+                whileTap="tap"
+                className={cn(baseStyles, 'cursor-pointer hover:border-[#fefefc]/20 transition-colors duration-300')}
+                onClick={onClick}
+            >
+                {children}
+            </motion.div>
+        );
+    }
+
+    return <div className={baseStyles}>{children}</div>;
+}
+
+// ============================================================================
+// EUVEKA OUTLINE BUTTON
+// ============================================================================
+
+interface EuvekaButtonProps {
+    children: React.ReactNode;
+    onClick?: () => void;
+    disabled?: boolean;
+    variant?: 'outline' | 'filled' | 'ghost';
+    size?: 'sm' | 'md' | 'lg';
+    className?: string;
+    icon?: boolean;
+}
+
+function EuvekaButton({ children, onClick, disabled, variant = 'outline', size = 'md', className, icon }: EuvekaButtonProps) {
+    const sizeStyles = {
+        sm: icon ? 'h-10 w-10' : 'h-10 px-4 text-sm',
+        md: icon ? 'h-12 w-12' : 'h-12 px-6 text-sm',
+        lg: icon ? 'h-14 w-14' : 'h-14 px-8 text-base',
     };
 
-    // App state
-    const [mode, setMode] = useState<'send' | 'receive'>('send');
-    const [connectionType, setConnectionType] = useState<'local' | 'internet' | 'friends' | null>(null);
-    const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
-    const [friendRequestCount, setFriendRequestCount] = useState(0);
-    const [transferPassword, setTransferPassword] = useState<string | undefined>(undefined);
-    const [showPasswordDialog, setShowPasswordDialog] = useState(false);
-    const [pendingDecryptFile, setPendingDecryptFile] = useState<ReceivedFile | null>(null);
+    const variantStyles = {
+        outline: 'bg-transparent border border-[#fefefc]/20 text-[#fefefc] hover:bg-[#fefefc]/5 hover:border-[#fefefc]/40',
+        filled: 'bg-[#fefefc] text-[#0a0a08] hover:bg-[#fefefc]/90',
+        ghost: 'bg-transparent text-[#fefefc]/60 hover:text-[#fefefc] hover:bg-[#fefefc]/5',
+    };
+
+    const hoverProps = !disabled ? { whileHover: "hover" as const, whileTap: "tap" as const } : {};
+
+    return (
+        <motion.button
+            variants={buttonVariants}
+            initial="rest"
+            {...hoverProps}
+            onClick={onClick}
+            disabled={disabled}
+            className={cn(
+                'rounded-full font-medium transition-all duration-200',
+                'flex items-center justify-center gap-2',
+                'disabled:opacity-40 disabled:cursor-not-allowed',
+                sizeStyles[size],
+                variantStyles[variant],
+                className
+            )}
+        >
+            {children}
+        </motion.button>
+    );
+}
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+
+export default function AppPage() {
+    const { t } = useLanguage();
+
+    // ========================================================================
+    // STATE
+    // ========================================================================
+
+    // Core state
+    const [activeTab, setActiveTab] = useState<'send' | 'receive'>('send');
+    const [transferMode, setTransferMode] = useState<TransferMode>(null);
+    const [_connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('idle');
+
+    // File state
     const [selectedFiles, setSelectedFiles] = useState<FileWithData[]>([]);
-    const [transfers, setTransfers] = useState<Transfer[]>([]);
+    const [receivedFiles, setReceivedFiles] = useState<ReceivedFile[]>([]);
+    const [_transfers, setTransfers] = useState<Transfer[]>([]);
+    const [recentTransfers, setRecentTransfers] = useState<RecentTransfer[]>([]);
+
+    // Connection state
     const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
     const [isConnecting, setIsConnecting] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
+    const [pqcReady, setPqcReady] = useState(false);
+
+    // Transfer state
     const [isSending, setIsSending] = useState(false);
     const [sendProgress, setSendProgress] = useState(0);
+    const [_sendSpeed, setSendSpeed] = useState(0);
+    const [sendingFileName, setSendingFileName] = useState('');
     const [sendingFileIndex, setSendingFileIndex] = useState(0);
     const [sendingFileTotal, setSendingFileTotal] = useState(0);
-    const [sendingFileName, setSendingFileName] = useState('');
     const [isReceiving, setIsReceiving] = useState(false);
     const [receiveProgress, setReceiveProgress] = useState(0);
     const [receivingFileName, setReceivingFileName] = useState('');
-    const transferStartTime = useRef<number>(0);
-    const [receivedFiles, setReceivedFiles] = useState<ReceivedFile[]>([]);
-    const [showReceivedDialog, setShowReceivedDialog] = useState(false);
-    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-    const [transferSpeed, setTransferSpeed] = useState(0);
 
-    // Email share state
-    const [showEmailShareDialog, setShowEmailShareDialog] = useState(false);
-    const [shareEmail, setShareEmail] = useState('');
-    const [shareId, setShareId] = useState('');
-    const [isSharing, setIsSharing] = useState(false);
-    const [shareStatus, setShareStatus] = useState<'idle' | 'waiting' | 'connected' | 'transferring' | 'done'>('idle');
+    // Code state
+    const [connectionCode, setConnectionCode] = useState('');
+    const [inputCode, setInputCode] = useState('');
+    const [codeType, _setCodeType] = useState<'word' | 'short'>('word');
 
-    // PQC encryption state
-    const [pqcReady, setPqcReady] = useState(false);
-
-    // SAS Verification state
+    // Privacy & security state
+    const [privacyInitResult, setPrivacyInitResult] = useState<PrivacyInitResult | null>(null);
     const [showVerificationDialog, setShowVerificationDialog] = useState(false);
     const [verificationSession, setVerificationSession] = useState<VerificationSession | null>(null);
     const [peerVerified, setPeerVerified] = useState(false);
-
-    // Code state - support both word phrases and short codes
-    const [codeType, setCodeType] = useState<'word' | 'short'>('word');
-    const [connectionCode, setConnectionCode] = useState('');
+    const [autoPromptVerification] = useState(true);
+    const [filePassword, setFilePassword] = useState<string | undefined>(undefined);
+    const [filePasswordHint, setFilePasswordHint] = useState<string | undefined>(undefined);
 
     // Local discovery
     const [discoveredDevices, setDiscoveredDevices] = useState<DiscoveredDevice[]>([]);
+    const [_friends, setFriends] = useState<Friend[]>([]);
+    const [friendRequestCount, setFriendRequestCount] = useState(0);
 
-    // Connection refs
+    // Dialog state
+    const [showReceivedDialog, setShowReceivedDialog] = useState(false);
+    const [_showPasswordDialog, _setShowPasswordDialog] = useState(false);
+    const [_showMetadataDialog, _setShowMetadataDialog] = useState(false);
+
+    // Drag state
+    const [isDragging, setIsDragging] = useState(false);
+
+    // Refs
     const connectionManager = useRef<ConnectionManager | null>(null);
     const peerConnection = useRef<RTCPeerConnection | null>(null);
     const dataChannel = useRef<RTCDataChannel | null>(null);
     const pqcManager = useRef<PQCTransferManager | null>(null);
     const pendingCandidates = useRef<RTCIceCandidateInit[]>([]);
     const connectionTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const transferStartTime = useRef<number>(0);
     const thisDevice = useRef<Device | null>(null);
+    const dropZoneRef = useRef<HTMLDivElement>(null);
 
-    // Helper: safely add ICE candidate (queues if remote description not set)
+    // ========================================================================
+    // DERIVED STATE
+    // ========================================================================
+
+    const localDevices: Device[] = useMemo(() => discoveredDevices.map(d => ({
+        id: d.id,
+        name: d.name,
+        platform: d.platform as Device['platform'],
+        ip: null,
+        port: null,
+        isOnline: d.isOnline,
+        isFavorite: false,
+        lastSeen: typeof d.lastSeen === 'number' ? d.lastSeen : d.lastSeen.getTime(),
+        avatar: null,
+    })), [discoveredDevices]);
+
+    const currentStatus: ConnectionStatus = useMemo(() => {
+        if (isSending || isReceiving) return 'transferring';
+        if (isConnected && pqcReady) return 'connected';
+        if (isConnecting) return 'connecting';
+        return 'idle';
+    }, [isSending, isReceiving, isConnected, pqcReady, isConnecting]);
+
+    // ========================================================================
+    // RESUMABLE TRANSFER
+    // ========================================================================
+
+    useResumableTransfer({
+        autoResume: true,
+        maxResumeAttempts: 3,
+        onTransferComplete: (blob, filename, relativePath) => {
+            const file: ReceivedFile = {
+                name: filename,
+                type: blob.type,
+                size: blob.size,
+                blob,
+                receivedAt: new Date(),
+                ...(relativePath !== undefined && { relativePath }),
+            };
+            setReceivedFiles((prev) => [...prev, file]);
+            toast.success(t('app.resumedComplete'));
+        },
+        onError: (error) => {
+            toast.error(`Resume failed: ${error.message}`);
+        },
+        onConnectionLost: () => {
+            toast.warning(t('app.connectionLost'));
+        },
+        onResumeAvailable: (_transferId, progress) => {
+            toast.info(t('app.previousTransfer'), {
+                description: `${Math.round(progress)}% ${t('app.completed')}`,
+                duration: 10000,
+            });
+        },
+    });
+
+    // ========================================================================
+    // CONNECTION HELPERS
+    // ========================================================================
+
     const addIceCandidate = useCallback(async (candidate: RTCIceCandidateInit) => {
         const pc = peerConnection.current;
         if (!pc) return;
-
         if (pc.remoteDescription) {
-            try {
-                await pc.addIceCandidate(candidate);
-            } catch (e) {
-                secureLog.error('Failed to add ICE candidate:', e);
-            }
+            try { await pc.addIceCandidate(candidate); } catch (e) { secureLog.error('Failed to add ICE candidate:', e); }
         } else {
             pendingCandidates.current.push(candidate);
         }
     }, []);
 
-    // Helper: flush queued ICE candidates after remote description is set
     const flushPendingCandidates = useCallback(async () => {
         const pc = peerConnection.current;
         if (!pc || !pc.remoteDescription) return;
-
         const candidates = pendingCandidates.current.splice(0);
         for (const candidate of candidates) {
-            try {
-                await pc.addIceCandidate(candidate);
-            } catch (e) {
-                secureLog.error('Failed to add queued ICE candidate:', e);
-            }
+            try { await pc.addIceCandidate(candidate); } catch (e) { secureLog.error('Failed to add queued ICE candidate:', e); }
         }
     }, []);
 
-    // Helper: clean up existing peer connection before creating a new one
     const cleanupConnection = useCallback(() => {
-        if (connectionTimeout.current) {
-            clearTimeout(connectionTimeout.current);
-            connectionTimeout.current = null;
-        }
-        if (dataChannel.current) {
-            dataChannel.current.close();
-            dataChannel.current = null;
-        }
-        if (peerConnection.current) {
-            peerConnection.current.close();
-            peerConnection.current = null;
-        }
+        if (connectionTimeout.current) { clearTimeout(connectionTimeout.current); connectionTimeout.current = null; }
+        if (dataChannel.current) { dataChannel.current.close(); dataChannel.current = null; }
+        if (peerConnection.current) { peerConnection.current.close(); peerConnection.current = null; }
         pqcManager.current?.destroy();
         pqcManager.current = null;
         pendingCandidates.current = [];
         setPqcReady(false);
+        setIsConnected(false);
+        setIsConnecting(false);
+        setConnectionStatus('idle');
     }, []);
 
-    // Helper: start connection timeout
     const startConnectionTimeout = useCallback((timeoutMs = 30000) => {
-        if (connectionTimeout.current) {
-            clearTimeout(connectionTimeout.current);
-        }
+        if (connectionTimeout.current) clearTimeout(connectionTimeout.current);
         connectionTimeout.current = setTimeout(() => {
             if (!peerConnection.current || peerConnection.current.connectionState !== 'connected') {
-                toast.error('Connection timed out. The peer may be unreachable.');
+                toast.error(t('app.connectionTimeout'));
                 cleanupConnection();
-                setIsConnecting(false);
-                setIsConnected(false);
             }
         }, timeoutMs);
-    }, [cleanupConnection]);
+    }, [cleanupConnection, t]);
 
-    // Handle control messages (non-file messages like clipboard)
-    const handleControlMessage = useCallback(async (message: any) => {
-        switch (message.type) {
+    // Handle control messages
+    const handleControlMessage = useCallback(async (message: Record<string, unknown>) => {
+        switch (message['type']) {
             case 'clipboard':
-                writeClipboard(message.content);
+                writeClipboard(message['content'] as string);
                 await addToClipboardHistory({
-                    content: message.content,
-                    fromDevice: message.senderId,
-                    fromName: message.senderName,
+                    content: message['content'] as string,
+                    fromDevice: message['senderId'] as string,
+                    fromName: message['senderName'] as string,
                     isLocal: false,
                 });
-                toast.success('Clipboard received', {
-                    description: message.content.slice(0, 50) + (message.content.length > 50 ? '...' : ''),
+                toast.success(t('app.clipboardReceived'), {
+                    description: (message['content'] as string).slice(0, 50) + ((message['content'] as string).length > 50 ? '...' : ''),
                 });
                 break;
             case 'device-info':
-                // Update discovered device with real info after WebRTC connects
-                if (message.deviceId && message.name) {
+                if (message['deviceId'] && message['name']) {
                     const discovery = getLocalDiscovery();
-                    discovery.updateDeviceInfo(message.deviceId, message.name, message.platform || 'unknown');
-                    // Update selected device if it matches
+                    discovery.updateDeviceInfo(message['deviceId'] as string, message['name'] as string, (message['platform'] as string) || 'unknown');
                     setSelectedDevice(prev => {
-                        if (prev && prev.id === message.deviceId) {
-                            return { ...prev, name: message.name, platform: message.platform || prev.platform };
+                        if (prev && prev.id === message['deviceId']) {
+                            return { ...prev, name: message['name'] as string, platform: (message['platform'] as Device['platform']) || prev.platform };
                         }
                         return prev;
                     });
                 }
                 break;
         }
-    }, []);
+    }, [t]);
 
     // Setup data channel handlers
     const setupDataChannel = useCallback((channel: RTCDataChannel, isInitiator = true) => {
         channel.binaryType = 'arraybuffer';
-
         channel.onopen = async () => {
             setIsConnected(true);
             setIsConnecting(false);
-            toast.success(isInitiator ? 'Connected! Establishing encrypted session...' : 'Connected! Waiting for encrypted session...');
+            setConnectionStatus('connected');
+            toast.success(t('app.encryptedSession'));
+            announce('Connection established successfully');
 
-            // Send real device info over the encrypted data channel
             const discovery = getLocalDiscovery();
             const myInfo = discovery.getMyDeviceInfo();
-            channel.send(JSON.stringify({
-                type: 'device-info',
-                deviceId: myInfo.deviceId,
-                name: myInfo.name,
-                platform: myInfo.platform,
-            }));
+            channel.send(JSON.stringify({ type: 'device-info', deviceId: myInfo.deviceId, name: myInfo.name, platform: myInfo.platform }));
 
-            // Initialize PQC encrypted session
             const manager = new PQCTransferManager();
             pqcManager.current = manager;
 
-            // Apply bandwidth limit from settings
             try {
                 const stored = localStorage.getItem('tallow_settings');
-                if (stored) {
-                    const s = JSON.parse(stored);
-                    if (s.bandwidthLimit > 0) {
-                        manager.setBandwidthLimit(s.bandwidthLimit);
-                    }
-                }
+                if (stored) { const s = JSON.parse(stored); if (s.bandwidthLimit > 0) manager.setBandwidthLimit(s.bandwidthLimit); }
             } catch { /* ignore */ }
 
             await manager.initializeSession(isInitiator ? 'send' : 'receive');
@@ -285,25 +548,31 @@ export default function AppPage() {
 
             manager.onSessionReady(() => {
                 setPqcReady(true);
-                toast.success('PQC encryption active. Ready to transfer.');
+                toast.success(t('app.pqcActive'));
             });
 
             manager.onProgress((progress) => {
                 setSendProgress(progress);
                 setReceiveProgress(progress);
+                if (transferStartTime.current > 0) {
+                    const elapsed = (Date.now() - transferStartTime.current) / 1000;
+                    if (elapsed > 0 && progress > 0) {
+                        const estimatedTotal = 1000000;
+                        setSendSpeed((progress / 100) * estimatedTotal / elapsed);
+                    }
+                }
             });
 
             manager.onComplete((blob, filename, relativePath) => {
                 setIsReceiving(false);
                 setReceiveProgress(0);
-                const displayName = relativePath || filename;
                 const file: ReceivedFile = {
-                    name: displayName,
+                    name: relativePath || filename,
                     type: blob.type || 'application/octet-stream',
                     size: blob.size,
                     blob,
                     receivedAt: new Date(),
-                    relativePath,
+                    ...(relativePath ? { relativePath } : {})
                 };
                 setReceivedFiles(prev => [...prev, file]);
                 addTransferRecord({
@@ -317,16 +586,14 @@ export default function AppPage() {
                     startedAt: new Date(Date.now() - 5000),
                     completedAt: new Date(),
                     duration: 5000,
-                    speed: blob.size / 5,
+                    speed: blob.size / 5
                 });
-                toast.success(`Received: ${filename}`, {
-                    action: {
-                        label: 'Download',
-                        onClick: () => downloadFile(blob, filename),
-                    },
+                toast.success(`${t('history.received')}: ${filename}`, {
+                    action: { label: t('app.download'), onClick: () => downloadFile(blob, filename) }
                 });
                 setShowReceivedDialog(true);
                 setIsSending(false);
+                loadRecentTransfers();
             });
 
             manager.onFileIncoming((metadata) => {
@@ -334,31 +601,30 @@ export default function AppPage() {
                 setReceiveProgress(0);
                 setReceivingFileName(`${metadata.mimeCategory} (${formatFileSize(metadata.size)})`);
                 transferStartTime.current = Date.now();
-                toast.info(`Receiving encrypted file (${formatFileSize(metadata.size)})...`);
+                toast.info(`${t('app.receiving')} (${formatFileSize(metadata.size)})...`);
+                setConnectionStatus('transferring');
             });
 
             manager.onError((error) => {
-                toast.error('Encrypted transfer failed: ' + error);
+                toast.error(t('app.transferFailed') + ': ' + error);
                 setIsSending(false);
+                setConnectionStatus('connected');
             });
 
-            // Only the initiator starts the key exchange
-            if (isInitiator) {
-                manager.startKeyExchange();
-            }
+            if (isInitiator) manager.startKeyExchange();
 
-            // Setup verification callback - triggered when shared secret is ready
             manager.onVerificationReady((sharedSecret) => {
                 const peerId = selectedDevice?.id || 'unknown';
                 const peerName = selectedDevice?.name || 'Unknown Device';
-
-                if (!isPeerVerified(peerId)) {
-                    // Use the actual cryptographically strong shared secret from PQC key exchange
+                const alreadyVerified = isPeerVerified(peerId);
+                if (!alreadyVerified || autoPromptVerification) {
                     const session = createVerificationSession(peerId, peerName, sharedSecret);
                     setVerificationSession(session);
                     setShowVerificationDialog(true);
+                    if (!alreadyVerified) toast.info(t('app.verifyConnection'), { description: t('app.verifyDesc'), duration: 5000 });
                 } else {
                     setPeerVerified(true);
+                    toast.success(t('app.autoVerified'), { description: t('app.previouslyVerified') });
                 }
             });
         };
@@ -368,41 +634,33 @@ export default function AppPage() {
             setPqcReady(false);
             pqcManager.current?.destroy();
             pqcManager.current = null;
+            setConnectionStatus('idle');
+            announce('Connection closed');
             toast.info('Connection closed');
         };
 
-        channel.onerror = () => {
-            toast.error('Connection error');
-        };
+        channel.onerror = () => { toast.error(t('app.connectionError')); };
 
         channel.onmessage = async (event) => {
             if (typeof event.data === 'string') {
-                // Route to PQC manager first
                 if (pqcManager.current) {
                     const handled = await pqcManager.current.handleIncomingMessage(event.data);
                     if (handled) return;
                 }
-
-                // Fall through to control messages (clipboard, etc.)
                 try {
                     const message = JSON.parse(event.data);
                     handleControlMessage(message);
-                } catch (e) {
-                    // Non-JSON string messages are ignored
-                }
+                } catch (_e) { /* Non-JSON string messages are ignored */ }
             }
         };
-    }, [handleControlMessage]);
+    }, [handleControlMessage, selectedDevice, autoPromptVerification, t]);
 
-    // Create peer connection with mode-appropriate ICE configuration
+    // Create peer connection
     const createPeerConnection = useCallback((): RTCPeerConnection => {
         let rtcConfig: RTCConfiguration;
-
-        if (connectionType === 'local') {
-            // Local mode: no STUN/TURN needed, LAN host candidates suffice
+        if (transferMode === 'local') {
             rtcConfig = { iceServers: [], iceTransportPolicy: 'all' };
         } else {
-            // Internet/friends mode: use private transport (TURN relay if configured)
             const transport = getPrivateTransport();
             rtcConfig = transport.getRTCConfiguration();
         }
@@ -413,13 +671,13 @@ export default function AppPage() {
             if (pc.connectionState === 'connected') {
                 setIsConnected(true);
                 setIsConnecting(false);
-                if (connectionTimeout.current) {
-                    clearTimeout(connectionTimeout.current);
-                    connectionTimeout.current = null;
-                }
+                setConnectionStatus('connected');
+                if (connectionTimeout.current) { clearTimeout(connectionTimeout.current); connectionTimeout.current = null; }
             } else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
                 setIsConnected(false);
                 setIsConnecting(false);
+                setConnectionStatus('idle');
+                announce(pc.connectionState === 'failed' ? 'Connection failed' : 'Connection disconnected');
             }
         };
 
@@ -429,66 +687,92 @@ export default function AppPage() {
         };
 
         return pc;
-    }, [setupDataChannel, connectionType]);
+    }, [setupDataChannel, transferMode]);
 
-    // Initialize
+    // Load recent transfers
+    const loadRecentTransfers = useCallback(async () => {
+        try {
+            const transfers = await getRecentTransfers(5);
+            const mapped: RecentTransfer[] = transfers.map(t => ({
+                id: t.id,
+                direction: t.direction,
+                fileName: t.files[0]?.name || 'Unknown',
+                fileSize: t.totalSize,
+                peerName: t.peerName,
+                completedAt: t.completedAt,
+                status: t.status as 'completed' | 'failed'
+            }));
+            setRecentTransfers(mapped);
+        } catch (e) {
+            secureLog.error('Failed to load recent transfers:', e);
+        }
+    }, []);
+
+    // ========================================================================
+    // INITIALIZATION
+    // ========================================================================
+
     useEffect(() => {
-        // Encrypt all sensitive data in localStorage on startup
+        preloadOnMount();
         migrateSensitiveData().catch(() => {});
-        // Initialize caches from secure storage
         initVerificationCache();
         initFriendsCache();
+        loadRecentTransfers();
 
-        // Set up device for transfers
+        initializePrivacyFeatures().then(result => {
+            setPrivacyInitResult(result);
+            if (result.warnings.length > 0) secureLog.warn('[App] Privacy warnings:', result.warnings);
+        }).catch(error => {
+            secureLog.error('[App] Privacy init failed:', error);
+        });
+
+        registerServiceWorker({
+            onSuccess: () => secureLog.log('[PWA] Service worker registered'),
+            onUpdate: () => toast.info('New version available! Refresh to update.'),
+            onError: (error) => secureLog.error('[PWA] Service worker error:', error)
+        }).catch(error => {
+            secureLog.error('[PWA] Service worker registration failed:', error);
+        });
+
         thisDevice.current = {
             id: getDeviceId(),
             name: 'Web Device',
             platform: 'web',
+            ip: null,
+            port: null,
             isOnline: true,
             isFavorite: false,
-            lastSeen: new Date(),
+            lastSeen: Date.now(),
+            avatar: null
         };
 
-        // Initialize connection manager
         connectionManager.current = getConnectionManager();
-
-        // Use the connection manager's generated code
         setConnectionCode(connectionManager.current.code);
-
-        // Load friend request count
         setFriendRequestCount(getPendingFriendRequests().length);
+        setFriends(getFriends());
 
-        // Start local discovery
         const discovery = getLocalDiscovery();
         discovery.start();
         const unsubscribe = discovery.onDevicesChanged(setDiscoveredDevices);
 
-        // Handle incoming local device connections
         discovery.setSignalingEvents({
             onOffer: async (data) => {
-                toast.info('Incoming local connection...');
+                toast.info('Incoming connection...');
                 cleanupConnection();
                 setIsConnecting(true);
+                setConnectionStatus('connecting');
                 startConnectionTimeout();
 
                 const pc = createPeerConnection();
                 peerConnection.current = pc;
-
-                pc.onicecandidate = (event) => {
-                    if (event.candidate) {
-                        discovery.sendIceCandidate(data.from, event.candidate.toJSON());
-                    }
-                };
-
+                pc.onicecandidate = (event) => { if (event.candidate) discovery.sendIceCandidate(data.from, event.candidate.toJSON()); };
                 await pc.setRemoteDescription(data.offer);
                 await flushPendingCandidates();
                 const answer = await pc.createAnswer();
                 await pc.setLocalDescription(answer);
                 discovery.sendAnswer(data.from, answer);
             },
-            onIceCandidate: async (data) => {
-                await addIceCandidate(data.candidate);
-            },
+            onIceCandidate: async (data) => { await addIceCandidate(data.candidate); },
         });
 
         return () => {
@@ -500,7 +784,10 @@ export default function AppPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Generate new code
+    // ========================================================================
+    // HANDLERS
+    // ========================================================================
+
     const regenerateCode = useCallback(() => {
         if (connectionManager.current) {
             const { wordCode, alphaCode } = connectionManager.current.regenerateCodes();
@@ -509,19 +796,6 @@ export default function AppPage() {
         }
     }, [codeType]);
 
-    // Toggle code type
-    const toggleCodeType = useCallback(() => {
-        if (!connectionManager.current) return;
-        if (codeType === 'word') {
-            setCodeType('short');
-            setConnectionCode(connectionManager.current.shortCode);
-        } else {
-            setCodeType('word');
-            setConnectionCode(connectionManager.current.code);
-        }
-    }, [codeType]);
-
-    // File selection handlers
     const handleFilesSelected = useCallback((files: FileWithData[]) => {
         setSelectedFiles((prev) => [...prev, ...files]);
         toast.success(`Added ${files.length} file${files.length !== 1 ? 's' : ''}`);
@@ -535,32 +809,16 @@ export default function AppPage() {
         setSelectedFiles([]);
     }, []);
 
-    // Convert discovered devices to Device format
-    const localDevices: Device[] = discoveredDevices.map(d => ({
-        id: d.id,
-        name: d.name,
-        platform: d.platform as any,
-        isOnline: d.isOnline,
-        isFavorite: false,
-        lastSeen: d.lastSeen,
-    }));
-
-    // Device handlers - initiates WebRTC connection for local devices
     const handleDeviceSelect = useCallback((device: Device) => {
         setSelectedDevice(device);
-
-        // For local devices, initiate WebRTC via discovery signaling
         const discovery = getLocalDiscovery();
         const targetSocketId = discovery.getDeviceSocketId(device.id);
-
-        if (!targetSocketId) {
-            toast.info(`Selected ${device.name}`);
-            return;
-        }
+        if (!targetSocketId) { toast.info(`Selected ${device.name}`); return; }
 
         cleanupConnection();
         setIsConnecting(true);
-        toast.info(`Connecting to ${device.name}...`);
+        setConnectionStatus('connecting');
+        toast.info(`${t('app.connecting')} ${device.name}...`);
         startConnectionTimeout();
 
         discovery.setSignalingEvents({
@@ -570,19 +828,12 @@ export default function AppPage() {
                     await flushPendingCandidates();
                 }
             },
-            onIceCandidate: async (data) => {
-                await addIceCandidate(data.candidate);
-            },
+            onIceCandidate: async (data) => { await addIceCandidate(data.candidate); },
         });
 
         const pc = createPeerConnection();
         peerConnection.current = pc;
-
-        pc.onicecandidate = (event) => {
-            if (event.candidate) {
-                discovery.sendIceCandidate(targetSocketId, event.candidate.toJSON());
-            }
-        };
+        pc.onicecandidate = (event) => { if (event.candidate) discovery.sendIceCandidate(targetSocketId, event.candidate.toJSON()); };
 
         const channel = pc.createDataChannel('fileTransfer', { ordered: true });
         dataChannel.current = channel;
@@ -592,89 +843,34 @@ export default function AppPage() {
             await pc.setLocalDescription(offer);
             discovery.sendOffer(targetSocketId, offer);
         }).catch(() => {
-            toast.error('Failed to connect');
+            toast.error(t('app.connectionError'));
             setIsConnecting(false);
+            setConnectionStatus('idle');
         });
-    }, [createPeerConnection, setupDataChannel, addIceCandidate, flushPendingCandidates, cleanupConnection, startConnectionTimeout]);
+    }, [createPeerConnection, setupDataChannel, addIceCandidate, flushPendingCandidates, cleanupConnection, startConnectionTimeout, t]);
 
-    const handleToggleFavorite = useCallback((device: Device) => {
-        // In a real app, this would persist to storage
-        toast.info(`${device.isFavorite ? 'Removed from' : 'Added to'} favorites`);
-    }, []);
-
-    const handleRefreshDevices = useCallback(() => {
-        toast.info('Scanning for devices...');
-        const discovery = getLocalDiscovery();
-        discovery.refresh();
-    }, []);
-
-    // Friend handlers
-    const handleSendToFriend = useCallback((friend: Friend) => {
-        setSelectedFriend(friend);
-        setConnectionType('friends');
-
-        // Create a virtual device for the friend
-        const friendDevice: Device = {
-            id: friend.id,
-            name: friend.name,
-            platform: 'web',
-            isOnline: true,
-            isFavorite: true,
-            lastSeen: friend.lastConnected || new Date(),
-        };
-        setSelectedDevice(friendDevice);
-
-        // Update last connected
-        updateFriendConnection(friend.id);
-
-        // Notify if first-time verification will be required
-        if (!isPeerVerified(friend.id)) {
-            toast.info(`First connection to ${friend.name} - verification will be required`);
-        } else {
-            toast.success(`Ready to send to ${friend.name}`);
-        }
-    }, []);
-
-    const handleRefreshFriends = useCallback(() => {
-        setFriendRequestCount(getPendingFriendRequests().length);
-    }, []);
-
-    // Connect by code using Socket.IO signaling
     const handleConnectByCode = useCallback(async (code: string) => {
         cleanupConnection();
         setIsConnecting(true);
-        toast.info(`Connecting to ${formatCode(code)}...`);
+        setConnectionStatus('connecting');
+        toast.info(`${t('app.connecting')} ${formatCode(code)}...`);
 
         try {
             const cm = connectionManager.current;
-            if (!cm) {
-                throw new Error('Connection manager not initialized');
-            }
+            if (!cm) throw new Error('Connection manager not initialized');
 
-            // Set up event handlers for signaling
             cm.setEvents({
                 onSignalingConnected: () => {},
-                onSignalingDisconnected: () => {
-                    setIsConnected(false);
-                },
-                onPeerConnected: async (peerId, socketId) => {
+                onSignalingDisconnected: () => { setIsConnected(false); setConnectionStatus('idle'); },
+                onPeerConnected: async () => {
                     toast.info('Peer found, establishing connection...');
                     startConnectionTimeout();
-
-                    // Create WebRTC connection and send offer
                     const pc = createPeerConnection();
                     peerConnection.current = pc;
-
-                    pc.onicecandidate = async (event) => {
-                        if (event.candidate) {
-                            await cm.sendIceCandidate(event.candidate.toJSON());
-                        }
-                    };
-
+                    pc.onicecandidate = async (event) => { if (event.candidate) await cm.sendIceCandidate(event.candidate.toJSON()); };
                     const channel = pc.createDataChannel('fileTransfer', { ordered: true });
                     dataChannel.current = channel;
                     setupDataChannel(channel, true);
-
                     const offer = await pc.createOffer();
                     await pc.setLocalDescription(offer);
                     await cm.sendOffer(offer);
@@ -682,16 +878,9 @@ export default function AppPage() {
                 onOffer: async (offer) => {
                     toast.info('Incoming connection...');
                     startConnectionTimeout();
-
                     const pc = createPeerConnection();
                     peerConnection.current = pc;
-
-                    pc.onicecandidate = async (event) => {
-                        if (event.candidate) {
-                            await cm.sendIceCandidate(event.candidate.toJSON());
-                        }
-                    };
-
+                    pc.onicecandidate = async (event) => { if (event.candidate) await cm.sendIceCandidate(event.candidate.toJSON()); };
                     await pc.setRemoteDescription(offer);
                     await flushPendingCandidates();
                     const answer = await pc.createAnswer();
@@ -704,161 +893,61 @@ export default function AppPage() {
                         await flushPendingCandidates();
                     }
                 },
-                onIceCandidate: async (candidate) => {
-                    await addIceCandidate(candidate);
-                },
+                onIceCandidate: async (candidate) => { await addIceCandidate(candidate); },
                 onError: (error) => {
                     secureLog.error('[App] Signaling error:', error);
                     toast.error(getUserFriendlyError(error));
                     setIsConnecting(false);
+                    setConnectionStatus('idle');
                 },
             });
 
-            // Connect to the code's room
             await cm.connectToCode(code);
-
             const connectedDevice: Device = {
                 id: code,
                 name: `Device ${formatCode(code)}`,
                 platform: 'web',
+                ip: null,
+                port: null,
                 isOnline: true,
                 isFavorite: false,
-                lastSeen: new Date(),
+                lastSeen: Date.now(),
+                avatar: null
             };
             setSelectedDevice(connectedDevice);
-
         } catch (error) {
             secureLog.error('Connection failed:', error);
-            toast.error('Failed to connect');
+            toast.error(t('app.connectionError'));
             setIsConnecting(false);
+            setConnectionStatus('idle');
         }
-    }, [createPeerConnection, setupDataChannel]);
+    }, [createPeerConnection, setupDataChannel, addIceCandidate, flushPendingCandidates, cleanupConnection, startConnectionTimeout, t]);
 
-    // QR code connect handler - connects via signaling using the scanned device ID
-    const handleQRConnect = useCallback((deviceId: string, name: string) => {
-        toast.info(`Connecting to ${name}...`);
-        handleConnectByCode(deviceId);
-    }, [handleConnectByCode]);
-
-    // Connect by IP - connects through signaling server at target IP
-    const handleConnectByIP = useCallback(async (ip: string, port: number) => {
-        cleanupConnection();
-        setIsConnecting(true);
-        toast.info(`Connecting to ${ip}:${port}...`);
-
-        try {
-            const cm = connectionManager.current;
-            if (!cm) {
-                throw new Error('Connection manager not initialized');
-            }
-
-            cm.setEvents({
-                onPeerConnected: async () => {
-                    toast.info('Device found, establishing connection...');
-                    startConnectionTimeout();
-
-                    const pc = createPeerConnection();
-                    peerConnection.current = pc;
-
-                    pc.onicecandidate = async (event) => {
-                        if (event.candidate) {
-                            await cm.sendIceCandidate(event.candidate.toJSON());
-                        }
-                    };
-
-                    const channel = pc.createDataChannel('fileTransfer', { ordered: true });
-                    dataChannel.current = channel;
-                    setupDataChannel(channel, true);
-
-                    const offer = await pc.createOffer();
-                    await pc.setLocalDescription(offer);
-                    await cm.sendOffer(offer);
-                },
-                onOffer: async (offer) => {
-                    startConnectionTimeout();
-
-                    const pc = createPeerConnection();
-                    peerConnection.current = pc;
-
-                    pc.onicecandidate = async (event) => {
-                        if (event.candidate) {
-                            await cm.sendIceCandidate(event.candidate.toJSON());
-                        }
-                    };
-
-                    await pc.setRemoteDescription(offer);
-                    await flushPendingCandidates();
-                    const answer = await pc.createAnswer();
-                    await pc.setLocalDescription(answer);
-                    await cm.sendAnswer(answer);
-                },
-                onAnswer: async (answer) => {
-                    if (peerConnection.current) {
-                        await peerConnection.current.setRemoteDescription(answer);
-                        await flushPendingCandidates();
-                    }
-                },
-                onIceCandidate: async (candidate) => {
-                    await addIceCandidate(candidate);
-                },
-                onError: (error) => {
-                    toast.error(getUserFriendlyError(error));
-                    setIsConnecting(false);
-                },
-            });
-
-            await cm.startListening();
-
-            const device: Device = {
-                id: generateUUID(),
-                name: `Device at ${ip}`,
-                platform: 'web',
-                isOnline: true,
-                isFavorite: false,
-                lastSeen: new Date(),
-            };
-            setSelectedDevice(device);
-        } catch (error) {
-            toast.error('Failed to connect to device');
-            setIsConnecting(false);
-        }
-    }, [createPeerConnection, setupDataChannel, addIceCandidate, flushPendingCandidates, cleanupConnection, startConnectionTimeout]);
-
-    // Listen for incoming connections when in SEND mode with Internet P2P
-    // This is when sender displays their code and waits for receiver to connect
+    // Listen for incoming connections - SEND mode with Internet
     useEffect(() => {
-        if (mode === 'send' && connectionType === 'internet' && connectionManager.current) {
+        if (activeTab === 'send' && transferMode === 'internet' && connectionManager.current) {
             const cm = connectionManager.current;
-
-            // Set up event handlers for sender (waiting for receiver)
             cm.setEvents({
                 onSignalingConnected: () => {},
-                onPeerConnected: async (peerId, socketId) => {
-                    toast.info('Receiver connected, establishing P2P...');
+                onPeerConnected: async () => {
+                    toast.info('Receiver connected...');
                     cleanupConnection();
+                    setConnectionStatus('connecting');
                     startConnectionTimeout();
-
-                    // As sender, create offer when receiver joins
                     try {
                         const pc = createPeerConnection();
                         peerConnection.current = pc;
-
-                        pc.onicecandidate = async (event) => {
-                            if (event.candidate) {
-                                await cm.sendIceCandidate(event.candidate.toJSON());
-                            }
-                        };
-
+                        pc.onicecandidate = async (event) => { if (event.candidate) await cm.sendIceCandidate(event.candidate.toJSON()); };
                         const channel = pc.createDataChannel('fileTransfer', { ordered: true });
                         dataChannel.current = channel;
                         setupDataChannel(channel, true);
-
                         const offer = await pc.createOffer();
                         await pc.setLocalDescription(offer);
                         await cm.sendOffer(offer);
-                    } catch (error) {
-                        toast.error('Failed to establish connection');
+                    } catch (_error) {
+                        toast.error(t('app.connectionError'));
                         setIsConnecting(false);
+                        setConnectionStatus('idle');
                     }
                 },
                 onAnswer: async (answer) => {
@@ -867,66 +956,48 @@ export default function AppPage() {
                         await flushPendingCandidates();
                     }
                 },
-                onIceCandidate: async (candidate) => {
-                    await addIceCandidate(candidate);
-                },
+                onIceCandidate: async (candidate) => { await addIceCandidate(candidate); },
                 onError: (error) => {
                     toast.error(getUserFriendlyError(error));
                     setIsConnecting(false);
+                    setConnectionStatus('idle');
                 },
             });
-
-            // Start listening on our code
             cm.startListening().catch((err) => {
                 const msg = err instanceof Error ? err.message : String(err);
-                if (!msg.includes('not configured')) {
-                    toast.error('Failed to connect to signaling server');
-                }
+                if (!msg.includes('not configured')) toast.error(t('app.signalingError'));
             });
-
-            return () => {
-                cm.disconnect();
-                cleanupConnection();
-            };
+            return () => { cm.disconnect(); cleanupConnection(); };
         }
-    }, [mode, connectionType, createPeerConnection, setupDataChannel, addIceCandidate, flushPendingCandidates, cleanupConnection, startConnectionTimeout]);
+        return undefined;
+    }, [activeTab, transferMode, createPeerConnection, setupDataChannel, addIceCandidate, flushPendingCandidates, cleanupConnection, startConnectionTimeout, t]);
 
-    // Listen for incoming connections when in receive mode
+    // Listen for incoming connections - RECEIVE mode
     useEffect(() => {
-        if (mode === 'receive' && connectionType === 'internet' && connectionManager.current) {
+        if (activeTab === 'receive' && transferMode === 'internet' && connectionManager.current) {
             const cm = connectionManager.current;
-
             cm.setEvents({
-                onSignalingConnected: () => {
-                    toast.info('Ready to receive connections');
-                },
-                onPeerConnected: () => {
-                    toast.info('Sender connected, waiting for offer...');
-                },
+                onSignalingConnected: () => { toast.info(t('app.waitingConnection')); },
+                onPeerConnected: () => { toast.info('Sender connected...'); },
                 onOffer: async (offer) => {
                     toast.info('Incoming connection...');
                     cleanupConnection();
                     setIsConnecting(true);
+                    setConnectionStatus('connecting');
                     startConnectionTimeout();
-
                     try {
                         const pc = createPeerConnection();
                         peerConnection.current = pc;
-
-                        pc.onicecandidate = async (event) => {
-                            if (event.candidate) {
-                                await cm.sendIceCandidate(event.candidate.toJSON());
-                            }
-                        };
-
+                        pc.onicecandidate = async (event) => { if (event.candidate) await cm.sendIceCandidate(event.candidate.toJSON()); };
                         await pc.setRemoteDescription(offer);
                         await flushPendingCandidates();
                         const answer = await pc.createAnswer();
                         await pc.setLocalDescription(answer);
                         await cm.sendAnswer(answer);
-                    } catch (error) {
-                        toast.error('Failed to accept connection');
+                    } catch (_error) {
+                        toast.error(t('app.connectionError'));
                         setIsConnecting(false);
+                        setConnectionStatus('idle');
                     }
                 },
                 onAnswer: async (answer) => {
@@ -935,30 +1006,23 @@ export default function AppPage() {
                         await flushPendingCandidates();
                     }
                 },
-                onIceCandidate: async (candidate) => {
-                    await addIceCandidate(candidate);
-                },
+                onIceCandidate: async (candidate) => { await addIceCandidate(candidate); },
                 onError: (error) => {
                     toast.error(getUserFriendlyError(error));
                     setIsConnecting(false);
+                    setConnectionStatus('idle');
                 },
             });
-
             cm.startListening().catch((err) => {
                 const msg = err instanceof Error ? err.message : String(err);
-                if (!msg.includes('not configured')) {
-                    toast.error('Failed to connect to signaling server');
-                }
+                if (!msg.includes('not configured')) toast.error(t('app.signalingError'));
             });
-
-            return () => {
-                cm.disconnect();
-                cleanupConnection();
-            };
+            return () => { cm.disconnect(); cleanupConnection(); };
         }
-    }, [mode, connectionType, createPeerConnection, addIceCandidate, flushPendingCandidates, cleanupConnection, startConnectionTimeout]);
+        return undefined;
+    }, [activeTab, transferMode, createPeerConnection, addIceCandidate, flushPendingCandidates, cleanupConnection, startConnectionTimeout, t]);
 
-    // Warn before page unload during active transfers
+    // Warn before page unload
     useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
             if (isSending || (isConnected && selectedFiles.length > 0)) {
@@ -966,78 +1030,74 @@ export default function AppPage() {
                 e.returnValue = '';
             }
         };
-
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [isSending, isConnected, selectedFiles.length]);
 
     // Send files
     const handleStartTransfer = useCallback(async () => {
-        if (selectedFiles.length === 0) {
-            toast.error('Please select files to send');
-            return;
-        }
-
-        if (!peerVerified) {
-            toast.error('Peer verification required before sending files');
-            setShowVerificationDialog(true);
-            return;
-        }
+        if (selectedFiles.length === 0) { toast.error('Please select files to send'); return; }
+        if (!peerVerified) { toast.error('Verify connection first'); setShowVerificationDialog(true); return; }
 
         const totalSize = selectedFiles.reduce((acc, f) => acc + f.size, 0);
         const startTime = Date.now();
 
-        // Create transfer record
         const newTransfer: Transfer = {
             id: generateUUID(),
             files: selectedFiles,
-            from: thisDevice.current || { id: 'self', name: 'This Device', platform: 'web', isOnline: true, isFavorite: false, lastSeen: new Date() },
-            to: selectedDevice || { id: 'peer', name: 'Peer', platform: 'web', isOnline: true, isFavorite: false, lastSeen: new Date() },
+            from: thisDevice.current || { id: 'self', name: 'This Device', platform: 'web', ip: null, port: null, isOnline: true, isFavorite: false, lastSeen: Date.now(), avatar: null },
+            to: selectedDevice || { id: 'peer', name: 'Peer', platform: 'web', ip: null, port: null, isOnline: true, isFavorite: false, lastSeen: Date.now(), avatar: null },
             status: 'transferring',
             progress: 0,
             speed: 0,
             direction: 'send',
             totalSize,
             transferredSize: 0,
-            startTime: new Date(),
+            startTime,
+            endTime: null,
+            error: null,
+            eta: null,
+            quality: 'good',
+            encryptionMetadata: null
         };
 
         setTransfers((prev) => [newTransfer, ...prev]);
         setIsSending(true);
+        setConnectionStatus('transferring');
         transferStartTime.current = Date.now();
 
-        // Verify we have a real connection and PQC session
+        if (filePassword) {
+            await transferMetadata.setMetadata(newTransfer.id, {
+                transferId: newTransfer.id,
+                hasPassword: true,
+                ...(filePasswordHint ? { passwordHint: filePasswordHint } : {}),
+                createdAt: Date.now(),
+                ...(selectedFiles[0]?.name ? { fileName: selectedFiles[0].name } : {}),
+                fileSize: totalSize
+            });
+        }
+
         if (!dataChannel.current || dataChannel.current.readyState !== 'open') {
-            setTransfers((prev) =>
-                prev.map((t) =>
-                    t.id === newTransfer.id
-                        ? { ...t, status: 'failed' }
-                        : t
-                )
-            );
+            setTransfers((prev) => prev.map((t) => t.id === newTransfer.id ? { ...t, status: 'failed' } : t));
             setIsSending(false);
-            toast.error('Not connected to a device. Please connect first.');
+            setConnectionStatus('idle');
+            toast.error('Not connected. Please connect first.');
             return;
         }
 
         if (!pqcManager.current || !pqcManager.current.isReady()) {
-            setTransfers((prev) =>
-                prev.map((t) =>
-                    t.id === newTransfer.id
-                        ? { ...t, status: 'failed' }
-                        : t
-                )
-            );
+            setTransfers((prev) => prev.map((t) => t.id === newTransfer.id ? { ...t, status: 'failed' } : t));
             setIsSending(false);
-            toast.error('Encrypted session not ready. Please wait for PQC handshake.');
+            setConnectionStatus('connected');
+            toast.error('Encrypted session not ready.');
             return;
         }
 
-        // Send files with PQC encryption
         try {
             setSendingFileTotal(selectedFiles.length);
             for (let i = 0; i < selectedFiles.length; i++) {
                 const fileData = selectedFiles[i];
+                if (!fileData) continue;
                 setSendingFileIndex(i + 1);
                 setSendingFileName(fileData.folderPath || fileData.name);
                 setSendProgress(0);
@@ -1047,15 +1107,7 @@ export default function AppPage() {
 
             const endTime = Date.now();
             const duration = endTime - startTime;
-
-            setTransfers((prev) =>
-                prev.map((t) =>
-                    t.id === newTransfer.id
-                        ? { ...t, status: 'completed', progress: 100, transferredSize: totalSize, endTime: new Date() }
-                        : t
-                )
-            );
-
+            setTransfers((prev) => prev.map((t) => t.id === newTransfer.id ? { ...t, status: 'completed', progress: 100, transferredSize: totalSize, endTime } : t));
             addTransferRecord({
                 id: newTransfer.id,
                 direction: 'send',
@@ -1067,224 +1119,105 @@ export default function AppPage() {
                 startedAt: new Date(startTime),
                 completedAt: new Date(endTime),
                 duration,
-                speed: totalSize / (duration / 1000),
+                speed: totalSize / (duration / 1000)
             });
 
             setSelectedFiles([]);
             setSendProgress(0);
-            toast.success('All files sent with PQC encryption!');
+            setFilePassword(undefined);
+            setFilePasswordHint(undefined);
+            toast.success(t('app.transferComplete'));
+            announce('All files sent successfully');
+            loadRecentTransfers();
         } catch (error) {
-            secureLog.error('PQC transfer failed:', error);
-            setTransfers((prev) =>
-                prev.map((t) =>
-                    t.id === newTransfer.id
-                        ? { ...t, status: 'failed' }
-                        : t
-                )
-            );
-            toast.error('Transfer failed');
+            secureLog.error('Transfer failed:', error);
+            setTransfers((prev) => prev.map((t) => t.id === newTransfer.id ? { ...t, status: 'failed' } : t));
+            toast.error(t('app.transferFailed'));
         } finally {
             setIsSending(false);
+            setConnectionStatus('connected');
         }
-    }, [selectedFiles, selectedDevice]);
+    }, [selectedFiles, selectedDevice, peerVerified, filePassword, filePasswordHint, t, loadRecentTransfers]);
 
-    // Share clipboard
-    const handleShareClipboard = useCallback(async () => {
-        const text = await readClipboard();
-        if (!text) {
-            toast.error('Clipboard is empty');
-            return;
-        }
-
-        if (dataChannel.current && dataChannel.current.readyState === 'open') {
-            dataChannel.current.send(JSON.stringify({
-                type: 'clipboard',
-                content: text,
-                senderId: getDeviceId(),
-                senderName: 'Device',
-            }));
-
-            await addToClipboardHistory({
-                content: text,
-                fromDevice: getDeviceId(),
-                fromName: 'Me',
-                isLocal: true,
-            });
-
-            toast.success('Clipboard shared!');
-        } else {
-            toast.error('Not connected to any device');
-        }
-    }, []);
-
-    // Download received file
+    // Download handlers
     const handleDownloadFile = useCallback(async (file: ReceivedFile) => {
         await downloadFile(file.blob, file.name, file.relativePath);
         toast.success(`Saved ${file.name}`);
     }, []);
 
-    // Transfer handlers
-    const handlePauseTransfer = useCallback((id: string) => {
-        setTransfers((prev) =>
-            prev.map((t) => (t.id === id ? { ...t, status: 'paused' } : t))
-        );
-    }, []);
+    const handleDownloadAll = useCallback(async () => {
+        for (const file of receivedFiles) {
+            await downloadFile(file.blob, file.name, file.relativePath);
+        }
+        toast.success(`Downloaded ${receivedFiles.length} files`);
+    }, [receivedFiles]);
 
-    const handleResumeTransfer = useCallback((id: string) => {
-        setTransfers((prev) =>
-            prev.map((t) => (t.id === id ? { ...t, status: 'transferring' } : t))
-        );
-    }, []);
-
-    const handleCancelTransfer = useCallback((id: string) => {
-        setTransfers((prev) =>
-            prev.map((t) => (t.id === id ? { ...t, status: 'cancelled' } : t))
-        );
-    }, []);
-
-    const handleClearCompleted = useCallback(() => {
-        setTransfers((prev) =>
-            prev.filter((t) => !['completed', 'failed', 'cancelled'].includes(t.status))
-        );
-    }, []);
-
-    // Copy connection code
     const handleCopyCode = useCallback(() => {
         navigator.clipboard.writeText(connectionCode);
-        toast.success('Code copied to clipboard!');
-    }, [connectionCode]);
+        toast.success(t('common.copied'));
+    }, [connectionCode, t]);
 
-    // Email share handler
-    const handleEmailShare = useCallback(async () => {
-        if (!shareEmail || selectedFiles.length === 0) return;
-
-        setIsSharing(true);
-        setShareStatus('waiting');
-
-        // Generate unique share ID
-        const id = generateUUID();
-        setShareId(id);
-
-        // Calculate total size
-        const totalSize = selectedFiles.reduce((acc, f) => acc + f.size, 0);
-
-        // Send email via API
-        try {
-            const res = await fetch('/api/send-share-email', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: shareEmail,
-                    shareId: id,
-                    fileCount: selectedFiles.length,
-                    totalSize,
-                }),
-            });
-
-            if (!res.ok) {
-                const data = await res.json();
-                toast.error(data.error || 'Failed to send email');
-                setIsSharing(false);
-                setShareStatus('idle');
-                return;
-            }
-
-            toast.success('Share link sent! Waiting for recipient...');
-
-            // Join signaling room and wait for recipient
-            const signalingUrl = process.env.NEXT_PUBLIC_SIGNALING_URL ||
-                (window.location.hostname.includes('manisahome.com')
-                    ? 'wss://signaling.manisahome.com'
-                    : '');
-
-            if (!signalingUrl) {
-                toast.error('Signaling server not configured');
-                setIsSharing(false);
-                setShareStatus('idle');
-                return;
-            }
-
-            const shareSocket = io(signalingUrl, {
-                path: '/signaling',
-                transports: ['websocket', 'polling'],
-            });
-
-            shareSocket.on('connect', () => {
-                shareSocket.emit('join-room', `share-${id}`, 'sender');
-            });
-
-            // When recipient joins and sends an offer
-            shareSocket.on('offer', async (data: { offer: RTCSessionDescriptionInit; from: string }) => {
-                setShareStatus('connected');
-
-                const pc = new RTCPeerConnection({
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                    ],
-                });
-
-                pc.onicecandidate = (e) => {
-                    if (e.candidate) {
-                        shareSocket.emit('ice-candidate', {
-                            target: data.from,
-                            candidate: e.candidate.toJSON(),
-                        });
-                    }
-                };
-
-                shareSocket.on('ice-candidate', (icData: { candidate: RTCIceCandidateInit }) => {
-                    pc.addIceCandidate(new RTCIceCandidate(icData.candidate));
-                });
-
-                // Create data channel (we're the sender)
-                const channel = pc.createDataChannel('pqc-transfer', { ordered: true });
-
-                channel.onopen = async () => {
-                    setShareStatus('transferring');
-
-                    const manager = new PQCTransferManager();
-                    await manager.initializeSession('send');
-                    manager.setDataChannel(channel);
-
-                    manager.onSessionReady(async () => {
-                        // Send all files
-                        for (const fileData of selectedFiles) {
-                            await manager.sendFile(fileData.file, fileData.folderPath);
-                        }
-                        setShareStatus('done');
-                        toast.success('Files shared successfully!');
-                        setShowEmailShareDialog(false);
-                        setIsSharing(false);
-                        shareSocket.disconnect();
-                        pc.close();
-                    });
-
-                    manager.onProgress((p) => setSendProgress(p));
-                    manager.startKeyExchange();
-                };
-
-                await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-                const answer = await pc.createAnswer();
-                await pc.setLocalDescription(answer);
-                shareSocket.emit('answer', { target: data.from, answer });
-            });
-
-        } catch (error) {
-            toast.error('Failed to share files');
-            setIsSharing(false);
-            setShareStatus('idle');
+    // Verification handlers
+    const handleVerify = useCallback(() => {
+        if (verificationSession) {
+            markSessionVerified(verificationSession.peerId);
+            setPeerVerified(true);
+            setShowVerificationDialog(false);
+            toast.success(t('verification.verified'));
         }
-    }, [shareEmail, selectedFiles]);
+    }, [verificationSession, t]);
 
-    // Cleanup on unmount
-    useEffect(() => {
-        return () => {
+    const handleSkipVerification = useCallback(() => {
+        if (verificationSession) {
+            markSessionSkipped(verificationSession.peerId);
+            setPeerVerified(true);
+            setShowVerificationDialog(false);
+            toast.info(t('verification.skipped'));
+        }
+    }, [verificationSession, t]);
+
+    const handleRejectVerification = useCallback(() => {
+        if (verificationSession) {
+            markSessionFailed(verificationSession.peerId);
+            setShowVerificationDialog(false);
             cleanupConnection();
-        };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+            toast.error(t('verification.failed'));
+        }
+    }, [verificationSession, cleanupConnection, t]);
+
+    // Refresh handlers
+    const handleRefreshDevices = useCallback(() => {
+        toast.info('Scanning for devices...');
+        const discovery = getLocalDiscovery();
+        discovery.refresh();
     }, []);
 
+    const handleRefreshFriends = useCallback(() => {
+        setFriendRequestCount(getPendingFriendRequests().length);
+        setFriends(getFriends());
+    }, []);
+
+    // Friend handler
+    const handleSendToFriend = useCallback((friend: Friend) => {
+        setTransferMode('friends');
+        const friendDevice: Device = {
+            id: friend.id,
+            name: friend.name,
+            platform: 'web',
+            ip: null,
+            port: null,
+            isOnline: true,
+            isFavorite: true,
+            lastSeen: typeof friend.lastConnected === 'number' ? friend.lastConnected : (friend.lastConnected ? (friend.lastConnected as Date).getTime() : Date.now()),
+            avatar: friend.avatar || null
+        };
+        setSelectedDevice(friendDevice);
+        updateFriendConnection(friend.id);
+        if (!isPeerVerified(friend.id)) toast.info(`First connection to ${friend.name}`);
+        else toast.success(`Ready to send to ${friend.name}`);
+    }, []);
+
+    // Format ETA
     const formatEta = useCallback((progress: number): string => {
         if (progress <= 0 || transferStartTime.current === 0) return '';
         const elapsed = Date.now() - transferStartTime.current;
@@ -1292,551 +1225,858 @@ export default function AppPage() {
         const remaining = Math.max(0, totalEstimated - elapsed);
         if (remaining < 1000) return '';
         const secs = Math.ceil(remaining / 1000);
-        if (secs < 60) return `${secs}s left`;
+        if (secs < 60) return `${secs}s`;
         const mins = Math.floor(secs / 60);
-        const remSecs = secs % 60;
-        if (mins < 60) return `${mins}m ${remSecs}s left`;
-        const hrs = Math.floor(mins / 60);
-        return `${hrs}h ${mins % 60}m left`;
+        if (mins < 60) return `${mins}m ${secs % 60}s`;
+        return `${Math.floor(mins / 60)}h ${mins % 60}m`;
     }, []);
 
-    const canSend = selectedFiles.length > 0;
+    // Drag and drop handlers
+    const handleDragOver = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(true);
+    }, []);
+
+    const handleDragLeave = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        if (dropZoneRef.current && !dropZoneRef.current.contains(e.relatedTarget as Node)) {
+            setIsDragging(false);
+        }
+    }, []);
+
+    const handleDrop = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+    }, []);
+
+    // ========================================================================
+    // RENDER - EUVEKA STYLE
+    // ========================================================================
 
     return (
-        <div className="min-h-screen bg-background safe-area-top safe-area-bottom">
-            {/* Minimal Fixed Header - Responsive & Touch-friendly */}
-            <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/95 backdrop-blur-sm safe-area-top">
-                <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
-                    <Link href="/" className="nav-logo hover:opacity-60 transition-opacity !text-foreground text-lg sm:text-xl">
-                        tallow
-                    </Link>
-                    {/* Visually hidden h1 for SEO/Accessibility */}
-                    <h1 className="sr-only">Tallow - Secure File Sharing</h1>
-
-                    <div className="flex items-center gap-1 sm:gap-3">
-                        {/* Connection status - hidden on very small screens */}
-                        <div className="hidden sm:flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${
-                                isConnected && pqcReady && canSend && mode === 'send'
-                                    ? 'bg-green-500'
-                                    : isConnected && pqcReady
-                                        ? 'bg-accent'
-                                        : isConnected
-                                            ? 'bg-yellow-500 animate-pulse'
-                                            : 'bg-muted-foreground'
-                            }`} />
-                            <span className="label text-xs sm:text-sm">
-                                {isConnected && pqcReady && canSend && mode === 'send'
-                                    ? 'Ready to send'
-                                    : isConnected && pqcReady
-                                        ? 'Secured'
-                                        : isConnected
-                                            ? 'Encrypting...'
-                                            : t('app.ready')}
+        <div className="min-h-screen" style={{ backgroundColor: EUVEKA.bg.primary }}>
+            {/* ================================================================
+                HEADER BAR - Euveka Style
+            ================================================================ */}
+            <header className="fixed top-0 left-0 right-0 z-50 border-b border-[#262626]" style={{ backgroundColor: EUVEKA.bg.primary }}>
+                <div className="max-w-5xl 3xl:max-w-6xl 4xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 3xl:px-12 h-14 sm:h-16 3xl:h-20 flex items-center justify-between">
+                    {/* Logo + Status */}
+                    <div className="flex items-center gap-4">
+                        <Link
+                            href="/"
+                            className="p-2 -ml-2 rounded-full hover:bg-[#fefefc]/5 transition-colors"
+                        >
+                            <ArrowLeft className="w-5 h-5 text-[#fefefc]/60" />
+                        </Link>
+                        <div className="flex items-center gap-3">
+                            <motion.div
+                                className="w-9 h-9 rounded-full border border-[#fefefc]/20 flex items-center justify-center"
+                                whileHover={{ scale: 1.05, borderColor: 'rgba(254, 254, 252, 0.4)' }}
+                            >
+                                <Zap className="w-5 h-5 text-[#fefefc]" />
+                            </motion.div>
+                            <span className="text-lg font-semibold text-[#fefefc]">
+                                {t('app.title')}
                             </span>
                         </div>
 
-                        {/* Clipboard button - Touch friendly 44px */}
-                        {isConnected && (
-                            <Button variant="ghost" size="icon" onClick={handleShareClipboard} title="Share Clipboard" aria-label="Share Clipboard" className="h-11 w-11 sm:h-10 sm:w-10 touchable">
-                                <Clipboard className="w-5 h-5 text-foreground" />
-                            </Button>
-                        )}
-
-                        {receivedFiles.length > 0 && (
-                            <Button variant="outline" size="sm" onClick={() => setShowReceivedDialog(true)} className="h-10 sm:h-9 px-3 touchable">
-                                <FileDown className="w-4 h-4 mr-1 sm:mr-2 text-foreground" />
-                                <span className="hidden sm:inline">{receivedFiles.length} Received</span>
-                                <span className="sm:hidden">{receivedFiles.length}</span>
-                            </Button>
-                        )}
-
-                        {/* Language Dropdown - hidden on mobile for cleaner nav */}
-                        <div className="hidden sm:block">
-                            <LanguageDropdown />
+                        {/* Status Indicator */}
+                        <div className={cn(
+                            'hidden sm:flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium border',
+                            currentStatus === 'connected' && 'border-[#22c55e]/40 text-[#22c55e]',
+                            currentStatus === 'connecting' && 'border-[#f59e0b]/40 text-[#f59e0b]',
+                            currentStatus === 'transferring' && 'border-[#fefefc]/40 text-[#fefefc]',
+                            currentStatus === 'idle' && 'border-[#262626] text-[#fefefc]/40'
+                        )}>
+                            <motion.span
+                                className={cn(
+                                    'w-1.5 h-1.5 rounded-full',
+                                    currentStatus === 'connected' && 'bg-[#22c55e]',
+                                    currentStatus === 'connecting' && 'bg-[#f59e0b]',
+                                    currentStatus === 'transferring' && 'bg-[#fefefc]',
+                                    currentStatus === 'idle' && 'bg-[#fefefc]/40'
+                                )}
+                                animate={currentStatus === 'connecting' || currentStatus === 'transferring' ? { scale: [1, 1.5, 1], opacity: [1, 0.5, 1] } : {}}
+                                transition={{ repeat: Infinity, duration: 1.5 }}
+                            />
+                            {currentStatus === 'connected' && (pqcReady ? 'PQC Secured' : t('app.connected'))}
+                            {currentStatus === 'connecting' && t('app.connecting')}
+                            {currentStatus === 'transferring' && t('app.transferring')}
+                            {currentStatus === 'idle' && t('app.ready')}
                         </div>
+                    </div>
 
-                        {/* Theme Toggle */}
+                    {/* Quick Actions */}
+                    <div className="flex items-center gap-1">
+                        {receivedFiles.length > 0 && (
+                            <EuvekaButton
+                                variant="ghost"
+                                size="sm"
+                                icon
+                                onClick={() => setShowReceivedDialog(true)}
+                                className="relative"
+                            >
+                                <FileDown className="w-5 h-5" />
+                                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#fefefc] text-[#0a0a08] text-[10px] flex items-center justify-center font-bold">
+                                    {receivedFiles.length}
+                                </span>
+                            </EuvekaButton>
+                        )}
                         <ThemeToggle />
-
-                        {/* History - hidden on mobile */}
-                        <Link href="/app/history" className="hidden sm:block">
-                            <Button variant="ghost" size="icon" title="History" aria-label="View transfer history" className="h-11 w-11 sm:h-10 sm:w-10 touchable">
-                                <History className="w-5 h-5 text-foreground" />
-                            </Button>
+                        <Link href="/app/history">
+                            <EuvekaButton variant="ghost" size="sm" icon>
+                                <History className="w-5 h-5" />
+                            </EuvekaButton>
                         </Link>
-
                         <Link href="/app/settings">
-                            <Button variant="ghost" size="icon" title="Settings" aria-label="Open settings" className="h-11 w-11 sm:h-10 sm:w-10 touchable">
-                                <Settings className="w-5 h-5 text-foreground" />
-                            </Button>
+                            <EuvekaButton variant="ghost" size="sm" icon>
+                                <Settings className="w-5 h-5" />
+                            </EuvekaButton>
                         </Link>
                     </div>
                 </div>
             </header>
 
-            {/* Main Content - Extra bottom padding on mobile to clear Next.js logo */}
-            <main className="container mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-20 sm:pb-8 safe-area-bottom">
-                <div className="max-w-5xl mx-auto">
-                    {/* Mode Toggle - Touch-friendly */}
-                    <div className="flex justify-center mb-6 sm:mb-8">
-                        <Tabs value={mode} onValueChange={(v) => setMode(v as 'send' | 'receive')} className="w-full max-w-sm">
-                            <TabsList className="grid w-full grid-cols-2 h-14 sm:h-12 p-1 bg-secondary rounded-full">
-                                <TabsTrigger value="send" className="flex items-center gap-2 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm h-12 sm:h-10 text-sm sm:text-base touchable">
-                                    <Upload className="w-4 h-4" />
-                                    {t('app.send')}
-                                </TabsTrigger>
-                                <TabsTrigger value="receive" className="flex items-center gap-2 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm h-12 sm:h-10 text-sm sm:text-base touchable">
-                                    <Download className="w-4 h-4" />
-                                    {t('app.receive')}
-                                </TabsTrigger>
-                            </TabsList>
-                        </Tabs>
-                    </div>
-
-                    {/* Connection Status */}
-                    {isConnecting && (
-                        <div className="flex items-center justify-center gap-3 p-4 mb-6 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
-                            <Loader2 className="w-4 h-4 animate-spin text-yellow-600 dark:text-yellow-400" />
-                            <span className="text-sm font-medium">{t('app.connecting')}</span>
-                        </div>
-                    )}
-
-                    {isConnected && (
-                        <div className="flex items-center justify-center gap-3 p-4 mb-6 rounded-xl bg-green-500/10 border border-green-500/20">
-                            <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
-                            <span className="text-sm font-medium">Connected and ready to transfer!</span>
-                        </div>
-                    )}
-
-                    {/* Connection Type Selection - Responsive & Touch-friendly */}
-                    {!connectionType && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto mb-6 sm:mb-8">
-                            {/* Local Network Card */}
-                            <div
-                                className="card-feature cursor-pointer hover:border-foreground min-h-[160px] sm:min-h-[180px] flex flex-col justify-between touchable active:scale-[0.98] transition-transform"
-                                onClick={() => {
-                                    setConnectionType('local');
-                                    handleRefreshDevices();
-                                }}
-                            >
-                                <div>
-                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center bg-secondary mb-3 sm:mb-4">
-                                        <Wifi className="w-4 h-4 sm:w-5 sm:h-5" />
-                                    </div>
-                                    <h3 className="heading-sm mb-1 text-base sm:text-lg">{t('app.localNetwork')}</h3>
-                                    <p className="body-md text-sm sm:text-base">{t('app.localNetworkDesc')}</p>
-                                </div>
-                                <div className="flex flex-wrap items-center gap-2 mt-3 sm:mt-4">
-                                    <span className="label px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-secondary text-xs sm:text-sm">⚡</span>
-                                    <span className="label px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-secondary text-xs sm:text-sm">📡</span>
-                                </div>
-                            </div>
-
-                            {/* Internet P2P Card - Matching style */}
-                            <div
-                                className="card-feature cursor-pointer hover:border-foreground min-h-[160px] sm:min-h-[180px] flex flex-col justify-between touchable active:scale-[0.98] transition-transform"
-                                onClick={() => setConnectionType('internet')}
-                            >
-                                <div>
-                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center bg-secondary mb-3 sm:mb-4">
-                                        <Globe className="w-4 h-4 sm:w-5 sm:h-5" />
-                                    </div>
-                                    <h3 className="heading-sm mb-1 text-base sm:text-lg">{t('app.internetP2P')}</h3>
-                                    <p className="body-md text-sm sm:text-base">{t('app.internetP2PDesc')}</p>
-                                </div>
-                                <div className="flex flex-wrap items-center gap-2 mt-3 sm:mt-4">
-                                    <span className="label px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-secondary text-xs sm:text-sm">🌍</span>
-                                    <span className="label px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-secondary text-xs sm:text-sm">🔒</span>
-                                </div>
-                            </div>
-
-                            {/* Friends Card */}
-                            <div
-                                className="relative card-feature cursor-pointer hover:border-foreground min-h-[160px] sm:min-h-[180px] flex flex-col justify-between sm:col-span-2 lg:col-span-1 touchable active:scale-[0.98] transition-transform"
-                                onClick={() => setConnectionType('friends')}
-                            >
-                                {friendRequestCount > 0 && (
-                                    <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-accent text-accent-foreground text-xs font-bold flex items-center justify-center">
-                                        {friendRequestCount}
-                                    </div>
-                                )}
-                                <div>
-                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center bg-secondary mb-3 sm:mb-4">
-                                        <Users className="w-4 h-4 sm:w-5 sm:h-5" />
-                                    </div>
-                                    <h3 className="heading-sm mb-1 text-base sm:text-lg">{t('app.friends')}</h3>
-                                    <p className="body-md text-sm sm:text-base">{t('app.friendsDesc')}</p>
-                                </div>
-                                <div className="flex flex-wrap items-center gap-2 mt-3 sm:mt-4">
-                                    <span className="label px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-secondary text-xs sm:text-sm">🔗</span>
-                                    <span className="label px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-secondary text-xs sm:text-sm">✓</span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Main Interface */}
-                    {connectionType && (
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            {/* Left Panel */}
-                            <div className="lg:col-span-1 space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <h2 className="text-xl font-semibold">
-                                        {connectionType === 'local' ? t('app.localNetwork') : connectionType === 'friends' ? t('app.friends') : t('app.connect')}
-                                    </h2>
-                                    <Button variant="ghost" size="sm" onClick={() => {
-                                        setConnectionType(null);
-                                        setSelectedFriend(null);
-                                    }}>
-                                        {t('app.back')}
-                                    </Button>
-                                </div>
-
-                                {connectionType === 'local' ? (
-                                    <DeviceList
-                                        devices={localDevices}
-                                        onDeviceSelect={handleDeviceSelect}
-                                        onToggleFavorite={handleToggleFavorite}
-                                        onRefresh={handleRefreshDevices}
-                                        onQRConnect={handleQRConnect}
-                                        selectedDevice={selectedDevice}
-                                    />
-                                ) : connectionType === 'friends' ? (
-                                    <FriendsList
-                                        onSendToFriend={handleSendToFriend}
-                                        onRefresh={handleRefreshFriends}
-                                    />
-                                ) : (
-                                    <div className="space-y-4">
-                                        {mode === 'send' ? (
-                                            <Card className="p-6 rounded-xl border border-border bg-card">
-                                                <div className="flex flex-col items-center text-center space-y-4">
-                                                    <h3 className="font-semibold text-lg">{t('app.yourCode')}</h3>
-
-                                                    {/* Toggle code type */}
-                                                    <div className="flex gap-2">
-                                                        <Button
-                                                            variant={codeType === 'word' ? 'default' : 'outline'}
-                                                            size="sm"
-                                                            onClick={() => { setCodeType('word'); setConnectionCode(generateWordPhrase(3)); }}
-                                                        >
-                                                            Word
-                                                        </Button>
-                                                        <Button
-                                                            variant={codeType === 'short' ? 'default' : 'outline'}
-                                                            size="sm"
-                                                            onClick={() => { setCodeType('short'); setConnectionCode(generateShortCode()); }}
-                                                        >
-                                                            Code
-                                                        </Button>
-                                                    </div>
-
-                                                    <div
-                                                        className="flex items-center gap-2 px-6 py-4 rounded-lg bg-primary/10 border border-primary/30 cursor-pointer hover:bg-primary/20 transition-colors"
-                                                        onClick={handleCopyCode}
-                                                    >
-                                                        <code className={`font-mono font-bold text-primary ${codeType === 'word' ? 'text-lg' : 'text-3xl tracking-widest'}`}>
-                                                            {formatCode(connectionCode)}
-                                                        </code>
-                                                        <Copy className="w-5 h-5 text-primary/70" />
-                                                    </div>
-
-                                                    <Button variant="ghost" size="sm" onClick={regenerateCode}>
-                                                        <RefreshCw className="w-4 h-4 mr-2" />
-                                                        {t('app.regenerate')}
-                                                    </Button>
-
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {t('app.shareCode')}
-                                                    </p>
-                                                </div>
-                                            </Card>
-                                        ) : (
-                                            <ManualConnect
-                                                onConnectByIP={handleConnectByIP}
-                                                onConnectByCode={handleConnectByCode}
-                                                isConnecting={isConnecting}
+            {/* ================================================================
+                MAIN CONTENT
+            ================================================================ */}
+            <main id="main-content" className="pt-20 sm:pt-24 3xl:pt-28 pb-12 sm:pb-16 3xl:pb-20 px-4 sm:px-6 lg:px-8 3xl:px-12">
+                <motion.div
+                    className="max-w-5xl 3xl:max-w-6xl 4xl:max-w-7xl mx-auto"
+                    variants={pageVariants}
+                    initial="hidden"
+                    animate="visible"
+                >
+                    {/* ============================================================
+                        SEND/RECEIVE TOGGLE - Pill Style
+                    ============================================================ */}
+                    <motion.div variants={itemVariants} className="flex justify-center mb-8 sm:mb-12 3xl:mb-16">
+                        <div className="p-1 rounded-full border border-[#262626] bg-[#141414]">
+                            <div className="flex">
+                                {(['send', 'receive'] as const).map((tab) => (
+                                    <motion.button
+                                        key={tab}
+                                        onClick={() => { setActiveTab(tab); setTransferMode(null); }}
+                                        className={cn(
+                                            'relative px-6 sm:px-8 3xl:px-10 py-2.5 sm:py-3 3xl:py-4 rounded-full font-medium text-sm 3xl:text-base transition-all duration-300 flex items-center gap-2 sm:gap-2.5',
+                                            activeTab === tab
+                                                ? 'text-[#0a0a08]'
+                                                : 'text-[#fefefc]/60 hover:text-[#fefefc]'
+                                        )}
+                                        whileHover={activeTab !== tab ? { scale: 1.02 } : {}}
+                                        whileTap={{ scale: 0.98 }}
+                                    >
+                                        {activeTab === tab && (
+                                            <motion.div
+                                                layoutId="activeTabPill"
+                                                className="absolute inset-0 bg-[#fefefc] rounded-full"
+                                                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                                             />
                                         )}
-                                    </div>
-                                )}
+                                        <span className="relative z-10 flex items-center gap-2">
+                                            {tab === 'send' ? <Upload className="w-4 h-4 3xl:w-5 3xl:h-5" /> : <Download className="w-4 h-4 3xl:w-5 3xl:h-5" />}
+                                            {tab === 'send' ? t('app.send') : t('app.receive')}
+                                        </span>
+                                    </motion.button>
+                                ))}
                             </div>
+                        </div>
+                    </motion.div>
 
-                            {/* Center/Right Panel */}
-                            <div className="lg:col-span-2 space-y-6">
-                                {mode === 'send' ? (
-                                    <>
-                                        <FileSelector
-                                            onFilesSelected={handleFilesSelected}
-                                            selectedFiles={selectedFiles}
-                                            onRemoveFile={handleRemoveFile}
-                                            onClearAll={handleClearFiles}
-                                        />
-
-                                        {/* Send Progress */}
-                                        {isSending && (
-                                            <Card className="p-4 rounded-xl border border-border bg-card">
-                                                <div className="space-y-2">
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="font-medium truncate max-w-[50%]">
-                                                            {sendingFileName || t('app.sending')}
-                                                        </span>
-                                                        <span className="text-sm text-muted-foreground">
-                                                            {sendingFileTotal > 1 && `${sendingFileIndex}/${sendingFileTotal} • `}
-                                                            {Math.round(sendProgress)}%
-                                                            {formatEta(sendProgress) && ` • ${formatEta(sendProgress)}`}
-                                                        </span>
-                                                    </div>
-                                                    <Progress value={sendProgress} className="h-2" />
-                                                </div>
-                                            </Card>
-                                        )}
-
-                                        {/* Send Button */}
-                                        {selectedFiles.length > 0 && !isSending && (
-                                            <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-card rounded-lg">
-                                                <div>
-                                                    <p className="font-semibold">
-                                                        Ready to send {selectedFiles.length} file{selectedFiles.length !== 1 ? 's' : ''}
-                                                    </p>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        Total: {formatFileSize(selectedFiles.reduce((acc, f) => acc + f.size, 0))}
-                                                    </p>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="lg"
-                                                        onClick={() => setShowEmailShareDialog(true)}
-                                                        disabled={selectedFiles.length === 0}
-                                                        className="gap-2"
-                                                    >
-                                                        <Mail className="w-5 h-5" />
-                                                        Share via Email
-                                                    </Button>
-                                                    <Button
-                                                        size="lg"
-                                                        disabled={!canSend || !isConnected || !pqcReady || isSending}
-                                                        onClick={handleStartTransfer}
-                                                        className="gap-2"
-                                                    >
-                                                        {isSending ? (
-                                                            <Loader2 className="w-5 h-5 animate-spin" />
-                                                        ) : (
-                                                            <Send className="w-5 h-5" />
-                                                        )}
-                                                        {isSending ? t('app.sending') : t('app.sendFiles')}
-                                                    </Button>
-                                                </div>
+                    {/* ============================================================
+                        TAB CONTENT
+                    ============================================================ */}
+                    <AnimatePresence mode="wait">
+                        {activeTab === 'send' ? (
+                            <motion.div
+                                key="send"
+                                variants={tabSwitchVariants}
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
+                                className="space-y-6 sm:space-y-8 3xl:space-y-10"
+                            >
+                                {/* File Drop Zone - Only when no mode selected */}
+                                {!transferMode && (
+                                    <motion.div variants={itemVariants}>
+                                        <EuvekaCard
+                                            className={cn(
+                                                'p-8 transition-all duration-300',
+                                                isDragging && 'border-[#fefefc] bg-[#fefefc]/5'
+                                            )}
+                                        >
+                                            <div
+                                                ref={dropZoneRef}
+                                                onDragOver={handleDragOver}
+                                                onDragLeave={handleDragLeave}
+                                                onDrop={handleDrop}
+                                            >
+                                                <FileSelectorWithPrivacy
+                                                    onFilesSelected={handleFilesSelected}
+                                                    selectedFiles={selectedFiles}
+                                                    onRemoveFile={handleRemoveFile}
+                                                    onClearAll={handleClearFiles}
+                                                />
                                             </div>
-                                        )}
-                                    </>
-                                ) : (
-                                    <>
-                                        <Card className="p-12 rounded-xl border border-border bg-card">
-                                            <div className="flex flex-col items-center text-center space-y-4">
-                                                <div className={`w-20 h-20 rounded-full flex items-center justify-center ${isConnected ? 'bg-green-500/20' : 'bg-accent/10 animate-pulse-glow'}`}>
-                                                    {isConnected ? (
-                                                        <Check className="w-10 h-10 text-green-500" />
-                                                    ) : (
-                                                        <Download className="w-10 h-10 text-accent" />
-                                                    )}
+                                        </EuvekaCard>
+                                    </motion.div>
+                                )}
+
+                                {/* Selected Files Summary */}
+                                {selectedFiles.length > 0 && !transferMode && (
+                                    <motion.div variants={itemVariants}>
+                                        <EuvekaCard className="p-5 border-[#fefefc]/20">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 rounded-full border border-[#fefefc]/20 flex items-center justify-center">
+                                                        <File className="w-5 h-5 text-[#fefefc]" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-[#fefefc]">
+                                                            {selectedFiles.length} {selectedFiles.length === 1 ? t('app.fileSelected') : t('app.filesSelected')}
+                                                        </p>
+                                                        <p className="text-sm text-[#fefefc]/60">
+                                                            {formatFileSize(selectedFiles.reduce((acc, f) => acc + f.size, 0))} total
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <h3 className="text-2xl font-semibold">
-                                                    {isConnected ? t('app.connected') : t('app.ready')}
-                                                </h3>
-                                                <p className="text-muted-foreground max-w-md">
-                                                    {isConnected
-                                                        ? t('app.waitingConnection')
-                                                        : t('app.shareCode')}
+                                                <EuvekaButton
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={handleClearFiles}
+                                                    className="text-[#fefefc]/60 hover:text-[#ef4444]"
+                                                >
+                                                    <X className="w-4 h-4 mr-1" />
+                                                    {t('app.clearFiles')}
+                                                </EuvekaButton>
+                                            </div>
+                                        </EuvekaCard>
+                                    </motion.div>
+                                )}
+
+                                {/* Transfer Mode Cards - Bento Grid */}
+                                {!transferMode && (
+                                    <motion.div variants={itemVariants}>
+                                        <h3 className="text-sm font-medium text-[#fefefc]/40 uppercase tracking-widest mb-6 px-1">
+                                            {t('app.selectConnection')}
+                                        </h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 3xl:gap-6">
+                                            {/* Local Network Card */}
+                                            <EuvekaCard
+                                                interactive
+                                                onClick={() => setTransferMode('local')}
+                                                className="p-6 group"
+                                            >
+                                                <div className="w-14 h-14 rounded-full border border-[#fefefc]/10 flex items-center justify-center mb-5 group-hover:border-[#fefefc]/30 transition-colors">
+                                                    <Wifi className="w-6 h-6 text-[#fefefc]" />
+                                                </div>
+                                                <h4 className="font-semibold text-[#fefefc] mb-2 text-lg">
+                                                    {t('app.localNetwork')}
+                                                </h4>
+                                                <p className="text-sm text-[#fefefc]/50 leading-relaxed">
+                                                    {t('app.localNetworkDesc')}
                                                 </p>
-                                                {connectionType === 'internet' && !isConnected && (
-                                                    <div
-                                                        className="flex items-center gap-2 p-4 rounded-lg bg-primary/10 border border-primary/30 cursor-pointer hover:bg-primary/20 transition-colors"
+                                                <div className="flex items-center gap-1 mt-5 text-[#fefefc]/60 text-sm font-medium group-hover:text-[#fefefc] transition-colors">
+                                                    <span>Connect</span>
+                                                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                                </div>
+                                            </EuvekaCard>
+
+                                            {/* Internet P2P Card */}
+                                            <EuvekaCard
+                                                interactive
+                                                onClick={() => setTransferMode('internet')}
+                                                className="p-6 group"
+                                            >
+                                                <div className="w-14 h-14 rounded-full border border-[#fefefc]/10 flex items-center justify-center mb-5 group-hover:border-[#fefefc]/30 transition-colors">
+                                                    <Globe className="w-6 h-6 text-[#fefefc]" />
+                                                </div>
+                                                <h4 className="font-semibold text-[#fefefc] mb-2 text-lg">
+                                                    {t('app.internetP2P')}
+                                                </h4>
+                                                <p className="text-sm text-[#fefefc]/50 leading-relaxed">
+                                                    {t('app.internetP2PDesc')}
+                                                </p>
+                                                <div className="flex items-center gap-1 mt-5 text-[#fefefc]/60 text-sm font-medium group-hover:text-[#fefefc] transition-colors">
+                                                    <span>Connect</span>
+                                                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                                </div>
+                                            </EuvekaCard>
+
+                                            {/* Friends Card */}
+                                            <EuvekaCard
+                                                interactive
+                                                onClick={() => setTransferMode('friends')}
+                                                className="p-6 group relative"
+                                            >
+                                                {friendRequestCount > 0 && (
+                                                    <motion.span
+                                                        className="absolute top-4 right-4 w-6 h-6 rounded-full bg-[#fefefc] text-[#0a0a08] text-xs font-bold flex items-center justify-center"
+                                                        initial={{ scale: 0 }}
+                                                        animate={{ scale: 1 }}
+                                                        transition={{ type: 'spring', stiffness: 500 }}
+                                                    >
+                                                        {friendRequestCount}
+                                                    </motion.span>
+                                                )}
+                                                <div className="w-14 h-14 rounded-full border border-[#fefefc]/10 flex items-center justify-center mb-5 group-hover:border-[#fefefc]/30 transition-colors">
+                                                    <Users className="w-6 h-6 text-[#fefefc]" />
+                                                </div>
+                                                <h4 className="font-semibold text-[#fefefc] mb-2 text-lg">
+                                                    {t('app.friends')}
+                                                </h4>
+                                                <p className="text-sm text-[#fefefc]/50 leading-relaxed">
+                                                    {t('app.friendsDesc')}
+                                                </p>
+                                                <div className="flex items-center gap-1 mt-5 text-[#fefefc]/60 text-sm font-medium group-hover:text-[#fefefc] transition-colors">
+                                                    <span>View Friends</span>
+                                                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                                </div>
+                                            </EuvekaCard>
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                {/* Mode-specific content */}
+                                {transferMode === 'local' && (
+                                    <motion.div variants={itemVariants} initial="hidden" animate="visible" className="space-y-5">
+                                        <div className="flex items-center justify-between">
+                                            <EuvekaButton
+                                                variant="ghost"
+                                                onClick={() => setTransferMode(null)}
+                                                className="text-[#fefefc]/60"
+                                            >
+                                                <ArrowLeft className="w-4 h-4 mr-2" />
+                                                {t('app.back')}
+                                            </EuvekaButton>
+                                            <EuvekaButton
+                                                variant="ghost"
+                                                onClick={handleRefreshDevices}
+                                            >
+                                                <RefreshCw className="w-4 h-4 mr-2" />
+                                                {t('app.refresh')}
+                                            </EuvekaButton>
+                                        </div>
+                                        <EuvekaCard className="p-6">
+                                            <DeviceListAnimated
+                                                devices={localDevices}
+                                                selectedDevice={selectedDevice}
+                                                onDeviceSelect={handleDeviceSelect}
+                                                onToggleFavorite={() => {}}
+                                                onRefresh={handleRefreshDevices}
+                                                isLoading={false}
+                                            />
+                                        </EuvekaCard>
+                                    </motion.div>
+                                )}
+
+                                {transferMode === 'internet' && (
+                                    <motion.div variants={itemVariants} initial="hidden" animate="visible" className="space-y-5">
+                                        <EuvekaButton
+                                            variant="ghost"
+                                            onClick={() => setTransferMode(null)}
+                                            className="text-[#fefefc]/60"
+                                        >
+                                            <ArrowLeft className="w-4 h-4 mr-2" />
+                                            {t('app.back')}
+                                        </EuvekaButton>
+
+                                        {/* Connection Code Display */}
+                                        <EuvekaCard className="p-8" glow>
+                                            <div className="text-center mb-6">
+                                                <h4 className="text-lg font-semibold text-[#fefefc] mb-2">
+                                                    {t('app.yourCode')}
+                                                </h4>
+                                                <p className="text-sm text-[#fefefc]/50">
+                                                    {t('app.shareCode')}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex-1 p-5 rounded-2xl bg-[#0a0a08] border border-[#262626] font-mono text-xl text-center text-[#fefefc] tracking-widest">
+                                                    {connectionCode}
+                                                </div>
+                                                <div className="flex flex-col gap-2">
+                                                    <EuvekaButton
+                                                        variant="outline"
+                                                        size="md"
+                                                        icon
                                                         onClick={handleCopyCode}
                                                     >
-                                                        <code className={`font-mono font-bold text-primary ${codeType === 'word' ? 'text-lg' : 'text-2xl tracking-widest'}`}>
-                                                            {formatCode(connectionCode)}
-                                                        </code>
-                                                        <Copy className="w-5 h-5 text-primary/70" />
+                                                        <Copy className="w-5 h-5" />
+                                                    </EuvekaButton>
+                                                    <EuvekaButton
+                                                        variant="outline"
+                                                        size="md"
+                                                        icon
+                                                        onClick={regenerateCode}
+                                                    >
+                                                        <RefreshCw className="w-5 h-5" />
+                                                    </EuvekaButton>
+                                                </div>
+                                            </div>
+                                        </EuvekaCard>
+                                    </motion.div>
+                                )}
+
+                                {transferMode === 'friends' && (
+                                    <motion.div variants={itemVariants} initial="hidden" animate="visible" className="space-y-5">
+                                        <div className="flex items-center justify-between">
+                                            <EuvekaButton
+                                                variant="ghost"
+                                                onClick={() => setTransferMode(null)}
+                                                className="text-[#fefefc]/60"
+                                            >
+                                                <ArrowLeft className="w-4 h-4 mr-2" />
+                                                {t('app.back')}
+                                            </EuvekaButton>
+                                            <EuvekaButton
+                                                variant="ghost"
+                                                onClick={handleRefreshFriends}
+                                            >
+                                                <RefreshCw className="w-4 h-4 mr-2" />
+                                                {t('app.refresh')}
+                                            </EuvekaButton>
+                                        </div>
+                                        <EuvekaCard className="p-6">
+                                            <FriendsList
+                                                onSendToFriend={handleSendToFriend}
+                                            />
+                                        </EuvekaCard>
+                                    </motion.div>
+                                )}
+
+                                {/* Connected State - Ready to Send */}
+                                {isConnected && selectedDevice && (
+                                    <motion.div variants={itemVariants} initial="hidden" animate="visible">
+                                        <EuvekaCard className="p-6 border-[#22c55e]/30">
+                                            <div className="flex items-center justify-between mb-5">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 rounded-full border border-[#22c55e]/30 flex items-center justify-center">
+                                                        <Check className="w-6 h-6 text-[#22c55e]" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-[#fefefc]">
+                                                            {t('app.connectedTo')} {selectedDevice.name}
+                                                        </p>
+                                                        <p className="text-sm text-[#fefefc]/50">
+                                                            {pqcReady ? 'Post-quantum encryption active' : 'Establishing encryption...'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                {peerVerified && (
+                                                    <div className="flex items-center gap-1.5 text-sm text-[#22c55e] font-medium">
+                                                        <Shield className="w-4 h-4" />
+                                                        Verified
                                                     </div>
                                                 )}
                                             </div>
-                                        </Card>
 
-                                        {/* Receive Progress */}
-                                        {isReceiving && (
-                                            <Card className="p-4 rounded-xl border border-border bg-card">
-                                                <div className="space-y-2">
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="font-medium truncate max-w-[50%]">
-                                                            Receiving{receivingFileName ? `: ${receivingFileName}` : ''}
-                                                        </span>
-                                                        <span className="text-sm text-muted-foreground">
-                                                            {Math.round(receiveProgress)}%
-                                                            {formatEta(receiveProgress) && ` • ${formatEta(receiveProgress)}`}
-                                                        </span>
+                                            {selectedFiles.length > 0 && (
+                                                <EuvekaButton
+                                                    variant="filled"
+                                                    size="lg"
+                                                    onClick={handleStartTransfer}
+                                                    disabled={!pqcReady || isSending}
+                                                    className="w-full"
+                                                >
+                                                    {isSending ? (
+                                                        <>
+                                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                                            {t('app.sending')} ({sendingFileIndex}/{sendingFileTotal})
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Send className="w-5 h-5" />
+                                                            {t('app.sendFiles')}
+                                                        </>
+                                                    )}
+                                                </EuvekaButton>
+                                            )}
+                                        </EuvekaCard>
+                                    </motion.div>
+                                )}
+
+                                {/* Transfer Progress */}
+                                {(isSending || isReceiving) && (
+                                    <motion.div variants={itemVariants} initial="hidden" animate="visible">
+                                        <EuvekaCard className="p-6">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <span className="font-semibold text-[#fefefc]">
+                                                    {isSending ? sendingFileName : receivingFileName}
+                                                </span>
+                                                <span className="text-sm font-medium text-[#fefefc]">
+                                                    {Math.round(isSending ? sendProgress : receiveProgress)}%
+                                                </span>
+                                            </div>
+                                            <div className="h-2 bg-[#262626] rounded-full overflow-hidden mb-3">
+                                                <motion.div
+                                                    className="h-full bg-[#fefefc] rounded-full"
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${isSending ? sendProgress : receiveProgress}%` }}
+                                                    transition={{ duration: 0.3 }}
+                                                />
+                                            </div>
+                                            <div className="flex items-center justify-between text-xs text-[#fefefc]/50">
+                                                <span className="flex items-center gap-1.5">
+                                                    {isSending ? <Upload className="w-3 h-3" /> : <Download className="w-3 h-3" />}
+                                                    {isSending ? t('app.sending') : t('app.receiving')}
+                                                </span>
+                                                <span>{formatEta(isSending ? sendProgress : receiveProgress)}</span>
+                                            </div>
+                                        </EuvekaCard>
+                                    </motion.div>
+                                )}
+
+                                {/* Recent Transfers Preview */}
+                                {!transferMode && !isConnected && recentTransfers.length > 0 && (
+                                    <motion.div variants={itemVariants}>
+                                        <div className="flex items-center justify-between mb-5 px-1">
+                                            <h3 className="text-sm font-medium text-[#fefefc]/40 uppercase tracking-widest">
+                                                Recent Transfers
+                                            </h3>
+                                            <Link href="/app/history" className="text-sm text-[#fefefc]/60 font-medium hover:text-[#fefefc] transition-colors">
+                                                View All
+                                            </Link>
+                                        </div>
+                                        <EuvekaCard className="divide-y divide-[#262626]">
+                                            {recentTransfers.slice(0, 3).map((transfer, i) => (
+                                                <motion.div
+                                                    key={transfer.id}
+                                                    className="flex items-center gap-4 p-4"
+                                                    initial={{ opacity: 0, x: -10 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    transition={{ delay: i * 0.05 }}
+                                                >
+                                                    <div className={cn(
+                                                        'w-10 h-10 rounded-full border flex items-center justify-center',
+                                                        transfer.direction === 'send'
+                                                            ? 'border-[#fefefc]/20'
+                                                            : 'border-[#22c55e]/30'
+                                                    )}>
+                                                        {transfer.direction === 'send' ? (
+                                                            <Upload className="w-4 h-4 text-[#fefefc]" />
+                                                        ) : (
+                                                            <Download className="w-4 h-4 text-[#22c55e]" />
+                                                        )}
                                                     </div>
-                                                    <Progress value={receiveProgress} className="h-2" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-medium text-[#fefefc] truncate">
+                                                            {transfer.fileName}
+                                                        </p>
+                                                        <p className="text-xs text-[#fefefc]/50">
+                                                            {transfer.peerName} - {formatFileSize(transfer.fileSize)}
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-xs text-[#fefefc]/40 flex items-center gap-1">
+                                                        <Clock className="w-3 h-3" />
+                                                        {new Date(transfer.completedAt).toLocaleDateString()}
+                                                    </div>
+                                                </motion.div>
+                                            ))}
+                                        </EuvekaCard>
+                                    </motion.div>
+                                )}
+                            </motion.div>
+                        ) : (
+                            /* ============================================================
+                                RECEIVE TAB
+                            ============================================================ */
+                            <motion.div
+                                key="receive"
+                                variants={tabSwitchVariants}
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
+                                className="space-y-6 sm:space-y-8 3xl:space-y-10"
+                            >
+                                {/* Code Input */}
+                                {!transferMode && !isConnected && (
+                                    <motion.div variants={itemVariants} className="space-y-4 sm:space-y-6 3xl:space-y-8">
+                                        {/* Enter Code Card */}
+                                        <EuvekaCard className="p-6 sm:p-8 3xl:p-10" glow>
+                                            <div className="text-center mb-4 sm:mb-6 3xl:mb-8">
+                                                <h3 className="text-lg sm:text-xl 3xl:text-2xl font-semibold text-[#fefefc] mb-2">
+                                                    {t('app.enterCode')}
+                                                </h3>
+                                                <p className="text-sm text-[#fefefc]/50">
+                                                    Enter the code from the sender to connect
+                                                </p>
+                                            </div>
+                                            <div className="space-y-5">
+                                                <Input
+                                                    value={inputCode}
+                                                    onChange={(e) => setInputCode(e.target.value)}
+                                                    placeholder="e.g. apple-berry-cloud or AB3X#K"
+                                                    className="h-16 text-lg text-center font-mono tracking-wider rounded-2xl border-[#262626] bg-[#0a0a08] text-[#fefefc] placeholder:text-[#fefefc]/30 focus:border-[#fefefc]/40 focus:ring-0"
+                                                />
+                                                <EuvekaButton
+                                                    variant="filled"
+                                                    size="lg"
+                                                    onClick={() => handleConnectByCode(inputCode)}
+                                                    disabled={!inputCode.trim() || isConnecting}
+                                                    className="w-full"
+                                                >
+                                                    {isConnecting ? (
+                                                        <>
+                                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                                            {t('app.connecting')}
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <ChevronRight className="w-5 h-5" />
+                                                            {t('app.connect')}
+                                                        </>
+                                                    )}
+                                                </EuvekaButton>
+                                            </div>
+                                        </EuvekaCard>
+
+                                        {/* QR Scanner Option */}
+                                        <EuvekaCard
+                                            interactive
+                                            onClick={() => setTransferMode('internet')}
+                                            className="p-6 border-dashed group"
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-14 h-14 rounded-full border border-[#fefefc]/10 flex items-center justify-center group-hover:border-[#fefefc]/30 transition-colors">
+                                                    <QrCode className="w-6 h-6 text-[#fefefc]/60 group-hover:text-[#fefefc] transition-colors" />
                                                 </div>
-                                            </Card>
-                                        )}
-                                    </>
+                                                <div className="flex-1">
+                                                    <h4 className="font-semibold text-[#fefefc]">
+                                                        {t('app.scanQR')}
+                                                    </h4>
+                                                    <p className="text-sm text-[#fefefc]/50">
+                                                        {t('app.orEnterCode')}
+                                                    </p>
+                                                </div>
+                                                <ChevronRight className="w-5 h-5 text-[#fefefc]/40 group-hover:text-[#fefefc] group-hover:translate-x-1 transition-all" />
+                                            </div>
+                                        </EuvekaCard>
+                                    </motion.div>
                                 )}
 
-                                {/* Transfers */}
-                                <div>
-                                    <h2 className="text-xl font-semibold mb-4">{t('app.history')}</h2>
-                                    <TransferQueue
-                                        transfers={transfers}
-                                        onPause={handlePauseTransfer}
-                                        onResume={handleResumeTransfer}
-                                        onCancel={handleCancelTransfer}
-                                        onClearCompleted={handleClearCompleted}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </main >
+                                {/* Waiting for connection */}
+                                {transferMode === 'internet' && !isConnected && (
+                                    <motion.div variants={itemVariants} initial="hidden" animate="visible" className="space-y-5">
+                                        <EuvekaButton
+                                            variant="ghost"
+                                            onClick={() => setTransferMode(null)}
+                                            className="text-[#fefefc]/60"
+                                        >
+                                            <ArrowLeft className="w-4 h-4 mr-2" />
+                                            {t('app.back')}
+                                        </EuvekaButton>
+                                        <EuvekaCard className="p-12 text-center" glow>
+                                            <motion.div
+                                                animate={{ rotate: 360 }}
+                                                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                                className="w-16 h-16 mx-auto mb-6"
+                                            >
+                                                <Loader2 className="w-16 h-16 text-[#fefefc]" />
+                                            </motion.div>
+                                            <p className="text-lg font-medium text-[#fefefc] mb-2">
+                                                {t('app.waitingConnection')}
+                                            </p>
+                                            <p className="text-sm text-[#fefefc]/50">
+                                                Share your code with the sender
+                                            </p>
+                                            <div className="mt-6 p-4 rounded-2xl bg-[#0a0a08] border border-[#262626] font-mono text-lg text-[#fefefc]">
+                                                {connectionCode}
+                                            </div>
+                                        </EuvekaCard>
+                                    </motion.div>
+                                )}
 
-            {/* Received Files Dialog */}
-            < Dialog open={showReceivedDialog} onOpenChange={setShowReceivedDialog} >
-                <DialogContent className="rounded-xl border border-border bg-card">
-                    <DialogHeader>
-                        <DialogTitle>{t('app.receivedFiles')}</DialogTitle>
-                        <DialogDescription>
-                            {t('app.receivedFiles')}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-2 max-h-[400px] overflow-auto">
-                        {receivedFiles.length === 0 ? (
-                            <p className="text-center text-muted-foreground py-4">
-                                {t('app.noFilesReceived')}
-                            </p>
-                        ) : (
-                            receivedFiles.map((file, index) => (
-                                <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-primary/5">
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-medium truncate">{file.name}</p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {formatFileSize(file.size)} • {file.receivedAt.toLocaleTimeString()}
-                                        </p>
+                                {/* Connected - Receiving */}
+                                {isConnected && (
+                                    <motion.div variants={itemVariants} initial="hidden" animate="visible">
+                                        <EuvekaCard className="p-6 border-[#22c55e]/30">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-full border border-[#22c55e]/30 flex items-center justify-center">
+                                                    <Check className="w-6 h-6 text-[#22c55e]" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-[#fefefc]">
+                                                        {t('app.connectedTo')} {selectedDevice?.name || 'Peer'}
+                                                    </p>
+                                                    <p className="text-sm text-[#fefefc]/50">
+                                                        {isReceiving ? t('app.receiving') : 'Ready to receive files'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </EuvekaCard>
+                                    </motion.div>
+                                )}
+
+                                {/* Receive Progress */}
+                                {isReceiving && (
+                                    <motion.div variants={itemVariants} initial="hidden" animate="visible">
+                                        <EuvekaCard className="p-6">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <span className="font-semibold text-[#fefefc]">
+                                                    {receivingFileName}
+                                                </span>
+                                                <span className="text-sm font-medium text-[#fefefc]">
+                                                    {Math.round(receiveProgress)}%
+                                                </span>
+                                            </div>
+                                            <div className="h-2 bg-[#262626] rounded-full overflow-hidden">
+                                                <motion.div
+                                                    className="h-full bg-[#fefefc] rounded-full"
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${receiveProgress}%` }}
+                                                    transition={{ duration: 0.3 }}
+                                                />
+                                            </div>
+                                        </EuvekaCard>
+                                    </motion.div>
+                                )}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* ============================================================
+                        PRIVACY WARNING
+                    ============================================================ */}
+                    {privacyInitResult?.warnings && privacyInitResult.warnings.length > 0 && (
+                        <motion.div variants={itemVariants} initial="hidden" animate="visible" className="mt-10">
+                            <EuvekaCard className="p-5 border-[#f59e0b]/30">
+                                <div className="flex items-start gap-4">
+                                    <div className="w-10 h-10 rounded-full border border-[#f59e0b]/30 flex items-center justify-center shrink-0">
+                                        <AlertTriangle className="w-5 h-5 text-[#f59e0b]" />
                                     </div>
-                                    <Button size="sm" onClick={() => handleDownloadFile(file)}>
-                                        <Download className="w-4 h-4 mr-2" />
-                                        {t('app.download')}
-                                    </Button>
+                                    <div className="flex-1">
+                                        <p className="font-semibold text-[#fefefc] mb-1">
+                                            Privacy Warning
+                                        </p>
+                                        <p className="text-sm text-[#fefefc]/60 mb-4">
+                                            WebRTC may expose your IP address to connected peers.
+                                        </p>
+                                        <EuvekaButton
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => window.location.href = '/app/settings#privacy'}
+                                            className="border-[#f59e0b]/30 text-[#f59e0b] hover:bg-[#f59e0b]/10"
+                                        >
+                                            Enable Relay Mode
+                                        </EuvekaButton>
+                                    </div>
                                 </div>
-                            ))
-                        )}
-                    </div>
-                </DialogContent>
-            </Dialog >
+                            </EuvekaCard>
+                        </motion.div>
+                    )}
+                </motion.div>
+            </main>
 
-            {/* Email Share Dialog */}
-            <Dialog open={showEmailShareDialog} onOpenChange={setShowEmailShareDialog}>
-                <DialogContent className="rounded-xl border border-border bg-card">
-                    <DialogHeader>
-                        <DialogTitle>Share via Email</DialogTitle>
-                        <DialogDescription>
-                            Send a download link to the recipient. Files are transferred directly P2P when they open the link.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        {shareStatus === 'idle' ? (
-                            <>
-                                <div>
-                                    <label className="text-sm font-medium mb-1 block">Recipient email</label>
-                                    <input
-                                        type="email"
-                                        value={shareEmail}
-                                        onChange={(e) => setShareEmail(e.target.value)}
-                                        placeholder="recipient@example.com"
-                                        className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground"
-                                    />
+            {/* ================================================================
+                RECEIVED FILES DIALOG
+            ================================================================ */}
+            <AnimatePresence>
+                {showReceivedDialog && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+                        onClick={() => setShowReceivedDialog(false)}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full max-w-md"
+                        >
+                            <EuvekaCard className="overflow-hidden" glow>
+                                <div className="p-6 border-b border-[#262626]">
+                                    <div className="flex items-center justify-between">
+                                        <h2 className="text-xl font-semibold text-[#fefefc]">
+                                            {t('app.receivedFiles')}
+                                        </h2>
+                                        <EuvekaButton
+                                            variant="ghost"
+                                            size="sm"
+                                            icon
+                                            onClick={() => setShowReceivedDialog(false)}
+                                        >
+                                            <X className="w-5 h-5" />
+                                        </EuvekaButton>
+                                    </div>
                                 </div>
-                                <p className="text-sm text-muted-foreground">
-                                    {selectedFiles.length} file{selectedFiles.length !== 1 ? 's' : ''} selected
-                                </p>
-                                <Button
-                                    onClick={handleEmailShare}
-                                    disabled={!shareEmail || selectedFiles.length === 0}
-                                    className="w-full"
-                                >
-                                    <Mail className="w-4 h-4 mr-2" />
-                                    Send Download Link
-                                </Button>
-                            </>
-                        ) : (
-                            <div className="text-center py-4 space-y-3">
-                                {shareStatus === 'waiting' && (
-                                    <>
-                                        <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
-                                        <p className="font-medium">Waiting for recipient...</p>
-                                        <p className="text-sm text-muted-foreground">Keep this tab open. The recipient will receive an email with a download link.</p>
-                                    </>
-                                )}
-                                {shareStatus === 'connected' && (
-                                    <>
-                                        <Check className="w-8 h-8 text-green-500 mx-auto" />
-                                        <p className="font-medium">Recipient connected!</p>
-                                        <p className="text-sm text-muted-foreground">Establishing encrypted session...</p>
-                                    </>
-                                )}
-                                {shareStatus === 'transferring' && (
-                                    <>
-                                        <p className="font-medium">Transferring files...</p>
-                                        <Progress value={sendProgress} className="h-2" />
-                                        <p className="text-sm text-muted-foreground">{Math.round(sendProgress)}%</p>
-                                    </>
-                                )}
-                                {shareStatus === 'done' && (
-                                    <>
-                                        <Check className="w-8 h-8 text-green-500 mx-auto" />
-                                        <p className="font-medium">Files shared successfully!</p>
-                                    </>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                </DialogContent>
-            </Dialog>
 
-            {/* SAS Verification Dialog */}
-            <VerificationDialog
-                open={showVerificationDialog}
-                onOpenChange={setShowVerificationDialog}
-                session={verificationSession}
-                peerName={selectedDevice?.name || 'Unknown Device'}
-                isPreviouslyVerified={peerVerified}
-                onVerified={async () => {
-                    if (verificationSession) {
-                        await markSessionVerified(verificationSession.id);
-                        setPeerVerified(true);
-                        setShowVerificationDialog(false);
-                        toast.success('Connection verified!');
-                    }
-                }}
-                onFailed={async () => {
-                    if (verificationSession) {
-                        await markSessionFailed(verificationSession.id);
-                        setShowVerificationDialog(false);
-                        toast.error('Verification failed! Disconnecting.');
-                        cleanupConnection();
-                    }
-                }}
-                onSkipped={async () => {
-                    if (verificationSession) {
-                        await markSessionSkipped(verificationSession.id);
-                        setPeerVerified(true);
-                        setShowVerificationDialog(false);
-                        toast.info('Verification skipped');
-                    }
-                }}
-            />
-        </div >
+                                <ScrollArea className="max-h-80">
+                                    <div className="p-4 space-y-2">
+                                        {receivedFiles.map((file, index) => {
+                                            const FileIcon = getFileIcon(file.type);
+                                            return (
+                                                <motion.div
+                                                    key={index}
+                                                    initial={{ opacity: 0, x: -10 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    transition={{ delay: index * 0.05 }}
+                                                    className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#fefefc]/5 group transition-colors"
+                                                >
+                                                    <div className="w-11 h-11 rounded-full border border-[#262626] flex items-center justify-center shrink-0">
+                                                        <FileIcon className="w-5 h-5 text-[#fefefc]/60" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-medium text-[#fefefc] truncate">
+                                                            {file.name}
+                                                        </p>
+                                                        <p className="text-xs text-[#fefefc]/50">
+                                                            {formatFileSize(file.size)}
+                                                        </p>
+                                                    </div>
+                                                    <EuvekaButton
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        icon
+                                                        onClick={() => handleDownloadFile(file)}
+                                                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    >
+                                                        <Download className="w-4 h-4" />
+                                                    </EuvekaButton>
+                                                </motion.div>
+                                            );
+                                        })}
+                                    </div>
+                                </ScrollArea>
+
+                                {receivedFiles.length > 0 && (
+                                    <div className="p-5 border-t border-[#262626]">
+                                        <EuvekaButton
+                                            variant="filled"
+                                            size="lg"
+                                            onClick={handleDownloadAll}
+                                            className="w-full"
+                                        >
+                                            <Download className="w-5 h-5" />
+                                            {t('app.downloadAll')}
+                                        </EuvekaButton>
+                                    </div>
+                                )}
+                            </EuvekaCard>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* ================================================================
+                VERIFICATION DIALOG
+            ================================================================ */}
+            {showVerificationDialog && verificationSession && (
+                <LazyVerificationDialog
+                    open={showVerificationDialog}
+                    onOpenChange={setShowVerificationDialog}
+                    session={verificationSession}
+                    peerName={selectedDevice?.name || 'Unknown Device'}
+                    onVerified={handleVerify}
+                    onSkipped={handleSkipVerification}
+                    onFailed={handleRejectVerification}
+                    isPreviouslyVerified={isPeerVerified(verificationSession.peerId)}
+                />
+            )}
+        </div>
     );
 }
