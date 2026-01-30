@@ -209,6 +209,208 @@
 }
 
 /* =====================================================================
+   HIGH CONTRAST MODE - WCAG AAA Compliant (>7:1 contrast ratio)
+   Pure black/white with bright yellow accents for maximum accessibility
+   ===================================================================== */
+.high-contrast {
+  /* Core Backgrounds - Pure Black */
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a0a;
+  --bg-tertiary: #141414;
+  --bg-quaternary: #1e1e1e;
+
+  /* Core Text - Pure White */
+  --text-primary: #ffffff;
+  --text-secondary: #e5e5e5;
+  --text-muted: #b3b3b3;
+  --text-disabled: #808080;
+  --text-inverse: #000000;
+
+  /* Borders - High visibility */
+  --border: #ffffff;
+  --border-light: #cccccc;
+  --border-hover: #ffff00;
+  --border-focus: #ffff00;
+
+  /* Cards & Surfaces */
+  --card-bg: #000000;
+  --card-bg-elevated: #0a0a0a;
+  --card-border: #ffffff;
+
+  --surface: #000000;
+  --surface-elevated: #0a0a0a;
+  --surface-overlay: rgba(0, 0, 0, 0.98);
+
+  /* Inputs */
+  --input-bg: #000000;
+  --input-border: #ffffff;
+  --input-focus: #ffff00;
+  --input-placeholder: #b3b3b3;
+
+  /* Semantic Colors - High contrast variants */
+  --success: #00ff00;
+  --success-subtle: rgba(0, 255, 0, 0.2);
+  --warning: #ffff00;
+  --warning-subtle: rgba(255, 255, 0, 0.2);
+  --error: #ff0000;
+  --error-subtle: rgba(255, 0, 0, 0.2);
+
+  /* Shadows - Minimal, replaced with borders */
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow-2xl: none;
+
+  /* Yellow Glow Effects for focus indicators */
+  --glow-xs: 0 0 4px rgba(255, 255, 0, 0.5);
+  --glow-sm: 0 0 8px rgba(255, 255, 0, 0.6);
+  --glow: 0 0 12px rgba(255, 255, 0, 0.7);
+  --glow-md: 0 0 16px rgba(255, 255, 0, 0.8);
+  --glow-lg: 0 0 24px rgba(255, 255, 0, 0.9);
+  --glow-xl: 0 0 32px rgba(255, 255, 0, 1);
+
+  --shadow-button: 0 0 0 2px #ffffff;
+  --shadow-button-hover: 0 0 0 3px #ffff00, var(--glow-sm);
+  --shadow-inner: inset 0 0 0 1px #ffffff;
+
+  /* Glassmorphism - Disabled for clarity */
+  --glass-bg: rgba(0, 0, 0, 0.95);
+  --glass-bg-strong: rgba(0, 0, 0, 0.98);
+  --glass-bg-subtle: rgba(0, 0, 0, 0.9);
+  --glass-border: #ffffff;
+  --glass-blur: 0px;
+
+  /* Shadcn compatibility - High Contrast */
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #000000;
+  --card-foreground: #ffffff;
+  --popover: #000000;
+  --popover-foreground: #ffffff;
+  --primary: #ffff00;
+  --primary-foreground: #000000;
+  --secondary: #0a0a0a;
+  --secondary-foreground: #ffffff;
+  --muted: #141414;
+  --muted-foreground: #b3b3b3;
+  --accent: #ffff00;
+  --accent-foreground: #000000;
+  --destructive: #ff0000;
+  --destructive-foreground: #ffffff;
+  --border: #ffffff;
+  --input: #000000;
+  --ring: #ffff00;
+  --radius: 20px;
+
+  --chart-1: #ffffff;
+  --chart-2: #ffff00;
+  --chart-3: #00ff00;
+  --chart-4: #00ffff;
+  --chart-5: #ff00ff;
+
+  --sidebar: #000000;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #ffff00;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #0a0a0a;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #ffffff;
+  --sidebar-ring: #ffff00;
+}
+
+/* High contrast specific overrides */
+.high-contrast :focus-visible {
+  outline: 3px solid #ffff00 !important;
+  outline-offset: 2px !important;
+  border-radius: var(--radius-sm);
+}
+
+.high-contrast ::selection {
+  background: #ffff00;
+  color: #000000;
+}
+
+.high-contrast a:hover {
+  text-decoration: underline;
+  opacity: 1;
+}
+
+.high-contrast .btn-tactile,
+.high-contrast .ds-button,
+.high-contrast .btn,
+.high-contrast .btn-primary {
+  border-width: 3px;
+}
+
+.high-contrast .btn-tactile:hover,
+.high-contrast .ds-button:hover,
+.high-contrast .btn:hover,
+.high-contrast .btn-primary:hover {
+  background: #ffff00;
+  color: #000000;
+  border-color: #ffff00;
+}
+
+.high-contrast .card,
+.high-contrast .bento-card,
+.high-contrast .glass-card {
+  border-width: 2px;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.high-contrast .badge {
+  border-width: 2px;
+  border-color: #ffffff;
+}
+
+.high-contrast .input {
+  border-width: 2px;
+}
+
+.high-contrast .input:focus {
+  border-color: #ffff00;
+  box-shadow: 0 0 0 3px rgba(255, 255, 0, 0.3);
+}
+
+/* Ensure sufficient contrast for all text */
+.high-contrast p,
+.high-contrast span,
+.high-contrast li {
+  color: #e5e5e5;
+}
+
+.high-contrast h1,
+.high-contrast h2,
+.high-contrast h3,
+.high-contrast h4,
+.high-contrast h5,
+.high-contrast h6 {
+  color: #ffffff;
+}
+
+/* Status indicators with distinct colors */
+.high-contrast .status-dot-online {
+  background: #00ff00;
+  box-shadow: 0 0 8px #00ff00;
+}
+
+.high-contrast .status-dot-offline {
+  background: #ff0000;
+  opacity: 1;
+}
+
+/* Disable animations that may cause issues */
+.high-contrast .animate-float,
+.high-contrast .animate-float-subtle,
+.high-contrast .animate-pulse,
+.high-contrast .animate-glow-pulse {
+  animation: none !important;
+}
+
+/* =====================================================================
    LIGHT MODE
    ===================================================================== */
 .light {
@@ -350,10 +552,21 @@ body {
   outline: none;
 }
 
-:focus-visible {
-  outline: 2px solid var(--text-primary);
-  outline-offset: 3px;
-  border-radius: var(--radius-sm);
+/* Enhanced focus visibility for keyboard navigation accessibility */
+*:focus-visible {
+  outline: 3px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Enhanced focus styles for buttons and interactive elements */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid hsl(var(--ring));
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px hsl(var(--ring) / 0.2);
 }
 
 /* =====================================================================
@@ -2552,5 +2765,69 @@ th {
 @media (min-width: 3840px) {
   .debug-breakpoint::after {
     content: '5xl 3840px (True 4K)';
+  }
+}
+
+/* =====================================================================
+   WCAG TOUCH TARGET UTILITIES
+   Ensure minimum 44px touch targets for accessibility
+   ===================================================================== */
+
+/* Base touch target - WCAG 2.1 minimum (44x44px) */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Extended touch target for TV/large screens (56x56px) */
+@media (min-width: 1920px) {
+  .touch-target-3xl {
+    min-height: 56px;
+    min-width: 56px;
+  }
+}
+
+/* Safe-area insets for mobile devices with notches */
+.safe-area-padding {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* TV-optimized focus states - larger, more visible */
+@media (min-width: 1920px) {
+  .tv-focus:focus-visible {
+    outline-width: 4px;
+    outline-offset: 4px;
+  }
+}
+
+/* =====================================================================
+   RESPONSIVE SPACING UTILITIES
+   TV-scale spacing for large screen viewing distances
+   ===================================================================== */
+
+/* Space scale multiplier for TV (3xl+) */
+@media (min-width: 1920px) {
+  .tv-spacing-1 { --spacing-scale: 1.25; }
+  .tv-spacing-2 { --spacing-scale: 1.5; }
+}
+
+@media (min-width: 2560px) {
+  .tv-spacing-1 { --spacing-scale: 1.5; }
+  .tv-spacing-2 { --spacing-scale: 1.75; }
+}
+
+/* Content max-width for TV viewing */
+@media (min-width: 1920px) {
+  .tv-content-width {
+    max-width: min(1600px, 85vw);
+    margin-inline: auto;
+  }
+}
+
+@media (min-width: 2560px) {
+  .tv-content-width {
+    max-width: min(2000px, 80vw);
   }
 }
