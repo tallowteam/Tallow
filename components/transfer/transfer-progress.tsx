@@ -1,12 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import {
     File,
-    Folder,
     X,
     CheckCircle,
     Loader2,
@@ -14,7 +12,10 @@ import {
     Clock,
     ArrowUp,
     ArrowDown,
+    Zap,
+    RotateCcw,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface TransferProgressProps {
     fileName: string;
@@ -28,7 +29,7 @@ interface TransferProgressProps {
 }
 
 function formatBytes(bytes: number): string {
-    if (bytes === 0) return '0 B';
+    if (bytes === 0) {return '0 B';}
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -40,12 +41,55 @@ function formatSpeed(bytesPerSecond: number): string {
 }
 
 function formatTime(seconds: number): string {
-    if (seconds < 60) return `${Math.ceil(seconds)}s`;
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${Math.ceil(seconds % 60)}s`;
+    if (seconds < 60) {return `${Math.ceil(seconds)}s`;}
+    if (seconds < 3600) {return `${Math.floor(seconds / 60)}m ${Math.ceil(seconds % 60)}s`;}
     return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
 }
 
-export function TransferProgress({
+function getStatusConfig(status: string, direction: string) {
+    const configs: Record<string, { icon: any; color: string; bgColor: string; label: string; animate?: boolean }> = {
+        waiting: {
+            icon: Clock,
+            color: 'text-zinc-500 dark:text-zinc-400',
+            bgColor: 'bg-zinc-500/10',
+            label: 'Waiting...'
+        },
+        connecting: {
+            icon: Loader2,
+            color: 'text-[#0066FF]',
+            bgColor: 'bg-[#0066FF]/10',
+            label: 'Connecting...',
+            animate: true
+        },
+        transferring: {
+            icon: direction === 'send' ? ArrowUp : ArrowDown,
+            color: 'text-[#0066FF]',
+            bgColor: 'bg-[#0066FF]/10',
+            label: direction === 'send' ? 'Sending...' : 'Receiving...'
+        },
+        completed: {
+            icon: CheckCircle,
+            color: 'text-emerald-500',
+            bgColor: 'bg-emerald-500/10',
+            label: 'Completed'
+        },
+        failed: {
+            icon: AlertCircle,
+            color: 'text-red-500',
+            bgColor: 'bg-red-500/10',
+            label: 'Failed'
+        },
+        paused: {
+            icon: Clock,
+            color: 'text-amber-500',
+            bgColor: 'bg-amber-500/10',
+            label: 'Paused'
+        },
+    };
+    return configs[status] || configs['waiting'];
+}
+
+export const TransferProgress = memo(function TransferProgress({
     fileName,
     fileSize,
     bytesTransferred,
@@ -56,84 +100,182 @@ export function TransferProgress({
     onRetry,
 }: TransferProgressProps) {
     const percentage = useMemo(() => {
-        if (fileSize === 0) return 0;
+        if (fileSize === 0) {return 0;}
         return Math.min(100, Math.round((bytesTransferred / fileSize) * 100));
     }, [bytesTransferred, fileSize]);
 
     const remainingTime = useMemo(() => {
-        if (speed === 0 || status !== 'transferring') return null;
+        if (speed === 0 || status !== 'transferring') {return null;}
         const remaining = fileSize - bytesTransferred;
         return remaining / speed;
     }, [fileSize, bytesTransferred, speed, status]);
 
-    const statusConfig: Record<string, { icon: any; color: string; label: string; animate?: boolean }> = {
-        waiting: { icon: Clock, color: 'text-muted-foreground', label: 'Waiting...' },
-        connecting: { icon: Loader2, color: 'text-blue-500', label: 'Connecting...', animate: true },
-        transferring: { icon: direction === 'send' ? ArrowUp : ArrowDown, color: 'text-primary', label: direction === 'send' ? 'Sending...' : 'Receiving...' },
-        completed: { icon: CheckCircle, color: 'text-green-500', label: 'Completed' },
-        failed: { icon: AlertCircle, color: 'text-red-500', label: 'Failed' },
-        paused: { icon: Clock, color: 'text-yellow-500', label: 'Paused' },
-    };
-
-    const config = statusConfig[status];
-    const StatusIcon = config.icon;
+    const config = getStatusConfig(status, direction);
+    const StatusIcon = config?.icon || Loader2;
+    const isTransferring = status === 'transferring';
+    const isActive = ['waiting', 'connecting', 'transferring'].includes(status);
 
     return (
-        <Card className="p-4 rounded-xl border border-border bg-card">
-            <div className="flex items-start gap-3">
-                {/* File icon */}
-                <div className="p-2 rounded-lg bg-primary/10">
-                    <File className="w-5 h-5 text-primary" />
+        <Card className={cn(
+            'relative p-5 rounded-2xl border bg-card/80 backdrop-blur-sm overflow-hidden',
+            'transition-all duration-300 ease-out',
+            'hover:shadow-lg hover:shadow-[#0066FF]/5 dark:hover:shadow-[#0066FF]/10',
+            'dark:bg-zinc-900/80',
+            isTransferring && 'border-[#0066FF]/30 shadow-md shadow-[#0066FF]/10'
+        )}>
+            {/* Bento-style gradient overlay for active transfers */}
+            {isTransferring && (
+                <div className="absolute inset-0 bg-gradient-to-br from-[#0066FF]/5 via-transparent to-transparent pointer-events-none" />
+            )}
+
+            {/* Live region for screen reader progress announcements (WCAG 4.1.3) */}
+            <div
+                role="status"
+                aria-live="polite"
+                aria-atomic="false"
+                className="sr-only"
+                aria-label="Transfer progress"
+            >
+                {config?.label || ''} - {percentage}% complete
+                {status === 'completed' && ` - ${fileName} transfer completed`}
+                {status === 'failed' && ` - ${fileName} transfer failed`}
+            </div>
+
+            <div className="relative flex items-start gap-4">
+                {/* File icon with gradient background */}
+                <div className={cn(
+                    'relative w-12 h-12 rounded-xl flex items-center justify-center shrink-0',
+                    'bg-gradient-to-br from-[#0066FF]/20 to-[#0066FF]/5',
+                    isTransferring && 'animate-pulse'
+                )}>
+                    <File className="w-6 h-6 text-[#0066FF]" aria-hidden="true" />
                 </div>
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                     {/* File name and status */}
-                    <div className="flex items-center justify-between mb-1">
-                        <p className="font-medium truncate text-sm">{fileName}</p>
-                        <div className={`flex items-center gap-1 text-xs ${config.color}`}>
-                            <StatusIcon className={`w-3.5 h-3.5 ${config.animate ? 'animate-spin' : ''}`} />
-                            <span>{config.label}</span>
+                    <div className="flex items-center justify-between mb-2">
+                        <p className="font-semibold truncate text-foreground">{fileName}</p>
+                        <div className={cn(
+                            'flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full',
+                            config?.bgColor,
+                            config?.color
+                        )}>
+                            <StatusIcon
+                                className={cn(
+                                    'w-3.5 h-3.5',
+                                    config?.animate && 'animate-spin'
+                                )}
+                                aria-hidden="true"
+                            />
+                            <span>{config?.label || ''}</span>
                         </div>
                     </div>
 
-                    {/* Progress bar */}
-                    <Progress value={percentage} className="h-2 mb-2" />
+                    {/* Progress bar - modern blue design */}
+                    <div className="relative h-3 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden mb-3">
+                        <div
+                            className={cn(
+                                'absolute inset-y-0 left-0 rounded-full transition-all duration-500 ease-out',
+                                status === 'completed'
+                                    ? 'bg-gradient-to-r from-emerald-500 to-emerald-400'
+                                    : status === 'failed'
+                                        ? 'bg-gradient-to-r from-red-500 to-red-400'
+                                        : status === 'paused'
+                                            ? 'bg-gradient-to-r from-amber-500 to-amber-400'
+                                            : 'bg-gradient-to-r from-[#0066FF] to-[#0088FF]'
+                            )}
+                            style={{ width: `${percentage}%` }}
+                        />
+                        {/* Shimmer effect for active transfers */}
+                        {isTransferring && percentage > 0 && (
+                            <div
+                                className="absolute inset-y-0 left-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                                style={{
+                                    width: `${percentage}%`,
+                                    animation: 'shimmer 2s infinite'
+                                }}
+                            />
+                        )}
+                    </div>
 
-                    {/* Stats */}
+                    {/* Stats row */}
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>
-                            {formatBytes(bytesTransferred)} / {formatBytes(fileSize)}
-                            {speed > 0 && status === 'transferring' && (
-                                <span className="ml-2 text-primary">• {formatSpeed(speed)}</span>
+                        <div className="flex items-center gap-2">
+                            <span className="font-medium">
+                                {formatBytes(bytesTransferred)} / {formatBytes(fileSize)}
+                            </span>
+                            {speed > 0 && isTransferring && (
+                                <div className="flex items-center gap-1 text-[#0066FF] font-medium">
+                                    <Zap className="w-3 h-3" aria-hidden="true" />
+                                    <span>{formatSpeed(speed)}</span>
+                                </div>
                             )}
-                        </span>
-                        <span>
-                            {percentage}%
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="font-semibold text-foreground">{percentage}%</span>
                             {remainingTime && remainingTime > 0 && (
-                                <span className="ml-2">• {formatTime(remainingTime)} left</span>
+                                <>
+                                    <span className="text-muted-foreground/50">|</span>
+                                    <div className="flex items-center gap-1">
+                                        <Clock className="w-3 h-3" aria-hidden="true" />
+                                        <span>{formatTime(remainingTime)} left</span>
+                                    </div>
+                                </>
                             )}
-                        </span>
+                        </div>
                     </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-1">
+                {/* Actions - 44px touch targets for WCAG compliance */}
+                <div className="flex items-center gap-1.5 shrink-0">
                     {status === 'failed' && onRetry && (
-                        <Button variant="ghost" size="sm" onClick={onRetry}>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={onRetry}
+                            aria-label={`Retry transfer of ${fileName}`}
+                            className={cn(
+                                'h-11 px-4 sm:h-9 sm:px-3 rounded-xl',
+                                'bg-[#0066FF]/10 hover:bg-[#0066FF]/20 text-[#0066FF] font-medium',
+                                'transition-all duration-200 hover:scale-105 active:scale-95'
+                            )}
+                        >
+                            <RotateCcw className="w-4 h-4 mr-1.5" aria-hidden="true" />
                             Retry
                         </Button>
                     )}
-                    {(status === 'transferring' || status === 'waiting' || status === 'connecting') && onCancel && (
-                        <Button variant="ghost" size="icon" onClick={onCancel}>
-                            <X className="w-4 h-4" />
+                    {isActive && onCancel && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={onCancel}
+                            aria-label={`Cancel transfer of ${fileName}`}
+                            className={cn(
+                                'h-11 w-11 sm:h-9 sm:w-9 rounded-xl',
+                                'bg-zinc-100 dark:bg-zinc-800',
+                                'hover:bg-red-500/10 text-muted-foreground hover:text-red-500',
+                                'transition-all duration-200 hover:scale-105 active:scale-95'
+                            )}
+                        >
+                            <X className="w-5 h-5 sm:w-4 sm:h-4" aria-hidden="true" />
                         </Button>
                     )}
                 </div>
             </div>
+
+            {/* Shimmer animation styles */}
+            <style jsx>{`
+                @keyframes shimmer {
+                    0% { transform: translateX(-100%); }
+                    100% { transform: translateX(100%); }
+                }
+            `}</style>
         </Card>
     );
-}
+});
+
+TransferProgress.displayName = 'TransferProgress';
 
 // Multi-file progress tracker
 interface TransferQueueItem {
@@ -152,10 +294,10 @@ interface TransferQueueProgressProps {
     onCancelAll?: () => void;
 }
 
-export function TransferQueueProgress({
+export const TransferQueueProgress = memo(function TransferQueueProgress({
     items,
     direction,
-    onCancel,
+    onCancel: _onCancel,
     onCancelAll,
 }: TransferQueueProgressProps) {
     const totalBytes = items.reduce((sum, item) => sum + item.fileSize, 0);
@@ -164,56 +306,164 @@ export function TransferQueueProgress({
     const totalSpeed = items.reduce((sum, item) => sum + (item.speed || 0), 0);
 
     const overallPercentage = totalBytes > 0 ? Math.round((transferredBytes / totalBytes) * 100) : 0;
+    const isInProgress = completedCount < items.length;
 
     return (
-        <Card className="p-4 rounded-xl border border-border bg-card">
+        <Card className={cn(
+            'relative p-5 rounded-2xl border bg-card/80 backdrop-blur-sm overflow-hidden',
+            'transition-all duration-300 ease-out',
+            'dark:bg-zinc-900/80',
+            isInProgress && 'border-[#0066FF]/30 shadow-md shadow-[#0066FF]/10'
+        )}>
+            {/* Bento-style gradient overlay */}
+            {isInProgress && (
+                <div className="absolute inset-0 bg-gradient-to-br from-[#0066FF]/5 via-transparent to-transparent pointer-events-none" />
+            )}
+
+            {/* Live region for queue progress announcements (WCAG 4.1.3) */}
+            <div
+                role="status"
+                aria-live="polite"
+                aria-atomic="false"
+                className="sr-only"
+                aria-label="Transfer queue progress"
+            >
+                {direction === 'send' ? 'Sending' : 'Receiving'} {items.length} files - {completedCount} of {items.length} completed - {overallPercentage}% complete
+            </div>
+
             {/* Overall progress header */}
-            <div className="flex items-center justify-between mb-4">
+            <div className="relative flex items-center justify-between mb-4">
                 <div>
-                    <h3 className="font-semibold">
+                    <h3 className="font-semibold text-foreground flex items-center gap-2">
+                        {direction === 'send' ? (
+                            <ArrowUp className="w-4 h-4 text-[#0066FF]" aria-hidden="true" />
+                        ) : (
+                            <ArrowDown className="w-4 h-4 text-emerald-500" aria-hidden="true" />
+                        )}
                         {direction === 'send' ? 'Sending' : 'Receiving'} {items.length} file{items.length !== 1 ? 's' : ''}
                     </h3>
-                    <p className="text-sm text-muted-foreground">
-                        {completedCount} of {items.length} completed • {formatBytes(transferredBytes)} / {formatBytes(totalBytes)}
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                        {completedCount} of {items.length} completed | {formatBytes(transferredBytes)} / {formatBytes(totalBytes)}
                     </p>
                 </div>
-                {onCancelAll && completedCount < items.length && (
-                    <Button variant="outline" size="sm" onClick={onCancelAll}>
+                {onCancelAll && isInProgress && (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onCancelAll}
+                        aria-label="Cancel all transfers"
+                        className={cn(
+                            'h-11 px-4 sm:h-9 sm:px-3 rounded-xl',
+                            'border-red-500/30 text-red-500 hover:bg-red-500/10',
+                            'transition-all duration-200'
+                        )}
+                    >
                         Cancel All
                     </Button>
                 )}
             </div>
 
             {/* Overall progress bar */}
-            <Progress value={overallPercentage} className="h-3 mb-2" />
+            <div className="relative h-4 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden mb-3">
+                <div
+                    className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#0066FF] to-[#0088FF] transition-all duration-500 ease-out"
+                    style={{ width: `${overallPercentage}%` }}
+                />
+                {isInProgress && overallPercentage > 0 && (
+                    <div
+                        className="absolute inset-y-0 left-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                        style={{
+                            width: `${overallPercentage}%`,
+                            animation: 'shimmer 2s infinite'
+                        }}
+                    />
+                )}
+            </div>
 
             <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
-                <span>{overallPercentage}% complete</span>
-                {totalSpeed > 0 && <span>{formatSpeed(totalSpeed)}</span>}
+                <span className="font-semibold text-foreground">{overallPercentage}% complete</span>
+                {totalSpeed > 0 && (
+                    <div className="flex items-center gap-1 text-[#0066FF] font-medium">
+                        <Zap className="w-3.5 h-3.5" aria-hidden="true" />
+                        <span>{formatSpeed(totalSpeed)}</span>
+                    </div>
+                )}
             </div>
 
             {/* Individual files */}
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-                {items.map((item) => (
-                    <div key={item.id} className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30">
-                        <File className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                        <span className="flex-1 truncate text-sm">{item.fileName}</span>
-                        <span className="text-xs text-muted-foreground">
-                            {item.status === 'completed' ? (
-                                <CheckCircle className="w-4 h-4 text-green-500" />
-                            ) : item.status === 'transferring' ? (
-                                `${Math.round((item.bytesTransferred / item.fileSize) * 100)}%`
-                            ) : item.status === 'failed' ? (
-                                <AlertCircle className="w-4 h-4 text-red-500" />
-                            ) : (
-                                <Clock className="w-4 h-4" />
+            <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                {items.map((item) => {
+                    const itemPercentage = item.fileSize > 0
+                        ? Math.round((item.bytesTransferred / item.fileSize) * 100)
+                        : 0;
+
+                    return (
+                        <div
+                            key={item.id}
+                            className={cn(
+                                'flex items-center gap-3 p-3 rounded-xl',
+                                'bg-zinc-100/50 dark:bg-zinc-800/50',
+                                'transition-all duration-200',
+                                item.status === 'transferring' && 'bg-[#0066FF]/5 dark:bg-[#0066FF]/10'
                             )}
-                        </span>
-                    </div>
-                ))}
+                        >
+                            <div className={cn(
+                                'w-9 h-9 rounded-lg flex items-center justify-center shrink-0',
+                                item.status === 'completed'
+                                    ? 'bg-emerald-500/10'
+                                    : item.status === 'failed'
+                                        ? 'bg-red-500/10'
+                                        : 'bg-zinc-200 dark:bg-zinc-700'
+                            )}>
+                                <File className={cn(
+                                    'w-4 h-4',
+                                    item.status === 'completed'
+                                        ? 'text-emerald-500'
+                                        : item.status === 'failed'
+                                            ? 'text-red-500'
+                                            : 'text-muted-foreground'
+                                )} aria-hidden="true" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <span className="text-sm font-medium truncate block text-foreground">
+                                    {item.fileName}
+                                </span>
+                                {item.status === 'transferring' && (
+                                    <div className="h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full mt-1.5 overflow-hidden">
+                                        <div
+                                            className="h-full bg-[#0066FF] rounded-full transition-all duration-300"
+                                            style={{ width: `${itemPercentage}%` }}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                            <div className="text-xs font-medium shrink-0">
+                                {item.status === 'completed' ? (
+                                    <CheckCircle className="w-5 h-5 text-emerald-500" aria-hidden="true" />
+                                ) : item.status === 'transferring' ? (
+                                    <span className="text-[#0066FF]">{itemPercentage}%</span>
+                                ) : item.status === 'failed' ? (
+                                    <AlertCircle className="w-5 h-5 text-red-500" aria-hidden="true" />
+                                ) : (
+                                    <Clock className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
+
+            {/* Shimmer animation styles */}
+            <style jsx>{`
+                @keyframes shimmer {
+                    0% { transform: translateX(-100%); }
+                    100% { transform: translateX(100%); }
+                }
+            `}</style>
         </Card>
     );
-}
+});
+
+TransferQueueProgress.displayName = 'TransferQueueProgress';
 
 export default TransferProgress;

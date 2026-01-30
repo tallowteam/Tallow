@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -8,7 +9,7 @@ import { Pause, Play, Trash2, ArrowUpDown } from 'lucide-react';
 import { Transfer } from '@/lib/types';
 import { TransferCard } from './transfer-card';
 
-interface TransferQueueProps {
+export interface TransferQueueProps {
     transfers: Transfer[];
     onPause?: (id: string) => void;
     onResume?: (id: string) => void;
@@ -20,14 +21,14 @@ interface TransferQueueProps {
 }
 
 function formatFileSize(bytes: number): string {
-    if (bytes === 0) return '0 B';
+    if (bytes === 0) {return '0 B';}
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-export function TransferQueue({
+export const TransferQueue = memo(function TransferQueue({
     transfers,
     onPause,
     onResume,
@@ -45,7 +46,6 @@ export function TransferQueue({
     );
 
     const totalActiveSize = activeTransfers.reduce((acc, t) => acc + t.totalSize, 0);
-    const totalTransferredSize = activeTransfers.reduce((acc, t) => acc + t.transferredSize, 0);
     const totalSpeed = activeTransfers.reduce((acc, t) => acc + (t.speed || 0), 0);
     const hasActiveTransfers = activeTransfers.length > 0;
     const hasCompletedTransfers = completedTransfers.length > 0;
@@ -64,36 +64,51 @@ export function TransferQueue({
 
     return (
         <div className="space-y-4">
-            {/* Stats Bar */}
+            {/* Stats Bar - Responsive layout for mobile */}
             {hasActiveTransfers && (
                 <Card className="p-4 rounded-xl border border-border bg-card">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-6">
-                            <div>
-                                <p className="text-sm text-muted-foreground">Active</p>
-                                <p className="font-semibold">{activeTransfers.length} transfer{activeTransfers.length !== 1 ? 's' : ''}</p>
+                    {/* Mobile: Stack vertically, Desktop: Row layout */}
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        {/* Stats - Grid on mobile, flex on desktop */}
+                        <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center sm:gap-6">
+                            <div className="text-center sm:text-left">
+                                <p className="text-xs sm:text-sm text-muted-foreground">Active</p>
+                                <p className="font-semibold text-sm sm:text-base">{activeTransfers.length} transfer{activeTransfers.length !== 1 ? 's' : ''}</p>
                             </div>
-                            <Separator orientation="vertical" className="h-8" />
-                            <div>
-                                <p className="text-sm text-muted-foreground">Total Size</p>
-                                <p className="font-semibold">{formatFileSize(totalActiveSize)}</p>
+                            <Separator orientation="vertical" className="hidden sm:block h-8" />
+                            <div className="text-center sm:text-left">
+                                <p className="text-xs sm:text-sm text-muted-foreground">Total Size</p>
+                                <p className="font-semibold text-sm sm:text-base">{formatFileSize(totalActiveSize)}</p>
                             </div>
-                            <Separator orientation="vertical" className="h-8" />
-                            <div>
-                                <p className="text-sm text-muted-foreground">Speed</p>
-                                <p className="font-semibold">{formatFileSize(totalSpeed)}/s</p>
+                            <Separator orientation="vertical" className="hidden sm:block h-8" />
+                            <div className="text-center sm:text-left">
+                                <p className="text-xs sm:text-sm text-muted-foreground">Speed</p>
+                                <p className="font-semibold text-sm sm:text-base">{formatFileSize(totalSpeed)}/s</p>
                             </div>
                         </div>
+                        {/* Action buttons - 44px height for touch compliance */}
                         <div className="flex items-center gap-2">
                             {onPauseAll && (
-                                <Button variant="outline" size="sm" onClick={onPauseAll}>
-                                    <Pause className="w-4 h-4 mr-2" />
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={onPauseAll}
+                                    className="flex-1 sm:flex-none h-11 sm:h-9"
+                                    aria-label="Pause all active transfers"
+                                >
+                                    <Pause className="w-4 h-4 mr-2" aria-hidden="true" />
                                     Pause All
                                 </Button>
                             )}
                             {onResumeAll && (
-                                <Button variant="outline" size="sm" onClick={onResumeAll}>
-                                    <Play className="w-4 h-4 mr-2" />
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={onResumeAll}
+                                    className="flex-1 sm:flex-none h-11 sm:h-9"
+                                    aria-label="Resume all paused transfers"
+                                >
+                                    <Play className="w-4 h-4 mr-2" aria-hidden="true" />
                                     Resume All
                                 </Button>
                             )}
@@ -112,9 +127,9 @@ export function TransferQueue({
                                 <TransferCard
                                     key={transfer.id}
                                     transfer={transfer}
-                                    onPause={onPause}
-                                    onResume={onResume}
-                                    onCancel={onCancel}
+                                    {...(onPause ? { onPause } : {})}
+                                    {...(onResume ? { onResume } : {})}
+                                    {...(onCancel ? { onCancel } : {})}
                                 />
                             ))}
                         </div>
@@ -128,8 +143,14 @@ export function TransferQueue({
                     <div className="flex items-center justify-between mb-3">
                         <h3 className="font-semibold">Completed</h3>
                         {onClearCompleted && (
-                            <Button variant="ghost" size="sm" onClick={onClearCompleted}>
-                                <Trash2 className="w-4 h-4 mr-2" />
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={onClearCompleted}
+                                className="h-11 sm:h-9"
+                                aria-label="Clear completed transfers from history"
+                            >
+                                <Trash2 className="w-4 h-4 mr-2" aria-hidden="true" />
                                 Clear
                             </Button>
                         )}
@@ -140,7 +161,7 @@ export function TransferQueue({
                                 <TransferCard
                                     key={transfer.id}
                                     transfer={transfer}
-                                    onRetry={onRetry}
+                                    {...(onRetry ? { onRetry } : {})}
                                 />
                             ))}
                         </div>
@@ -149,6 +170,8 @@ export function TransferQueue({
             )}
         </div>
     );
-}
+});
+
+TransferQueue.displayName = 'TransferQueue';
 
 export default TransferQueue;
