@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,7 @@ import {
     DialogDescription,
     DialogFooter,
 } from '@/components/ui/dialog';
-import { Settings, Lock, Bell, Trash2, Shield, Clock } from 'lucide-react';
+import { Settings, Bell, Trash2, Shield, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import {
     Friend,
@@ -23,7 +23,7 @@ import {
     formatFriendCode,
 } from '@/lib/storage/friends';
 
-interface FriendSettingsDialogProps {
+export interface FriendSettingsDialogProps {
     friend: Friend | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -43,6 +43,7 @@ export function FriendSettingsDialog({
     const [autoAccept, setAutoAccept] = useState(friend?.connectionPreferences?.autoAccept ?? false);
     const [notifications, setNotifications] = useState(friend?.connectionPreferences?.notifications ?? true);
     const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+    const [isPending, startTransition] = useTransition();
 
     // Sync local state when friend prop changes (e.g., opening dialog for different friend)
     useEffect(() => {
@@ -56,26 +57,28 @@ export function FriendSettingsDialog({
     }, [friend]);
 
     const handleSave = useCallback(() => {
-        if (!friend) return;
+        if (!friend) {return;}
 
-        const updated = updateFriendSettings(friend.id, {
-            name: name.trim() || friend.name,
-            requirePasscode,
-            connectionPreferences: {
-                autoAccept,
-                notifications,
-            },
+        startTransition(() => {
+            const updated = updateFriendSettings(friend.id, {
+                name: name.trim() || friend.name,
+                requirePasscode,
+                connectionPreferences: {
+                    autoAccept,
+                    notifications,
+                },
+            });
+
+            if (updated) {
+                toast.success('Friend settings updated');
+                onFriendUpdated?.(updated);
+                onOpenChange(false);
+            }
         });
-
-        if (updated) {
-            toast.success('Friend settings updated');
-            onFriendUpdated?.(updated);
-            onOpenChange(false);
-        }
     }, [friend, name, requirePasscode, autoAccept, notifications, onFriendUpdated, onOpenChange]);
 
     const handleRemove = useCallback(() => {
-        if (!friend) return;
+        if (!friend) {return;}
 
         removeFriend(friend.id);
         toast.success(`Removed ${friend.name} from friends`);
@@ -83,7 +86,7 @@ export function FriendSettingsDialog({
         onOpenChange(false);
     }, [friend, onFriendRemoved, onOpenChange]);
 
-    if (!friend) return null;
+    if (!friend) {return null;}
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -139,7 +142,7 @@ export function FriendSettingsDialog({
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-0.5">
                                         <Label htmlFor="require-passcode" className="text-sm">Require Passcode</Label>
-                                        <p className="text-xs text-muted-foreground">
+                                        <p id="require-passcode-desc" className="text-xs text-muted-foreground">
                                             Always require a passcode when transferring with this friend
                                         </p>
                                     </div>
@@ -147,13 +150,15 @@ export function FriendSettingsDialog({
                                         id="require-passcode"
                                         checked={requirePasscode}
                                         onCheckedChange={setRequirePasscode}
+                                        aria-label="Require passcode for transfers"
+                                        aria-describedby="require-passcode-desc"
                                     />
                                 </div>
 
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-0.5">
                                         <Label htmlFor="auto-accept" className="text-sm">Auto-accept Files</Label>
-                                        <p className="text-xs text-muted-foreground">
+                                        <p id="auto-accept-desc" className="text-xs text-muted-foreground">
                                             Automatically accept file transfers from this friend
                                         </p>
                                     </div>
@@ -161,6 +166,8 @@ export function FriendSettingsDialog({
                                         id="auto-accept"
                                         checked={autoAccept}
                                         onCheckedChange={setAutoAccept}
+                                        aria-label="Auto-accept file transfers"
+                                        aria-describedby="auto-accept-desc"
                                     />
                                 </div>
                             </div>
@@ -177,7 +184,7 @@ export function FriendSettingsDialog({
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-0.5">
                                         <Label htmlFor="notifications" className="text-sm">Enable Notifications</Label>
-                                        <p className="text-xs text-muted-foreground">
+                                        <p id="notifications-desc" className="text-xs text-muted-foreground">
                                             Get notified when this friend sends files
                                         </p>
                                     </div>
@@ -185,6 +192,8 @@ export function FriendSettingsDialog({
                                         id="notifications"
                                         checked={notifications}
                                         onCheckedChange={setNotifications}
+                                        aria-label="Enable file transfer notifications"
+                                        aria-describedby="notifications-desc"
                                     />
                                 </div>
                             </div>
@@ -204,22 +213,23 @@ export function FriendSettingsDialog({
                                 size="sm"
                                 onClick={() => setShowRemoveConfirm(true)}
                                 className="sm:mr-auto"
+                                aria-label={`Remove ${friend.name} from friends`}
                             >
-                                <Trash2 className="w-4 h-4 mr-2" />
+                                <Trash2 className="w-4 h-4 mr-2" aria-hidden="true" />
                                 Remove Friend
                             </Button>
                             <Button variant="outline" onClick={() => onOpenChange(false)}>
                                 Cancel
                             </Button>
-                            <Button onClick={handleSave}>
-                                Save Changes
+                            <Button onClick={handleSave} disabled={isPending} aria-label="Save friend settings">
+                                {isPending ? 'Saving...' : 'Save Changes'}
                             </Button>
                         </DialogFooter>
                     </>
                 ) : (
                     <div className="py-6 text-center space-y-4">
                         <div className="w-16 h-16 rounded-full bg-destructive/20 flex items-center justify-center mx-auto">
-                            <Trash2 className="w-8 h-8 text-destructive" />
+                            <Trash2 className="w-8 h-8 text-destructive" aria-hidden="true" />
                         </div>
                         <div>
                             <h3 className="font-medium text-lg">Remove {friend.name}?</h3>
@@ -231,7 +241,7 @@ export function FriendSettingsDialog({
                             <Button variant="outline" onClick={() => setShowRemoveConfirm(false)}>
                                 Cancel
                             </Button>
-                            <Button variant="destructive" onClick={handleRemove}>
+                            <Button variant="destructive" onClick={handleRemove} aria-label={`Confirm remove ${friend.name}`}>
                                 Remove Friend
                             </Button>
                         </div>
