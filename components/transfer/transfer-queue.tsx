@@ -5,7 +5,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Pause, Play, Trash2, ArrowUpDown } from 'lucide-react';
+import { NoTransfersEmpty } from '@/components/ui/empty-state-presets';
+import { Pause, Play, Trash2 } from 'lucide-react';
 import { Transfer } from '@/lib/types';
 import { TransferCard } from './transfer-card';
 
@@ -52,18 +53,15 @@ export const TransferQueue = memo(function TransferQueue({
 
     if (transfers.length === 0) {
         return (
-            <Card className="p-8 rounded-xl border border-border bg-card text-center">
-                <ArrowUpDown className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">No transfers yet</p>
-                <p className="text-sm text-muted-foreground/70 mt-1">
-                    Select files and a recipient to start transferring
-                </p>
+            <Card className="rounded-xl sm:rounded-2xl border border-border bg-card overflow-hidden">
+                <NoTransfersEmpty />
             </Card>
         );
     }
 
     return (
-        <div className="space-y-4">
+        <section className="space-y-4" aria-labelledby="transfer-queue-heading">
+            <h2 id="transfer-queue-heading" className="sr-only">Transfer Queue</h2>
             {/* Stats Bar - Responsive layout for mobile */}
             {hasActiveTransfers && (
                 <Card className="p-4 rounded-xl border border-border bg-card">
@@ -168,7 +166,7 @@ export const TransferQueue = memo(function TransferQueue({
                     </ScrollArea>
                 </div>
             )}
-        </div>
+        </section>
     );
 });
 

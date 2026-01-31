@@ -6,10 +6,10 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { NoDevicesEmpty, NoSearchResultsEmpty } from '@/components/ui/empty-state-presets';
 import {
     RefreshCw,
     Search,
-    Wifi,
     Loader2,
     Copy,
     Check,
@@ -55,7 +55,7 @@ export function DeviceList({
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     // React 18 features for search optimization
-    const [isPending, startTransition] = useTransition();
+    const [isPending, _startTransition] = useTransition();
     const deferredSearchQuery = useDeferredValue(searchQuery);
 
     // Generate a local connection code
@@ -150,7 +150,13 @@ export function DeviceList({
     };
 
     return (
-        <div className="space-y-4 sm:space-y-5 3xl:space-y-6">
+        <section className="space-y-4 sm:space-y-5 3xl:space-y-6" aria-labelledby="device-list-heading">
+            <h2 id="device-list-heading" className="sr-only">Discover and connect to devices</h2>
+
+            {/* Live region for device discovery updates */}
+            <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+                {isLoading ? 'Searching for devices...' : `Found ${devices.length} device${devices.length !== 1 ? 's' : ''}`}
+            </div>
             {/* Tabs for QR / Discover */}
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'qr' | 'discover')} className="w-full">
                 <TabsList className={cn(
@@ -236,36 +242,19 @@ export function DeviceList({
 
                     {/* Device Lists */}
                     {devices.length === 0 ? (
-                        <Card variant="default" hoverLift={false} className="p-6 sm:p-10 3xl:p-12 text-center">
-                            <div className={cn(
-                                'w-16 h-16 sm:w-20 sm:h-20 3xl:w-24 3xl:h-24 mx-auto mb-4 sm:mb-5 3xl:mb-6 rounded-xl sm:rounded-2xl 3xl:rounded-3xl',
-                                'bg-[#0066FF]/10 dark:bg-[#0066FF]/20',
-                                'flex items-center justify-center'
-                            )}>
-                                <Wifi
-                                    className="w-8 h-8 sm:w-10 sm:h-10 3xl:w-12 3xl:h-12 text-[#0066FF] animate-pulse"
-                                    aria-hidden="true"
-                                />
-                            </div>
-                            <h4 className="font-semibold text-base sm:text-lg 3xl:text-xl text-gray-900 dark:text-white mb-2">
-                                {t('app.searchingDevices')}
-                            </h4>
-                            <p className="text-xs sm:text-sm 3xl:text-base text-gray-500 dark:text-gray-400 max-w-xs 3xl:max-w-sm mx-auto">
-                                {t('app.noDevicesFound')}
-                            </p>
+                        <Card variant="default" hoverLift={false} className="overflow-hidden">
+                            <NoDevicesEmpty
+                                {...(isLoading !== undefined ? { isSearching: isLoading } : {})}
+                                {...(onRefresh ? { onRefresh } : {})}
+                                onScanQR={() => setActiveTab('qr')}
+                            />
                         </Card>
                     ) : filteredDevices.length === 0 ? (
-                        <Card variant="default" hoverLift={false} className="p-10 text-center">
-                            <div className={cn(
-                                'w-20 h-20 mx-auto mb-5 rounded-2xl',
-                                'bg-gray-100 dark:bg-[#1a1a1a]',
-                                'flex items-center justify-center'
-                            )}>
-                                <Search className="w-10 h-10 text-gray-400" aria-hidden="true" />
-                            </div>
-                            <p className="text-gray-500 dark:text-gray-400">
-                                No devices found matching &quot;{searchQuery}&quot;
-                            </p>
+                        <Card variant="default" hoverLift={false} className="overflow-hidden">
+                            <NoSearchResultsEmpty
+                                query={searchQuery}
+                                onClearSearch={() => setSearchQuery('')}
+                            />
                         </Card>
                     ) : (
                         <ScrollArea className={cn("h-[350px] sm:h-[420px] 3xl:h-[500px] pr-1", isPending && "opacity-70 transition-opacity")}>
@@ -479,7 +468,7 @@ export function DeviceList({
                     </Card>
                 </TabsContent>
             </Tabs>
-        </div>
+        </section>
     );
 }
 

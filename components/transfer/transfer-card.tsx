@@ -1,6 +1,6 @@
 'use client';
 
-import React, { memo } from 'react';
+import { memo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -161,7 +161,10 @@ export const TransferCard = memo(function TransferCard({
         : `${transfer.files.length} files`;
 
     return (
-        <div className="relative overflow-hidden rounded-2xl">
+        <article
+          className="relative overflow-hidden rounded-2xl"
+          aria-label={`${transfer.direction === 'send' ? 'Sending' : 'Receiving'} ${fileName} - ${statusConfig.label}`}
+        >
             {/* Background action hints */}
             {enableGestures && (
                 <>
@@ -399,7 +402,15 @@ export const TransferCard = memo(function TransferCard({
                     animation: shimmer 2s infinite;
                 }
             `}</style>
-        </div>
+
+            {/* Live region for status announcements */}
+            <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+                {isComplete && `Transfer of ${fileName} complete`}
+                {isFailed && `Transfer of ${fileName} failed`}
+                {isPaused && `Transfer of ${fileName} paused at ${transfer.progress}%`}
+                {isTransferring && transfer.progress % 25 === 0 && `Transfer progress: ${transfer.progress}%`}
+            </div>
+        </article>
     );
 });
 

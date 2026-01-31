@@ -222,7 +222,7 @@ export const ScreenShareViewer = memo(function ScreenShareViewer({
             <Card className={`w-full ${className}`}>
                 <CardContent className="py-12">
                     <div className="text-center text-muted-foreground">
-                        <Monitor className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                        <Monitor className="h-12 w-12 mx-auto mb-3 opacity-50" aria-hidden="true" />
                         <p>Waiting for screen share...</p>
                     </div>
                 </CardContent>
@@ -235,7 +235,7 @@ export const ScreenShareViewer = memo(function ScreenShareViewer({
             <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-sm flex items-center gap-2">
-                        <Monitor className="h-4 w-4" />
+                        <Monitor className="h-4 w-4" aria-hidden="true" />
                         {peerName}&apos;s Screen
                     </CardTitle>
                     <div className="flex items-center gap-2">
@@ -256,7 +256,10 @@ export const ScreenShareViewer = memo(function ScreenShareViewer({
                         playsInline
                         muted={isMuted}
                         className="w-full h-full object-contain"
-                    />
+                        aria-label="Screen share viewer - displaying shared screen content from another user"
+                    >
+                        <track kind="captions" src="" label="No captions available for screen share" />
+                    </video>
 
                     {/* Hidden canvas for screenshots */}
                     <canvas ref={canvasRef} className="hidden" />
@@ -270,8 +273,8 @@ export const ScreenShareViewer = memo(function ScreenShareViewer({
 
                     {/* Mute Indicator */}
                     {isMuted && hasAudio && (
-                        <div className="absolute top-2 right-2 bg-black/70 text-white p-1.5 rounded">
-                            <VolumeX className="h-4 w-4" />
+                        <div className="absolute top-2 right-2 bg-black/70 text-white p-1.5 rounded" aria-label="Audio muted" role="status">
+                            <VolumeX className="h-4 w-4" aria-hidden="true" />
                         </div>
                     )}
 
@@ -294,12 +297,12 @@ export const ScreenShareViewer = memo(function ScreenShareViewer({
                         >
                             {isFullscreen ? (
                                 <>
-                                    <Minimize2 className="h-4 w-4" />
+                                    <Minimize2 className="h-4 w-4" aria-hidden="true" />
                                     Exit Fullscreen
                                 </>
                             ) : (
                                 <>
-                                    <Maximize2 className="h-4 w-4" />
+                                    <Maximize2 className="h-4 w-4" aria-hidden="true" />
                                     Fullscreen
                                 </>
                             )}
@@ -312,7 +315,7 @@ export const ScreenShareViewer = memo(function ScreenShareViewer({
                                 size="sm"
                                 className="flex items-center gap-2"
                             >
-                                <PictureInPicture2 className="h-4 w-4" />
+                                <PictureInPicture2 className="h-4 w-4" aria-hidden="true" />
                                 {isPiP ? 'Exit PiP' : 'Picture-in-Picture'}
                             </Button>
                         )}
@@ -326,12 +329,12 @@ export const ScreenShareViewer = memo(function ScreenShareViewer({
                             >
                                 {isMuted ? (
                                     <>
-                                        <VolumeX className="h-4 w-4" />
+                                        <VolumeX className="h-4 w-4" aria-hidden="true" />
                                         Unmute
                                     </>
                                 ) : (
                                     <>
-                                        <Volume2 className="h-4 w-4" />
+                                        <Volume2 className="h-4 w-4" aria-hidden="true" />
                                         Mute
                                     </>
                                 )}
@@ -345,7 +348,7 @@ export const ScreenShareViewer = memo(function ScreenShareViewer({
                                 size="sm"
                                 className="flex items-center gap-2"
                             >
-                                <Download className="h-4 w-4" />
+                                <Download className="h-4 w-4" aria-hidden="true" />
                                 Screenshot
                             </Button>
                         )}
