@@ -5,7 +5,7 @@
  * Individual message display with status, actions, and formatting
  */
 
-import { useState, memo } from 'react';
+import { useState, memo, useEffect, useRef } from 'react';
 import DOMPurify from 'dompurify';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -48,6 +48,20 @@ export const MessageBubble = memo(function MessageBubble({
 }: MessageBubbleProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
+
+  // Ref for accessible focus management - focus after edit mode is enabled
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Focus management: delay focus to allow screen readers to announce the edit state
+  useEffect(() => {
+    if (isEditing) {
+      const timer = setTimeout(() => {
+        editTextareaRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [isEditing]);
 
   const handleSaveEdit = async () => {
     if (onEdit && editContent.trim() !== message.content) {
@@ -219,11 +233,11 @@ export const MessageBubble = memo(function MessageBubble({
         {isEditing ? (
           <div className="space-y-2">
             <textarea
+              ref={editTextareaRef}
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
               className="w-full p-2 rounded bg-background text-foreground resize-none"
               rows={3}
-              autoFocus
               aria-label="Edit message"
             />
             <div className="flex gap-2">

@@ -116,7 +116,7 @@ export default function SecureDownloadPage() {
       let fileName = 'download';
       if (contentDisposition) {
         const filenameMatch = contentDisposition.match(/filename\*?=['"]?(?:UTF-8'')?([^"';\n]+)/i);
-        if (filenameMatch) {
+        if (filenameMatch && filenameMatch[1]) {
           fileName = decodeURIComponent(filenameMatch[1]);
         }
       }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -30,6 +30,20 @@ export function JoinRoomDialog({
   const [needsPassword, setNeedsPassword] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  // Ref for accessible focus management - focus after dialog announces to screen readers
+  const roomCodeInputRef = useRef<HTMLInputElement>(null);
+
+  // Focus management: delay focus to allow screen readers to announce dialog first
+  useEffect(() => {
+    if (open) {
+      const timer = setTimeout(() => {
+        roomCodeInputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [open]);
 
   const handleJoin = async () => {
     if (!roomCode.trim()) {return;}
@@ -80,13 +94,13 @@ export function JoinRoomDialog({
             <Label htmlFor="room-code">Room Code</Label>
             <Input
               id="room-code"
+              ref={roomCodeInputRef}
               placeholder="ABC12345"
               value={roomCode}
               onChange={(e) => handleCodeChange(e.target.value)}
               maxLength={8}
               className="font-mono text-lg tracking-wider"
               autoComplete="off"
-              autoFocus
               aria-required="true"
               aria-invalid={roomCode.length > 0 && roomCode.length < 8}
               aria-describedby="room-code-help"

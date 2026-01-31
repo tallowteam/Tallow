@@ -1,5 +1,14 @@
+'use client';
+
+// Note: This page is a client component because it passes React components (icons)
+// to child components. For SEO, consider using next/head or a separate metadata export.
+// import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import {
+    ResponsiveFeaturesGrid,
+    ResponsiveSection,
+} from "@/components/features/responsive-features-grid";
 import {
     Shield,
     Wifi,
@@ -18,6 +27,12 @@ import {
     Fingerprint,
 } from "lucide-react";
 import { SiteNav } from "@/components/site-nav";
+
+// Metadata must be in a separate layout.tsx or use generateMetadata in a server component
+// export const metadata: Metadata = {
+//     title: "Features | Tallow - Post-Quantum Secure File Transfer",
+//     description: "Explore Tallow's powerful features...",
+// };
 
 const features = [
     {
@@ -104,115 +119,93 @@ export default function FeaturesPage() {
             <SiteNav />
 
             {/* Hero - Dark */}
-            <section className="section-hero-dark grid-pattern pt-32 pb-20">
-                <div className="container mx-auto px-6 relative z-10">
+            <section className="relative bg-background pt-28 pb-16 sm:pt-32 sm:pb-20 md:pt-36 md:pb-24 lg:pt-40 lg:pb-28">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="max-w-3xl mx-auto text-center">
-                        <p className="label mb-4 animate-fade-up text-hero-muted">
+                        <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-3 sm:mb-4 animate-fade-up">
                             Features
                         </p>
 
-                        <h1 className="display-lg mb-6 animate-fade-up stagger-1">
+                        <h1 className="text-display-md sm:text-display-lg mb-4 sm:mb-6 animate-fade-up stagger-1">
                             Everything You Need to Share Files Securely
                         </h1>
-                        <p className="body-xl max-w-2xl mx-auto animate-fade-up stagger-2 text-hero-muted">
+                        <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto animate-fade-up stagger-2">
                             Powerful features, zero complexity. Built for speed, privacy, and simplicity.
                         </p>
                     </div>
                 </div>
             </section>
 
-            {/* Features Grid - Light */}
-            <section className="section-content-lg">
-                <div className="container mx-auto px-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-                        {features.map((feature, i) => (
-                            <div
-                                key={i}
-                                className="card-feature animate-fade-up"
-                                style={{ animationDelay: `${i * 0.05}s` }}
-                            >
-                                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-secondary mb-6">
-                                    <feature.icon className="w-5 h-5" />
-                                </div>
-                                <h3 className="heading-sm mb-3">{feature.title}</h3>
-                                <p className="body-md">{feature.description}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
+            {/* Features Grid - Using Responsive Components */}
+            <ResponsiveFeaturesGrid features={features} />
 
             {/* Security Section */}
-            <section className="section-content border-t border-border">
-                <div className="container mx-auto px-6">
-                    <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                        <div className="animate-fade-up">
-                            <p className="label mb-4">Security</p>
-                            <h2 className="display-md mb-6">
-                                Built With Security at the Core
-                            </h2>
-                            <p className="body-lg mb-8">
-                                Your files never touch our servers. Everything encrypted end-to-end
-                                with industry-standard algorithms.
-                            </p>
-                            <div className="grid grid-cols-2 gap-4">
-                                {security.map((item) => (
-                                    <div key={item} className="flex items-center gap-3">
-                                        <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 bg-primary">
-                                            <Check className="w-4 h-4 text-primary-foreground" />
-                                        </div>
-                                        <span className="font-medium">{item}</span>
+            <ResponsiveSection className="border-t border-border">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 md:gap-12 lg:gap-16 items-center">
+                    <div className="animate-fade-up">
+                        <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-3 sm:mb-4">Security</p>
+                        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.5rem] font-light tracking-tight leading-tight mb-4 sm:mb-5 md:mb-6">
+                            Built With Security at the Core
+                        </h2>
+                        <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-6 sm:mb-7 md:mb-8">
+                            Your files never touch our servers. Everything encrypted end-to-end
+                            with industry-standard algorithms.
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                            {security.map((item) => (
+                                <div key={item} className="flex items-center gap-2.5 sm:gap-3">
+                                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center shrink-0 bg-primary">
+                                        <Check className="w-3 h-3 sm:w-4 sm:h-4 text-primary-foreground" />
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="card-dark p-10 text-center animate-fade-up stagger-2">
-                            <div className="w-16 h-16 rounded-full mx-auto mb-6 flex items-center justify-center bg-hero-fg/10">
-                                <Shield className="w-8 h-8" />
-                            </div>
-                            <h3 className="heading-md mb-3">Zero Knowledge</h3>
-                            <p className="body-md text-hero-muted mb-6">
-                                We can&apos;t access your files. Only you and your recipient can.
-                            </p>
-                            <Link href="/security" className="text-sm font-medium uppercase tracking-wider hover:opacity-70 transition-opacity">
-                                Learn More <ArrowRight className="w-4 h-4 inline ml-1" />
-                            </Link>
+                                    <span className="text-sm sm:text-base font-medium">{item}</span>
+                                </div>
+                            ))}
                         </div>
                     </div>
+
+                    <div className="rounded-xl sm:rounded-2xl border border-border bg-card p-6 sm:p-8 md:p-10 text-center animate-fade-up stagger-2">
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full mx-auto mb-4 sm:mb-5 md:mb-6 flex items-center justify-center bg-secondary">
+                            <Shield className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-foreground" />
+                        </div>
+                        <h3 className="text-xl sm:text-2xl md:text-[1.75rem] font-light tracking-tight mb-2 sm:mb-3">Zero Knowledge</h3>
+                        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-4 sm:mb-5 md:mb-6">
+                            We can&apos;t access your files. Only you and your recipient can.
+                        </p>
+                        <Link href="/security" className="inline-flex items-center text-xs sm:text-sm font-semibold uppercase tracking-wider hover:opacity-70 transition-opacity">
+                            Learn More <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1.5 sm:ml-2" />
+                        </Link>
+                    </div>
                 </div>
-            </section>
+            </ResponsiveSection>
 
             {/* CTA */}
-            <section className="section-content-lg border-t border-border">
-                <div className="container mx-auto px-6">
-                    <div className="max-w-3xl mx-auto text-center">
-                        <h2 className="display-md mb-8 animate-fade-up">
-                            Ready to Try?
-                        </h2>
-                        <Link href="/app">
-                            <Button size="lg" className="animate-fade-up stagger-1">
-                                Get Started
-                                <ArrowRight className="w-5 h-5 ml-2" />
-                            </Button>
-                        </Link>
-                    </div>
+            <ResponsiveSection className="border-t border-border">
+                <div className="max-w-3xl mx-auto text-center">
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.5rem] font-light tracking-tight leading-tight mb-6 sm:mb-7 md:mb-8 animate-fade-up">
+                        Ready to Try?
+                    </h2>
+                    <Link href="/app">
+                        <Button size="lg" className="h-12 sm:h-14 px-6 sm:px-8 text-sm sm:text-base animate-fade-up stagger-1">
+                            Get Started
+                            <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
+                        </Button>
+                    </Link>
                 </div>
-            </section>
+            </ResponsiveSection>
 
             {/* Footer */}
-            <footer className="border-t border-border py-12 bg-background">
-                <div className="container mx-auto px-6">
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <Link href="/" className="text-xl tracking-tight lowercase font-serif text-foreground">
+            <footer className="border-t border-border py-8 sm:py-10 md:py-12 bg-background">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
+                        <Link href="/" className="text-lg sm:text-xl tracking-tight lowercase font-serif text-foreground">
                             tallow
                         </Link>
-                        <div className="flex items-center gap-6">
-                            <Link href="/privacy" className="text-xs font-medium uppercase tracking-widest text-foreground hover:opacity-70 transition-opacity">Privacy</Link>
-                            <Link href="/security" className="text-xs font-medium uppercase tracking-widest text-foreground hover:opacity-70 transition-opacity">Security</Link>
-                            <Link href="/terms" className="text-xs font-medium uppercase tracking-widest text-foreground hover:opacity-70 transition-opacity">Terms</Link>
+                        <div className="flex items-center gap-4 sm:gap-6">
+                            <Link href="/privacy" className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-foreground hover:opacity-70 transition-opacity">Privacy</Link>
+                            <Link href="/security" className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-foreground hover:opacity-70 transition-opacity">Security</Link>
+                            <Link href="/terms" className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-foreground hover:opacity-70 transition-opacity">Terms</Link>
                         </div>
-                        <p className="text-sm text-muted-foreground">Open source &bull; Privacy first</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">Open source &bull; Privacy first</p>
                     </div>
                 </div>
             </footer>
