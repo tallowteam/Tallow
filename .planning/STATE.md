@@ -79,6 +79,7 @@
 | 008 | UI/UX responsive design fixes               | 2026-01-29 | cc6958b | [008-fix-ui-ux-responsive-design](./quick/008-fix-ui-ux-responsive-design/)         |
 | 009 | React 18 adoption improvement               | 2026-01-30 | cf1ef09 | [009-react-18-adoption-improvement](./quick/009-react-18-adoption-improvement/)     |
 | 010 | mDNS discovery integration testing          | 2026-01-31 | c055456 | [010-mdns-discovery-integration-testing](./quick/010-mdns-discovery-integration-testing/) |
+| 011 | Onion routing & traffic obfuscation         | 2026-01-31 | b28c876 | [011-onion-routing-obfuscation](./quick/011-onion-routing-obfuscation/) |
 
 ## Files Modified (Security Fix)
 
