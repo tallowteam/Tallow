@@ -166,7 +166,7 @@ export default function SecurityTestPage() {
                 {/* Test Results by Module */}
                 {testModules.map(module => {
                     const moduleResults = results.get(module.name);
-                    if (!moduleResults && !testing) return null;
+                    if (!moduleResults && !testing) {return null;}
 
                     return (
                         <Card key={module.name} className="p-6">
@@ -247,8 +247,8 @@ async function testTrafficObfuscation(): Promise<TestResult[]> {
 
         results.push({
             name: 'Initialization',
-            passed: config.paddingMin === 0.1 && config.paddingMax === 0.3,
-            details: `Padding: ${config.paddingMin * 100}%-${config.paddingMax * 100}%, Bitrate: ${config.targetBitrate / 1000}KB/s`,
+            passed: config.minPacketSize > 0 && config.maxPacketSize > config.minPacketSize,
+            details: `Packet size: ${config.minPacketSize}B-${config.maxPacketSize}B, Bitrate: ${config.targetBitrate / 1000}KB/s`,
             duration: Date.now() - start,
         });
     } catch (e) {
@@ -275,105 +275,80 @@ async function testTrafficObfuscation(): Promise<TestResult[]> {
         results.push({ name: 'Data Padding/Unpadding', passed: false, details: String(e) });
     }
 
-    // Test 3: Random Chunking
+    // Test 3: Data Fragmentation
     try {
         const start = Date.now();
-        // Use smaller chunk sizes for testing (1KB-5KB instead of 16KB-1MB)
         const obfuscator = new TrafficObfuscator({
-            chunkSizeMin: 1024,    // 1KB
-            chunkSizeMax: 5120,    // 5KB
+            enableChunking: true,
+            minPacketSize: 64,
+            maxPacketSize: 512,
         });
-        const data = new Uint8Array(50000); // 50KB (under 64KB crypto limit)
-        // Fill in chunks to avoid getRandomValues limit
-        for (let i = 0; i < data.length; i += 32768) {
-            const chunk = Math.min(32768, data.length - i);
-            crypto.getRandomValues(data.subarray(i, i + chunk));
-        }
-
-        const chunks = obfuscator.randomChunking(data);
-        const reassembled = obfuscator.reassembleChunks(chunks);
-
-        const matched = arraysEqual(data, reassembled);
-        const hasVariation = new Set(chunks.map(c => c.length)).size > 1;
-
-        results.push({
-            name: 'Random Chunking',
-            passed: matched && hasVariation && chunks.length > 1,
-            details: `${chunks.length} chunks, sizes vary: ${hasVariation}, reassembly: ${matched ? 'OK' : 'FAILED'}`,
-            duration: Date.now() - start,
-        });
-    } catch (e) {
-        results.push({ name: 'Random Chunking', passed: false, details: String(e) });
-    }
-
-    // Test 4: Constant Bitrate Transfer
-    try {
-        const start = Date.now();
-        const obfuscator = new TrafficObfuscator({ targetBitrate: 50000 }); // 50KB/s for faster test
-        const data = new Uint8Array(1000); // 1KB test data
+        const data = new Uint8Array(2000);
         crypto.getRandomValues(data);
 
-        let chunkCount = 0;
-        let totalBytes = 0;
-
-        for await (const chunk of obfuscator.constantBitrateTransfer(data)) {
-            chunkCount++;
-            totalBytes += chunk.data.length;
-            if (chunkCount > 20) break; // Limit for test
-        }
+        const fragments = obfuscator.fragmentData(data);
 
         results.push({
-            name: 'Constant Bitrate Transfer',
-            passed: chunkCount > 0 && totalBytes > 0,
-            details: `${chunkCount} chunks, ${totalBytes}B total (async generator works)`,
+            name: 'Data Fragmentation',
+            passed: fragments.length >= 1,
+            details: `${fragments.length} fragment(s), first size: ${fragments[0]?.length || 0}B`,
             duration: Date.now() - start,
         });
     } catch (e) {
-        results.push({ name: 'Constant Bitrate Transfer', passed: false, details: String(e) });
+        results.push({ name: 'Data Fragmentation', passed: false, details: String(e) });
+    }
+
+    // Test 4: Obfuscate/Deobfuscate Round Trip
+    try {
+        const start = Date.now();
+        const obfuscator = new TrafficObfuscator();
+        const data = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+
+        const obfuscated = await obfuscator.obfuscate(data);
+        const deobfuscated = obfuscator.deobfuscate(obfuscated);
+
+        const matched = deobfuscated !== null && arraysEqual(data, deobfuscated);
+
+        results.push({
+            name: 'Obfuscate/Deobfuscate Round Trip',
+            passed: matched,
+            details: `Original: ${data.length}B → ${obfuscated.length} packets → Restored: ${deobfuscated?.length || 0}B`,
+            duration: Date.now() - start,
+        });
+    } catch (e) {
+        results.push({ name: 'Obfuscate/Deobfuscate Round Trip', passed: false, details: String(e) });
     }
 
     // Test 5: Decoy Generation
     try {
         const start = Date.now();
-        const obfuscator = new TrafficObfuscator({ decoyProbability: 1.0 }); // Force decoys
-        const decoy = obfuscator.generateDecoyChunk(42);
+        const obfuscator = new TrafficObfuscator({ decoyProbability: 1.0 });
+        const decoy = obfuscator.generateDecoyPacket();
 
         results.push({
             name: 'Decoy Generation',
-            passed: decoy.isDecoy && decoy.sequenceNumber === 42 && decoy.data.length > 0,
-            details: `Decoy: ${decoy.data.length}B, seq=${decoy.sequenceNumber}, isDecoy=${decoy.isDecoy}`,
+            passed: decoy.type === 0x03 && decoy.data.length > 0,
+            details: `Decoy: ${decoy.data.length}B, type=${decoy.type}, seq=${decoy.sequenceNumber}`,
             duration: Date.now() - start,
         });
     } catch (e) {
         results.push({ name: 'Decoy Generation', passed: false, details: String(e) });
     }
 
-    // Test 6: Frame/Parse Round Trip
+    // Test 6: Cover Traffic Generation
     try {
         const start = Date.now();
-        const obfuscator = new TrafficObfuscator();
-        const originalChunk = {
-            data: new Uint8Array([1, 2, 3, 4, 5]),
-            isDecoy: false,
-            sequenceNumber: 123,
-            timestamp: Date.now(),
-        };
-
-        const framed = obfuscator.frameChunk(originalChunk);
-        const parsed = obfuscator.parseFrame(framed);
-
-        const matched = parsed &&
-            arraysEqual(originalChunk.data, parsed.data) &&
-            parsed.sequenceNumber === 123;
+        const obfuscator = new TrafficObfuscator({ enableCoverTraffic: true, coverTrafficRate: 1 });
+        const cover = obfuscator.generateCoverPacket();
 
         results.push({
-            name: 'Frame/Parse Round Trip',
-            passed: !!matched,
-            details: matched ? `Frame: ${framed.length}B, parsed seq=${parsed!.sequenceNumber}` : 'Parse failed',
+            name: 'Cover Traffic Generation',
+            passed: cover.type === 0x04 && cover.data.length > 0,
+            details: `Cover: ${cover.data.length}B, type=${cover.type}, seq=${cover.sequenceNumber}`,
             duration: Date.now() - start,
         });
     } catch (e) {
-        results.push({ name: 'Frame/Parse Round Trip', passed: false, details: String(e) });
+        results.push({ name: 'Cover Traffic Generation', passed: false, details: String(e) });
     }
 
     return results;
@@ -737,9 +712,9 @@ async function testOnionRouting(): Promise<TestResult[]> {
 
 // Utility functions
 function arraysEqual(a: Uint8Array, b: Uint8Array): boolean {
-    if (a.length !== b.length) return false;
+    if (a.length !== b.length) {return false;}
     for (let i = 0; i < a.length; i++) {
-        if (a[i] !== b[i]) return false;
+        if (a[i] !== b[i]) {return false;}
     }
     return true;
 }

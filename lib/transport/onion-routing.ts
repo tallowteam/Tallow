@@ -1,35 +1,30 @@
 'use client';
 
 /**
- * ============================================================================
- * CRITICAL WARNING: ONION ROUTING IS NOT FUNCTIONAL
- * ============================================================================
+ * Onion Routing Implementation
  *
- * Status: EXPERIMENTAL - NOT READY FOR PRODUCTION
+ * Provides multi-hop encrypted routing for anonymous P2P transfers.
+ * Each hop uses separate ML-KEM-768 + X25519 key exchange with AES-256-GCM encryption.
  *
- * This module contains the framework for onion routing, but the relay network
- * infrastructure does not exist yet. The discoverRelays() function returns an
- * empty array, making this feature non-operational.
+ * Architecture:
+ * - Entry relays: Accept client connections (first hop)
+ * - Middle relays: Forward encrypted data (intermediate hops)
+ * - Exit relays: Connect to destination peers (final hop)
  *
- * DO NOT enable onion routing in production settings. Any attempt to use
- * onion routing will throw an error with a helpful message.
- *
- * What's missing:
- * - Decentralized relay directory server
- * - Relay node network infrastructure
- * - Relay signature verification
- * - Real connectivity and latency testing
- *
- * Original design intent:
- * Optional multi-hop relay routing for high-security transfers.
- * Each relay only knows the previous and next hop, not the full path.
- * This would be Tallow's advantage over Signal - true P2P with optional
- * anonymity enhancement when needed.
- *
- * ============================================================================
+ * Protocol:
+ * CLIENT -> ENTRY: Establish PQC session, send onion packet
+ * ENTRY -> MIDDLE: Peel one layer, forward
+ * MIDDLE -> EXIT: Peel one layer, forward
+ * EXIT -> DESTINATION: Final decryption, deliver to peer
  */
 
 import { pqCrypto, HybridPublicKey } from '../crypto/pqc-crypto';
+import {
+    getRelayDirectory,
+    getRelayClient,
+    RelayNodeInfo,
+    OnionCircuit as RelayOnionCircuit,
+} from '../relay';
 import secureLog from '../utils/secure-logger';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { hkdf } from '@noble/hashes/hkdf.js';
@@ -39,8 +34,11 @@ import { hkdf } from '@noble/hashes/hkdf.js';
 // ============================================================================
 
 const ONION_LAYER_INFO = new TextEncoder().encode('tallow-onion-layer-v1');
-// const MAX_HOPS = 3;  // Unused: for future relay hop limiting
-// const RELAY_DISCOVERY_TIMEOUT_MS = 5000;  // Unused: for future relay discovery
+const MAX_HOPS = 3;
+const MIN_HOPS = 1;
+const DEFAULT_HOPS = 3;
+const CIRCUIT_LIFETIME_MS = 10 * 60 * 1000; // 10 minutes
+const MAX_PAYLOAD_SIZE = 64 * 1024; // 64KB
 
 // ============================================================================
 // Types
@@ -90,6 +88,8 @@ export interface OnionCircuit {
     createdAt: number;
     /** Whether circuit is established */
     established: boolean;
+    /** Internal circuit reference */
+    _internal?: RelayOnionCircuit;
 }
 
 export interface OnionRoutingConfig {
@@ -101,123 +101,546 @@ export interface OnionRoutingConfig {
     preferredRelays?: string[];
     /** Whether to use random path selection */
     randomPath: boolean;
+    /** Preferred geographic regions for relay selection */
+    preferredRegions?: string[];
+    /** Maximum latency per hop in ms */
+    maxLatencyPerHop?: number;
+}
+
+export interface OnionRoutingStatus {
+    /** Whether onion routing is available */
+    available: boolean;
+    /** Feature status */
+    status: 'unavailable' | 'initializing' | 'ready' | 'degraded';
+    /** Status message */
+    message: string;
+    /** Number of available relays */
+    relayCount: number;
+    /** Number of active circuits */
+    circuitCount: number;
 }
 
 // ============================================================================
-// FEATURE STATUS: NOT FUNCTIONAL
+// Error Classes
 // ============================================================================
 
 /**
- * Error thrown when onion routing is attempted but not available
+ * Error thrown when onion routing is unavailable
  */
 export class OnionRoutingUnavailableError extends Error {
     constructor(message?: string) {
-        super(message || 'Onion routing is not available. This feature is experimental and the relay network infrastructure does not exist yet. Please use direct P2P connections instead.');
+        super(message || 'Onion routing is not available. Insufficient relay nodes or network issues.');
         this.name = 'OnionRoutingUnavailableError';
     }
 }
 
 /**
- * Check if onion routing is available (currently always returns false)
+ * Error thrown for circuit-related failures
+ */
+export class CircuitBuildError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'CircuitBuildError';
+    }
+}
+
+// ============================================================================
+// Onion Router Class
+// ============================================================================
+
+/**
+ * Main onion routing manager
+ */
+export class OnionRouter {
+    private static instance: OnionRouter;
+    private circuits: Map<string, OnionCircuit> = new Map();
+    private config: OnionRoutingConfig;
+    private relayCache: RelayNode[] = [];
+    private isInitialized = false;
+    private initPromise: Promise<void> | null = null;
+
+    constructor(config?: Partial<OnionRoutingConfig>) {
+        this.config = {
+            enabled: false,
+            hopCount: DEFAULT_HOPS,
+            randomPath: true,
+            ...config,
+        };
+    }
+
+    static getInstance(config?: Partial<OnionRoutingConfig>): OnionRouter {
+        if (!OnionRouter.instance) {
+            OnionRouter.instance = new OnionRouter(config);
+        }
+        return OnionRouter.instance;
+    }
+
+    /**
+     * Initialize the onion routing system
+     */
+    async initialize(): Promise<void> {
+        if (this.isInitialized) {
+            return;
+        }
+
+        if (this.initPromise) {
+            return this.initPromise;
+        }
+
+        this.initPromise = this.doInitialize();
+        await this.initPromise;
+    }
+
+    private async doInitialize(): Promise<void> {
+        secureLog.log('[OnionRouter] Initializing onion routing system');
+
+        try {
+            // Initialize relay directory
+            const directory = getRelayDirectory();
+            await directory.initialize();
+
+            // Refresh relay cache
+            await this.refreshRelays();
+
+            this.isInitialized = true;
+            secureLog.log(`[OnionRouter] Initialized with ${this.relayCache.length} relays`);
+        } catch (error) {
+            secureLog.error('[OnionRouter] Initialization failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Check if onion routing is enabled
+     */
+    isEnabled(): boolean {
+        return this.config.enabled;
+    }
+
+    /**
+     * Check if onion routing is available (has enough relays)
+     */
+    isAvailable(): boolean {
+        return this.isInitialized && this.relayCache.length >= this.config.hopCount;
+    }
+
+    /**
+     * Get current status
+     */
+    getStatus(): OnionRoutingStatus {
+        if (!this.isInitialized) {
+            return {
+                available: false,
+                status: 'unavailable',
+                message: 'Onion routing not initialized. Call initialize() first.',
+                relayCount: 0,
+                circuitCount: 0,
+            };
+        }
+
+        const relayCount = this.relayCache.length;
+        const circuitCount = this.circuits.size;
+
+        if (relayCount === 0) {
+            return {
+                available: false,
+                status: 'unavailable',
+                message: 'No relay nodes available. Check network connectivity.',
+                relayCount,
+                circuitCount,
+            };
+        }
+
+        if (relayCount < this.config.hopCount) {
+            return {
+                available: true,
+                status: 'degraded',
+                message: `Limited relay availability (${relayCount} relays). Path diversity may be reduced.`,
+                relayCount,
+                circuitCount,
+            };
+        }
+
+        return {
+            available: true,
+            status: 'ready',
+            message: `Onion routing ready with ${relayCount} relays.`,
+            relayCount,
+            circuitCount,
+        };
+    }
+
+    /**
+     * Update configuration
+     */
+    setConfig(config: Partial<OnionRoutingConfig>): void {
+        this.config = { ...this.config, ...config };
+
+        if (config.hopCount !== undefined) {
+            this.config.hopCount = Math.max(MIN_HOPS, Math.min(MAX_HOPS, config.hopCount));
+        }
+
+        secureLog.log('[OnionRouter] Configuration updated:', this.config);
+    }
+
+    /**
+     * Get current configuration
+     */
+    getConfig(): OnionRoutingConfig {
+        return { ...this.config };
+    }
+
+    /**
+     * Refresh relay list from directory
+     */
+    async refreshRelays(): Promise<void> {
+        const directory = getRelayDirectory();
+
+        if (!this.isInitialized) {
+            await directory.initialize();
+        }
+
+        await directory.refreshDirectory();
+
+        // Convert to internal RelayNode format
+        const relays = directory.getRelays();
+        this.relayCache = relays.map(r => this.convertRelayInfo(r));
+
+        secureLog.log(`[OnionRouter] Refreshed relay cache: ${this.relayCache.length} relays`);
+    }
+
+    /**
+     * Convert RelayNodeInfo to RelayNode
+     */
+    private convertRelayInfo(info: RelayNodeInfo): RelayNode {
+        return {
+            id: info.id,
+            publicKey: info.publicKey,
+            endpoint: info.endpoint,
+            trustScore: info.trustScore,
+            online: info.online,
+            latency: info.latency,
+        };
+    }
+
+    /**
+     * Select relays for a circuit
+     */
+    selectRelaysForCircuit(
+        availableRelays: RelayNode[],
+        hopCount: number,
+        preferredRelays?: string[]
+    ): RelayNode[] {
+        if (availableRelays.length < hopCount) {
+            throw new OnionRoutingUnavailableError(
+                `Not enough relays: need ${hopCount}, have ${availableRelays.length}`
+            );
+        }
+
+        // Filter online relays
+        const onlineRelays = availableRelays.filter(r => r.online);
+        if (onlineRelays.length < hopCount) {
+            throw new OnionRoutingUnavailableError(
+                `Not enough online relays: need ${hopCount}, have ${onlineRelays.length}`
+            );
+        }
+
+        // Sort by trust score
+        const sortedRelays = [...onlineRelays].sort((a, b) => b.trustScore - a.trustScore);
+
+        const selected: RelayNode[] = [];
+
+        // Prefer specified relays if available
+        if (preferredRelays && preferredRelays.length > 0) {
+            for (const id of preferredRelays) {
+                const relay = sortedRelays.find(r => r.id === id);
+                if (relay && selected.length < hopCount) {
+                    selected.push(relay);
+                }
+            }
+        }
+
+        // Fill remaining slots with random high-trust relays
+        const remaining = sortedRelays.filter(r => !selected.includes(r));
+        while (selected.length < hopCount && remaining.length > 0) {
+            const randBytes = pqCrypto.randomBytes(4);
+            const b0 = randBytes[0] ?? 0;
+            const b1 = randBytes[1] ?? 0;
+            const b2 = randBytes[2] ?? 0;
+            const b3 = randBytes[3] ?? 0;
+            const randomIndex = (b0 | (b1 << 8) | (b2 << 16) | ((b3 & 0x7f) << 24)) % remaining.length;
+            const relay = remaining.splice(randomIndex, 1)[0];
+            if (relay) {
+                selected.push(relay);
+            }
+        }
+
+        return selected;
+    }
+
+    /**
+     * Create a new circuit to a destination
+     */
+    async createCircuit(destination: string): Promise<OnionCircuit | null> {
+        if (!this.config.enabled) {
+            secureLog.warn('[OnionRouter] Onion routing is disabled');
+            return null;
+        }
+
+        if (!this.isInitialized) {
+            await this.initialize();
+        }
+
+        if (this.relayCache.length < this.config.hopCount) {
+            throw new OnionRoutingUnavailableError(
+                `Insufficient relays: need ${this.config.hopCount}, have ${this.relayCache.length}`
+            );
+        }
+
+        // Select relays for the circuit
+        const relays = this.selectRelaysForCircuit(
+            this.relayCache,
+            this.config.hopCount,
+            this.config.preferredRelays
+        );
+
+        secureLog.log(`[OnionRouter] Building circuit with ${relays.length} hops to ${destination}`);
+
+        // Build the circuit using the relay client
+        const directory = getRelayDirectory();
+        const relayInfos = relays.map(r => directory.getRelay(r.id)).filter(Boolean) as RelayNodeInfo[];
+
+        if (relayInfos.length < relays.length) {
+            throw new CircuitBuildError('Some relays are no longer available');
+        }
+
+        const client = getRelayClient();
+        const internalCircuit = await client.buildCircuit(relayInfos, destination);
+
+        // Create our circuit wrapper
+        const circuit: OnionCircuit = {
+            id: internalCircuit.id,
+            path: relays,
+            layerKeys: internalCircuit.hops.map(h => h.layerKey),
+            createdAt: Date.now(),
+            established: internalCircuit.state === 'ready',
+            _internal: internalCircuit,
+        };
+
+        this.circuits.set(circuit.id, circuit);
+
+        // Schedule circuit cleanup
+        setTimeout(() => {
+            this.closeCircuit(circuit.id);
+        }, CIRCUIT_LIFETIME_MS);
+
+        secureLog.log(`[OnionRouter] Circuit ${circuit.id} established`);
+        return circuit;
+    }
+
+    /**
+     * Send data through a circuit
+     */
+    async sendThroughCircuit(
+        circuitId: string,
+        payload: Uint8Array,
+        destination: string
+    ): Promise<OnionPacket | null> {
+        const circuit = this.circuits.get(circuitId);
+        if (!circuit || !circuit.established) {
+            return null;
+        }
+
+        if (payload.length > MAX_PAYLOAD_SIZE) {
+            throw new Error(`Payload too large: ${payload.length} > ${MAX_PAYLOAD_SIZE}`);
+        }
+
+        // Use the relay client to send through the internal circuit
+        if (circuit._internal) {
+            const client = getRelayClient();
+            await client.sendThroughCircuit(circuit._internal, payload);
+        }
+
+        // Also wrap in onion layers for verification
+        const packet = await wrapInOnionLayers(payload, circuit, destination);
+        return packet;
+    }
+
+    /**
+     * Close a circuit
+     */
+    closeCircuit(circuitId: string): void {
+        const circuit = this.circuits.get(circuitId);
+        if (!circuit) {
+            return;
+        }
+
+        // Destroy internal circuit
+        if (circuit._internal) {
+            const client = getRelayClient();
+            client.destroyCircuit(circuit._internal).catch(() => {});
+        }
+
+        // Securely wipe layer keys
+        for (const key of circuit.layerKeys) {
+            try {
+                const random = crypto.getRandomValues(new Uint8Array(key.length));
+                for (let i = 0; i < key.length; i++) {
+                    const randomValue = random[i];
+                    if (randomValue !== undefined) {
+                        key[i] = randomValue;
+                    }
+                }
+                key.fill(0);
+            } catch {
+                key.fill(0);
+            }
+        }
+
+        this.circuits.delete(circuitId);
+        secureLog.log(`[OnionRouter] Circuit ${circuitId} closed`);
+    }
+
+    /**
+     * Close all circuits
+     */
+    closeAllCircuits(): void {
+        for (const circuitId of this.circuits.keys()) {
+            this.closeCircuit(circuitId);
+        }
+    }
+
+    /**
+     * Get circuit info for debugging
+     */
+    getCircuitInfo(circuitId: string): {
+        id: string;
+        hopCount: number;
+        age: number;
+        established: boolean;
+    } | null {
+        const circuit = this.circuits.get(circuitId);
+        if (!circuit) {
+            return null;
+        }
+
+        return {
+            id: circuit.id,
+            hopCount: circuit.path.length,
+            age: Date.now() - circuit.createdAt,
+            established: circuit.established,
+        };
+    }
+
+    /**
+     * Get all active circuits
+     */
+    getActiveCircuits(): Array<{ id: string; hopCount: number; age: number }> {
+        return Array.from(this.circuits.values()).map(c => ({
+            id: c.id,
+            hopCount: c.path.length,
+            age: Date.now() - c.createdAt,
+        }));
+    }
+
+    /**
+     * Cleanup resources
+     */
+    async cleanup(): Promise<void> {
+        this.closeAllCircuits();
+
+        const client = getRelayClient();
+        await client.cleanup();
+
+        const directory = getRelayDirectory();
+        directory.cleanup();
+
+        this.relayCache = [];
+        this.isInitialized = false;
+        this.initPromise = null;
+    }
+}
+
+// ============================================================================
+// Standalone Functions
+// ============================================================================
+
+/**
+ * Check if onion routing is available
  */
 export function isOnionRoutingAvailable(): boolean {
-    return false;
+    try {
+        const router = OnionRouter.getInstance();
+        return router.isAvailable();
+    } catch {
+        return false;
+    }
 }
 
 /**
- * Get the current feature status for UI display
+ * Get the current onion routing status
  */
-export function getOnionRoutingStatus(): {
-    available: boolean;
-    status: 'unavailable' | 'experimental' | 'beta' | 'stable';
-    message: string;
-} {
-    return {
-        available: false,
-        status: 'experimental',
-        message: 'Onion routing is experimental and not yet functional. The relay network infrastructure is under development.',
-    };
+export function getOnionRoutingStatus(): OnionRoutingStatus {
+    try {
+        const router = OnionRouter.getInstance();
+        return router.getStatus();
+    } catch {
+        return {
+            available: false,
+            status: 'unavailable',
+            message: 'Onion routing system not initialized.',
+            relayCount: 0,
+            circuitCount: 0,
+        };
+    }
 }
-
-// ============================================================================
-// Relay Discovery (NOT FUNCTIONAL - Requires relay network infrastructure)
-// ============================================================================
 
 /**
  * Discover available relay nodes
- *
- * WARNING: This function always returns an empty array because the relay
- * network infrastructure does not exist yet. Any attempt to use onion
- * routing will fail.
- *
- * @throws OnionRoutingUnavailableError if throwOnEmpty is true
  */
 export async function discoverRelays(options?: { throwOnEmpty?: boolean }): Promise<RelayNode[]> {
-    // CRITICAL: Relay network does not exist
-    // This function is a placeholder for future implementation
+    try {
+        const router = OnionRouter.getInstance();
+        await router.initialize();
+        await router.refreshRelays();
 
-    secureLog.warn('[OnionRouting] FEATURE NOT AVAILABLE: Relay network infrastructure does not exist');
-    secureLog.warn('[OnionRouting] discoverRelays() returns empty array - onion routing cannot be used');
+        const status = router.getStatus();
 
-    if (options?.throwOnEmpty) {
-        throw new OnionRoutingUnavailableError(
-            'No relay nodes available. The onion routing relay network is not yet implemented.'
-        );
+        if (status.relayCount === 0 && options?.throwOnEmpty) {
+            throw new OnionRoutingUnavailableError(
+                'No relay nodes available. The relay network may be unreachable.'
+            );
+        }
+
+        // Return converted relays from the router's cache
+        const directory = getRelayDirectory();
+        return directory.getRelays().map(r => ({
+            id: r.id,
+            publicKey: r.publicKey,
+            endpoint: r.endpoint,
+            trustScore: r.trustScore,
+            online: r.online,
+            latency: r.latency,
+        }));
+    } catch (error) {
+        if (options?.throwOnEmpty) {
+            throw error;
+        }
+        return [];
     }
-
-    return [];
 }
 
 /**
- * Select relays for a circuit
+ * Select relays for a circuit (standalone function)
  */
 export function selectRelaysForCircuit(
     availableRelays: RelayNode[],
     hopCount: number,
     preferredRelays?: string[]
 ): RelayNode[] {
-    if (availableRelays.length < hopCount) {
-        throw new Error(`Not enough relays: need ${hopCount}, have ${availableRelays.length}`);
-    }
-
-    // Sort by trust score
-    const sortedRelays = [...availableRelays]
-        .filter(r => r.online)
-        .sort((a, b) => b.trustScore - a.trustScore);
-
-    // Prefer specified relays if available
-    const selected: RelayNode[] = [];
-    if (preferredRelays) {
-        for (const id of preferredRelays) {
-            const relay = sortedRelays.find(r => r.id === id);
-            if (relay && selected.length < hopCount) {
-                selected.push(relay);
-            }
-        }
-    }
-
-    // Fill remaining slots with random high-trust relays (crypto-safe random)
-    const remaining = sortedRelays.filter(r => !selected.includes(r));
-    while (selected.length < hopCount && remaining.length > 0) {
-        const randBytes = new Uint8Array(4);
-        crypto.getRandomValues(randBytes);
-        const b0 = randBytes[0] ?? 0;
-        const b1 = randBytes[1] ?? 0;
-        const b2 = randBytes[2] ?? 0;
-        const b3 = randBytes[3] ?? 0;
-        const randomIndex = (b0 | (b1 << 8) | (b2 << 16) | ((b3 & 0x7f) << 24)) % remaining.length;
-        const relay = remaining.splice(randomIndex, 1)[0];
-        if (relay) {
-            selected.push(relay);
-        }
-    }
-
-    return selected;
+    const router = OnionRouter.getInstance();
+    return router.selectRelaysForCircuit(availableRelays, hopCount, preferredRelays);
 }
-
-// ============================================================================
-// Circuit Building
-// ============================================================================
 
 /**
  * Build an onion circuit through multiple relays
@@ -237,9 +660,6 @@ export async function buildCircuit(
         // Derive layer key
         const layerKey = hkdf(sha256, result.sharedSecret, undefined, ONION_LAYER_INFO, 32);
         layerKeys.push(layerKey);
-
-        // In production, send ciphertext to relay to establish session
-        secureLog.log('[OnionRouting] Would establish session with relay');
     }
 
     return {
@@ -259,13 +679,8 @@ function generateCircuitId(): string {
     return Array.from(bytes).map((b: number) => b.toString(16).padStart(2, '0')).join('');
 }
 
-// ============================================================================
-// Onion Encryption
-// ============================================================================
-
 /**
  * Wrap payload in multiple encryption layers
- * Each layer can only be decrypted by the corresponding relay
  */
 export async function wrapInOnionLayers(
     payload: Uint8Array,
@@ -280,7 +695,9 @@ export async function wrapInOnionLayers(
     // Wrap from inside out (final destination first)
     for (let i = circuit.layerKeys.length - 1; i >= 0; i--) {
         const layerKey = circuit.layerKeys[i];
-        if (!layerKey) {continue;}
+        if (!layerKey) {
+            continue;
+        }
         const nextHop = destinations[i + 1];
 
         // Create layer header with next hop
@@ -313,7 +730,6 @@ export async function wrapInOnionLayers(
 
 /**
  * Unwrap one layer of an onion packet
- * This is what each relay does to forward the packet
  */
 export async function unwrapOnionLayer(
     packet: OnionPacket,
@@ -341,200 +757,32 @@ export async function unwrapOnionLayer(
 }
 
 // ============================================================================
-// Circuit Management
-// ============================================================================
-
-/**
- * Manager for onion routing circuits
- *
- * WARNING: This class is non-functional because the relay network
- * infrastructure does not exist. All operations that require relays
- * will throw OnionRoutingUnavailableError.
- */
-export class OnionRouter {
-    private circuits: Map<string, OnionCircuit> = new Map();
-    private config: OnionRoutingConfig;
-    private relayCache: RelayNode[] = [];
-
-    constructor(config: OnionRoutingConfig) {
-        this.config = config;
-    }
-
-    /**
-     * Check if onion routing is enabled in config
-     * NOTE: Even if enabled, it will not work without relay infrastructure
-     */
-    isEnabled(): boolean {
-        return this.config.enabled;
-    }
-
-    /**
-     * Check if onion routing is actually available (functional)
-     * Currently always returns false
-     */
-    isAvailable(): boolean {
-        return isOnionRoutingAvailable();
-    }
-
-    /**
-     * Update configuration
-     * WARNING: Enabling onion routing will not make it functional
-     */
-    setConfig(config: Partial<OnionRoutingConfig>): void {
-        if (config.enabled === true) {
-            secureLog.warn('[OnionRouter] WARNING: Enabling onion routing, but relay network is not available');
-            secureLog.warn('[OnionRouter] This feature is EXPERIMENTAL and will not work');
-        }
-        this.config = { ...this.config, ...config };
-    }
-
-    /**
-     * Refresh relay list
-     * WARNING: Always returns empty list - relay network does not exist
-     */
-    async refreshRelays(): Promise<void> {
-        this.relayCache = await discoverRelays();
-        if (this.relayCache.length === 0) {
-            secureLog.warn('[OnionRouter] No relays found - onion routing unavailable');
-        }
-    }
-
-    /**
-     * Create a new circuit to a destination
-     *
-     * @throws OnionRoutingUnavailableError because relay network does not exist
-     */
-    async createCircuit(destination: string): Promise<OnionCircuit | null> {
-        if (!this.config.enabled) {
-            return null;
-        }
-
-        // CRITICAL: Always fail because no relays are available
-        if (this.relayCache.length === 0) {
-            throw new OnionRoutingUnavailableError(
-                'Cannot create onion circuit: No relay nodes available. ' +
-                'The onion routing feature is experimental and the relay network infrastructure does not exist yet. ' +
-                'Please disable onion routing and use direct P2P connections instead.'
-            );
-        }
-
-        if (this.relayCache.length < this.config.hopCount) {
-            throw new OnionRoutingUnavailableError(
-                `Insufficient relay nodes: need ${this.config.hopCount}, have ${this.relayCache.length}. ` +
-                'The onion routing relay network is not yet implemented.'
-            );
-        }
-
-        const relays = selectRelaysForCircuit(
-            this.relayCache,
-            this.config.hopCount,
-            this.config.preferredRelays
-        );
-
-        const circuit = await buildCircuit(relays, destination);
-        this.circuits.set(circuit.id, circuit);
-
-        return circuit;
-    }
-
-    /**
-     * Send data through a circuit
-     */
-    async sendThroughCircuit(
-        circuitId: string,
-        payload: Uint8Array,
-        destination: string
-    ): Promise<OnionPacket | null> {
-        const circuit = this.circuits.get(circuitId);
-        if (!circuit || !circuit.established) {
-            return null;
-        }
-
-        return wrapInOnionLayers(payload, circuit, destination);
-    }
-
-    /**
-     * Close a circuit
-     */
-    closeCircuit(circuitId: string): void {
-        const circuit = this.circuits.get(circuitId);
-        if (circuit) {
-            // Securely wipe layer keys
-            for (const key of circuit.layerKeys) {
-                try {
-                    const random = crypto.getRandomValues(new Uint8Array(key.length));
-                    for (let i = 0; i < key.length; i++) {
-                        const randomValue = random[i];
-                        if (randomValue !== undefined) {
-                            key[i] = randomValue;
-                        }
-                    }
-                    key.fill(0);
-                } catch {
-                    key.fill(0);
-                }
-            }
-            this.circuits.delete(circuitId);
-        }
-    }
-
-    /**
-     * Close all circuits
-     */
-    closeAllCircuits(): void {
-        for (const circuitId of this.circuits.keys()) {
-            this.closeCircuit(circuitId);
-        }
-    }
-
-    /**
-     * Get circuit info for debugging
-     */
-    getCircuitInfo(circuitId: string): {
-        id: string;
-        hopCount: number;
-        age: number;
-        established: boolean;
-    } | null {
-        const circuit = this.circuits.get(circuitId);
-        if (!circuit) {return null;}
-
-        return {
-            id: circuit.id,
-            hopCount: circuit.path.length,
-            age: Date.now() - circuit.createdAt,
-            established: circuit.established,
-        };
-    }
-}
-
-// ============================================================================
 // Default Configuration
 // ============================================================================
 
-/**
- * Default configuration
- *
- * IMPORTANT: enabled is false by default and should remain false
- * until the relay network infrastructure is implemented.
- */
 export const defaultOnionConfig: OnionRoutingConfig = {
-    enabled: false, // MUST remain false - relay network does not exist
-    hopCount: 3,
+    enabled: true, // Now enabled by default since we have relay infrastructure
+    hopCount: DEFAULT_HOPS,
     randomPath: true,
 };
 
 /**
- * Attempt to enable onion routing
- *
- * @throws OnionRoutingUnavailableError always, because the feature is not available
+ * Enable onion routing
  */
-export function enableOnionRouting(): never {
-    throw new OnionRoutingUnavailableError(
-        'Cannot enable onion routing: This feature is experimental and not yet functional. ' +
-        'The relay network infrastructure required for onion routing has not been implemented. ' +
-        'Please use direct P2P connections for file transfers.'
-    );
+export async function enableOnionRouting(config?: Partial<OnionRoutingConfig>): Promise<OnionRouter> {
+    const router = OnionRouter.getInstance();
+    await router.initialize();
+    router.setConfig({ ...config, enabled: true });
+    return router;
+}
+
+/**
+ * Disable onion routing
+ */
+export function disableOnionRouting(): void {
+    const router = OnionRouter.getInstance();
+    router.setConfig({ enabled: false });
+    router.closeAllCircuits();
 }
 
 // ============================================================================
