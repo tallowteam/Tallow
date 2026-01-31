@@ -5,7 +5,8 @@
  * Replaces lib/transfer/file-encryption.ts with PQC-enhanced version
  */
 
-import { pqCrypto, EncryptedData } from './pqc-crypto';
+import { pqCrypto } from './pqc-crypto';
+import { captureException, addBreadcrumb } from '../monitoring/sentry';
 
 const CHUNK_SIZE = 64 * 1024; // 64KB chunks for progressive encryption
 
@@ -44,7 +45,7 @@ export interface EncryptedChunk {
  * Returns generic category instead of specific type
  */
 function categorizeMimeType(mimeType: string): string {
-  if (!mimeType) return 'unknown';
+  if (!mimeType) {return 'unknown';}
   const [type] = mimeType.split('/');
   switch (type) {
     case 'image': return 'image';
@@ -66,6 +67,11 @@ export async function encryptFile(
   if (file.size === 0) {
     throw new Error('Cannot encrypt empty file');
   }
+
+  addBreadcrumb('Starting PQC file encryption', 'crypto', {
+    fileSize: file.size,
+    mimeType: file.type,
+  });
 
   // Read file
   const fileBuffer = await file.arrayBuffer();
@@ -210,7 +216,16 @@ export async function decryptFile(
     // Verify chunk hash
     const computedHash = pqCrypto.hash(decrypted);
     if (!pqCrypto.constantTimeEqual(computedHash, encChunk.hash)) {
-      throw new Error(`Chunk ${encChunk.index} hash mismatch - file corrupted`);
+      const hashError = new Error(`Chunk ${encChunk.index} hash mismatch - file corrupted`);
+      captureException(hashError, {
+        tags: { module: 'file-encryption-pqc', operation: 'decryptFile' },
+        extra: {
+          chunkIndex: encChunk.index,
+          totalChunks: encryptedFile.metadata.totalChunks,
+          originalSize: encryptedFile.metadata.originalSize,
+        }
+      });
+      throw hashError;
     }
 
     chunks.push(decrypted);
@@ -232,7 +247,16 @@ export async function decryptFile(
   // Verify complete file hash
   const computedFileHash = pqCrypto.hash(fileData);
   if (!pqCrypto.constantTimeEqual(computedFileHash, encryptedFile.metadata.fileHash)) {
-    throw new Error('File hash mismatch - file corrupted');
+    const fileHashError = new Error('File hash mismatch - file corrupted');
+    captureException(fileHashError, {
+      tags: { module: 'file-encryption-pqc', operation: 'decryptFile' },
+      extra: {
+        originalSize: encryptedFile.metadata.originalSize,
+        decryptedSize: totalSize,
+        totalChunks: encryptedFile.metadata.totalChunks,
+      }
+    });
+    throw fileHashError;
   }
 
   // Use mimeCategory for blob type (not revealing exact mime)
@@ -254,8 +278,8 @@ export async function encryptFileWithPassword(
   // Generate random salt
   const salt = pqCrypto.randomBytes(32);
 
-  // Derive key from password using HKDF
-  const encryptionKey = pqCrypto.deriveKeyFromPassword(password, salt);
+  // Derive key from password using Argon2id (memory-hard KDF)
+  const encryptionKey = await pqCrypto.deriveKeyFromPassword(password, salt);
 
   // Encrypt file
   const encrypted = await encryptFile(file, encryptionKey);
@@ -283,14 +307,22 @@ export async function decryptFileWithPassword(
     throw new Error('Invalid or missing salt in encrypted file metadata');
   }
 
-  // Derive key using HKDF
-  const encryptionKey = pqCrypto.deriveKeyFromPassword(password, salt);
+  // Derive key using Argon2id (memory-hard KDF)
+  const encryptionKey = await pqCrypto.deriveKeyFromPassword(password, salt);
 
   // Decrypt - hash mismatch after password derivation indicates wrong password
   try {
     return await decryptFile(encryptedFile, encryptionKey);
   } catch (error) {
     if (error instanceof Error && error.message.includes('hash mismatch')) {
+      // Report password decryption failure (likely wrong password)
+      captureException(error, {
+        tags: { module: 'file-encryption-pqc', operation: 'decryptFileWithPassword' },
+        extra: {
+          reason: 'hash_mismatch_likely_wrong_password',
+          originalSize: encryptedFile.metadata.originalSize,
+        }
+      });
       throw new Error('Decryption failed - incorrect password or corrupted file');
     }
     throw error;
@@ -320,7 +352,7 @@ export async function* encryptFileStream(
       try {
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
+          if (done) {break;}
           chunks.push(value);
         }
       } finally {

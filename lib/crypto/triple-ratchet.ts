@@ -15,7 +15,7 @@
  * - Post-quantum security (from Sparse PQ Ratchet)
  */
 
-import { pqCrypto, HybridKeyPair, HybridPublicKey, HybridCiphertext, SessionKeys } from './pqc-crypto';
+import { pqCrypto, HybridPublicKey, HybridCiphertext } from './pqc-crypto';
 import { SparsePQRatchet } from './sparse-pq-ratchet';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { hkdf } from '@noble/hashes/hkdf.js';
@@ -54,6 +54,8 @@ export interface DoubleRatchetState {
     receiveMessageNumber: number;
     /** Previous chain length */
     previousChainLength: number;
+    /** Whether we need to perform a DH ratchet on next send (after receiving a new DH key) */
+    needsSendRatchet: boolean;
 }
 
 export interface TripleRatchetState {
@@ -132,6 +134,7 @@ export class TripleRatchet {
             sendMessageNumber: 0,
             receiveMessageNumber: 0,
             previousChainLength: 0,
+            needsSendRatchet: false,
         };
 
         const state: TripleRatchetState = {
@@ -168,12 +171,17 @@ export class TripleRatchet {
      * Encrypt a message
      */
     async encrypt(plaintext: Uint8Array): Promise<TripleRatchetMessage> {
+        if (plaintext.length === 0) {
+            throw new Error('Plaintext must not be empty');
+        }
+
         // Get PQ ratchet contribution
         const pqResult = await this.state.pqr.prepareSend();
 
-        // Perform DH ratchet step if we have peer's key
-        if (this.state.dr.peerDHPublicKey) {
+        // Perform DH ratchet step only if we need to (after receiving a message with a new DH key)
+        if (this.state.dr.needsSendRatchet && this.state.dr.peerDHPublicKey) {
             await this.dhRatchetSend();
+            this.state.dr.needsSendRatchet = false;
         }
 
         // Derive message key by combining DH and PQ contributions
@@ -189,7 +197,7 @@ export class TripleRatchet {
             previousChainLength: this.state.dr.previousChainLength,
             messageNumber: this.state.dr.sendMessageNumber,
             pqEpoch: pqResult.epoch,
-            pqKemCiphertext: pqResult.kemCiphertext,
+            ...(pqResult.kemCiphertext ? { pqKemCiphertext: pqResult.kemCiphertext } : {}),
             ciphertext: encrypted.ciphertext,
             nonce: encrypted.nonce,
         };
@@ -230,10 +238,12 @@ export class TripleRatchet {
             return decrypted;
         }
 
-        // Handle DH ratchet step
+        // Handle DH ratchet step - only if this is a new DH public key from peer
         if (!this.arraysEqual(message.dhPublicKey, this.state.dr.peerDHPublicKey || new Uint8Array(0))) {
             await this.skipMessageKeys(message.previousChainLength);
             await this.dhRatchetReceive(message.dhPublicKey);
+            // Mark that we need to perform a DH ratchet on next send
+            this.state.dr.needsSendRatchet = true;
         }
 
         // Skip to message number
@@ -293,6 +303,9 @@ export class TripleRatchet {
         this.secureDelete(this.state.dr.rootKey);
         this.secureDelete(this.state.dr.sendChainKey);
 
+        // Secure cleanup of DH output
+        dhOutput.fill(0);
+
         // Update state
         this.state.dr.rootKey = rootKey;
         this.state.dr.sendChainKey = chainKey;
@@ -315,6 +328,9 @@ export class TripleRatchet {
 
         this.secureDelete(this.state.dr.rootKey);
         this.secureDelete(this.state.dr.receiveChainKey);
+
+        // Secure cleanup of DH output
+        dhOutput.fill(0);
 
         this.state.dr.rootKey = rootKey;
         this.state.dr.receiveChainKey = chainKey;
@@ -361,14 +377,19 @@ export class TripleRatchet {
         combined.set(dhOutput, rootKey.length);
 
         const output = hkdf(sha256, combined, undefined, CHAIN_KEY_INFO, 64);
-        return {
+        const result = {
             rootKey: output.slice(0, 32),
             chainKey: output.slice(32, 64),
         };
+
+        // Secure cleanup of intermediate data
+        combined.fill(0);
+        output.fill(0);
+
+        return result;
     }
 
-    private deriveMessageKey(chainKey: Uint8Array, messageNumber: number): Uint8Array {
-        const info = new TextEncoder().encode(`msg-${messageNumber}`);
+    private deriveMessageKey(chainKey: Uint8Array, _messageNumber: number): Uint8Array {
         return hkdf(sha256, chainKey, undefined, MESSAGE_KEY_INFO, 32);
     }
 
@@ -380,7 +401,12 @@ export class TripleRatchet {
         const combined = new Uint8Array(dhKey.length + pqKey.length);
         combined.set(dhKey, 0);
         combined.set(pqKey, dhKey.length);
-        return hkdf(sha256, combined, undefined, MESSAGE_KEY_INFO, 32);
+        const result = hkdf(sha256, combined, undefined, MESSAGE_KEY_INFO, 32);
+
+        // Secure cleanup of intermediate data
+        combined.fill(0);
+
+        return result;
     }
 
     private static deriveChainKeys(rootKey: Uint8Array, isInitiator: boolean): {
@@ -408,19 +434,29 @@ export class TripleRatchet {
     }
 
     private arraysEqual(a: Uint8Array | null, b: Uint8Array): boolean {
-        if (!a || a.length !== b.length) return false;
-        for (let i = 0; i < a.length; i++) {
-            if (a[i] !== b[i]) return false;
+        if (!a) {return false;}
+
+        // Constant-time comparison to prevent timing attacks
+        // Use the longer length to avoid leaking length information
+        const len = Math.max(a.length, b.length);
+        let result = a.length ^ b.length; // Non-zero if lengths differ
+
+        for (let i = 0; i < len; i++) {
+            // Use 0 for out-of-bounds access (safe: XOR with 0 is identity)
+            result |= (a[i] || 0) ^ (b[i] || 0);
         }
-        return true;
+        return result === 0;
     }
 
     private secureDelete(data: Uint8Array): void {
-        if (!data) return;
+        if (!data) {return;}
         try {
             const random = crypto.getRandomValues(new Uint8Array(data.length));
             for (let i = 0; i < data.length; i++) {
-                data[i] = random[i];
+                const byte = random[i];
+                if (byte !== undefined) {
+                    data[i] = byte;
+                }
             }
             data.fill(0);
         } catch {

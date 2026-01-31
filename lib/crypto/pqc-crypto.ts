@@ -5,12 +5,17 @@
  * Implements hybrid encryption: ML-KEM-768 (Kyber) + X25519 + AES-256-GCM
  *
  * This provides defense against both classical and quantum attacks.
+ *
+ * SECURITY: Uses counter-based nonces to prevent nonce reuse attacks.
+ * Random nonces have birthday paradox risk; counter-based nonces guarantee uniqueness.
  */
 
 import { sha256 } from '@noble/hashes/sha2.js';
 import { hkdf } from '@noble/hashes/hkdf.js';
 import { x25519 } from '@noble/curves/ed25519.js';
 import * as kyber from 'pqc-kyber';
+import { NonceManager } from './nonce-manager';
+import { deriveKeyFromPassword as deriveKeyArgon2, ARGON2_DEFAULTS } from './argon2-browser';
 
 // ============================================================================
 // Type Definitions
@@ -58,8 +63,13 @@ export interface SessionKeys {
 
 export class PQCryptoService {
   private static instance: PQCryptoService;
+  private nonceManager: NonceManager;
 
-  private constructor() {}
+  private constructor() {
+    // Initialize counter-based nonce manager for AES-GCM encryption
+    // This prevents nonce reuse which would be catastrophic for security
+    this.nonceManager = new NonceManager();
+  }
 
   /**
    * Convert Uint8Array to ArrayBuffer (for Web Crypto API compatibility)
@@ -202,7 +212,12 @@ export class PQCryptoService {
 
     // Use HKDF to derive the combined secret
     const info = new TextEncoder().encode('tallow-hybrid-v1');
-    return hkdf(sha256, ikm, undefined, info, 32);
+    const result = hkdf(sha256, ikm, undefined, info, 32);
+
+    // Zero intermediate buffer to prevent key material leakage
+    ikm.fill(0);
+
+    return result;
   }
 
   // ==========================================================================
@@ -239,14 +254,25 @@ export class PQCryptoService {
   }
 
   /**
-   * Derive a key from password using HKDF (for file encryption)
+   * Derive a key from password using Argon2id (memory-hard KDF)
+   *
+   * SECURITY: Uses Argon2id with OWASP-recommended parameters:
+   * - 64 MiB memory cost (GPU/ASIC resistant)
+   * - 3 iterations (time cost)
+   * - 4 parallelism factor
+   *
+   * This is significantly more secure than HKDF for password-derived keys
+   * as it provides protection against brute-force attacks with specialized hardware.
    */
-  deriveKeyFromPassword(password: string, salt: Uint8Array): Uint8Array {
-    const encoder = new TextEncoder();
-    const passwordBytes = encoder.encode(password);
-    const info = encoder.encode('tallow-file-key-v1');
-
-    return hkdf(sha256, passwordBytes, salt, info, 32);
+  async deriveKeyFromPassword(password: string, salt: Uint8Array): Promise<Uint8Array> {
+    // Use Argon2id from argon2-browser.ts with OWASP-recommended defaults
+    // (64MB memory, 3 iterations, 4 parallelism)
+    return deriveKeyArgon2(password, salt, {
+      memory: ARGON2_DEFAULTS.memory,
+      iterations: ARGON2_DEFAULTS.iterations,
+      parallelism: ARGON2_DEFAULTS.parallelism,
+      hashLength: 32,
+    });
   }
 
   // ==========================================================================
@@ -254,7 +280,31 @@ export class PQCryptoService {
   // ==========================================================================
 
   /**
+   * Reset the nonce manager (call when key is rotated)
+   *
+   * SECURITY: This must be called whenever the encryption key changes
+   * to ensure a fresh nonce sequence for the new key.
+   */
+  resetNonceManager(): void {
+    this.nonceManager = new NonceManager();
+  }
+
+  /**
+   * Get nonce manager status (for monitoring/debugging)
+   */
+  getNonceStatus(): { counter: bigint; isNearCapacity: boolean } {
+    return {
+      counter: this.nonceManager.getCounter(),
+      isNearCapacity: this.nonceManager.isNearCapacity(),
+    };
+  }
+
+  /**
    * Encrypt data using AES-256-GCM
+   *
+   * SECURITY: Uses counter-based nonces to prevent nonce reuse attacks.
+   * Random nonces have birthday paradox risk after 2^48 messages with the same key.
+   * Counter-based nonces guarantee uniqueness up to 2^64 messages per session.
    */
   async encrypt(
     plaintext: Uint8Array,
@@ -274,8 +324,9 @@ export class PQCryptoService {
       throw new Error('Plaintext must not be empty');
     }
 
-    // Generate random nonce (96 bits for GCM)
-    const nonce = this.randomBytes(12);
+    // Get counter-based nonce (96 bits for GCM)
+    // Counter-based nonces prevent collision attacks that random nonces are vulnerable to
+    const nonce = this.nonceManager.getNextNonce();
 
     // Import key for Web Crypto
     const cryptoKey = await crypto.subtle.importKey(
