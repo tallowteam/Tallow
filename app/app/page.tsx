@@ -64,6 +64,7 @@ import { initializePrivacyFeatures, PrivacyInitResult } from '@/lib/init/privacy
 import { registerServiceWorker } from '@/lib/pwa/service-worker-registration';
 import { announce } from '@/components/accessibility/live-region-provider';
 import { cn } from '@/lib/utils';
+import { MDNSStatusIndicator } from '@/components/app/MDNSStatusIndicator';
 
 // ============================================================================
 // EUVEKA DESIGN SYSTEM - BLACK & WHITE DARK MODE
@@ -199,11 +200,11 @@ const buttonVariants = {
 // ============================================================================
 
 function getFileIcon(type: string) {
-    if (type.startsWith('image/')) return Image;
-    if (type.startsWith('video/')) return Video;
-    if (type.startsWith('audio/')) return Music;
-    if (type.includes('zip') || type.includes('rar') || type.includes('7z') || type.includes('tar')) return Archive;
-    if (type.includes('pdf') || type.includes('doc') || type.includes('text')) return FileText;
+    if (type.startsWith('image/')) {return Image;}
+    if (type.startsWith('video/')) {return Video;}
+    if (type.startsWith('audio/')) {return Music;}
+    if (type.includes('zip') || type.includes('rar') || type.includes('7z') || type.includes('tar')) {return Archive;}
+    if (type.includes('pdf') || type.includes('doc') || type.includes('text')) {return FileText;}
     return File;
 }
 
@@ -278,9 +279,9 @@ interface EuvekaButtonProps {
 
 function EuvekaButton({ children, onClick, disabled, variant = 'outline', size = 'md', className, icon }: EuvekaButtonProps) {
     const sizeStyles = {
-        sm: icon ? 'h-10 w-10' : 'h-10 px-4 text-sm',
-        md: icon ? 'h-12 w-12' : 'h-12 px-6 text-sm',
-        lg: icon ? 'h-14 w-14' : 'h-14 px-8 text-base',
+        sm: icon ? 'h-9 w-9' : 'h-9 px-4 text-sm',
+        md: icon ? 'h-11 w-11' : 'h-11 px-5 text-sm',
+        lg: icon ? 'h-12 w-12' : 'h-12 px-6 text-base',
     };
 
     const variantStyles = {
@@ -406,9 +407,9 @@ export default function AppPage() {
     })), [discoveredDevices]);
 
     const currentStatus: ConnectionStatus = useMemo(() => {
-        if (isSending || isReceiving) return 'transferring';
-        if (isConnected && pqcReady) return 'connected';
-        if (isConnecting) return 'connecting';
+        if (isSending || isReceiving) {return 'transferring';}
+        if (isConnected && pqcReady) {return 'connected';}
+        if (isConnecting) {return 'connecting';}
         return 'idle';
     }, [isSending, isReceiving, isConnected, pqcReady, isConnecting]);
 
@@ -451,7 +452,7 @@ export default function AppPage() {
 
     const addIceCandidate = useCallback(async (candidate: RTCIceCandidateInit) => {
         const pc = peerConnection.current;
-        if (!pc) return;
+        if (!pc) {return;}
         if (pc.remoteDescription) {
             try { await pc.addIceCandidate(candidate); } catch (e) { secureLog.error('Failed to add ICE candidate:', e); }
         } else {
@@ -461,7 +462,7 @@ export default function AppPage() {
 
     const flushPendingCandidates = useCallback(async () => {
         const pc = peerConnection.current;
-        if (!pc || !pc.remoteDescription) return;
+        if (!pc || !pc.remoteDescription) {return;}
         const candidates = pendingCandidates.current.splice(0);
         for (const candidate of candidates) {
             try { await pc.addIceCandidate(candidate); } catch (e) { secureLog.error('Failed to add queued ICE candidate:', e); }
@@ -482,7 +483,7 @@ export default function AppPage() {
     }, []);
 
     const startConnectionTimeout = useCallback((timeoutMs = 30000) => {
-        if (connectionTimeout.current) clearTimeout(connectionTimeout.current);
+        if (connectionTimeout.current) {clearTimeout(connectionTimeout.current);}
         connectionTimeout.current = setTimeout(() => {
             if (!peerConnection.current || peerConnection.current.connectionState !== 'connected') {
                 toast.error(t('app.connectionTimeout'));
@@ -540,7 +541,7 @@ export default function AppPage() {
 
             try {
                 const stored = localStorage.getItem('tallow_settings');
-                if (stored) { const s = JSON.parse(stored); if (s.bandwidthLimit > 0) manager.setBandwidthLimit(s.bandwidthLimit); }
+                if (stored) { const s = JSON.parse(stored); if (s.bandwidthLimit > 0) {manager.setBandwidthLimit(s.bandwidthLimit);} }
             } catch { /* ignore */ }
 
             await manager.initializeSession(isInitiator ? 'send' : 'receive');
@@ -611,7 +612,7 @@ export default function AppPage() {
                 setConnectionStatus('connected');
             });
 
-            if (isInitiator) manager.startKeyExchange();
+            if (isInitiator) {manager.startKeyExchange();}
 
             manager.onVerificationReady((sharedSecret) => {
                 const peerId = selectedDevice?.id || 'unknown';
@@ -621,7 +622,7 @@ export default function AppPage() {
                     const session = createVerificationSession(peerId, peerName, sharedSecret);
                     setVerificationSession(session);
                     setShowVerificationDialog(true);
-                    if (!alreadyVerified) toast.info(t('app.verifyConnection'), { description: t('app.verifyDesc'), duration: 5000 });
+                    if (!alreadyVerified) {toast.info(t('app.verifyConnection'), { description: t('app.verifyDesc'), duration: 5000 });}
                 } else {
                     setPeerVerified(true);
                     toast.success(t('app.autoVerified'), { description: t('app.previouslyVerified') });
@@ -645,7 +646,7 @@ export default function AppPage() {
             if (typeof event.data === 'string') {
                 if (pqcManager.current) {
                     const handled = await pqcManager.current.handleIncomingMessage(event.data);
-                    if (handled) return;
+                    if (handled) {return;}
                 }
                 try {
                     const message = JSON.parse(event.data);
@@ -721,7 +722,7 @@ export default function AppPage() {
 
         initializePrivacyFeatures().then(result => {
             setPrivacyInitResult(result);
-            if (result.warnings.length > 0) secureLog.warn('[App] Privacy warnings:', result.warnings);
+            if (result.warnings.length > 0) {secureLog.warn('[App] Privacy warnings:', result.warnings);}
         }).catch(error => {
             secureLog.error('[App] Privacy init failed:', error);
         });
@@ -765,7 +766,7 @@ export default function AppPage() {
 
                 const pc = createPeerConnection();
                 peerConnection.current = pc;
-                pc.onicecandidate = (event) => { if (event.candidate) discovery.sendIceCandidate(data.from, event.candidate.toJSON()); };
+                pc.onicecandidate = (event) => { if (event.candidate) {discovery.sendIceCandidate(data.from, event.candidate.toJSON());} };
                 await pc.setRemoteDescription(data.offer);
                 await flushPendingCandidates();
                 const answer = await pc.createAnswer();
@@ -833,7 +834,7 @@ export default function AppPage() {
 
         const pc = createPeerConnection();
         peerConnection.current = pc;
-        pc.onicecandidate = (event) => { if (event.candidate) discovery.sendIceCandidate(targetSocketId, event.candidate.toJSON()); };
+        pc.onicecandidate = (event) => { if (event.candidate) {discovery.sendIceCandidate(targetSocketId, event.candidate.toJSON());} };
 
         const channel = pc.createDataChannel('fileTransfer', { ordered: true });
         dataChannel.current = channel;
@@ -857,7 +858,7 @@ export default function AppPage() {
 
         try {
             const cm = connectionManager.current;
-            if (!cm) throw new Error('Connection manager not initialized');
+            if (!cm) {throw new Error('Connection manager not initialized');}
 
             cm.setEvents({
                 onSignalingConnected: () => {},
@@ -867,7 +868,7 @@ export default function AppPage() {
                     startConnectionTimeout();
                     const pc = createPeerConnection();
                     peerConnection.current = pc;
-                    pc.onicecandidate = async (event) => { if (event.candidate) await cm.sendIceCandidate(event.candidate.toJSON()); };
+                    pc.onicecandidate = async (event) => { if (event.candidate) {await cm.sendIceCandidate(event.candidate.toJSON());} };
                     const channel = pc.createDataChannel('fileTransfer', { ordered: true });
                     dataChannel.current = channel;
                     setupDataChannel(channel, true);
@@ -880,7 +881,7 @@ export default function AppPage() {
                     startConnectionTimeout();
                     const pc = createPeerConnection();
                     peerConnection.current = pc;
-                    pc.onicecandidate = async (event) => { if (event.candidate) await cm.sendIceCandidate(event.candidate.toJSON()); };
+                    pc.onicecandidate = async (event) => { if (event.candidate) {await cm.sendIceCandidate(event.candidate.toJSON());} };
                     await pc.setRemoteDescription(offer);
                     await flushPendingCandidates();
                     const answer = await pc.createAnswer();
@@ -937,7 +938,7 @@ export default function AppPage() {
                     try {
                         const pc = createPeerConnection();
                         peerConnection.current = pc;
-                        pc.onicecandidate = async (event) => { if (event.candidate) await cm.sendIceCandidate(event.candidate.toJSON()); };
+                        pc.onicecandidate = async (event) => { if (event.candidate) {await cm.sendIceCandidate(event.candidate.toJSON());} };
                         const channel = pc.createDataChannel('fileTransfer', { ordered: true });
                         dataChannel.current = channel;
                         setupDataChannel(channel, true);
@@ -965,7 +966,7 @@ export default function AppPage() {
             });
             cm.startListening().catch((err) => {
                 const msg = err instanceof Error ? err.message : String(err);
-                if (!msg.includes('not configured')) toast.error(t('app.signalingError'));
+                if (!msg.includes('not configured')) {toast.error(t('app.signalingError'));}
             });
             return () => { cm.disconnect(); cleanupConnection(); };
         }
@@ -988,7 +989,7 @@ export default function AppPage() {
                     try {
                         const pc = createPeerConnection();
                         peerConnection.current = pc;
-                        pc.onicecandidate = async (event) => { if (event.candidate) await cm.sendIceCandidate(event.candidate.toJSON()); };
+                        pc.onicecandidate = async (event) => { if (event.candidate) {await cm.sendIceCandidate(event.candidate.toJSON());} };
                         await pc.setRemoteDescription(offer);
                         await flushPendingCandidates();
                         const answer = await pc.createAnswer();
@@ -1015,7 +1016,7 @@ export default function AppPage() {
             });
             cm.startListening().catch((err) => {
                 const msg = err instanceof Error ? err.message : String(err);
-                if (!msg.includes('not configured')) toast.error(t('app.signalingError'));
+                if (!msg.includes('not configured')) {toast.error(t('app.signalingError'));}
             });
             return () => { cm.disconnect(); cleanupConnection(); };
         }
@@ -1097,7 +1098,7 @@ export default function AppPage() {
             setSendingFileTotal(selectedFiles.length);
             for (let i = 0; i < selectedFiles.length; i++) {
                 const fileData = selectedFiles[i];
-                if (!fileData) continue;
+                if (!fileData) {continue;}
                 setSendingFileIndex(i + 1);
                 setSendingFileName(fileData.folderPath || fileData.name);
                 setSendProgress(0);
@@ -1213,21 +1214,21 @@ export default function AppPage() {
         };
         setSelectedDevice(friendDevice);
         updateFriendConnection(friend.id);
-        if (!isPeerVerified(friend.id)) toast.info(`First connection to ${friend.name}`);
-        else toast.success(`Ready to send to ${friend.name}`);
+        if (!isPeerVerified(friend.id)) {toast.info(`First connection to ${friend.name}`);}
+        else {toast.success(`Ready to send to ${friend.name}`);}
     }, []);
 
     // Format ETA
     const formatEta = useCallback((progress: number): string => {
-        if (progress <= 0 || transferStartTime.current === 0) return '';
+        if (progress <= 0 || transferStartTime.current === 0) {return '';}
         const elapsed = Date.now() - transferStartTime.current;
         const totalEstimated = (elapsed / progress) * 100;
         const remaining = Math.max(0, totalEstimated - elapsed);
-        if (remaining < 1000) return '';
+        if (remaining < 1000) {return '';}
         const secs = Math.ceil(remaining / 1000);
-        if (secs < 60) return `${secs}s`;
+        if (secs < 60) {return `${secs}s`;}
         const mins = Math.floor(secs / 60);
-        if (mins < 60) return `${mins}m ${secs % 60}s`;
+        if (mins < 60) {return `${mins}m ${secs % 60}s`;}
         return `${Math.floor(mins / 60)}h ${mins % 60}m`;
     }, []);
 
@@ -1259,30 +1260,30 @@ export default function AppPage() {
                 HEADER BAR - Euveka Style
             ================================================================ */}
             <header className="fixed top-0 left-0 right-0 z-50 border-b border-[#262626]" style={{ backgroundColor: EUVEKA.bg.primary }}>
-                <div className="max-w-5xl 3xl:max-w-6xl 4xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 3xl:px-12 h-14 sm:h-16 3xl:h-20 flex items-center justify-between">
+                <div className="max-w-5xl 3xl:max-w-6xl 4xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
                     {/* Logo + Status */}
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
                         <Link
                             href="/"
                             className="p-2 -ml-2 rounded-full hover:bg-[#fefefc]/5 transition-colors"
                         >
-                            <ArrowLeft className="w-5 h-5 text-[#fefefc]/60" />
+                            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-[#fefefc]/60" />
                         </Link>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2.5">
                             <motion.div
-                                className="w-9 h-9 rounded-full border border-[#fefefc]/20 flex items-center justify-center"
+                                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-[#fefefc]/20 flex items-center justify-center"
                                 whileHover={{ scale: 1.05, borderColor: 'rgba(254, 254, 252, 0.4)' }}
                             >
-                                <Zap className="w-5 h-5 text-[#fefefc]" />
+                                <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-[#fefefc]" />
                             </motion.div>
-                            <span className="text-lg font-semibold text-[#fefefc]">
+                            <span className="text-base sm:text-lg font-semibold text-[#fefefc]">
                                 {t('app.title')}
                             </span>
                         </div>
 
                         {/* Status Indicator */}
                         <div className={cn(
-                            'hidden sm:flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium border',
+                            'hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border',
                             currentStatus === 'connected' && 'border-[#22c55e]/40 text-[#22c55e]',
                             currentStatus === 'connecting' && 'border-[#f59e0b]/40 text-[#f59e0b]',
                             currentStatus === 'transferring' && 'border-[#fefefc]/40 text-[#fefefc]',
@@ -1307,7 +1308,7 @@ export default function AppPage() {
                     </div>
 
                     {/* Quick Actions */}
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                         {receivedFiles.length > 0 && (
                             <EuvekaButton
                                 variant="ghost"
@@ -1316,8 +1317,8 @@ export default function AppPage() {
                                 onClick={() => setShowReceivedDialog(true)}
                                 className="relative"
                             >
-                                <FileDown className="w-5 h-5" />
-                                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#fefefc] text-[#0a0a08] text-[10px] flex items-center justify-center font-bold">
+                                <FileDown className="w-4 h-4" />
+                                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#fefefc] text-[#0a0a08] text-[10px] flex items-center justify-center font-bold">
                                     {receivedFiles.length}
                                 </span>
                             </EuvekaButton>
@@ -1325,12 +1326,12 @@ export default function AppPage() {
                         <ThemeToggle />
                         <Link href="/app/history">
                             <EuvekaButton variant="ghost" size="sm" icon>
-                                <History className="w-5 h-5" />
+                                <History className="w-4 h-4" />
                             </EuvekaButton>
                         </Link>
                         <Link href="/app/settings">
                             <EuvekaButton variant="ghost" size="sm" icon>
-                                <Settings className="w-5 h-5" />
+                                <Settings className="w-4 h-4" />
                             </EuvekaButton>
                         </Link>
                     </div>
@@ -1340,9 +1341,9 @@ export default function AppPage() {
             {/* ================================================================
                 MAIN CONTENT
             ================================================================ */}
-            <main id="main-content" className="pt-20 sm:pt-24 3xl:pt-28 pb-12 sm:pb-16 3xl:pb-20 px-4 sm:px-6 lg:px-8 3xl:px-12">
+            <main id="main-content" className="pt-18 sm:pt-22 pb-10 sm:pb-14 px-4 sm:px-6 lg:px-8">
                 <motion.div
-                    className="max-w-5xl 3xl:max-w-6xl 4xl:max-w-7xl mx-auto"
+                    className="max-w-4xl lg:max-w-5xl mx-auto"
                     variants={pageVariants}
                     initial="hidden"
                     animate="visible"
@@ -1350,7 +1351,7 @@ export default function AppPage() {
                     {/* ============================================================
                         SEND/RECEIVE TOGGLE - Pill Style
                     ============================================================ */}
-                    <motion.div variants={itemVariants} className="flex justify-center mb-8 sm:mb-12 3xl:mb-16">
+                    <motion.div variants={itemVariants} className="flex justify-center mb-6 sm:mb-8">
                         <div className="p-1 rounded-full border border-[#262626] bg-[#141414]">
                             <div className="flex">
                                 {(['send', 'receive'] as const).map((tab) => (
@@ -1358,7 +1359,7 @@ export default function AppPage() {
                                         key={tab}
                                         onClick={() => { setActiveTab(tab); setTransferMode(null); }}
                                         className={cn(
-                                            'relative px-6 sm:px-8 3xl:px-10 py-2.5 sm:py-3 3xl:py-4 rounded-full font-medium text-sm 3xl:text-base transition-all duration-300 flex items-center gap-2 sm:gap-2.5',
+                                            'relative px-5 sm:px-6 py-2 sm:py-2.5 rounded-full font-medium text-sm transition-all duration-300 flex items-center gap-2',
                                             activeTab === tab
                                                 ? 'text-[#0a0a08]'
                                                 : 'text-[#fefefc]/60 hover:text-[#fefefc]'
@@ -1374,7 +1375,7 @@ export default function AppPage() {
                                             />
                                         )}
                                         <span className="relative z-10 flex items-center gap-2">
-                                            {tab === 'send' ? <Upload className="w-4 h-4 3xl:w-5 3xl:h-5" /> : <Download className="w-4 h-4 3xl:w-5 3xl:h-5" />}
+                                            {tab === 'send' ? <Upload className="w-4 h-4" /> : <Download className="w-4 h-4" />}
                                             {tab === 'send' ? t('app.send') : t('app.receive')}
                                         </span>
                                     </motion.button>
@@ -1394,14 +1395,14 @@ export default function AppPage() {
                                 initial="hidden"
                                 animate="visible"
                                 exit="exit"
-                                className="space-y-6 sm:space-y-8 3xl:space-y-10"
+                                className="space-y-5 sm:space-y-6"
                             >
                                 {/* File Drop Zone - Only when no mode selected */}
                                 {!transferMode && (
                                     <motion.div variants={itemVariants}>
                                         <EuvekaCard
                                             className={cn(
-                                                'p-8 transition-all duration-300',
+                                                'p-5 sm:p-6 transition-all duration-300',
                                                 isDragging && 'border-[#fefefc] bg-[#fefefc]/5'
                                             )}
                                         >
@@ -1425,17 +1426,17 @@ export default function AppPage() {
                                 {/* Selected Files Summary */}
                                 {selectedFiles.length > 0 && !transferMode && (
                                     <motion.div variants={itemVariants}>
-                                        <EuvekaCard className="p-5 border-[#fefefc]/20">
+                                        <EuvekaCard className="p-4 border-[#fefefc]/20">
                                             <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 rounded-full border border-[#fefefc]/20 flex items-center justify-center">
-                                                        <File className="w-5 h-5 text-[#fefefc]" />
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full border border-[#fefefc]/20 flex items-center justify-center">
+                                                        <File className="w-4 h-4 text-[#fefefc]" />
                                                     </div>
                                                     <div>
-                                                        <p className="font-semibold text-[#fefefc]">
+                                                        <p className="font-medium text-[#fefefc] text-sm">
                                                             {selectedFiles.length} {selectedFiles.length === 1 ? t('app.fileSelected') : t('app.filesSelected')}
                                                         </p>
-                                                        <p className="text-sm text-[#fefefc]/60">
+                                                        <p className="text-xs text-[#fefefc]/60">
                                                             {formatFileSize(selectedFiles.reduce((acc, f) => acc + f.size, 0))} total
                                                         </p>
                                                     </div>
@@ -1446,7 +1447,7 @@ export default function AppPage() {
                                                     onClick={handleClearFiles}
                                                     className="text-[#fefefc]/60 hover:text-[#ef4444]"
                                                 >
-                                                    <X className="w-4 h-4 mr-1" />
+                                                    <X className="w-3.5 h-3.5 mr-1" />
                                                     {t('app.clearFiles')}
                                                 </EuvekaButton>
                                             </div>
@@ -1457,28 +1458,31 @@ export default function AppPage() {
                                 {/* Transfer Mode Cards - Bento Grid */}
                                 {!transferMode && (
                                     <motion.div variants={itemVariants}>
-                                        <h3 className="text-sm font-medium text-[#fefefc]/40 uppercase tracking-widest mb-6 px-1">
+                                        <h3 className="text-xs font-medium text-[#fefefc]/40 uppercase tracking-wider mb-4 px-1">
                                             {t('app.selectConnection')}
                                         </h3>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 3xl:gap-6">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 items-stretch">
                                             {/* Local Network Card */}
                                             <EuvekaCard
                                                 interactive
                                                 onClick={() => setTransferMode('local')}
-                                                className="p-6 group"
+                                                className="p-4 sm:p-5 group h-full flex flex-col"
                                             >
-                                                <div className="w-14 h-14 rounded-full border border-[#fefefc]/10 flex items-center justify-center mb-5 group-hover:border-[#fefefc]/30 transition-colors">
-                                                    <Wifi className="w-6 h-6 text-[#fefefc]" />
+                                                <div className="w-11 h-11 rounded-full border border-[#fefefc]/10 flex items-center justify-center mb-3 group-hover:border-[#fefefc]/30 transition-colors">
+                                                    <Wifi className="w-5 h-5 text-[#fefefc]" />
                                                 </div>
-                                                <h4 className="font-semibold text-[#fefefc] mb-2 text-lg">
+                                                <h4 className="font-semibold text-[#fefefc] mb-1.5 text-base">
                                                     {t('app.localNetwork')}
                                                 </h4>
-                                                <p className="text-sm text-[#fefefc]/50 leading-relaxed">
+                                                <p className="text-sm text-[#fefefc]/50 leading-relaxed flex-grow">
                                                     {t('app.localNetworkDesc')}
                                                 </p>
-                                                <div className="flex items-center gap-1 mt-5 text-[#fefefc]/60 text-sm font-medium group-hover:text-[#fefefc] transition-colors">
-                                                    <span>Connect</span>
-                                                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                                <div className="flex items-center justify-between mt-auto pt-3">
+                                                    <MDNSStatusIndicator size="sm" className="opacity-70 group-hover:opacity-100 transition-opacity" />
+                                                    <div className="flex items-center gap-1 text-[#fefefc]/60 text-xs font-medium group-hover:text-[#fefefc] transition-colors">
+                                                        <span>Connect</span>
+                                                        <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                                                    </div>
                                                 </div>
                                             </EuvekaCard>
 
@@ -1486,20 +1490,20 @@ export default function AppPage() {
                                             <EuvekaCard
                                                 interactive
                                                 onClick={() => setTransferMode('internet')}
-                                                className="p-6 group"
+                                                className="p-4 sm:p-5 group h-full flex flex-col"
                                             >
-                                                <div className="w-14 h-14 rounded-full border border-[#fefefc]/10 flex items-center justify-center mb-5 group-hover:border-[#fefefc]/30 transition-colors">
-                                                    <Globe className="w-6 h-6 text-[#fefefc]" />
+                                                <div className="w-11 h-11 rounded-full border border-[#fefefc]/10 flex items-center justify-center mb-3 group-hover:border-[#fefefc]/30 transition-colors">
+                                                    <Globe className="w-5 h-5 text-[#fefefc]" />
                                                 </div>
-                                                <h4 className="font-semibold text-[#fefefc] mb-2 text-lg">
+                                                <h4 className="font-semibold text-[#fefefc] mb-1.5 text-base">
                                                     {t('app.internetP2P')}
                                                 </h4>
-                                                <p className="text-sm text-[#fefefc]/50 leading-relaxed">
+                                                <p className="text-sm text-[#fefefc]/50 leading-relaxed flex-grow">
                                                     {t('app.internetP2PDesc')}
                                                 </p>
-                                                <div className="flex items-center gap-1 mt-5 text-[#fefefc]/60 text-sm font-medium group-hover:text-[#fefefc] transition-colors">
+                                                <div className="flex items-center gap-1 text-[#fefefc]/60 text-xs font-medium group-hover:text-[#fefefc] transition-colors mt-auto pt-3">
                                                     <span>Connect</span>
-                                                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                                    <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                                                 </div>
                                             </EuvekaCard>
 
@@ -1507,11 +1511,11 @@ export default function AppPage() {
                                             <EuvekaCard
                                                 interactive
                                                 onClick={() => setTransferMode('friends')}
-                                                className="p-6 group relative"
+                                                className="p-4 sm:p-5 group relative h-full flex flex-col"
                                             >
                                                 {friendRequestCount > 0 && (
                                                     <motion.span
-                                                        className="absolute top-4 right-4 w-6 h-6 rounded-full bg-[#fefefc] text-[#0a0a08] text-xs font-bold flex items-center justify-center"
+                                                        className="absolute top-3 right-3 w-5 h-5 rounded-full bg-[#fefefc] text-[#0a0a08] text-[10px] font-bold flex items-center justify-center"
                                                         initial={{ scale: 0 }}
                                                         animate={{ scale: 1 }}
                                                         transition={{ type: 'spring', stiffness: 500 }}
@@ -1519,18 +1523,18 @@ export default function AppPage() {
                                                         {friendRequestCount}
                                                     </motion.span>
                                                 )}
-                                                <div className="w-14 h-14 rounded-full border border-[#fefefc]/10 flex items-center justify-center mb-5 group-hover:border-[#fefefc]/30 transition-colors">
-                                                    <Users className="w-6 h-6 text-[#fefefc]" />
+                                                <div className="w-11 h-11 rounded-full border border-[#fefefc]/10 flex items-center justify-center mb-3 group-hover:border-[#fefefc]/30 transition-colors">
+                                                    <Users className="w-5 h-5 text-[#fefefc]" />
                                                 </div>
-                                                <h4 className="font-semibold text-[#fefefc] mb-2 text-lg">
+                                                <h4 className="font-semibold text-[#fefefc] mb-1.5 text-base">
                                                     {t('app.friends')}
                                                 </h4>
-                                                <p className="text-sm text-[#fefefc]/50 leading-relaxed">
+                                                <p className="text-sm text-[#fefefc]/50 leading-relaxed flex-grow">
                                                     {t('app.friendsDesc')}
                                                 </p>
-                                                <div className="flex items-center gap-1 mt-5 text-[#fefefc]/60 text-sm font-medium group-hover:text-[#fefefc] transition-colors">
+                                                <div className="flex items-center gap-1 text-[#fefefc]/60 text-xs font-medium group-hover:text-[#fefefc] transition-colors mt-auto pt-3">
                                                     <span>View Friends</span>
-                                                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                                    <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                                                 </div>
                                             </EuvekaCard>
                                         </div>
@@ -1539,25 +1543,28 @@ export default function AppPage() {
 
                                 {/* Mode-specific content */}
                                 {transferMode === 'local' && (
-                                    <motion.div variants={itemVariants} initial="hidden" animate="visible" className="space-y-5">
+                                    <motion.div variants={itemVariants} initial="hidden" animate="visible" className="space-y-4">
                                         <div className="flex items-center justify-between">
                                             <EuvekaButton
                                                 variant="ghost"
+                                                size="sm"
                                                 onClick={() => setTransferMode(null)}
                                                 className="text-[#fefefc]/60"
                                             >
-                                                <ArrowLeft className="w-4 h-4 mr-2" />
+                                                <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
                                                 {t('app.back')}
                                             </EuvekaButton>
+                                            <MDNSStatusIndicator size="sm" />
                                             <EuvekaButton
                                                 variant="ghost"
+                                                size="sm"
                                                 onClick={handleRefreshDevices}
                                             >
-                                                <RefreshCw className="w-4 h-4 mr-2" />
+                                                <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
                                                 {t('app.refresh')}
                                             </EuvekaButton>
                                         </div>
-                                        <EuvekaCard className="p-6">
+                                        <EuvekaCard className="p-4 sm:p-5">
                                             <DeviceListAnimated
                                                 devices={localDevices}
                                                 selectedDevice={selectedDevice}
@@ -1571,46 +1578,47 @@ export default function AppPage() {
                                 )}
 
                                 {transferMode === 'internet' && (
-                                    <motion.div variants={itemVariants} initial="hidden" animate="visible" className="space-y-5">
+                                    <motion.div variants={itemVariants} initial="hidden" animate="visible" className="space-y-4">
                                         <EuvekaButton
                                             variant="ghost"
+                                            size="sm"
                                             onClick={() => setTransferMode(null)}
                                             className="text-[#fefefc]/60"
                                         >
-                                            <ArrowLeft className="w-4 h-4 mr-2" />
+                                            <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
                                             {t('app.back')}
                                         </EuvekaButton>
 
                                         {/* Connection Code Display */}
-                                        <EuvekaCard className="p-8" glow>
-                                            <div className="text-center mb-6">
-                                                <h4 className="text-lg font-semibold text-[#fefefc] mb-2">
+                                        <EuvekaCard className="p-5 sm:p-6" glow>
+                                            <div className="text-center mb-4">
+                                                <h4 className="text-base font-semibold text-[#fefefc] mb-1.5">
                                                     {t('app.yourCode')}
                                                 </h4>
                                                 <p className="text-sm text-[#fefefc]/50">
                                                     {t('app.shareCode')}
                                                 </p>
                                             </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex-1 p-5 rounded-2xl bg-[#0a0a08] border border-[#262626] font-mono text-xl text-center text-[#fefefc] tracking-widest">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="flex-1 p-4 rounded-xl bg-[#0a0a08] border border-[#262626] font-mono text-lg text-center text-[#fefefc] tracking-wider">
                                                     {connectionCode}
                                                 </div>
-                                                <div className="flex flex-col gap-2">
+                                                <div className="flex flex-col gap-1.5">
                                                     <EuvekaButton
                                                         variant="outline"
-                                                        size="md"
+                                                        size="sm"
                                                         icon
                                                         onClick={handleCopyCode}
                                                     >
-                                                        <Copy className="w-5 h-5" />
+                                                        <Copy className="w-4 h-4" />
                                                     </EuvekaButton>
                                                     <EuvekaButton
                                                         variant="outline"
-                                                        size="md"
+                                                        size="sm"
                                                         icon
                                                         onClick={regenerateCode}
                                                     >
-                                                        <RefreshCw className="w-5 h-5" />
+                                                        <RefreshCw className="w-4 h-4" />
                                                     </EuvekaButton>
                                                 </div>
                                             </div>
@@ -1619,25 +1627,27 @@ export default function AppPage() {
                                 )}
 
                                 {transferMode === 'friends' && (
-                                    <motion.div variants={itemVariants} initial="hidden" animate="visible" className="space-y-5">
+                                    <motion.div variants={itemVariants} initial="hidden" animate="visible" className="space-y-4">
                                         <div className="flex items-center justify-between">
                                             <EuvekaButton
                                                 variant="ghost"
+                                                size="sm"
                                                 onClick={() => setTransferMode(null)}
                                                 className="text-[#fefefc]/60"
                                             >
-                                                <ArrowLeft className="w-4 h-4 mr-2" />
+                                                <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
                                                 {t('app.back')}
                                             </EuvekaButton>
                                             <EuvekaButton
                                                 variant="ghost"
+                                                size="sm"
                                                 onClick={handleRefreshFriends}
                                             >
-                                                <RefreshCw className="w-4 h-4 mr-2" />
+                                                <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
                                                 {t('app.refresh')}
                                             </EuvekaButton>
                                         </div>
-                                        <EuvekaCard className="p-6">
+                                        <EuvekaCard className="p-4 sm:p-5">
                                             <FriendsList
                                                 onSendToFriend={handleSendToFriend}
                                             />
@@ -1648,24 +1658,24 @@ export default function AppPage() {
                                 {/* Connected State - Ready to Send */}
                                 {isConnected && selectedDevice && (
                                     <motion.div variants={itemVariants} initial="hidden" animate="visible">
-                                        <EuvekaCard className="p-6 border-[#22c55e]/30">
-                                            <div className="flex items-center justify-between mb-5">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 rounded-full border border-[#22c55e]/30 flex items-center justify-center">
-                                                        <Check className="w-6 h-6 text-[#22c55e]" />
+                                        <EuvekaCard className="p-4 sm:p-5 border-[#22c55e]/30">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full border border-[#22c55e]/30 flex items-center justify-center">
+                                                        <Check className="w-5 h-5 text-[#22c55e]" />
                                                     </div>
                                                     <div>
-                                                        <p className="font-semibold text-[#fefefc]">
+                                                        <p className="font-medium text-[#fefefc] text-sm">
                                                             {t('app.connectedTo')} {selectedDevice.name}
                                                         </p>
-                                                        <p className="text-sm text-[#fefefc]/50">
+                                                        <p className="text-xs text-[#fefefc]/50">
                                                             {pqcReady ? 'Post-quantum encryption active' : 'Establishing encryption...'}
                                                         </p>
                                                     </div>
                                                 </div>
                                                 {peerVerified && (
-                                                    <div className="flex items-center gap-1.5 text-sm text-[#22c55e] font-medium">
-                                                        <Shield className="w-4 h-4" />
+                                                    <div className="flex items-center gap-1.5 text-xs text-[#22c55e] font-medium">
+                                                        <Shield className="w-3.5 h-3.5" />
                                                         Verified
                                                     </div>
                                                 )}
@@ -1674,19 +1684,19 @@ export default function AppPage() {
                                             {selectedFiles.length > 0 && (
                                                 <EuvekaButton
                                                     variant="filled"
-                                                    size="lg"
+                                                    size="md"
                                                     onClick={handleStartTransfer}
                                                     disabled={!pqcReady || isSending}
                                                     className="w-full"
                                                 >
                                                     {isSending ? (
                                                         <>
-                                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                                            <Loader2 className="w-4 h-4 animate-spin" />
                                                             {t('app.sending')} ({sendingFileIndex}/{sendingFileTotal})
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <Send className="w-5 h-5" />
+                                                            <Send className="w-4 h-4" />
                                                             {t('app.sendFiles')}
                                                         </>
                                                     )}
@@ -1699,16 +1709,16 @@ export default function AppPage() {
                                 {/* Transfer Progress */}
                                 {(isSending || isReceiving) && (
                                     <motion.div variants={itemVariants} initial="hidden" animate="visible">
-                                        <EuvekaCard className="p-6">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <span className="font-semibold text-[#fefefc]">
+                                        <EuvekaCard className="p-4 sm:p-5">
+                                            <div className="flex items-center justify-between mb-2.5">
+                                                <span className="font-medium text-[#fefefc] text-sm truncate mr-3">
                                                     {isSending ? sendingFileName : receivingFileName}
                                                 </span>
                                                 <span className="text-sm font-medium text-[#fefefc]">
                                                     {Math.round(isSending ? sendProgress : receiveProgress)}%
                                                 </span>
                                             </div>
-                                            <div className="h-2 bg-[#262626] rounded-full overflow-hidden mb-3">
+                                            <div className="h-1.5 bg-[#262626] rounded-full overflow-hidden mb-2.5">
                                                 <motion.div
                                                     className="h-full bg-[#fefefc] rounded-full"
                                                     initial={{ width: 0 }}
@@ -1730,11 +1740,11 @@ export default function AppPage() {
                                 {/* Recent Transfers Preview */}
                                 {!transferMode && !isConnected && recentTransfers.length > 0 && (
                                     <motion.div variants={itemVariants}>
-                                        <div className="flex items-center justify-between mb-5 px-1">
-                                            <h3 className="text-sm font-medium text-[#fefefc]/40 uppercase tracking-widest">
+                                        <div className="flex items-center justify-between mb-3 px-1">
+                                            <h3 className="text-xs font-medium text-[#fefefc]/40 uppercase tracking-wider">
                                                 Recent Transfers
                                             </h3>
-                                            <Link href="/app/history" className="text-sm text-[#fefefc]/60 font-medium hover:text-[#fefefc] transition-colors">
+                                            <Link href="/app/history" className="text-xs text-[#fefefc]/60 font-medium hover:text-[#fefefc] transition-colors">
                                                 View All
                                             </Link>
                                         </div>
@@ -1742,32 +1752,32 @@ export default function AppPage() {
                                             {recentTransfers.slice(0, 3).map((transfer, i) => (
                                                 <motion.div
                                                     key={transfer.id}
-                                                    className="flex items-center gap-4 p-4"
+                                                    className="flex items-center gap-3 p-3"
                                                     initial={{ opacity: 0, x: -10 }}
                                                     animate={{ opacity: 1, x: 0 }}
                                                     transition={{ delay: i * 0.05 }}
                                                 >
                                                     <div className={cn(
-                                                        'w-10 h-10 rounded-full border flex items-center justify-center',
+                                                        'w-9 h-9 rounded-full border flex items-center justify-center',
                                                         transfer.direction === 'send'
                                                             ? 'border-[#fefefc]/20'
                                                             : 'border-[#22c55e]/30'
                                                     )}>
                                                         {transfer.direction === 'send' ? (
-                                                            <Upload className="w-4 h-4 text-[#fefefc]" />
+                                                            <Upload className="w-3.5 h-3.5 text-[#fefefc]" />
                                                         ) : (
-                                                            <Download className="w-4 h-4 text-[#22c55e]" />
+                                                            <Download className="w-3.5 h-3.5 text-[#22c55e]" />
                                                         )}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="font-medium text-[#fefefc] truncate">
+                                                        <p className="font-medium text-[#fefefc] text-sm truncate">
                                                             {transfer.fileName}
                                                         </p>
                                                         <p className="text-xs text-[#fefefc]/50">
                                                             {transfer.peerName} - {formatFileSize(transfer.fileSize)}
                                                         </p>
                                                     </div>
-                                                    <div className="text-xs text-[#fefefc]/40 flex items-center gap-1">
+                                                    <div className="text-[10px] text-[#fefefc]/40 flex items-center gap-1">
                                                         <Clock className="w-3 h-3" />
                                                         {new Date(transfer.completedAt).toLocaleDateString()}
                                                     </div>
@@ -1787,43 +1797,43 @@ export default function AppPage() {
                                 initial="hidden"
                                 animate="visible"
                                 exit="exit"
-                                className="space-y-6 sm:space-y-8 3xl:space-y-10"
+                                className="space-y-5 sm:space-y-6"
                             >
                                 {/* Code Input */}
                                 {!transferMode && !isConnected && (
-                                    <motion.div variants={itemVariants} className="space-y-4 sm:space-y-6 3xl:space-y-8">
+                                    <motion.div variants={itemVariants} className="space-y-4">
                                         {/* Enter Code Card */}
-                                        <EuvekaCard className="p-6 sm:p-8 3xl:p-10" glow>
-                                            <div className="text-center mb-4 sm:mb-6 3xl:mb-8">
-                                                <h3 className="text-lg sm:text-xl 3xl:text-2xl font-semibold text-[#fefefc] mb-2">
+                                        <EuvekaCard className="p-5 sm:p-6" glow>
+                                            <div className="text-center mb-4">
+                                                <h3 className="text-base sm:text-lg font-semibold text-[#fefefc] mb-1.5">
                                                     {t('app.enterCode')}
                                                 </h3>
                                                 <p className="text-sm text-[#fefefc]/50">
                                                     Enter the code from the sender to connect
                                                 </p>
                                             </div>
-                                            <div className="space-y-5">
+                                            <div className="space-y-4">
                                                 <Input
                                                     value={inputCode}
                                                     onChange={(e) => setInputCode(e.target.value)}
                                                     placeholder="e.g. apple-berry-cloud or AB3X#K"
-                                                    className="h-16 text-lg text-center font-mono tracking-wider rounded-2xl border-[#262626] bg-[#0a0a08] text-[#fefefc] placeholder:text-[#fefefc]/30 focus:border-[#fefefc]/40 focus:ring-0"
+                                                    className="h-12 text-base text-center font-mono tracking-wider rounded-xl border-[#262626] bg-[#0a0a08] text-[#fefefc] placeholder:text-[#fefefc]/30 focus:border-[#fefefc]/40 focus:ring-0"
                                                 />
                                                 <EuvekaButton
                                                     variant="filled"
-                                                    size="lg"
+                                                    size="md"
                                                     onClick={() => handleConnectByCode(inputCode)}
                                                     disabled={!inputCode.trim() || isConnecting}
                                                     className="w-full"
                                                 >
                                                     {isConnecting ? (
                                                         <>
-                                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                                            <Loader2 className="w-4 h-4 animate-spin" />
                                                             {t('app.connecting')}
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <ChevronRight className="w-5 h-5" />
+                                                            <ChevronRight className="w-4 h-4" />
                                                             {t('app.connect')}
                                                         </>
                                                     )}
@@ -1835,21 +1845,21 @@ export default function AppPage() {
                                         <EuvekaCard
                                             interactive
                                             onClick={() => setTransferMode('internet')}
-                                            className="p-6 border-dashed group"
+                                            className="p-4 border-dashed group"
                                         >
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-14 h-14 rounded-full border border-[#fefefc]/10 flex items-center justify-center group-hover:border-[#fefefc]/30 transition-colors">
-                                                    <QrCode className="w-6 h-6 text-[#fefefc]/60 group-hover:text-[#fefefc] transition-colors" />
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-11 h-11 rounded-full border border-[#fefefc]/10 flex items-center justify-center group-hover:border-[#fefefc]/30 transition-colors">
+                                                    <QrCode className="w-5 h-5 text-[#fefefc]/60 group-hover:text-[#fefefc] transition-colors" />
                                                 </div>
                                                 <div className="flex-1">
-                                                    <h4 className="font-semibold text-[#fefefc]">
+                                                    <h4 className="font-medium text-[#fefefc] text-sm">
                                                         {t('app.scanQR')}
                                                     </h4>
-                                                    <p className="text-sm text-[#fefefc]/50">
+                                                    <p className="text-xs text-[#fefefc]/50">
                                                         {t('app.orEnterCode')}
                                                     </p>
                                                 </div>
-                                                <ChevronRight className="w-5 h-5 text-[#fefefc]/40 group-hover:text-[#fefefc] group-hover:translate-x-1 transition-all" />
+                                                <ChevronRight className="w-4 h-4 text-[#fefefc]/40 group-hover:text-[#fefefc] group-hover:translate-x-1 transition-all" />
                                             </div>
                                         </EuvekaCard>
                                     </motion.div>
@@ -1857,30 +1867,31 @@ export default function AppPage() {
 
                                 {/* Waiting for connection */}
                                 {transferMode === 'internet' && !isConnected && (
-                                    <motion.div variants={itemVariants} initial="hidden" animate="visible" className="space-y-5">
+                                    <motion.div variants={itemVariants} initial="hidden" animate="visible" className="space-y-4">
                                         <EuvekaButton
                                             variant="ghost"
+                                            size="sm"
                                             onClick={() => setTransferMode(null)}
                                             className="text-[#fefefc]/60"
                                         >
-                                            <ArrowLeft className="w-4 h-4 mr-2" />
+                                            <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
                                             {t('app.back')}
                                         </EuvekaButton>
-                                        <EuvekaCard className="p-12 text-center" glow>
+                                        <EuvekaCard className="p-8 sm:p-10 text-center" glow>
                                             <motion.div
                                                 animate={{ rotate: 360 }}
                                                 transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                                                className="w-16 h-16 mx-auto mb-6"
+                                                className="w-12 h-12 mx-auto mb-5"
                                             >
-                                                <Loader2 className="w-16 h-16 text-[#fefefc]" />
+                                                <Loader2 className="w-12 h-12 text-[#fefefc]" />
                                             </motion.div>
-                                            <p className="text-lg font-medium text-[#fefefc] mb-2">
+                                            <p className="text-base font-medium text-[#fefefc] mb-1.5">
                                                 {t('app.waitingConnection')}
                                             </p>
                                             <p className="text-sm text-[#fefefc]/50">
                                                 Share your code with the sender
                                             </p>
-                                            <div className="mt-6 p-4 rounded-2xl bg-[#0a0a08] border border-[#262626] font-mono text-lg text-[#fefefc]">
+                                            <div className="mt-5 p-3 rounded-xl bg-[#0a0a08] border border-[#262626] font-mono text-base text-[#fefefc]">
                                                 {connectionCode}
                                             </div>
                                         </EuvekaCard>
@@ -1890,16 +1901,16 @@ export default function AppPage() {
                                 {/* Connected - Receiving */}
                                 {isConnected && (
                                     <motion.div variants={itemVariants} initial="hidden" animate="visible">
-                                        <EuvekaCard className="p-6 border-[#22c55e]/30">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-full border border-[#22c55e]/30 flex items-center justify-center">
-                                                    <Check className="w-6 h-6 text-[#22c55e]" />
+                                        <EuvekaCard className="p-4 sm:p-5 border-[#22c55e]/30">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full border border-[#22c55e]/30 flex items-center justify-center">
+                                                    <Check className="w-5 h-5 text-[#22c55e]" />
                                                 </div>
                                                 <div>
-                                                    <p className="font-semibold text-[#fefefc]">
+                                                    <p className="font-medium text-[#fefefc] text-sm">
                                                         {t('app.connectedTo')} {selectedDevice?.name || 'Peer'}
                                                     </p>
-                                                    <p className="text-sm text-[#fefefc]/50">
+                                                    <p className="text-xs text-[#fefefc]/50">
                                                         {isReceiving ? t('app.receiving') : 'Ready to receive files'}
                                                     </p>
                                                 </div>
@@ -1911,16 +1922,16 @@ export default function AppPage() {
                                 {/* Receive Progress */}
                                 {isReceiving && (
                                     <motion.div variants={itemVariants} initial="hidden" animate="visible">
-                                        <EuvekaCard className="p-6">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <span className="font-semibold text-[#fefefc]">
+                                        <EuvekaCard className="p-4 sm:p-5">
+                                            <div className="flex items-center justify-between mb-2.5">
+                                                <span className="font-medium text-[#fefefc] text-sm truncate mr-3">
                                                     {receivingFileName}
                                                 </span>
                                                 <span className="text-sm font-medium text-[#fefefc]">
                                                     {Math.round(receiveProgress)}%
                                                 </span>
                                             </div>
-                                            <div className="h-2 bg-[#262626] rounded-full overflow-hidden">
+                                            <div className="h-1.5 bg-[#262626] rounded-full overflow-hidden">
                                                 <motion.div
                                                     className="h-full bg-[#fefefc] rounded-full"
                                                     initial={{ width: 0 }}
@@ -1939,17 +1950,17 @@ export default function AppPage() {
                         PRIVACY WARNING
                     ============================================================ */}
                     {privacyInitResult?.warnings && privacyInitResult.warnings.length > 0 && (
-                        <motion.div variants={itemVariants} initial="hidden" animate="visible" className="mt-10">
-                            <EuvekaCard className="p-5 border-[#f59e0b]/30">
-                                <div className="flex items-start gap-4">
-                                    <div className="w-10 h-10 rounded-full border border-[#f59e0b]/30 flex items-center justify-center shrink-0">
-                                        <AlertTriangle className="w-5 h-5 text-[#f59e0b]" />
+                        <motion.div variants={itemVariants} initial="hidden" animate="visible" className="mt-6">
+                            <EuvekaCard className="p-4 border-[#f59e0b]/30">
+                                <div className="flex items-start gap-3">
+                                    <div className="w-9 h-9 rounded-full border border-[#f59e0b]/30 flex items-center justify-center shrink-0">
+                                        <AlertTriangle className="w-4 h-4 text-[#f59e0b]" />
                                     </div>
                                     <div className="flex-1">
-                                        <p className="font-semibold text-[#fefefc] mb-1">
+                                        <p className="font-medium text-[#fefefc] text-sm mb-0.5">
                                             Privacy Warning
                                         </p>
-                                        <p className="text-sm text-[#fefefc]/60 mb-4">
+                                        <p className="text-xs text-[#fefefc]/60 mb-3">
                                             WebRTC may expose your IP address to connected peers.
                                         </p>
                                         <EuvekaButton
@@ -1989,9 +2000,9 @@ export default function AppPage() {
                             className="w-full max-w-md"
                         >
                             <EuvekaCard className="overflow-hidden" glow>
-                                <div className="p-6 border-b border-[#262626]">
+                                <div className="p-4 border-b border-[#262626]">
                                     <div className="flex items-center justify-between">
-                                        <h2 className="text-xl font-semibold text-[#fefefc]">
+                                        <h2 className="text-lg font-semibold text-[#fefefc]">
                                             {t('app.receivedFiles')}
                                         </h2>
                                         <EuvekaButton
@@ -2000,13 +2011,13 @@ export default function AppPage() {
                                             icon
                                             onClick={() => setShowReceivedDialog(false)}
                                         >
-                                            <X className="w-5 h-5" />
+                                            <X className="w-4 h-4" />
                                         </EuvekaButton>
                                     </div>
                                 </div>
 
-                                <ScrollArea className="max-h-80">
-                                    <div className="p-4 space-y-2">
+                                <ScrollArea className="max-h-72">
+                                    <div className="p-3 space-y-1.5">
                                         {receivedFiles.map((file, index) => {
                                             const FileIcon = getFileIcon(file.type);
                                             return (
@@ -2015,13 +2026,13 @@ export default function AppPage() {
                                                     initial={{ opacity: 0, x: -10 }}
                                                     animate={{ opacity: 1, x: 0 }}
                                                     transition={{ delay: index * 0.05 }}
-                                                    className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#fefefc]/5 group transition-colors"
+                                                    className="flex items-center gap-2.5 p-2.5 rounded-lg hover:bg-[#fefefc]/5 group transition-colors"
                                                 >
-                                                    <div className="w-11 h-11 rounded-full border border-[#262626] flex items-center justify-center shrink-0">
-                                                        <FileIcon className="w-5 h-5 text-[#fefefc]/60" />
+                                                    <div className="w-9 h-9 rounded-full border border-[#262626] flex items-center justify-center shrink-0">
+                                                        <FileIcon className="w-4 h-4 text-[#fefefc]/60" />
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="font-medium text-[#fefefc] truncate">
+                                                        <p className="font-medium text-[#fefefc] text-sm truncate">
                                                             {file.name}
                                                         </p>
                                                         <p className="text-xs text-[#fefefc]/50">
@@ -2035,7 +2046,7 @@ export default function AppPage() {
                                                         onClick={() => handleDownloadFile(file)}
                                                         className="opacity-0 group-hover:opacity-100 transition-opacity"
                                                     >
-                                                        <Download className="w-4 h-4" />
+                                                        <Download className="w-3.5 h-3.5" />
                                                     </EuvekaButton>
                                                 </motion.div>
                                             );
@@ -2044,14 +2055,14 @@ export default function AppPage() {
                                 </ScrollArea>
 
                                 {receivedFiles.length > 0 && (
-                                    <div className="p-5 border-t border-[#262626]">
+                                    <div className="p-4 border-t border-[#262626]">
                                         <EuvekaButton
                                             variant="filled"
-                                            size="lg"
+                                            size="md"
                                             onClick={handleDownloadAll}
                                             className="w-full"
                                         >
-                                            <Download className="w-5 h-5" />
+                                            <Download className="w-4 h-4" />
                                             {t('app.downloadAll')}
                                         </EuvekaButton>
                                     </div>
