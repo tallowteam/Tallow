@@ -14,12 +14,45 @@ const APP_URL = process.env['APP_URL'] || 'http://localhost:3000';
 const DAEMON_WS_URL = 'ws://localhost:53318';
 
 /**
- * Check if the mDNS daemon is available via WebSocket
+ * Check if the mDNS daemon is available via HTTP health endpoint
  */
 async function checkDaemonAvailable(): Promise<boolean> {
-  // We can't directly check WebSocket from Playwright, so we'll check via the app
-  // Return false for now - the test will use conditional logic
-  return false;
+  try {
+    // Try to connect to daemon's health endpoint or WebSocket upgrade
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+
+    const response = await fetch('http://localhost:53318/health', {
+      signal: controller.signal,
+    }).catch(() => null);
+
+    clearTimeout(timeout);
+
+    if (response?.ok) return true;
+
+    // Fallback: try WebSocket connection via Node
+    const { WebSocket } = await import('ws');
+    return new Promise((resolve) => {
+      const ws = new WebSocket('ws://localhost:53318');
+      const wsTimeout = setTimeout(() => {
+        ws.close();
+        resolve(false);
+      }, 2000);
+
+      ws.on('open', () => {
+        clearTimeout(wsTimeout);
+        ws.close();
+        resolve(true);
+      });
+
+      ws.on('error', () => {
+        clearTimeout(wsTimeout);
+        resolve(false);
+      });
+    });
+  } catch {
+    return false;
+  }
 }
 
 /**
