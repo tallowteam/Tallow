@@ -126,12 +126,13 @@
 
 ## Session Continuity
 
-Last activity: 2026-01-31 - quick-010 mDNS discovery integration testing
+Last activity: 2026-01-31 - MDNSBridge test timeout fixes
 
-- quick-010 mDNS discovery testing (commits 0820628, 40df631, c055456)
-  - 38 MDNSBridge unit tests
+- quick-010 mDNS discovery testing (commits 0820628, 40df631, c055456, 4ccbe7e)
+  - 38 MDNSBridge unit tests (fixed timeout issues with fake timers)
   - 23 daemon integration tests
   - 14 E2E discovery tests
+  - 115 total discovery tests passing in ~5 seconds
 - quick-009 React 18 adoption (commits 3b76ee3, 6670de0, 81d1fd0, af02e5a, cf1ef09)
 - 20-agent full execution (Go CLI, Relay, mDNS, WebRTC, Tests, Monitoring)
 
