@@ -54,11 +54,26 @@ const statusColors: Record<
 };
 
 /**
- * Get Lucide icon component by name
+ * Icon cache to prevent repeated lookups
+ * Improves performance when rendering many feature cards
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const iconCache = new Map<string, React.ComponentType<any>>();
+
+/**
+ * Get Lucide icon component by name with caching
+ * Caches icon lookups to avoid repeated object access overhead
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getIconComponent = (iconName?: string): React.ComponentType<any> => {
   if (!iconName) {
     return LucideIcons.FileText;
+  }
+
+  // Check cache first
+  const cached = iconCache.get(iconName);
+  if (cached) {
+    return cached;
   }
 
   // Convert to PascalCase (e.g., "file-text" -> "FileText")
@@ -67,8 +82,14 @@ const getIconComponent = (iconName?: string): React.ComponentType<any> => {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join("");
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const IconComponent = (LucideIcons as any)[componentName];
-  return IconComponent || LucideIcons.FileText;
+  const result = IconComponent || LucideIcons.FileText;
+
+  // Cache for future lookups
+  iconCache.set(iconName, result);
+
+  return result;
 };
 
 /**
@@ -183,10 +204,12 @@ const CompactCard = ({
           }
         }}
         className={cn(
-          "h-full cursor-pointer transition-all duration-300",
-          "rounded-[2rem] p-6 gap-4 flex flex-col",
-          "hover:shadow-xl hover:border-foreground",
-          "dark:hover:shadow-[0_12px_40px_-12px_rgba(61,90,254,0.3)]",
+          "h-full min-h-[220px] cursor-pointer transition-all duration-300",
+          "rounded-[2rem] p-6 md:p-8 gap-5 flex flex-col",
+          "dark:bg-[#161614] bg-white",
+          "dark:border-[#262626] border-gray-200 border",
+          "hover:shadow-xl dark:hover:border-white/30 hover:border-foreground",
+          "dark:hover:shadow-[0_12px_40px_-12px_rgba(254,254,252,0.15)]",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
           "active:translate-y-[-2px] active:scale-[0.98]"
         )}
@@ -197,7 +220,7 @@ const CompactCard = ({
             className="rounded-xl bg-primary/10 p-3 shrink-0"
             aria-hidden="true"
           >
-            <Icon className="size-6 text-primary" />
+            <Icon className="size-6 text-primary" aria-hidden="true" />
           </div>
           {showStatus && (
             <div className="ml-auto">
@@ -206,11 +229,11 @@ const CompactCard = ({
           )}
         </div>
 
-        <div className="space-y-2 flex-1">
-          <h3 className="display-sm text-xl font-bold leading-tight">
+        <div className="space-y-3 flex-1 flex flex-col">
+          <h3 className="text-xl font-bold leading-tight tracking-tight text-foreground">
             {feature.title}
           </h3>
-          <p className="body-md text-sm text-muted-foreground line-clamp-3">
+          <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3 flex-1">
             {feature.description}
           </p>
         </div>
@@ -258,8 +281,11 @@ const DetailedCard = ({
         }}
         className={cn(
           "h-full cursor-pointer transition-all duration-300",
-          "rounded-[2rem] hover:shadow-xl hover:border-foreground",
-          "dark:hover:shadow-[0_12px_40px_-12px_rgba(61,90,254,0.3)]",
+          "rounded-[2rem]",
+          "dark:bg-[#161614] bg-white",
+          "dark:border-[#262626] border-gray-200 border",
+          "hover:shadow-xl dark:hover:border-white/30 hover:border-foreground",
+          "dark:hover:shadow-[0_12px_40px_-12px_rgba(254,254,252,0.15)]",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
           "active:translate-y-[-2px] active:scale-[0.98]"
         )}
@@ -272,7 +298,7 @@ const DetailedCard = ({
                 className="rounded-xl bg-primary/10 p-3 shrink-0"
                 aria-hidden="true"
               >
-                <Icon className="size-8 text-primary" />
+                <Icon className="size-8 text-primary" aria-hidden="true" />
               </div>
               <div className="space-y-2 flex-1 min-w-0">
                 <CardTitle className="display-sm text-2xl">
@@ -386,8 +412,11 @@ const InteractiveCard = ({
         }}
         className={cn(
           "h-full transition-all duration-300",
-          "rounded-[2rem] hover:shadow-xl hover:border-foreground",
-          "dark:hover:shadow-[0_12px_40px_-12px_rgba(61,90,254,0.3)]",
+          "rounded-[2rem]",
+          "dark:bg-[#161614] bg-white",
+          "dark:border-[#262626] border-gray-200 border",
+          "hover:shadow-xl dark:hover:border-white/30 hover:border-foreground",
+          "dark:hover:shadow-[0_12px_40px_-12px_rgba(254,254,252,0.15)]",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         )}
         aria-label={`Feature: ${feature.title}`}
@@ -399,7 +428,7 @@ const InteractiveCard = ({
                 className="rounded-xl bg-primary/10 p-3 shrink-0"
                 aria-hidden="true"
               >
-                <Icon className="size-8 text-primary" />
+                <Icon className="size-8 text-primary" aria-hidden="true" />
               </div>
               <div className="space-y-2 flex-1 min-w-0">
                 <CardTitle className="display-sm text-2xl">
@@ -428,7 +457,7 @@ const InteractiveCard = ({
 
           {/* File Location */}
           <div className="flex items-start gap-2 text-sm">
-            <LucideIcons.FileCode className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+            <LucideIcons.FileCode className="size-4 text-muted-foreground mt-0.5 shrink-0" aria-hidden="true" />
             <code className="text-xs font-mono text-muted-foreground break-all">
               {feature.location}
             </code>
@@ -446,7 +475,7 @@ const InteractiveCard = ({
                 }}
                 aria-label={`Try ${feature.title} demo`}
               >
-                <LucideIcons.Play className="size-4" />
+                <LucideIcons.Play className="size-4" aria-hidden="true" />
                 Try Demo
               </Button>
             )}
@@ -461,7 +490,7 @@ const InteractiveCard = ({
                 }}
                 aria-label={`View ${feature.title} documentation`}
               >
-                <LucideIcons.BookOpen className="size-4" />
+                <LucideIcons.BookOpen className="size-4" aria-hidden="true" />
                 View Docs
               </Button>
             )}
@@ -476,7 +505,7 @@ const InteractiveCard = ({
                 }}
                 aria-label={`View ${feature.title} details`}
               >
-                <LucideIcons.Info className="size-4" />
+                <LucideIcons.Info className="size-4" aria-hidden="true" />
                 Learn More
               </Button>
             )}
@@ -555,7 +584,8 @@ FeatureCard.displayName = 'FeatureCard';
 
 /**
  * Responsive Grid Container for FeatureCards
- * 3 columns on desktop, 2 on tablet, 1 on mobile
+ * EUVEKA breakpoints: 758px, 1200px, 1400px
+ * 4K support at 1536px+
  */
 export function FeatureCardGrid({
   children,
@@ -567,10 +597,16 @@ export function FeatureCardGrid({
   return (
     <div
       className={cn(
-        "grid gap-6",
-        "grid-cols-1", // Mobile: 1 column
-        "sm:grid-cols-2", // Tablet: 2 columns
-        "lg:grid-cols-3", // Desktop: 3 columns
+        // EUVEKA responsive gaps
+        "grid gap-4 sm:gap-5 md:gap-6 lg:gap-8",
+        "grid-cols-1", // Mobile: 1 column (< 480px)
+        "sm:grid-cols-2", // Small tablet: 2 columns (480-767px)
+        "md:grid-cols-2", // Tablet: 2 columns (768-1023px)
+        "lg:grid-cols-3", // Desktop: 3 columns (1024-1279px)
+        "xl:grid-cols-3", // Large desktop: 3 columns (1280-1535px)
+        "2xl:grid-cols-4", // 4K: 4 columns (1536px+)
+        "3xl:grid-cols-4", // Ultra-wide: 4 columns (1920px+)
+        "4xl:grid-cols-5", // 4K+: 5 columns (2560px+)
         className
       )}
       role="list"
