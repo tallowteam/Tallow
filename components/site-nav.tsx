@@ -1,23 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ThemeToggleMinimal } from "@/components/theme-toggle";
+import { LanguageDropdown } from "@/components/language-dropdown";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 
-const NAV_HEIGHT = 64;
+const NAV_HEIGHT = 80; // px - used for inline styles
 
-const navLinks = [
-  { href: "/features", label: "Features" },
-  { href: "/how-it-works", label: "How it works" },
-  { href: "/security", label: "Security" },
-  { href: "/docs", label: "Docs" },
+// Navigation link configuration - labels are translation keys
+const NAV_LINK_CONFIG = [
+  { href: "/features", labelKey: "nav.features" },
+  { href: "/how-it-works", labelKey: "nav.howItWorks" },
+  { href: "/security", labelKey: "nav.security" },
+  { href: "/docs", labelKey: "nav.docs" },
 ] as const;
 
 // ============================================================================
@@ -96,7 +100,7 @@ function TallowLogo() {
           <path d="M8 5v14l11-7z" />
         </svg>
       </div>
-      <span className="text-xl 3xl:text-2xl 4xl:text-3xl font-medium text-[#fefefc] group-hover:text-white/70 transition-colors">
+      <span className="text-xl 3xl:text-2xl 4xl:text-3xl font-medium dark:text-[#fefefc] text-[#0a0a08] dark:group-hover:text-white/70 group-hover:text-[#0a0a08]/70 transition-colors">
         tallow
       </span>
     </Link>
@@ -122,15 +126,15 @@ function NavLink({
       className={cn(
         "relative text-sm 3xl:text-base 4xl:text-lg font-medium transition-colors duration-200",
         isActive
-          ? "text-[#fefefc]"
-          : "text-[#a8a29e] hover:text-[#fefefc]"
+          ? "dark:text-[#fefefc] text-[#0a0a08]"
+          : "dark:text-[#a3a3a3] text-[#666666] dark:hover:text-[#fefefc] hover:text-[#0a0a08]"
       )}
     >
       {label}
       {isActive && (
         <motion.div
           layoutId="nav-underline"
-          className="absolute -bottom-1 left-0 right-0 h-px bg-[#fefefc]"
+          className="absolute -bottom-1 left-0 right-0 h-px dark:bg-[#fefefc] bg-[#0a0a08]"
           transition={{ type: "spring", stiffness: 380, damping: 30 }}
         />
       )}
@@ -145,9 +149,11 @@ function NavLink({
 function CTAButton({
   className,
   onClick,
+  label,
 }: {
   className?: string;
   onClick?: () => void;
+  label: string;
 }) {
   return (
     <Link
@@ -155,15 +161,15 @@ function CTAButton({
       {...(onClick ? { onClick } : {})}
       className={cn(
         "inline-flex items-center justify-center",
-        "px-6 py-2.5 3xl:px-8 3xl:py-3 4xl:px-10 4xl:py-4 rounded-[60px]",
-        "text-sm 3xl:text-base 4xl:text-lg font-medium",
-        "border border-[#fefefc] text-[#fefefc]",
-        "hover:bg-[#fefefc] hover:text-[#0a0a08]",
+        "px-4 py-2 md:px-6 md:py-2.5 3xl:px-8 3xl:py-3 4xl:px-10 4xl:py-4 rounded-[60px]",
+        "text-sm 3xl:text-base 4xl:text-lg font-semibold",
+        "bg-[#fefefc] text-[#0a0a08]",
+        "hover:bg-[#e5e5e3] hover:shadow-[0_0_20px_rgba(254,254,252,0.3)]",
         "transition-all duration-300",
         className
       )}
     >
-      Get Started
+      {label}
     </Link>
   );
 }
@@ -191,8 +197,8 @@ function MobileNavLink({
         className={cn(
           "block text-3xl font-medium py-4 transition-colors duration-200",
           isActive
-            ? "text-[#fefefc]"
-            : "text-[#a8a29e] hover:text-[#fefefc]"
+            ? "dark:text-[#fefefc] text-[#0a0a08]"
+            : "dark:text-[#a3a3a3] text-[#666666] dark:hover:text-[#fefefc] hover:text-[#0a0a08]"
         )}
       >
         {label}
@@ -209,6 +215,17 @@ export function SiteNav() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { t } = useLanguage();
+
+  // Memoize translated nav links to prevent unnecessary re-renders
+  const navLinks = useMemo(
+    () =>
+      NAV_LINK_CONFIG.map((link) => ({
+        href: link.href,
+        label: t(link.labelKey),
+      })),
+    [t]
+  );
 
   // Scroll detection
   useEffect(() => {
@@ -243,19 +260,19 @@ export function SiteNav() {
       <header
         className={cn(
           "fixed top-0 left-0 right-0 z-50",
+          "h-16 md:h-20",
           "transition-all duration-300",
           scrolled
-            ? "bg-[#0a0a08]/80 backdrop-blur-xl border-b border-[#262626]"
+            ? "dark:bg-[#0a0a08]/95 bg-white/95 backdrop-blur-xl border-b dark:border-[#262626] border-gray-200"
             : "bg-transparent border-b border-transparent"
         )}
-        style={{ height: NAV_HEIGHT }}
       >
-        <nav className="h-full max-w-[1400px] 3xl:max-w-[1800px] 4xl:max-w-[2200px] mx-auto px-6 3xl:px-10 4xl:px-12 flex items-center justify-between">
+        <nav id="site-navigation" aria-label="Main navigation" className="h-full max-w-[1400px] 3xl:max-w-[1800px] 4xl:max-w-[2200px] mx-auto px-4 md:px-6 lg:px-8 flex items-center justify-between">
           {/* Logo */}
           <TallowLogo />
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-10 3xl:gap-14 4xl:gap-16">
+          <div className="hidden md:flex items-center gap-6 md:gap-8 3xl:gap-10 4xl:gap-12">
             {navLinks.map((link) => (
               <NavLink
                 key={link.href}
@@ -266,9 +283,11 @@ export function SiteNav() {
             ))}
           </div>
 
-          {/* Desktop CTA */}
-          <div className="hidden md:block">
-            <CTAButton />
+          {/* Desktop CTA + Theme/Language */}
+          <div className="hidden md:flex items-center gap-4 3xl:gap-6">
+            <LanguageDropdown />
+            <ThemeToggleMinimal />
+            <CTAButton label={t("nav.getStarted")} />
           </div>
 
           {/* Mobile Menu Button */}
@@ -276,10 +295,11 @@ export function SiteNav() {
             whileTap={{ scale: 0.95 }}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden p-2 -mr-2"
-            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-label={mobileMenuOpen ? t("nav.closeMenu") : t("nav.openMenu")}
             aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-menu"
           >
-            <Menu className="w-6 h-6 text-[#fefefc]" />
+            <Menu className="w-6 h-6 dark:text-[#fefefc] text-[#0a0a08]" aria-hidden="true" />
           </motion.button>
         </nav>
       </header>
@@ -305,17 +325,21 @@ export function SiteNav() {
               initial="closed"
               animate="open"
               exit="closed"
+              id="mobile-menu"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Mobile navigation menu"
               className={cn(
                 "fixed top-0 right-0 bottom-0 z-50",
                 "w-full max-w-md",
-                "bg-[#0a0a08]",
+                "dark:bg-[#0a0a08] bg-white",
                 "md:hidden"
               )}
             >
               <div className="flex flex-col h-full">
                 {/* Mobile Header */}
                 <div
-                  className="flex items-center justify-between px-6 border-b border-[#262626]"
+                  className="flex items-center justify-between px-6 border-b dark:border-[#262626] border-gray-200"
                   style={{ height: NAV_HEIGHT }}
                 >
                   <TallowLogo />
@@ -323,18 +347,19 @@ export function SiteNav() {
                     whileTap={{ scale: 0.95 }}
                     onClick={closeMobileMenu}
                     className="p-2 -mr-2"
-                    aria-label="Close menu"
+                    aria-label={t("nav.closeMenu")}
                   >
-                    <X className="w-6 h-6 text-[#fefefc]" />
+                    <X className="w-6 h-6 dark:text-[#fefefc] text-[#0a0a08]" aria-hidden="true" />
                   </motion.button>
                 </div>
 
                 {/* Mobile Links */}
-                <motion.div
+                <motion.nav
                   variants={linkContainerVariants}
                   initial="closed"
                   animate="open"
                   className="flex-1 px-6 py-8"
+                  aria-label="Mobile navigation"
                 >
                   {navLinks.map((link) => (
                     <MobileNavLink
@@ -345,13 +370,23 @@ export function SiteNav() {
                       onClick={closeMobileMenu}
                     />
                   ))}
-                </motion.div>
+                </motion.nav>
+
+                {/* Mobile Settings Row */}
+                <div className="px-6 pb-6 flex items-center justify-between border-t dark:border-[#262626] border-gray-200 pt-6">
+                  <span className="text-sm dark:text-[#a3a3a3] text-[#666666]">{t("app.settings")}</span>
+                  <div className="flex items-center gap-4">
+                    <LanguageDropdown />
+                    <ThemeToggleMinimal />
+                  </div>
+                </div>
 
                 {/* Mobile CTA */}
                 <div className="px-6 pb-8">
                   <CTAButton
                     onClick={closeMobileMenu}
                     className="w-full"
+                    label={t("nav.getStarted")}
                   />
                 </div>
               </div>

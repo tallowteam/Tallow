@@ -130,7 +130,7 @@ export const ScreenSharePreview = memo(function ScreenSharePreview({
             <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-sm flex items-center gap-2">
-                        <Monitor className="h-4 w-4" />
+                        <Monitor className="h-4 w-4" aria-hidden="true" />
                         Your Screen (Preview)
                     </CardTitle>
                     <div className="flex items-center gap-2">
@@ -152,13 +152,16 @@ export const ScreenSharePreview = memo(function ScreenSharePreview({
                             muted
                             playsInline
                             className="w-full h-full object-contain"
-                        />
+                            aria-label="Screen share preview - showing your shared screen content"
+                        >
+                            <track kind="captions" src="" label="No captions available for screen share" />
+                        </video>
 
                         {/* Overlay when paused */}
                         {isPaused && (
                             <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                                <div className="text-center text-white">
-                                    <Monitor className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                                <div className="text-center text-white" role="alert">
+                                    <Monitor className="h-12 w-12 mx-auto mb-2 opacity-50" aria-hidden="true" />
                                     <p className="text-sm">Screen sharing paused</p>
                                 </div>
                             </div>
@@ -173,8 +176,8 @@ export const ScreenSharePreview = memo(function ScreenSharePreview({
 
                         {/* Audio Indicator */}
                         {isAudioEnabled && (
-                            <div className="absolute top-2 right-2 bg-black/70 text-white p-1.5 rounded">
-                                <Volume2 className="h-4 w-4" />
+                            <div className="absolute top-2 right-2 bg-black/70 text-white p-1.5 rounded" aria-label="Audio enabled" role="status">
+                                <Volume2 className="h-4 w-4" aria-hidden="true" />
                             </div>
                         )}
                     </div>
@@ -191,12 +194,12 @@ export const ScreenSharePreview = memo(function ScreenSharePreview({
                         >
                             {isVisible ? (
                                 <>
-                                    <EyeOff className="h-4 w-4" />
+                                    <EyeOff className="h-4 w-4" aria-hidden="true" />
                                     Hide Preview
                                 </>
                             ) : (
                                 <>
-                                    <Eye className="h-4 w-4" />
+                                    <Eye className="h-4 w-4" aria-hidden="true" />
                                     Show Preview
                                 </>
                             )}
@@ -211,12 +214,12 @@ export const ScreenSharePreview = memo(function ScreenSharePreview({
                             >
                                 {isFullscreen ? (
                                     <>
-                                        <Minimize2 className="h-4 w-4" />
+                                        <Minimize2 className="h-4 w-4" aria-hidden="true" />
                                         Exit Fullscreen
                                     </>
                                 ) : (
                                     <>
-                                        <Maximize2 className="h-4 w-4" />
+                                        <Maximize2 className="h-4 w-4" aria-hidden="true" />
                                         Fullscreen
                                     </>
                                 )}
@@ -228,7 +231,7 @@ export const ScreenSharePreview = memo(function ScreenSharePreview({
                 {/* Hidden state message */}
                 {!isVisible && (
                     <div className="text-center py-8 text-sm text-muted-foreground">
-                        <Monitor className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <Monitor className="h-8 w-8 mx-auto mb-2 opacity-50" aria-hidden="true" />
                         <p>Preview hidden</p>
                     </div>
                 )}
