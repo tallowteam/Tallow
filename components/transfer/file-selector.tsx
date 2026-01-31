@@ -298,7 +298,7 @@ export function FileSelector({
                                         {t('app.dropFiles')}
                                     </p>
                                     <p className="text-xs text-muted-foreground/70">
-                                        Supports all file types up to 10GB
+                                        Any file type, up to 10GB each
                                     </p>
                                 </div>
                             </div>
@@ -350,9 +350,9 @@ export function FileSelector({
                                     <Folder className="w-10 h-10 text-amber-500" aria-hidden="true" />
                                 </div>
                                 <div className="space-y-2">
-                                    <h3 className="text-lg font-semibold text-foreground">Select Entire Folder</h3>
+                                    <h3 className="text-lg font-semibold text-foreground">Share a Folder</h3>
                                     <p className="text-muted-foreground text-sm max-w-xs">
-                                        All files inside will be included with folder structure preserved
+                                        Everything inside will be included, keeping the folder structure
                                     </p>
                                 </div>
                             </div>
@@ -367,7 +367,7 @@ export function FileSelector({
                             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500/20 to-violet-500/5 flex items-center justify-center">
                                 <Sparkles className="w-4 h-4 text-violet-500" aria-hidden="true" />
                             </div>
-                            <span className="text-sm font-medium text-muted-foreground">Share text snippets instantly</span>
+                            <span className="text-sm font-medium text-muted-foreground">Quick text sharing - notes, links, code snippets</span>
                         </div>
                         <Input
                             placeholder="Title (optional)"

@@ -89,14 +89,16 @@ export function PasswordProtectionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Shield className="w-5 h-5" />
-            Password Protect File
+          <DialogTitle className="flex items-center gap-3 text-[#191610] dark:text-[#fefefc]">
+            <div className="p-2 rounded-xl bg-[#b2987d]/10 dark:bg-[#b2987d]/20">
+              <Shield className="w-5 h-5 text-[#b2987d]" />
+            </div>
+            <span>Password Protect File</span>
           </DialogTitle>
           <DialogDescription>
             {fileName
-              ? `Add password protection to "${fileName}"`
-              : 'Add an extra layer of security with password protection'}
+              ? `Lock "${fileName}" so only people with the password can open it`
+              : 'Add a password so only the right people can access your files'}
           </DialogDescription>
         </DialogHeader>
 
@@ -176,7 +178,7 @@ export function PasswordProtectionDialog({
             </div>
             {confirmPassword && !passwordsMatch && (
               <p id="password-mismatch-error" className="text-xs text-destructive" role="alert">
-                Passwords do not match
+                Passwords don't match yet
               </p>
             )}
           </div>
@@ -196,15 +198,18 @@ export function PasswordProtectionDialog({
               maxLength={100}
             />
             <p className="text-xs text-muted-foreground">
-              Optional hint to help remember the password. Do not include the actual password.
+              A hint to help you remember. Don't include the actual password!
             </p>
           </div>
 
           {/* Security Notice */}
-          <div className="flex gap-2 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-md border border-blue-200 dark:border-blue-900">
-            <Lock className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-blue-900 dark:text-blue-100">
-              Password protection adds an extra layer of encryption. The recipient will need this password to decrypt the file.
+          <div className="flex gap-3 p-4 rounded-xl
+            bg-gradient-to-br from-[#b2987d]/5 to-[#b2987d]/10
+            dark:from-[#b2987d]/10 dark:to-[#b2987d]/5
+            border border-[#e5dac7] dark:border-[#544a36]">
+            <Lock className="w-4 h-4 text-[#b2987d] mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-[#b2987d]">
+              The file will be encrypted. Send the password separately so only the right person can open it.
             </p>
           </div>
         </div>
