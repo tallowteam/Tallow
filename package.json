@@ -105,7 +105,6 @@
     "simple-peer": "^9.11.1",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
-    "sonner": "^2.0.7",
     "stripe": "^20.2.0",
     "web-vitals": "^5.1.0",
     "zod": "^4.3.6",

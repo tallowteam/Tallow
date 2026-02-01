@@ -6,7 +6,6 @@
 
 import { useState, useCallback } from 'react';
 import { secureLog } from '../utils/secure-logger';
-import { toast } from 'sonner';
 import {
   stripMetadata,
   extractMetadata,
@@ -87,13 +86,10 @@ export function useMetadataStripper(): UseMetadataStripperResult {
         // Check metadata first
         const metadata = await extractMetadata(file);
 
-        // Show warning if sensitive data detected
+        // Log warning if sensitive data detected
         if (metadata.hasSensitiveData && settings.showMetadataWarnings) {
           const summary = getMetadataSummary(metadata);
-          toast.warning('Sensitive metadata detected', {
-            description: `This file contains: ${summary.join(', ')}`,
-            duration: 5000,
-          });
+          secureLog.warn('Sensitive metadata detected:', summary.join(', '));
         }
 
         // Require confirmation if enabled
@@ -111,21 +107,15 @@ export function useMetadataStripper(): UseMetadataStripperResult {
           return file;
         }
 
-        // Show success notification
+        // Log success
         if (result.bytesRemoved && result.bytesRemoved > 0) {
           const summary = getMetadataSummary(metadata);
-          toast.success('Metadata removed', {
-            description: `Removed: ${summary.join(', ')} (saved ${formatBytes(result.bytesRemoved)})`,
-            duration: 4000,
-          });
+          secureLog.log('Metadata removed:', summary.join(', '), `(saved ${formatBytes(result.bytesRemoved)})`);
         }
 
         return result.strippedFile;
       } catch (error) {
         secureLog.error('Error processing file:', error);
-        toast.error('Failed to process file', {
-          description: 'Using original file without metadata stripping',
-        });
         return file;
       } finally {
         setIsProcessing(false);
@@ -157,7 +147,6 @@ export function useMetadataStripper(): UseMetadataStripperResult {
         return results;
       } catch (error) {
         secureLog.error('Error processing files:', error);
-        toast.error('Failed to process some files');
         return files;
       } finally {
         setIsProcessing(false);

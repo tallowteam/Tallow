@@ -9,7 +9,6 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { TransferRoomManager, TransferRoom, RoomMember, RoomConfig } from '../rooms/transfer-room-manager';
 import { getDeviceId } from '../auth/user-identity';
 import secureLog from '../utils/secure-logger';
-import { toast } from 'sonner';
 import { toAppError } from '../utils/error-handling';
 
 export interface UseTransferRoomState {
@@ -46,34 +45,27 @@ export function useTransferRoom(deviceName: string) {
 
       managerRef.current.onMemberJoined((member) => {
         secureLog.log('[Room Hook] Member joined:', member.deviceName);
-        toast.success(`${member.deviceName} joined the room`);
         updateMembers();
       });
 
       managerRef.current.onMemberLeft((memberId) => {
-        const members = managerRef.current?.getRoomMembers() || [];
-        const leftMember = members.find(m => m.id === memberId);
         secureLog.log('[Room Hook] Member left:', memberId);
-        if (leftMember) {
-          toast.info(`${leftMember.deviceName} left the room`);
-        }
         updateMembers();
       });
 
       managerRef.current.onFileOffer((offer) => {
-        const member = managerRef.current?.getRoomMembers().find(m => m.id === offer.senderId);
-        const senderName = member?.deviceName || 'Someone';
-        toast.info(`${senderName} shared ${offer.fileName} (${formatFileSize(offer.fileSize)})`);
+        secureLog.log('[Room Hook] File offer received:', offer.fileName);
       });
 
       managerRef.current.onRoomClosed(() => {
-        toast.error('Room has been closed by the owner');
+        secureLog.log('[Room Hook] Room closed by owner');
         setState(prev => ({
           ...prev,
           room: null,
           members: [],
           isInRoom: false,
           isOwner: false,
+          error: 'Room has been closed by the owner',
         }));
       });
 
@@ -123,7 +115,6 @@ export function useTransferRoom(deviceName: string) {
         isOwner: true,
         error: null,
       }));
-      toast.success('Room created successfully');
       return room;
     } catch (error: unknown) {
       const appError = toAppError(error, {
@@ -131,7 +122,6 @@ export function useTransferRoom(deviceName: string) {
         component: 'useTransferRoom',
       });
       setState(prev => ({ ...prev, error: appError.message }));
-      toast.error(`Failed to create room: ${appError.message}`);
       throw appError;
     }
   }, []);
@@ -151,7 +141,6 @@ export function useTransferRoom(deviceName: string) {
         isOwner: false,
         error: null,
       }));
-      toast.success(`Joined room ${code}`);
       return room;
     } catch (error: unknown) {
       const appError = toAppError(error, {
@@ -159,7 +148,6 @@ export function useTransferRoom(deviceName: string) {
         component: 'useTransferRoom',
       });
       setState(prev => ({ ...prev, error: appError.message }));
-      toast.error(`Failed to join room: ${appError.message}`);
       throw appError;
     }
   }, []);
@@ -174,7 +162,6 @@ export function useTransferRoom(deviceName: string) {
         isInRoom: false,
         isOwner: false,
       }));
-      toast.info('Left the room');
     }
   }, []);
 
@@ -190,13 +177,12 @@ export function useTransferRoom(deviceName: string) {
         isInRoom: false,
         isOwner: false,
       }));
-      toast.success('Room closed');
     } catch (error: unknown) {
       const appError = toAppError(error, {
         operation: 'room-close',
         component: 'useTransferRoom',
       });
-      toast.error(appError.message);
+      setState(prev => ({ ...prev, error: appError.message }));
     }
   }, []);
 
@@ -220,13 +206,4 @@ export function useTransferRoom(deviceName: string) {
     broadcastFileOffer,
     getRoomUrl,
   };
-}
-
-// Helper function
-function formatFileSize(bytes: number): string {
-  if (bytes === 0) {return '0 B';}
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
 }

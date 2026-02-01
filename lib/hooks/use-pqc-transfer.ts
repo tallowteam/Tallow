@@ -10,7 +10,6 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { PQCTransferManager } from '../transfer/pqc-transfer-manager';
-import { toast } from 'sonner';
 
 /**
  * Options for PQC transfer hook
@@ -129,10 +128,6 @@ export function usePQCTransfer(options: UsePQCTransferOptions = {}) {
         .map((b) => b.toString(16).padStart(2, '0'))
         .join('');
 
-      toast.success('Session initialized', {
-        description: 'Share your public key with the receiver',
-      });
-
       return publicKeyHex;
     } catch (error) {
       setState((prev) => ({
@@ -173,10 +168,6 @@ export function usePQCTransfer(options: UsePQCTransferOptions = {}) {
         }));
 
         onTransferCompleteRef.current?.(blob, filename);
-
-        toast.success('File received successfully!', {
-          description: filename,
-        });
       });
 
       manager.onError((error) => {
@@ -191,10 +182,6 @@ export function usePQCTransfer(options: UsePQCTransferOptions = {}) {
       const publicKeyHex = Array.from(publicKey)
         .map((b) => b.toString(16).padStart(2, '0'))
         .join('');
-
-      toast.success('Receiver initialized', {
-        description: 'Share your public key with the sender',
-      });
 
       return publicKeyHex;
     } catch (error) {
@@ -229,9 +216,6 @@ export function usePQCTransfer(options: UsePQCTransferOptions = {}) {
         isNegotiating: false,
       }));
 
-      toast.success('Key exchange complete', {
-        description: 'Session is ready for transfer',
-      });
     } catch (error) {
       setState((prev) => ({
         ...prev,
@@ -252,8 +236,6 @@ export function usePQCTransfer(options: UsePQCTransferOptions = {}) {
 
     dataChannelRef.current = dataChannel;
     managerRef.current.setDataChannel(dataChannel);
-
-    toast.info('Data channel connected');
   }, []);
 
   /**
@@ -290,8 +272,6 @@ export function usePQCTransfer(options: UsePQCTransferOptions = {}) {
         isTransferring: false,
         progress: 100,
       }));
-
-      toast.success('File sent successfully!');
     } catch (error) {
       setState((prev) => ({
         ...prev,
