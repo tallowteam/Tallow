@@ -1,22 +1,41 @@
 /* =====================================================================
-   TALLOW DESIGN SYSTEM 2026 - EUVEKA STYLE
-   100% Black & White - NO BLUE - Contrast Only
+   TALLOW DESIGN SYSTEM 2026 - MONOCHROME DARK MODE
+
+   MONOCHROME COLOR PALETTE:
+   - Dark: #191610
+   - Background: #fefefc
+   - Neutrals: #fefdfb, #fcf6ec, #f3ede2, #e5dac7, #d6cec2, #b2987d, #544a36, #2c261c, #242018
+   - Accent: #fefefc (white)
+   - Error: #ff4f4f
+
+   EUVEKA TYPOGRAPHY:
+   - Headlines: "PP Eiko" or "Cormorant Garamond", weight 100-300, line-height 0.95
+   - Body: "Inter", weight 400-500
+
+   EUVEKA COMPONENTS:
+   - Buttons: pill shape (border-radius: 60px), height 56-64px
+   - Cards: border-radius 24-32px
+   - Blur effects: filter blur(84px)
 
    Design Philosophy:
-   - Dark mode DEFAULT (elegant, minimal)
-   - Pure black/white contrast - NO accent colors
+   - Pure monochrome: black (#191610) background, white (#fefefc) accent
+   - Dark mode only (no light mode)
    - Cormorant Garamond display (thin 300 weight)
-   - Inter body text
-   - Tactile 64px buttons with 60px radius
-   - Organic radii: 12px, 20px, 24px, 32px, 60px
-   - Spring animations, glassmorphism
-   - White glow effects only (no color)
+   - Inter body text (400-500 weight)
+   - Tactile 56-64px buttons with 60px radius
+   - Organic radii: 24px cards, 32px large cards, 60px pills
+   - Spring animations, glassmorphism with 84px blur, white glow effects
    ===================================================================== */
 
 /* =====================================================================
    FONT IMPORTS
    ===================================================================== */
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* =====================================================================
+   RTL (Right-to-Left) Support - Arabic, Hebrew, Urdu
+   ===================================================================== */
+@import '../lib/i18n/rtl-support.css';
 
 /* =====================================================================
    TAILWIND DIRECTIVES
@@ -29,53 +48,73 @@
    CSS CUSTOM PROPERTIES - EUVEKA DESIGN TOKENS
    ===================================================================== */
 
-/* DARK MODE IS DEFAULT */
-:root {
+/* DARK MODE ONLY - MONOCHROME DESIGN SYSTEM */
+:root,
+.dark {
   /* ─────────────────────────────────────────────────────────────────────
-     EUVEKA DARK PALETTE (DEFAULT)
+     MONOCHROME DARK PALETTE - #191610 BACKGROUND, #fefefc ACCENT
      ───────────────────────────────────────────────────────────────────── */
 
-  /* Core Backgrounds - Deep Black */
-  --bg-primary: #0a0a08;
-  --bg-secondary: #111110;
-  --bg-tertiary: #1a1918;
-  --bg-quaternary: #242322;
+  /* Core Backgrounds - EXACT EUVEKA Warm Charcoal (#191610) */
+  --bg-primary: #191610;
+  --bg-secondary: #242018;
+  --bg-tertiary: #2c261c;
+  --bg-quaternary: #544a36;
 
-  /* Core Text - Off White */
+  /* Core Text - EXACT EUVEKA Off White (#fefefc) */
   --text-primary: #fefefc;
-  --text-secondary: #a8a29e;
-  --text-muted: #78716c;
-  --text-disabled: #57534e;
-  --text-inverse: #0a0a08;
+  --text-secondary: #d6cec2;
+  --text-muted: #b2987d;
+  /* WCAG AA compliant */
+  --text-disabled: #b2987d;
+  --text-inverse: #191610;
 
-  /* Borders */
-  --border: #262626;
-  --border-light: #333333;
-  --border-hover: #404040;
+  /* Accent - MONOCHROME White (#fefefc) */
+  --accent: #fefefc;
+  --accent-hover: #e5e5e3;
+  --accent-subtle: rgba(254, 254, 252, 0.15);
+  --accent-muted: rgba(254, 254, 252, 0.08);
+
+  /* EUVEKA Neutral Scale */
+  --euveka-50: #fefdfb;
+  --euveka-100: #fcf6ec;
+  --euveka-200: #f3ede2;
+  --euveka-300: #e5dac7;
+  --euveka-400: #d6cec2;
+  --euveka-500: #b2987d;
+  --euveka-600: #544a36;
+  --euveka-700: #2c261c;
+  --euveka-800: #242018;
+  --euveka-900: #191610;
+
+  /* Borders - EUVEKA neutrals */
+  --border: #2c261c;
+  --border-light: #544a36;
+  --border-hover: #b2987d;
   --border-focus: #fefefc;
 
-  /* Cards & Surfaces */
-  --card-bg: #111110;
-  --card-bg-elevated: #1a1918;
-  --card-border: #262626;
+  /* Cards & Surfaces - EUVEKA specification */
+  --card-bg: #242018;
+  --card-bg-elevated: #2c261c;
+  --card-border: #544a36;
 
-  --surface: #0a0a08;
-  --surface-elevated: #111110;
-  --surface-overlay: rgba(10, 10, 8, 0.95);
+  --surface: #191610;
+  --surface-elevated: #242018;
+  --surface-overlay: rgba(25, 22, 16, 0.95);
 
   /* Inputs */
-  --input-bg: #111110;
-  --input-border: #262626;
+  --input-bg: #242018;
+  --input-border: #544a36;
   --input-focus: #fefefc;
-  --input-placeholder: #78716c;
+  --input-placeholder: #b2987d;
 
-  /* Semantic Colors - Grayscale Variants */
-  --success: #a8a29e;
-  --success-subtle: rgba(168, 162, 158, 0.15);
-  --warning: #a8a29e;
-  --warning-subtle: rgba(168, 162, 158, 0.15);
-  --error: #fefefc;
-  --error-subtle: rgba(254, 254, 252, 0.1);
+  /* Semantic Colors - EUVEKA error is #ff4f4f */
+  --success: #22c55e;
+  --success-subtle: rgba(34, 197, 94, 0.15);
+  --warning: #f59e0b;
+  --warning-subtle: rgba(245, 158, 11, 0.15);
+  --error: #ff4f4f;
+  --error-subtle: rgba(255, 79, 79, 0.15);
 
   /* ─────────────────────────────────────────────────────────────────────
      TYPOGRAPHY
@@ -116,7 +155,7 @@
   --radius-pill: 9999px;
 
   /* ─────────────────────────────────────────────────────────────────────
-     SHADOWS - WHITE GLOW ONLY
+     SHADOWS - EUVEKA WARM DARK
      ───────────────────────────────────────────────────────────────────── */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.5);
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.6);
@@ -125,26 +164,26 @@
   --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.9);
   --shadow-2xl: 0 24px 64px rgba(0, 0, 0, 0.95);
 
-  /* White Glow Effects */
-  --glow-xs: 0 0 8px rgba(254, 254, 252, 0.1);
-  --glow-sm: 0 0 16px rgba(254, 254, 252, 0.15);
-  --glow: 0 0 24px rgba(254, 254, 252, 0.2);
-  --glow-md: 0 0 32px rgba(254, 254, 252, 0.25);
-  --glow-lg: 0 0 48px rgba(254, 254, 252, 0.3);
-  --glow-xl: 0 0 64px rgba(254, 254, 252, 0.35);
+  /* Blue Glow Effects - EUVEKA accent (#0099ff) */
+  --glow-xs: 0 0 8px rgba(0, 153, 255, 0.2);
+  --glow-sm: 0 0 16px rgba(0, 153, 255, 0.25);
+  --glow: 0 0 24px rgba(0, 153, 255, 0.3);
+  --glow-md: 0 0 32px rgba(0, 153, 255, 0.35);
+  --glow-lg: 0 0 48px rgba(0, 153, 255, 0.4);
+  --glow-xl: 0 0 64px rgba(0, 153, 255, 0.45);
 
   --shadow-button: 0 4px 16px rgba(0, 0, 0, 0.5);
   --shadow-button-hover: 0 8px 24px rgba(0, 0, 0, 0.6), var(--glow-sm);
   --shadow-inner: inset 0 2px 6px rgba(0, 0, 0, 0.4);
 
   /* ─────────────────────────────────────────────────────────────────────
-     GLASSMORPHISM - DARK
+     GLASSMORPHISM - EUVEKA blur(84px) specification
      ───────────────────────────────────────────────────────────────────── */
-  --glass-bg: rgba(10, 10, 8, 0.7);
-  --glass-bg-strong: rgba(10, 10, 8, 0.9);
-  --glass-bg-subtle: rgba(10, 10, 8, 0.5);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-blur: 20px;
+  --glass-bg: rgba(25, 22, 16, 0.7);
+  --glass-bg-strong: rgba(25, 22, 16, 0.9);
+  --glass-bg-subtle: rgba(25, 22, 16, 0.5);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: 84px;
 
   /* ─────────────────────────────────────────────────────────────────────
      TRANSITIONS & SPRING EASING
@@ -168,44 +207,386 @@
   --container-max: 1400px;
   --button-height: 64px;
 
+  /* Component Radii - EUVEKA specification */
+  --radius-card: 24px;
+  --radius-card-lg: 32px;
+  --radius-button: 60px;
+
+  /* Button Height - EUVEKA 56-64px */
+  --button-height: 56px;
+  --button-height-lg: 64px;
+
   /* ─────────────────────────────────────────────────────────────────────
-     SHADCN/TAILWIND COMPATIBILITY - DARK DEFAULT
+     SHADCN/TAILWIND COMPATIBILITY - EUVEKA DARK DEFAULT
      ───────────────────────────────────────────────────────────────────── */
-  --background: #0a0a08;
+  --background: #191610;
   --foreground: #fefefc;
-  --card: #111110;
+  --card: #242018;
   --card-foreground: #fefefc;
-  --popover: #111110;
+  --popover: #242018;
   --popover-foreground: #fefefc;
   --primary: #fefefc;
-  --primary-foreground: #0a0a08;
-  --secondary: #1a1918;
-  --secondary-foreground: #a8a29e;
-  --muted: #1a1918;
-  --muted-foreground: #78716c;
-  --accent: #1a1918;
+  --primary-foreground: #191610;
+  --secondary: #2c261c;
+  --secondary-foreground: #d6cec2;
+  --muted: #2c261c;
+  --muted-foreground: #b2987d;
   --accent-foreground: #fefefc;
-  --destructive: #fefefc;
-  --destructive-foreground: #0a0a08;
-  --border: #262626;
-  --input: #111110;
+  --destructive: #ff4f4f;
+  --destructive-foreground: #ffffff;
+  --border: #2c261c;
+  --input: #242018;
   --ring: #fefefc;
-  --radius: 20px;
+  --radius: 24px;
 
   --chart-1: #fefefc;
-  --chart-2: #a8a29e;
-  --chart-3: #78716c;
-  --chart-4: #57534e;
-  --chart-5: #44403c;
+  --chart-2: #fefefc;
+  --chart-3: #d6cec2;
+  --chart-4: #b2987d;
+  --chart-5: #544a36;
 
-  --sidebar: #0a0a08;
+  --sidebar: #191610;
   --sidebar-foreground: #fefefc;
   --sidebar-primary: #fefefc;
-  --sidebar-primary-foreground: #0a0a08;
-  --sidebar-accent: #1a1918;
-  --sidebar-accent-foreground: #a8a29e;
-  --sidebar-border: #262626;
+  --sidebar-primary-foreground: #191610;
+  --sidebar-accent: #2c261c;
+  --sidebar-accent-foreground: #d6cec2;
+  --sidebar-border: #2c261c;
   --sidebar-ring: #fefefc;
+}
+
+/* =====================================================================
+   EUVEKA DARK THEME - EXACT euveka.com Design Language
+   Premium aesthetic with warm charcoal and electric blue accent
+
+   EXACT EUVEKA PALETTE:
+   - Dark: #191610
+   - Background: #fefefc
+   - Neutrals: #fefdfb, #fcf6ec, #f3ede2, #e5dac7, #d6cec2, #b2987d, #544a36, #2c261c, #242018
+   - Accent: #0099ff
+   - Error: #ff4f4f
+   ===================================================================== */
+.euveka {
+  /* Core Backgrounds - EXACT EUVEKA Warm Charcoal (#191610) */
+  --bg-primary: #191610;
+  --bg-secondary: #242018;
+  --bg-tertiary: #2c261c;
+  --bg-quaternary: #544a36;
+
+  /* Core Text - EXACT EUVEKA Off White (#fefefc) */
+  --text-primary: #fefefc;
+  --text-secondary: #d6cec2;
+  --text-muted: #b2987d;
+  --text-disabled: #544a36;
+  --text-inverse: #191610;
+
+  /* Accent - MONOCHROME White (#fefefc) */
+  --accent: #fefefc;
+  --accent-hover: #e5e5e3;
+  --accent-subtle: rgba(254, 254, 252, 0.15);
+  --accent-muted: rgba(254, 254, 252, 0.08);
+
+  /* EUVEKA Neutral Scale */
+  --euveka-50: #fefdfb;
+  --euveka-100: #fcf6ec;
+  --euveka-200: #f3ede2;
+  --euveka-300: #e5dac7;
+  --euveka-400: #d6cec2;
+  --euveka-500: #b2987d;
+  --euveka-600: #544a36;
+  --euveka-700: #2c261c;
+  --euveka-800: #242018;
+  --euveka-900: #191610;
+
+  /* Muted Colors - EUVEKA warm tones */
+  --muted-warm: #544a36;
+  --muted-dark: #242018;
+
+  /* Borders - EUVEKA neutrals */
+  --border: #2c261c;
+  --border-light: #544a36;
+  --border-hover: #b2987d;
+  --border-focus: #fefefc;
+
+  /* Cards & Surfaces - EUVEKA specification */
+  --card-bg: #242018;
+  --card-bg-elevated: #2c261c;
+  --card-border: #544a36;
+  --surface: #191610;
+  --surface-elevated: #242018;
+  --surface-overlay: rgba(25, 22, 16, 0.95);
+
+  /* Inputs */
+  --input-bg: #242018;
+  --input-border: #544a36;
+  --input-focus: #fefefc;
+  --input-placeholder: #b2987d;
+
+  /* Semantic Colors - EUVEKA error is #ff4f4f */
+  --success: #22c55e;
+  --success-subtle: rgba(34, 197, 94, 0.15);
+  --warning: #f59e0b;
+  --warning-subtle: rgba(245, 158, 11, 0.15);
+  --error: #ff4f4f;
+  --error-subtle: rgba(255, 79, 79, 0.15);
+
+  /* Shadows - Warm Dark */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.6);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.8);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.9);
+  --shadow-2xl: 0 24px 64px rgba(0, 0, 0, 0.95);
+
+  /* White Glow Effects - Monochrome accent */
+  --glow-xs: 0 0 8px rgba(254, 254, 252, 0.2);
+  --glow-sm: 0 0 16px rgba(254, 254, 252, 0.25);
+  --glow: 0 0 24px rgba(254, 254, 252, 0.3);
+  --glow-md: 0 0 32px rgba(254, 254, 252, 0.35);
+  --glow-lg: 0 0 48px rgba(254, 254, 252, 0.4);
+  --glow-xl: 0 0 64px rgba(254, 254, 252, 0.45);
+  --shadow-button: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-button-hover: 0 8px 24px rgba(0, 0, 0, 0.6), var(--glow-sm);
+  --shadow-inner: inset 0 2px 6px rgba(0, 0, 0, 0.4);
+
+  /* Glassmorphism - EUVEKA blur(84px) specification */
+  --glass-bg: rgba(25, 22, 16, 0.7);
+  --glass-bg-strong: rgba(25, 22, 16, 0.9);
+  --glass-bg-subtle: rgba(25, 22, 16, 0.5);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: 84px;  /* EUVEKA specification */
+
+  /* Component Radii - EUVEKA specification */
+  --radius-card: 24px;
+  --radius-card-lg: 32px;
+  --radius-button: 60px;
+  --radius-pill: 60px;
+
+  /* Button Height - EUVEKA 56-64px */
+  --button-height: 56px;
+  --button-height-lg: 64px;
+
+  /* Shadcn/Tailwind Compatibility */
+  --background: #191610;
+  --foreground: #fefefc;
+  --card: #242018;
+  --card-foreground: #fefefc;
+  --popover: #242018;
+  --popover-foreground: #fefefc;
+  --primary: #fefefc;
+  --primary-foreground: #191610;
+  --secondary: #2c261c;
+  --secondary-foreground: #d6cec2;
+  --muted: #2c261c;
+  --muted-foreground: #b2987d;
+  --destructive: #ff4f4f;
+  --destructive-foreground: #ffffff;
+  --ring: #fefefc;
+  --radius: 24px;
+}
+
+/* Euveka Dark - Button and Link Styling */
+.euveka .btn-tactile:hover,
+.euveka .ds-button:hover,
+.euveka .btn:hover,
+.euveka .btn-primary:hover {
+  background: var(--accent);
+  color: var(--primary-foreground);
+  border-color: var(--accent);
+}
+
+.euveka .btn-tactile:focus-visible,
+.euveka .ds-button:focus-visible,
+.euveka .btn:focus-visible {
+  box-shadow: 0 0 0 3px var(--bg-primary), 0 0 0 5px var(--accent);
+}
+
+.euveka ::selection {
+  background: var(--accent);
+  color: var(--primary-foreground);
+}
+
+.euveka a:hover {
+  color: var(--accent);
+  opacity: 1;
+}
+
+/* =====================================================================
+   EUVEKA LIGHT THEME - EXACT euveka.com Design Language
+   Premium light mode with warm cream backgrounds
+
+   EXACT EUVEKA PALETTE:
+   - Dark: #191610
+   - Background: #fefefc
+   - Neutrals: #fefdfb, #fcf6ec, #f3ede2, #e5dac7, #d6cec2, #b2987d, #544a36, #2c261c, #242018
+   - Accent: #0099ff
+   - Error: #ff4f4f
+   ===================================================================== */
+.euveka-light {
+  /* Core Backgrounds - EXACT EUVEKA Cream/Off-White */
+  --bg-primary: #fefefc;
+  --bg-secondary: #fefdfb;
+  --bg-tertiary: #fcf6ec;
+  --bg-quaternary: #f3ede2;
+
+  /* Core Text - EXACT EUVEKA Warm Charcoal */
+  --text-primary: #191610;
+  --text-secondary: #2c261c;
+  --text-muted: #544a36;
+  --text-disabled: #b2987d;
+  --text-inverse: #fefefc;
+
+  /* Accent - MONOCHROME White (#fefefc) */
+  --accent: #fefefc;
+  --accent-hover: #e5e5e3;
+  --accent-subtle: rgba(254, 254, 252, 0.12);
+  --accent-muted: rgba(254, 254, 252, 0.06);
+
+  /* EUVEKA Neutral Scale */
+  --euveka-50: #fefdfb;
+  --euveka-100: #fcf6ec;
+  --euveka-200: #f3ede2;
+  --euveka-300: #e5dac7;
+  --euveka-400: #d6cec2;
+  --euveka-500: #b2987d;
+  --euveka-600: #544a36;
+  --euveka-700: #2c261c;
+  --euveka-800: #242018;
+  --euveka-900: #191610;
+
+  /* Muted Colors - EUVEKA neutrals */
+  --muted-warm: #d6cec2;
+  --muted-light: #e5dac7;
+
+  /* Borders - EUVEKA neutrals */
+  --border: #d6cec2;
+  --border-light: #e5dac7;
+  --border-hover: #b2987d;
+  --border-focus: #fefefc;
+
+  /* Cards & Surfaces - EUVEKA specification */
+  --card-bg: #fefdfb;
+  --card-bg-elevated: #fcf6ec;
+  --card-border: #e5dac7;
+  --surface: #fefefc;
+  --surface-elevated: #fefdfb;
+  --surface-overlay: rgba(254, 254, 252, 0.95);
+
+  /* Inputs */
+  --input-bg: #fcf6ec;
+  --input-border: #d6cec2;
+  --input-focus: #fefefc;
+  --input-placeholder: #b2987d;
+
+  /* Semantic Colors - EUVEKA error is #ff4f4f */
+  --success: #16a34a;
+  --success-subtle: rgba(22, 163, 74, 0.12);
+  --warning: #d97706;
+  --warning-subtle: rgba(217, 119, 6, 0.12);
+  --error: #ff4f4f;
+  --error-subtle: rgba(255, 79, 79, 0.12);
+
+  /* Shadows - Light and Subtle */
+  --shadow-xs: 0 1px 2px rgba(25, 22, 16, 0.04);
+  --shadow-sm: 0 2px 8px rgba(25, 22, 16, 0.06);
+  --shadow-md: 0 4px 16px rgba(25, 22, 16, 0.08);
+  --shadow-lg: 0 8px 32px rgba(25, 22, 16, 0.1);
+  --shadow-xl: 0 16px 48px rgba(25, 22, 16, 0.12);
+  --shadow-2xl: 0 24px 64px rgba(25, 22, 16, 0.14);
+
+  /* Blue Glow Effects - EUVEKA accent */
+  --glow-xs: 0 0 8px rgba(254, 254, 252, 0.15);
+  --glow-sm: 0 0 16px rgba(254, 254, 252, 0.2);
+  --glow: 0 0 24px rgba(254, 254, 252, 0.25);
+  --glow-md: 0 0 32px rgba(254, 254, 252, 0.3);
+  --glow-lg: 0 0 48px rgba(254, 254, 252, 0.35);
+  --glow-xl: 0 0 64px rgba(254, 254, 252, 0.4);
+  --shadow-button: 0 4px 16px rgba(25, 22, 16, 0.1);
+  --shadow-button-hover: 0 8px 24px rgba(25, 22, 16, 0.15), var(--glow-sm);
+  --shadow-inner: inset 0 2px 6px rgba(25, 22, 16, 0.06);
+
+  /* Glassmorphism - EUVEKA blur(84px) specification */
+  --glass-bg: rgba(254, 254, 252, 0.75);
+  --glass-bg-strong: rgba(254, 254, 252, 0.92);
+  --glass-bg-subtle: rgba(254, 254, 252, 0.55);
+  --glass-border: rgba(25, 22, 16, 0.08);
+  --glass-blur: 84px;  /* EUVEKA specification */
+
+  /* Component Radii - EUVEKA specification */
+  --radius-card: 24px;
+  --radius-card-lg: 32px;
+  --radius-button: 60px;
+  --radius-pill: 60px;
+
+  /* Button Height - EUVEKA 56-64px */
+  --button-height: 56px;
+  --button-height-lg: 64px;
+
+  /* Shadcn/Tailwind Compatibility */
+  --background: #fefefc;
+  --foreground: #191610;
+  --card: #fefdfb;
+  --card-foreground: #191610;
+  --popover: #fefdfb;
+  --popover-foreground: #191610;
+  --primary: #fefefc;
+  --primary-foreground: #191610;
+  --secondary: #fcf6ec;
+  --secondary-foreground: #2c261c;
+  --muted: #f3ede2;
+  --muted-foreground: #544a36;
+  --destructive: #ff4f4f;
+  --destructive-foreground: #ffffff;
+  --ring: #fefefc;
+  --radius: 24px;
+}
+
+/* Euveka Light - Button and Link Styling */
+.euveka-light .btn-tactile:hover,
+.euveka-light .ds-button:hover,
+.euveka-light .btn:hover,
+.euveka-light .btn-primary:hover {
+  background: var(--accent);
+  color: var(--primary-foreground);
+  border-color: var(--accent);
+}
+
+.euveka-light .btn-tactile:focus-visible,
+.euveka-light .ds-button:focus-visible,
+.euveka-light .btn:focus-visible {
+  box-shadow: 0 0 0 3px var(--bg-primary), 0 0 0 5px var(--accent);
+}
+
+.euveka-light ::selection {
+  background: var(--accent);
+  color: var(--primary-foreground);
+}
+
+.euveka-light a:hover {
+  color: var(--accent);
+  opacity: 1;
+}
+
+/* =====================================================================
+   SMOOTH THEME TRANSITION ANIMATION
+   ===================================================================== */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition:
+    background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    fill 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    stroke 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+html.theme-transition img,
+html.theme-transition video,
+html.theme-transition canvas {
+  transition: none !important;
 }
 
 /* =====================================================================
@@ -411,42 +792,55 @@
 }
 
 /* =====================================================================
-   LIGHT MODE
+   LIGHT MODE - EUVEKA Neutral Scale
+   Uses EXACT EUVEKA warm grayscale neutrals
    ===================================================================== */
 .light {
-  /* Core Backgrounds - Off White */
+  /* Core Backgrounds - EUVEKA Off White/Cream */
   --bg-primary: #fefefc;
-  --bg-secondary: #f5f3ef;
-  --bg-tertiary: #ebe8e3;
-  --bg-quaternary: #e0dcd5;
+  --bg-secondary: #fefdfb;
+  --bg-tertiary: #fcf6ec;
+  --bg-quaternary: #f3ede2;
 
-  /* Core Text - Dark */
+  /* Core Text - EUVEKA Dark */
   --text-primary: #191610;
-  --text-secondary: #544a36;
-  --text-muted: #7a7060;
-  --text-disabled: #a8a096;
+  --text-secondary: #2c261c;
+  --text-muted: #544a36;
+  --text-disabled: #b2987d;
   --text-inverse: #fefefc;
 
-  /* Borders */
+  /* EUVEKA Neutral Scale */
+  --euveka-50: #fefdfb;
+  --euveka-100: #fcf6ec;
+  --euveka-200: #f3ede2;
+  --euveka-300: #e5dac7;
+  --euveka-400: #d6cec2;
+  --euveka-500: #b2987d;
+  --euveka-600: #544a36;
+  --euveka-700: #2c261c;
+  --euveka-800: #242018;
+  --euveka-900: #191610;
+
+  /* Borders - EUVEKA neutrals */
   --border: #d6cec2;
-  --border-light: #e5ded3;
-  --border-hover: #c4baa8;
+  --border-light: #e5dac7;
+  --border-hover: #b2987d;
   --border-focus: #191610;
 
   /* Cards & Surfaces */
-  --card-bg: #ffffff;
-  --card-bg-elevated: #fefefc;
-  --card-border: #d6cec2;
+  --card-bg: #fefdfb;
+  --card-bg-elevated: #fcf6ec;
+  --card-border: #e5dac7;
 
   --surface: #fefefc;
-  --surface-elevated: #ffffff;
+  --surface-elevated: #fefdfb;
   --surface-overlay: rgba(254, 254, 252, 0.95);
 
   /* Inputs */
-  --input-bg: #f5f3ef;
+  --input-bg: #fcf6ec;
   --input-border: #d6cec2;
   --input-focus: #191610;
-  --input-placeholder: #7a7060;
+  --input-placeholder: #b2987d;
 
   /* Semantic - Grayscale */
   --success: #544a36;
@@ -475,41 +869,379 @@
   --shadow-button-hover: 0 8px 24px rgba(25, 22, 16, 0.15);
   --shadow-inner: inset 0 2px 6px rgba(25, 22, 16, 0.06);
 
-  /* Glassmorphism - Light */
+  /* Glassmorphism - Light with EUVEKA blur */
   --glass-bg: rgba(254, 254, 252, 0.7);
   --glass-bg-strong: rgba(254, 254, 252, 0.9);
   --glass-bg-subtle: rgba(254, 254, 252, 0.5);
   --glass-border: rgba(25, 22, 16, 0.1);
+  --glass-blur: 84px;  /* EUVEKA specification */
 
-  /* Shadcn compatibility - Light */
+  /* Component Radii - EUVEKA specification */
+  --radius-card: 24px;
+  --radius-card-lg: 32px;
+  --radius-button: 60px;
+  --radius-pill: 60px;
+
+  /* Button Height - EUVEKA 56-64px */
+  --button-height: 56px;
+  --button-height-lg: 64px;
+
+  /* Shadcn compatibility - Light with EUVEKA colors */
   --background: #fefefc;
   --foreground: #191610;
-  --card: #ffffff;
+  --card: #fefdfb;
   --card-foreground: #191610;
-  --popover: #ffffff;
+  --popover: #fefdfb;
   --popover-foreground: #191610;
   --primary: #191610;
   --primary-foreground: #fefefc;
-  --secondary: #f5f3ef;
-  --secondary-foreground: #544a36;
-  --muted: #f5f3ef;
-  --muted-foreground: #7a7060;
-  --accent: #f5f3ef;
+  --secondary: #fcf6ec;
+  --secondary-foreground: #2c261c;
+  --muted: #f3ede2;
+  --muted-foreground: #544a36;
+  --accent: #f3ede2;
   --accent-foreground: #191610;
   --destructive: #191610;
   --destructive-foreground: #fefefc;
   --border: #d6cec2;
-  --input: #f5f3ef;
+  --input: #fcf6ec;
   --ring: #191610;
+  --radius: 24px;
 
   --sidebar: #fefefc;
   --sidebar-foreground: #191610;
   --sidebar-primary: #191610;
   --sidebar-primary-foreground: #fefefc;
-  --sidebar-accent: #f5f3ef;
-  --sidebar-accent-foreground: #544a36;
+  --sidebar-accent: #fcf6ec;
+  --sidebar-accent-foreground: #2c261c;
   --sidebar-border: #d6cec2;
   --sidebar-ring: #191610;
+}
+
+/* =====================================================================
+   OCEAN THEME - EUVEKA Grayscale Base + Ocean Blue Accent
+   Uses EUVEKA neutrals as base with ocean blue accent color
+   ===================================================================== */
+.ocean {
+  /* Core Backgrounds - EUVEKA Warm Charcoal Base */
+  --bg-primary: #191610;
+  --bg-secondary: #242018;
+  --bg-tertiary: #2c261c;
+  --bg-quaternary: #544a36;
+
+  /* Core Text - EUVEKA Off White */
+  --text-primary: #fefefc;
+  --text-secondary: #d6cec2;
+  --text-muted: #b2987d;
+  --text-disabled: #544a36;
+  --text-inverse: #191610;
+
+  /* Accent - Ocean Blue (cyan/teal) */
+  --accent: #06b6d4;
+  --accent-hover: #22d3ee;
+  --accent-subtle: rgba(6, 182, 212, 0.15);
+  --accent-muted: rgba(6, 182, 212, 0.08);
+
+  /* EUVEKA Neutral Scale */
+  --euveka-50: #fefdfb;
+  --euveka-100: #fcf6ec;
+  --euveka-200: #f3ede2;
+  --euveka-300: #e5dac7;
+  --euveka-400: #d6cec2;
+  --euveka-500: #b2987d;
+  --euveka-600: #544a36;
+  --euveka-700: #2c261c;
+  --euveka-800: #242018;
+  --euveka-900: #191610;
+
+  /* Muted Colors - EUVEKA warm tones */
+  --muted-warm: #544a36;
+  --muted-dark: #242018;
+
+  /* Borders - EUVEKA neutrals */
+  --border: #2c261c;
+  --border-light: #544a36;
+  --border-hover: #b2987d;
+  --border-focus: #06b6d4;
+
+  /* Cards & Surfaces - EUVEKA specification */
+  --card-bg: #242018;
+  --card-bg-elevated: #2c261c;
+  --card-border: #544a36;
+  --surface: #191610;
+  --surface-elevated: #242018;
+  --surface-overlay: rgba(25, 22, 16, 0.95);
+
+  /* Inputs */
+  --input-bg: #242018;
+  --input-border: #544a36;
+  --input-focus: #06b6d4;
+  --input-placeholder: #b2987d;
+
+  /* Semantic Colors */
+  --success: #22c55e;
+  --success-subtle: rgba(34, 197, 94, 0.15);
+  --warning: #f59e0b;
+  --warning-subtle: rgba(245, 158, 11, 0.15);
+  --error: #ff4f4f;
+  --error-subtle: rgba(255, 79, 79, 0.15);
+
+  /* Shadows - EUVEKA warm dark */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.6);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.8);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.9);
+  --shadow-2xl: 0 24px 64px rgba(0, 0, 0, 0.95);
+
+  /* Ocean Blue Glow Effects */
+  --glow-xs: 0 0 8px rgba(6, 182, 212, 0.2);
+  --glow-sm: 0 0 16px rgba(6, 182, 212, 0.25);
+  --glow: 0 0 24px rgba(6, 182, 212, 0.3);
+  --glow-md: 0 0 32px rgba(6, 182, 212, 0.35);
+  --glow-lg: 0 0 48px rgba(6, 182, 212, 0.4);
+  --glow-xl: 0 0 64px rgba(6, 182, 212, 0.45);
+  --shadow-button: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-button-hover: 0 8px 24px rgba(0, 0, 0, 0.6), var(--glow-sm);
+  --shadow-inner: inset 0 2px 6px rgba(0, 0, 0, 0.4);
+
+  /* Glassmorphism - EUVEKA blur(84px) */
+  --glass-bg: rgba(25, 22, 16, 0.7);
+  --glass-bg-strong: rgba(25, 22, 16, 0.9);
+  --glass-bg-subtle: rgba(25, 22, 16, 0.5);
+  --glass-border: rgba(6, 182, 212, 0.1);
+  --glass-blur: 84px;
+
+  /* Component Radii - EUVEKA specification */
+  --radius-card: 24px;
+  --radius-card-lg: 32px;
+  --radius-button: 60px;
+
+  /* Button Height - EUVEKA 56-64px */
+  --button-height: 56px;
+  --button-height-lg: 64px;
+
+  /* Shadcn/Tailwind Compatibility */
+  --background: #191610;
+  --foreground: #fefefc;
+  --card: #242018;
+  --card-foreground: #fefefc;
+  --popover: #242018;
+  --popover-foreground: #fefefc;
+  --primary: #06b6d4;
+  --primary-foreground: #ffffff;
+  --secondary: #2c261c;
+  --secondary-foreground: #d6cec2;
+  --muted: #2c261c;
+  --muted-foreground: #b2987d;
+  --destructive: #ff4f4f;
+  --destructive-foreground: #ffffff;
+  --ring: #06b6d4;
+  --radius: 24px;
+
+  --chart-1: #06b6d4;
+  --chart-2: #22d3ee;
+  --chart-3: #d6cec2;
+  --chart-4: #b2987d;
+  --chart-5: #544a36;
+
+  --sidebar: #191610;
+  --sidebar-foreground: #fefefc;
+  --sidebar-primary: #06b6d4;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2c261c;
+  --sidebar-accent-foreground: #d6cec2;
+  --sidebar-border: #2c261c;
+  --sidebar-ring: #06b6d4;
+}
+
+/* Ocean theme - Button and Link Styling */
+.ocean .btn-tactile:hover,
+.ocean .ds-button:hover,
+.ocean .btn:hover,
+.ocean .btn-primary:hover {
+  background: var(--accent);
+  color: var(--primary-foreground);
+  border-color: var(--accent);
+}
+
+.ocean .btn-tactile:focus-visible,
+.ocean .ds-button:focus-visible,
+.ocean .btn:focus-visible {
+  box-shadow: 0 0 0 3px var(--bg-primary), 0 0 0 5px var(--accent);
+}
+
+.ocean ::selection {
+  background: var(--accent);
+  color: var(--primary-foreground);
+}
+
+.ocean a:hover {
+  color: var(--accent);
+  opacity: 1;
+}
+
+/* =====================================================================
+   FOREST THEME - EUVEKA Grayscale Base + Green Accent
+   Uses EUVEKA neutrals as base with forest green accent color
+   ===================================================================== */
+.forest {
+  /* Core Backgrounds - EUVEKA Warm Charcoal Base */
+  --bg-primary: #191610;
+  --bg-secondary: #242018;
+  --bg-tertiary: #2c261c;
+  --bg-quaternary: #544a36;
+
+  /* Core Text - EUVEKA Off White */
+  --text-primary: #fefefc;
+  --text-secondary: #d6cec2;
+  --text-muted: #b2987d;
+  --text-disabled: #544a36;
+  --text-inverse: #191610;
+
+  /* Accent - Forest Green */
+  --accent: #22c55e;
+  --accent-hover: #4ade80;
+  --accent-subtle: rgba(34, 197, 94, 0.15);
+  --accent-muted: rgba(34, 197, 94, 0.08);
+
+  /* EUVEKA Neutral Scale */
+  --euveka-50: #fefdfb;
+  --euveka-100: #fcf6ec;
+  --euveka-200: #f3ede2;
+  --euveka-300: #e5dac7;
+  --euveka-400: #d6cec2;
+  --euveka-500: #b2987d;
+  --euveka-600: #544a36;
+  --euveka-700: #2c261c;
+  --euveka-800: #242018;
+  --euveka-900: #191610;
+
+  /* Muted Colors - EUVEKA warm tones */
+  --muted-warm: #544a36;
+  --muted-dark: #242018;
+
+  /* Borders - EUVEKA neutrals */
+  --border: #2c261c;
+  --border-light: #544a36;
+  --border-hover: #b2987d;
+  --border-focus: #22c55e;
+
+  /* Cards & Surfaces - EUVEKA specification */
+  --card-bg: #242018;
+  --card-bg-elevated: #2c261c;
+  --card-border: #544a36;
+  --surface: #191610;
+  --surface-elevated: #242018;
+  --surface-overlay: rgba(25, 22, 16, 0.95);
+
+  /* Inputs */
+  --input-bg: #242018;
+  --input-border: #544a36;
+  --input-focus: #22c55e;
+  --input-placeholder: #b2987d;
+
+  /* Semantic Colors */
+  --success: #22c55e;
+  --success-subtle: rgba(34, 197, 94, 0.15);
+  --warning: #f59e0b;
+  --warning-subtle: rgba(245, 158, 11, 0.15);
+  --error: #ff4f4f;
+  --error-subtle: rgba(255, 79, 79, 0.15);
+
+  /* Shadows - EUVEKA warm dark */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.6);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.8);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.9);
+  --shadow-2xl: 0 24px 64px rgba(0, 0, 0, 0.95);
+
+  /* Forest Green Glow Effects */
+  --glow-xs: 0 0 8px rgba(34, 197, 94, 0.2);
+  --glow-sm: 0 0 16px rgba(34, 197, 94, 0.25);
+  --glow: 0 0 24px rgba(34, 197, 94, 0.3);
+  --glow-md: 0 0 32px rgba(34, 197, 94, 0.35);
+  --glow-lg: 0 0 48px rgba(34, 197, 94, 0.4);
+  --glow-xl: 0 0 64px rgba(34, 197, 94, 0.45);
+  --shadow-button: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-button-hover: 0 8px 24px rgba(0, 0, 0, 0.6), var(--glow-sm);
+  --shadow-inner: inset 0 2px 6px rgba(0, 0, 0, 0.4);
+
+  /* Glassmorphism - EUVEKA blur(84px) */
+  --glass-bg: rgba(25, 22, 16, 0.7);
+  --glass-bg-strong: rgba(25, 22, 16, 0.9);
+  --glass-bg-subtle: rgba(25, 22, 16, 0.5);
+  --glass-border: rgba(34, 197, 94, 0.1);
+  --glass-blur: 84px;
+
+  /* Component Radii - EUVEKA specification */
+  --radius-card: 24px;
+  --radius-card-lg: 32px;
+  --radius-button: 60px;
+
+  /* Button Height - EUVEKA 56-64px */
+  --button-height: 56px;
+  --button-height-lg: 64px;
+
+  /* Shadcn/Tailwind Compatibility */
+  --background: #191610;
+  --foreground: #fefefc;
+  --card: #242018;
+  --card-foreground: #fefefc;
+  --popover: #242018;
+  --popover-foreground: #fefefc;
+  --primary: #22c55e;
+  --primary-foreground: #ffffff;
+  --secondary: #2c261c;
+  --secondary-foreground: #d6cec2;
+  --muted: #2c261c;
+  --muted-foreground: #b2987d;
+  --destructive: #ff4f4f;
+  --destructive-foreground: #ffffff;
+  --ring: #22c55e;
+  --radius: 24px;
+
+  --chart-1: #22c55e;
+  --chart-2: #4ade80;
+  --chart-3: #d6cec2;
+  --chart-4: #b2987d;
+  --chart-5: #544a36;
+
+  --sidebar: #191610;
+  --sidebar-foreground: #fefefc;
+  --sidebar-primary: #22c55e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2c261c;
+  --sidebar-accent-foreground: #d6cec2;
+  --sidebar-border: #2c261c;
+  --sidebar-ring: #22c55e;
+}
+
+/* Forest theme - Button and Link Styling */
+.forest .btn-tactile:hover,
+.forest .ds-button:hover,
+.forest .btn:hover,
+.forest .btn-primary:hover {
+  background: var(--accent);
+  color: var(--primary-foreground);
+  border-color: var(--accent);
+}
+
+.forest .btn-tactile:focus-visible,
+.forest .ds-button:focus-visible,
+.forest .btn:focus-visible {
+  box-shadow: 0 0 0 3px var(--bg-primary), 0 0 0 5px var(--accent);
+}
+
+.forest ::selection {
+  background: var(--accent);
+  color: var(--primary-foreground);
+}
+
+.forest a:hover {
+  color: var(--accent);
+  opacity: 1;
 }
 
 /* =====================================================================
@@ -2829,5 +3561,162 @@ th {
 @media (min-width: 2560px) {
   .tv-content-width {
     max-width: min(2000px, 80vw);
+  }
+}
+
+/* =====================================================================
+   WINDOWS HIGH CONTRAST MODE SUPPORT - forced-colors
+   WCAG 2.1 AA: Ensures UI works with Windows High Contrast
+   ===================================================================== */
+
+@media (forced-colors: active) {
+  /* Use system colors */
+  button,
+  [role="button"],
+  .btn-tactile,
+  .ds-button {
+    border: 2px solid ButtonText !important;
+    background: ButtonFace !important;
+    color: ButtonText !important;
+    forced-color-adjust: none;
+  }
+
+  button:hover,
+  [role="button"]:hover {
+    background: Highlight !important;
+    color: HighlightText !important;
+  }
+
+  button:focus-visible,
+  [role="button"]:focus-visible {
+    outline: 3px solid Highlight !important;
+    outline-offset: 2px !important;
+  }
+
+  a {
+    color: LinkText !important;
+  }
+
+  input,
+  textarea,
+  select {
+    border: 2px solid ButtonText !important;
+    background: Field !important;
+    color: FieldText !important;
+  }
+
+  .card,
+  .bento-card,
+  .glass-card {
+    border: 2px solid ButtonText !important;
+    background: Canvas !important;
+  }
+
+  /* Disable all decorative shadows in high contrast */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+}
+
+/* =====================================================================
+   PERFORMANCE OPTIMIZATIONS FOR EUVEKA-STYLE ANIMATIONS
+   Optimizes blur effects, floating animations, and scroll transforms
+   ===================================================================== */
+
+/* GPU acceleration hints for animated elements */
+.animate-gpu {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Remove will-change after animation completes */
+.animate-gpu-once {
+  will-change: transform, opacity;
+}
+.animate-gpu-once.animation-complete {
+  will-change: auto;
+}
+
+/* Disable blur effects on mobile/low-power devices */
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .blur-mobile-disabled {
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Replace expensive blurs with solid backgrounds */
+  .glass,
+  .glass-dark,
+  .glass-subtle {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(10, 10, 8, 0.95) !important;
+  }
+
+  /* Disable floating animations */
+  .animate-float,
+  .animate-float-slow,
+  .animate-float-subtle {
+    animation: none !important;
+  }
+
+  /* Disable parallax transforms */
+  .parallax-disabled {
+    transform: none !important;
+  }
+}
+
+/* Optimize large blur elements */
+.blur-orb {
+  contain: strict;
+  content-visibility: auto;
+}
+
+/* Intersection observer trigger for lazy animations */
+.animate-on-visible {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.animate-on-visible.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Content visibility for below-fold content */
+.lazy-section {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 500px;
+}
+
+/* Optimize scroll-linked animations */
+.scroll-animate {
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-animate {
+    will-change: auto;
+    transform: none !important;
+  }
+}
+
+/* Optimize touch device interactions */
+@media (pointer: coarse) {
+  /* Larger touch targets for mobile */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Disable hover states on touch */
+  .hover-only:hover {
+    transform: none;
+    box-shadow: none;
   }
 }

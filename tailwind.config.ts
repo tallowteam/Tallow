@@ -2,17 +2,31 @@ import type { Config } from "tailwindcss";
 import type { PluginAPI } from "tailwindcss/types/config";
 
 /**
- * TALLOW DESIGN SYSTEM 2026 - EUVEKA STYLE
+ * TALLOW DESIGN SYSTEM 2026 - MONOCHROME DARK MODE
+ *
+ * MONOCHROME COLOR PALETTE:
+ * - Dark: #191610
+ * - Background: #fefefc
+ * - Neutrals: #fefdfb, #fcf6ec, #f3ede2, #e5dac7, #d6cec2, #b2987d, #544a36, #2c261c, #242018
+ * - Accent: #fefefc (white)
+ * - Error: #ff4f4f
+ *
+ * EUVEKA TYPOGRAPHY:
+ * - Headlines: "PP Eiko" or "Cormorant Garamond", weight 100-300, line-height 0.95
+ * - Body: "Inter", weight 400-500
+ *
+ * EUVEKA COMPONENTS:
+ * - Buttons: pill shape (border-radius: 60px), height 56-64px
+ * - Cards: border-radius 24-32px
+ * - Blur effects: filter blur(84px)
  *
  * Design Philosophy:
- * - BLACK AND WHITE FOCUS - NO BLUE COLORS
- * - Monochromatic elegance with warm neutrals
- * - Primary white (#fefefc) for dark mode accents
- * - Deep blacks and warm stones for base
+ * - Pure monochrome: black (#191610) background, white (#fefefc) accent
+ * - Dark mode only (no light mode)
  * - Cormorant Garamond for display, Inter for body
- * - Organic border radii (12px to 60px)
+ * - Organic border radii (24px cards, 60px pills)
  * - Spring-based animations with white glow effects
- * - Bento grid and glassmorphism (dark variant)
+ * - Bento grid and glassmorphism
  */
 
 // ============================================================================
@@ -35,9 +49,11 @@ type KeyframeDefinition = Record<string, Record<string, string>>;
 // ============================================================================
 
 const DESIGN_TOKENS = {
-  // Core Colors - Black & White Focus
+  // Core Colors - EUVEKA Palette
   white: "#fefefc",
-  black: "#0a0a08",
+  black: "#191610",
+  accent: "#fefefc",
+  error: "#ff4f4f",
 
   // Spacing Grid (4px base)
   spacing: {
@@ -75,7 +91,7 @@ const DESIGN_TOKENS = {
 } as const;
 
 // ============================================================================
-// COLOR SCALES - NO BLUE, WARM NEUTRALS ONLY
+// COLOR SCALES - EXACT EUVEKA PALETTE
 // ============================================================================
 
 const colors = {
@@ -83,84 +99,85 @@ const colors = {
   background: "var(--background)",
   foreground: "var(--foreground)",
 
-  // Primary - White for dark mode
+  // Primary - EUVEKA White Accent
   primary: {
     DEFAULT: "#fefefc",
-    foreground: "#0a0a08",
+    foreground: "#191610",
   },
 
-  // Secondary - Deep black/charcoal
+  // Secondary - EUVEKA Charcoal
   secondary: {
-    DEFAULT: "#1a1918",
+    DEFAULT: "#242018",
     foreground: "#fefefc",
   },
 
-  // Muted - Dark neutrals
+  // Muted - EUVEKA Warm Charcoal
   muted: {
-    DEFAULT: "#262626",
-    foreground: "#a8a29e",
+    DEFAULT: "#2c261c",
+    foreground: "#b2987d",
   },
 
-  // Sand - Warm Neutral Scale (50-950)
-  sand: {
-    50: "#fdfcfb",
-    100: "#faf8f5",
-    200: "#f5f0ea",
-    300: "#e8dfd3",
-    400: "#d4c4b0",
-    500: "#b8a389",
-    600: "#9a8268",
-    700: "#7a6652",
-    800: "#5c4d3e",
-    900: "#3d332a",
-    950: "#1f1a15",
+  // EUVEKA Neutrals - EXACT warm grayscale from euveka.com
+  euveka: {
+    dark: "#191610",        // Primary dark background
+    bg: "#fefefc",          // Primary light background
+    50: "#fefdfb",          // Lightest neutral
+    100: "#fcf6ec",         // Cream
+    200: "#f3ede2",         // Warm off-white
+    300: "#e5dac7",         // Sand light
+    400: "#d6cec2",         // Sand medium
+    500: "#b2987d",         // Sand dark / muted text
+    600: "#544a36",         // Brown muted
+    700: "#2c261c",         // Dark brown
+    800: "#242018",         // Darker charcoal
+    900: "#191610",         // Darkest (primary dark)
   },
 
-  // Stone - Warm Neutral Scale (50-950)
+  // Stone - Updated to EUVEKA warm tones
   stone: {
-    50: "#fafaf9",
-    100: "#f5f5f4",
-    200: "#e7e5e4",
-    300: "#d6d3d1",
-    400: "#a8a29e",
-    500: "#78716c",
-    600: "#57534e",
-    700: "#44403c",
-    800: "#292524",
-    900: "#1c1917",
-    950: "#0c0a09",
+    50: "#fefdfb",
+    100: "#fcf6ec",
+    200: "#f3ede2",
+    300: "#e5dac7",
+    400: "#d6cec2",
+    500: "#b2987d",
+    600: "#544a36",
+    700: "#2c261c",
+    800: "#242018",
+    900: "#191610",
+    950: "#0f0e0a",
   },
 
-  // Neutral - Pure grayscale (50-950)
+  // Neutral - EUVEKA warm grayscale
   neutral: {
-    50: "#fafafa",
-    100: "#f5f5f5",
-    200: "#e5e5e5",
-    300: "#d4d4d4",
-    400: "#a3a3a3",
-    500: "#737373",
-    600: "#525252",
-    700: "#404040",
-    800: "#262626",
-    900: "#171717",
-    950: "#0a0a0a",
+    50: "#fefdfb",
+    100: "#fcf6ec",
+    200: "#f3ede2",
+    300: "#e5dac7",
+    400: "#d6cec2",
+    500: "#b2987d",
+    600: "#544a36",
+    700: "#2c261c",
+    800: "#242018",
+    900: "#191610",
+    950: "#0f0e0a",
   },
 
-  // Accent - Warm white/cream for highlights
+  // Accent - EUVEKA White
   accent: {
     DEFAULT: "#fefefc",
     50: "#ffffff",
     100: "#fefefc",
-    200: "#faf8f5",
-    300: "#f5f0ea",
-    400: "#e8dfd3",
-    500: "#d4c4b0",
-    600: "#b8a389",
-    700: "#9a8268",
-    800: "#7a6652",
-    900: "#5c4d3e",
-    950: "#3d332a",
-    foreground: "#0a0a08",
+    200: "#f5f5f3",
+    300: "#e5e5e3",
+    400: "#d5d5d3",
+    500: "#c5c5c3",
+    600: "#a5a5a3",
+    700: "#858583",
+    800: "#656563",
+    900: "#454543",
+    950: "#252523",
+    foreground: "#191610",
   },
 
   // Surface Colors
@@ -209,12 +226,12 @@ const colors = {
     placeholder: "var(--input-placeholder)",
   },
   destructive: {
-    DEFAULT: "#dc2626",
-    foreground: "#fefefc",
+    DEFAULT: "#ff4f4f",  // EUVEKA error red
+    foreground: "#ffffff",
   },
-  ring: "var(--ring)",
+  ring: "#fefefc",
 
-  // Status Colors - Warm tones, no blue
+  // Status Colors - EUVEKA palette
   success: {
     DEFAULT: "#22c55e",
     50: "#f0fdf4",
@@ -243,21 +260,21 @@ const colors = {
     800: "#92400e",
     900: "#78350f",
     950: "#451a03",
-    foreground: "#0a0a08",
+    foreground: "#191610",
   },
   error: {
-    DEFAULT: "#ef4444",
-    50: "#fef2f2",
-    100: "#fee2e2",
-    200: "#fecaca",
-    300: "#fca5a5",
-    400: "#f87171",
-    500: "#ef4444",
-    600: "#dc2626",
-    700: "#b91c1c",
-    800: "#991b1b",
-    900: "#7f1d1d",
-    950: "#450a0a",
+    DEFAULT: "#ff4f4f",  // EUVEKA error red
+    50: "#fff2f2",
+    100: "#ffe5e5",
+    200: "#ffcccc",
+    300: "#ffb3b3",
+    400: "#ff8080",
+    500: "#ff4f4f",
+    600: "#e63e3e",
+    700: "#cc2e2e",
+    800: "#b31f1f",
+    900: "#991010",
+    950: "#660808",
     foreground: "#ffffff",
   },
 
@@ -276,7 +293,7 @@ const colors = {
     DEFAULT: "var(--sidebar)",
     foreground: "var(--sidebar-foreground)",
     primary: "#fefefc",
-    "primary-foreground": "#0a0a08",
+    "primary-foreground": "#191610",
     accent: "var(--sidebar-accent)",
     "accent-foreground": "var(--sidebar-accent-foreground)",
     border: "var(--sidebar-border)",
@@ -796,25 +813,29 @@ const config: Config = {
       },
 
       // =======================================================================
-      // BORDER RADIUS - ORGANIC (Euveka specification)
+      // BORDER RADIUS - EUVEKA SPECIFICATION
+      // Cards: 24-32px, Buttons/Pills: 60px
       // =======================================================================
       borderRadius: {
         none: "0",
         xs: "4px",
-        sm: "6px",
-        DEFAULT: "8px",
-        md: "10px",
-        lg: "12px",       // organic-sm
-        xl: "16px",
-        "2xl": "20px",    // organic
-        "3xl": "24px",    // organic-md
-        "4xl": "28px",    // organic-lg
-        "5xl": "32px",    // organic-xl
-        "6xl": "60px",    // organic-2xl
+        sm: "8px",
+        DEFAULT: "12px",
+        md: "16px",
+        lg: "20px",
+        xl: "24px",       // EUVEKA card radius
+        "2xl": "28px",
+        "3xl": "32px",    // EUVEKA large card radius
+        "4xl": "40px",
+        "5xl": "48px",
+        "6xl": "60px",    // EUVEKA button/pill radius
         full: "9999px",
 
-        // Named organic scale (Euveka specification)
-        "organic-xs": "12px",
+        // EUVEKA Named scale
+        card: "24px",           // Standard card
+        "card-lg": "32px",      // Large card
+        button: "60px",         // Button/pill shape
+        pill: "60px",           // Pill buttons
         "organic-sm": "20px",
         organic: "24px",
         "organic-md": "28px",
@@ -1107,12 +1128,14 @@ const config: Config = {
       },
 
       // =======================================================================
-      // BACKDROP BLUR
+      // BACKDROP BLUR - EUVEKA uses filter blur(84px)
       // =======================================================================
       backdropBlur: {
         xs: "2px",
         "3xl": "64px",
-        "4xl": "96px",
+        "4xl": "84px",    // EUVEKA blur specification
+        "5xl": "96px",
+        euveka: "84px",   // EUVEKA primary blur effect
       },
 
       // =======================================================================
