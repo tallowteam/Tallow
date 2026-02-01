@@ -1,0 +1,41 @@
+# Binaries
+build/
+dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+tallow
+
+# Test binary
+*.test
+
+# Output of go coverage tool
+*.out
+coverage.html
+
+# Dependency directories
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Config
+.tallow.yaml
+!configs/relay.yaml
+
+# Temporary files
+tmp/
+temp/

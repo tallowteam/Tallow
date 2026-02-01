@@ -1,0 +1,59 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": [
+    "./app",
+    "./components",
+    "./lib"
+  ],
+  "entryPointStrategy": "expand",
+  "out": "docs/api",
+  "exclude": [
+    "**/node_modules/**",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/tests/**",
+    "**/.next/**",
+    "**/dist/**"
+  ],
+  "excludePrivate": false,
+  "excludeProtected": false,
+  "excludeExternals": true,
+  "excludeInternal": false,
+  "includeVersion": true,
+  "sort": ["source-order"],
+  "name": "Tallow - P2P File Transfer Documentation",
+  "readme": "README.md",
+  "theme": "default",
+  "darkHighlightTheme": "github-dark",
+  "lightHighlightTheme": "github-light",
+  "plugin": [],
+  "categorizeByGroup": true,
+  "categoryOrder": [
+    "Hooks",
+    "Components",
+    "Utilities",
+    "Types",
+    "*"
+  ],
+  "searchInComments": true,
+  "searchInDocuments": true,
+  "validation": {
+    "notExported": true,
+    "invalidLink": true,
+    "notDocumented": false
+  },
+  "treatWarningsAsErrors": false,
+  "treatValidationWarningsAsErrors": false,
+  "skipErrorChecking": false,
+  "gitRevision": "master",
+  "gitRemote": "origin",
+  "hideGenerator": false,
+  "cleanOutputDir": true,
+  "navigation": {
+    "includeCategories": true,
+    "includeGroups": true,
+    "includeFolders": true
+  }
+}

@@ -1,0 +1,21 @@
+apiVersion: v2
+name: tallow
+description: A Helm chart for TALLOW - Secure P2P file transfer application
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - tallow
+  - file-transfer
+  - p2p
+  - webrtc
+  - security
+  - encryption
+home: https://tallow.manisahome.com
+sources:
+  - https://github.com/your-username/tallow
+maintainers:
+  - name: TALLOW Team
+    email: support@tallow.example.com
+icon: https://tallow.manisahome.com/logo.svg
+dependencies: []

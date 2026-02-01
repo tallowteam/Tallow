@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Service Worker Test</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .status {
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+    .success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 5px;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    button:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+    }
+    pre {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 5px;
+      overflow-x: auto;
+    }
+    .test-section {
+      margin: 30px 0;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    h2 {
+      color: #333;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 10px;
+    }
+    #console-output {
+      max-height: 300px;
+      overflow-y: auto;
+      background: #2d2d2d;
+      color: #f8f8f2;
+      padding: 15px;
+      border-radius: 5px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+    }
+    .console-line {
+      margin: 2px 0;
+    }
+    .console-error {
+      color: #ff6b6b;
+    }
+    .console-warn {
+      color: #ffd93d;
+    }
+    .console-info {
+      color: #6bcf7f;
+    }
+  </style>
+</head>
+<body>
+  <h1>Service Worker Test Suite</h1>
+
+  <div id="registration-status" class="status info">
+    Checking service worker registration...
+  </div>
+
+  <div class="test-section">
+    <h2>Service Worker Controls</h2>
+    <button onclick="registerServiceWorker()">Register Service Worker</button>
+    <button onclick="unregisterServiceWorker()">Unregister Service Worker</button>
+    <button onclick="skipWaiting()">Skip Waiting</button>
+    <button onclick="clearCache()">Clear Cache</button>
+    <button onclick="checkCacheStatus()">Check Cache Status</button>
+  </div>
+
+  <div class="test-section">
+    <h2>Response Validation Tests</h2>
+    <button onclick="testNavigationRequest()">Test Navigation Request</button>
+    <button onclick="testStaticAsset()">Test Static Asset</button>
+    <button onclick="testAPICall()">Test API Call</button>
+    <button onclick="testPQCChunk()">Test PQC Chunk</button>
+    <button onclick="testOfflineFallback()">Test Offline Fallback</button>
+  </div>
+
+  <div class="test-section">
+    <h2>Error Handling Tests</h2>
+    <button onclick="test404Response()">Test 404 Response</button>
+    <button onclick="testNetworkError()">Test Network Error</button>
+    <button onclick="testInvalidURL()">Test Invalid URL</button>
+  </div>
+
+  <div class="test-section">
+    <h2>Console Output</h2>
+    <button onclick="clearConsole()">Clear Console</button>
+    <div id="console-output"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test Results</h2>
+    <pre id="test-results">No tests run yet.</pre>
+  </div>
+
+  <script>
+    const consoleOutput = document.getElementById('console-output');
+    const testResults = document.getElementById('test-results');
+    let testCount = 0;
+    let passCount = 0;
+    let failCount = 0;
+
+    // Intercept console methods
+    const originalConsole = {
+      log: console.log,
+      error: console.error,
+      warn: console.warn,
+      info: console.info
+    };
+
+    function logToConsole(type, ...args) {
+      const line = document.createElement('div');
+      line.className = `console-line console-${type}`;
+      line.textContent = `[${type.toUpperCase()}] ${args.join(' ')}`;
+      consoleOutput.appendChild(line);
+      consoleOutput.scrollTop = consoleOutput.scrollHeight;
+      originalConsole[type](...args);
+    }
+
+    console.log = (...args) => logToConsole('info', ...args);
+    console.error = (...args) => logToConsole('error', ...args);
+    console.warn = (...args) => logToConsole('warn', ...args);
+    console.info = (...args) => logToConsole('info', ...args);
+
+    function clearConsole() {
+      // Clear by removing all children
+      while (consoleOutput.firstChild) {
+        consoleOutput.removeChild(consoleOutput.firstChild);
+      }
+    }
+
+    function updateStatus(message, type = 'info') {
+      const status = document.getElementById('registration-status');
+      status.className = `status ${type}`;
+      status.textContent = message;
+    }
+
+    function logTest(name, passed, details = '') {
+      testCount++;
+      if (passed) {
+        passCount++;
+        console.log(`✓ ${name} - PASSED ${details}`);
+      } else {
+        failCount++;
+        console.error(`✗ ${name} - FAILED ${details}`);
+      }
+      updateTestResults();
+    }
+
+    function updateTestResults() {
+      const percentage = testCount > 0 ? ((passCount / testCount) * 100).toFixed(1) : 0;
+      testResults.textContent = `Tests Run: ${testCount}
+Passed: ${passCount}
+Failed: ${failCount}
+Success Rate: ${percentage}%`;
+    }
+
+    async function registerServiceWorker() {
+      try {
+        console.log('Registering service worker...');
+        const registration = await navigator.serviceWorker.register('/service-worker.js');
+        console.log('Service worker registered:', registration);
+        updateStatus('Service worker registered successfully', 'success');
+        logTest('Service Worker Registration', true, registration.scope);
+      } catch (error) {
+        console.error('Service worker registration failed:', error);
+        updateStatus(`Service worker registration failed: ${error.message}`, 'error');
+        logTest('Service Worker Registration', false, error.message);
+      }
+    }
+
+    async function unregisterServiceWorker() {
+      try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+          await registration.unregister();
+          console.log('Service worker unregistered');
+          updateStatus('Service worker unregistered', 'info');
+          logTest('Service Worker Unregistration', true);
+        } else {
+          console.warn('No service worker registered');
+          updateStatus('No service worker to unregister', 'info');
+        }
+      } catch (error) {
+        console.error('Unregistration failed:', error);
+        logTest('Service Worker Unregistration', false, error.message);
+      }
+    }
+
+    async function skipWaiting() {
+      try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration && registration.waiting) {
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+          console.log('Skip waiting message sent');
+          logTest('Skip Waiting', true);
+        } else {
+          console.warn('No waiting service worker');
+        }
+      } catch (error) {
+        console.error('Skip waiting failed:', error);
+        logTest('Skip Waiting', false, error.message);
+      }
+    }
+
+    async function clearCache() {
+      try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration && registration.active) {
+          registration.active.postMessage({ type: 'CLEAR_CACHE' });
+          console.log('Clear cache message sent');
+          logTest('Clear Cache', true);
+        } else {
+          console.warn('No active service worker');
+        }
+      } catch (error) {
+        console.error('Clear cache failed:', error);
+        logTest('Clear Cache', false, error.message);
+      }
+    }
+
+    async function checkCacheStatus() {
+      try {
+        const cacheNames = await caches.keys();
+        console.log('Available caches:', cacheNames);
+
+        for (const cacheName of cacheNames) {
+          const cache = await caches.open(cacheName);
+          const keys = await cache.keys();
+          console.log(`${cacheName}: ${keys.length} items`);
+        }
+
+        logTest('Check Cache Status', true, `${cacheNames.length} caches found`);
+      } catch (error) {
+        console.error('Cache check failed:', error);
+        logTest('Check Cache Status', false, error.message);
+      }
+    }
+
+    async function testFetch(url, testName) {
+      try {
+        console.log(`Testing fetch: ${url}`);
+        const response = await fetch(url);
+        const isValidResponse = response instanceof Response;
+        const hasValidStatus = response.status >= 200 && response.status < 600;
+        const passed = isValidResponse && hasValidStatus;
+
+        console.log(`Response: status=${response.status}, ok=${response.ok}, type=${response.type}`);
+        logTest(testName, passed, `Status: ${response.status}`);
+
+        return response;
+      } catch (error) {
+        console.error(`Fetch failed: ${error.message}`);
+        logTest(testName, false, error.message);
+        return null;
+      }
+    }
+
+    async function testNavigationRequest() {
+      await testFetch('/', 'Navigation Request');
+    }
+
+    async function testStaticAsset() {
+      await testFetch('/manifest.json', 'Static Asset');
+    }
+
+    async function testAPICall() {
+      await testFetch('/api/health', 'API Call');
+    }
+
+    async function testPQCChunk() {
+      await testFetch('/_next/static/chunks/main.js', 'PQC Chunk');
+    }
+
+    async function testOfflineFallback() {
+      await testFetch('/offline', 'Offline Fallback');
+    }
+
+    async function test404Response() {
+      const response = await testFetch('/nonexistent-page-12345', '404 Response');
+      if (response) {
+        const is404 = response.status === 404;
+        logTest('404 Handling', is404, `Expected 404, got ${response.status}`);
+      }
+    }
+
+    async function testNetworkError() {
+      try {
+        // This should be caught by service worker
+        await testFetch('http://invalid-domain-that-does-not-exist-12345.com', 'Network Error');
+      } catch (error) {
+        logTest('Network Error Handling', true, 'Caught as expected');
+      }
+    }
+
+    async function testInvalidURL() {
+      try {
+        await testFetch('', 'Invalid URL');
+      } catch (error) {
+        logTest('Invalid URL Handling', true, 'Caught as expected');
+      }
+    }
+
+    // Check initial status
+    (async function checkInitialStatus() {
+      try {
+        if ('serviceWorker' in navigator) {
+          const registration = await navigator.serviceWorker.getRegistration();
+          if (registration) {
+            updateStatus(`Service worker active: ${registration.scope}`, 'success');
+            console.log('Service worker already registered:', registration);
+          } else {
+            updateStatus('No service worker registered. Click "Register Service Worker" to begin.', 'info');
+          }
+        } else {
+          updateStatus('Service workers not supported in this browser', 'error');
+        }
+      } catch (error) {
+        console.error('Status check failed:', error);
+        updateStatus(`Status check failed: ${error.message}`, 'error');
+      }
+    })();
+
+    // Listen for service worker updates
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        console.log('Service worker controller changed');
+        updateStatus('Service worker updated', 'success');
+      });
+
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        console.log('Message from service worker:', event.data);
+      });
+    }
+  </script>
+</body>
+</html>

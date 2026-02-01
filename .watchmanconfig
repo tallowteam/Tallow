@@ -1,0 +1,14 @@
+{
+  "ignore_dirs": [
+    ".git",
+    ".next",
+    "node_modules",
+    ".planning",
+    ".claude",
+    ".playwright-mcp",
+    "reports",
+    "build",
+    "dist",
+    "coverage"
+  ]
+}

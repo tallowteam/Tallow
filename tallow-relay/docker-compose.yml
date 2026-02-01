@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # Entry relay - accepts client connections
+  relay-entry-1:
+    build: .
+    container_name: tallow-relay-entry-1
+    ports:
+      - "8441:8443"
+    environment:
+      - RELAY_PORT=8443
+      - RELAY_ROLE=entry
+      - RELAY_REGION=local
+    networks:
+      - tallow-relay-network
+    restart: unless-stopped
+
+  # Middle relay - forwards encrypted data
+  relay-middle-1:
+    build: .
+    container_name: tallow-relay-middle-1
+    ports:
+      - "8442:8443"
+    environment:
+      - RELAY_PORT=8443
+      - RELAY_ROLE=middle
+      - RELAY_REGION=local
+    networks:
+      - tallow-relay-network
+    restart: unless-stopped
+
+  relay-middle-2:
+    build: .
+    container_name: tallow-relay-middle-2
+    ports:
+      - "8443:8443"
+    environment:
+      - RELAY_PORT=8443
+      - RELAY_ROLE=middle
+      - RELAY_REGION=local
+    networks:
+      - tallow-relay-network
+    restart: unless-stopped
+
+  # Exit relay - delivers to destination
+  relay-exit-1:
+    build: .
+    container_name: tallow-relay-exit-1
+    ports:
+      - "8444:8443"
+    environment:
+      - RELAY_PORT=8443
+      - RELAY_ROLE=exit
+      - RELAY_REGION=local
+    networks:
+      - tallow-relay-network
+    restart: unless-stopped
+
+  # Relay directory service (simple static server for dev)
+  relay-directory:
+    image: nginx:alpine
+    container_name: tallow-relay-directory
+    ports:
+      - "8080:80"
+    volumes:
+      - ./directory:/usr/share/nginx/html:ro
+    networks:
+      - tallow-relay-network
+    restart: unless-stopped
+
+networks:
+  tallow-relay-network:
+    driver: bridge

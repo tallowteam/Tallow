@@ -1,0 +1,125 @@
+name: tallow
+description: Quantum-resistant P2P file transfer application
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+  flutter: '>=3.16.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # State Management
+  flutter_riverpod: ^2.4.9
+  riverpod_annotation: ^2.3.3
+
+  # Cryptography
+  cryptography: ^2.7.0
+  pointycastle: ^3.7.4
+  convert: ^3.1.1
+
+  # Networking
+  flutter_webrtc: ^0.9.47
+  socket_io_client: ^2.0.3+1
+  multicast_dns: ^0.3.2+6
+  http: ^1.2.0
+  web_socket_channel: ^2.4.0
+
+  # Storage
+  flutter_secure_storage: ^9.0.0
+  shared_preferences: ^2.2.2
+  sqflite: ^2.3.2
+  path_provider: ^2.1.2
+  path: ^1.8.3
+
+  # UI Components
+  file_picker: ^6.1.1
+  permission_handler: ^11.2.0
+  share_plus: ^7.2.2
+  mobile_scanner: ^4.0.1
+  qr_flutter: ^4.1.0
+  lottie: ^3.0.0
+  shimmer: ^3.0.0
+
+  # Utilities
+  uuid: ^4.3.3
+  intl: ^0.18.1
+  device_info_plus: ^9.1.1
+  connectivity_plus: ^5.0.2
+  package_info_plus: ^5.0.1
+  url_launcher: ^6.2.4
+
+  # Platform specific
+  receive_sharing_intent: ^1.6.7
+  open_file: ^3.3.2
+
+  # Logging
+  logger: ^2.0.2+1
+
+  # Crash Reporting
+  sentry_flutter: ^7.18.0
+
+  # Background Tasks
+  workmanager: ^0.5.2
+
+  # Desktop Support
+  window_manager: ^0.3.8
+  system_tray: ^2.0.3
+  launch_at_startup: ^0.2.2
+
+  # Analytics (optional)
+  firebase_analytics: ^10.8.5
+  firebase_core: ^2.25.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  riverpod_generator: ^2.3.9
+  build_runner: ^2.4.8
+  freezed: ^2.4.6
+  freezed_annotation: ^2.4.1
+  json_serializable: ^6.7.1
+  integration_test:
+    sdk: flutter
+  mockito: ^5.4.4
+
+flutter:
+  uses-material-design: true
+  generate: true
+
+  assets:
+    - assets/images/
+    - assets/animations/
+    - assets/icons/
+
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
+
+flutter_intl:
+  enabled: true
+  class_name: S
+  main_locale: en
+  arb_dir: lib/l10n
+  output_dir: lib/generated
+
+# Platform specific configurations
+flutter_native_splash:
+  color: "#1a1a2e"
+  image: assets/images/splash_logo.png
+  android_12:
+    color: "#1a1a2e"
+    icon_background_color: "#1a1a2e"
+    image: assets/images/splash_logo.png

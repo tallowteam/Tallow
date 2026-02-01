@@ -1,0 +1,47 @@
+# Tallow Deployment Quick Reference
+# =================================
+
+## After Making Local Changes
+
+1. Test locally first:
+   npm run dev
+   → Open http://localhost:3000
+
+2. Sync to NAS:
+   .\sync-to-nas.ps1
+
+3. SSH to NAS:
+   ssh manisaadmin@192.168.4.3
+
+4. Rebuild and restart Docker:
+   cd /volume1/docker/tallow
+   sudo docker compose down
+   sudo docker compose up -d --build
+
+5. Check containers are running:
+   sudo docker ps | grep tallow
+
+6. View logs if issues:
+   sudo docker logs tallow -f
+   sudo docker logs tallow-signaling -f
+
+
+## Quick Commands Reference
+
+# Windows - sync files
+.\sync-to-nas.ps1
+
+# NAS SSH - full rebuild (~3-5 min)
+cd /volume1/docker/tallow && sudo docker compose down && sudo docker compose up -d --build
+
+# NAS SSH - view status
+sudo docker ps
+
+# NAS SSH - view logs
+sudo docker logs tallow -f
+
+
+## URLs
+
+Local:      http://localhost:3000
+Production: https://tallow.manisahome.com

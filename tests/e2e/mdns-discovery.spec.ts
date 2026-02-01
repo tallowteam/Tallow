@@ -28,7 +28,7 @@ async function checkDaemonAvailable(): Promise<boolean> {
 
     clearTimeout(timeout);
 
-    if (response?.ok) return true;
+    if (response?.ok) {return true;}
 
     // Fallback: try WebSocket connection via Node
     const { WebSocket } = await import('ws');

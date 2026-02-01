@@ -1,0 +1,157 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tallow-relay-config
+  labels:
+    app: tallow-relay
+    app.kubernetes.io/name: tallow-relay
+data:
+  # Simple key-value config
+  max_rooms: "50000"
+  rate_limit_enabled: "true"
+
+  # Full configuration file
+  relay.yaml: |
+    # Tallow Relay Server Configuration
+    # Kubernetes production configuration
+
+    server:
+      host: "0.0.0.0"
+      port: 8080
+      read_timeout: 30s
+      write_timeout: 30s
+      idle_timeout: 60s
+      max_header_bytes: 1048576
+      shutdown_timeout: 60s
+
+    room:
+      max_rooms: 50000
+      default_expiry: 24h
+      max_expiry: 24h
+      cleanup_interval: 1m
+      code_word_count: 3
+
+    rate_limit:
+      enabled: true
+      requests_per_second: 5
+      burst_size: 10
+      cleanup_interval: 5m
+      ban_duration: 24h
+      max_violations: 3
+
+    bridge:
+      buffer_size: 65536
+      max_message_size: 67108864
+      read_deadline: 60s
+      write_deadline: 30s
+      ping_interval: 30s
+      pong_timeout: 10s
+      max_bytes_per_room: 10737418240
+      idle_timeout: 2m
+
+    tls:
+      enabled: false  # TLS terminated at ingress
+
+    metrics:
+      enabled: true
+      path: "/metrics"
+      health_path: "/health"
+      ready_path: "/ready"
+      port: 9090
+      namespace: "tallow_relay"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tallow-relay-secrets
+  labels:
+    app: tallow-relay
+type: Opaque
+data:
+  # Add any secrets here (base64 encoded)
+  # Example: admin_token: YWRtaW4tdG9rZW4=
+---
+# Network Policy for security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: tallow-relay
+  labels:
+    app: tallow-relay
+spec:
+  podSelector:
+    matchLabels:
+      app: tallow-relay
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow traffic from ingress controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8080
+    # Allow Prometheus scraping
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+      ports:
+        - protocol: TCP
+          port: 9090
+    # Allow traffic from within the cluster
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 8080
+  egress:
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+    # Allow all egress (relay doesn't need external access, but allow for flexibility)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+---
+# Resource Quota (optional)
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: tallow-relay-quota
+  labels:
+    app: tallow-relay
+spec:
+  hard:
+    requests.cpu: "4"
+    requests.memory: 4Gi
+    limits.cpu: "8"
+    limits.memory: 8Gi
+    pods: "20"
+---
+# Limit Range (optional)
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: tallow-relay-limits
+  labels:
+    app: tallow-relay
+spec:
+  limits:
+    - default:
+        cpu: 500m
+        memory: 256Mi
+      defaultRequest:
+        cpu: 100m
+        memory: 128Mi
+      type: Container

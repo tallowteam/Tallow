@@ -369,12 +369,12 @@ export class MDNSServer extends EventEmitter {
 
     for (const name in interfaces) {
       const iface = interfaces[name];
-      if (!iface) continue;
+      if (!iface) {continue;}
 
       for (const addr of iface) {
         // Skip internal and IPv6 link-local
-        if (addr.internal) continue;
-        if (addr.family === 'IPv6' && addr.address.startsWith('fe80')) continue;
+        if (addr.internal) {continue;}
+        if (addr.family === 'IPv6' && addr.address.startsWith('fe80')) {continue;}
 
         addresses.push(addr.address);
       }
@@ -391,7 +391,7 @@ export class MDNSServer extends EventEmitter {
 
     // Prefer IPv4
     const ipv4 = addresses.find((addr) => !addr.includes(':'));
-    if (ipv4) return ipv4;
+    if (ipv4) {return ipv4;}
 
     // Fall back to first address
     return addresses[0] || '127.0.0.1';

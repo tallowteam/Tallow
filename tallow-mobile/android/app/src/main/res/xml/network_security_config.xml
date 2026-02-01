@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Allow local network connections for P2P discovery -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Trust local network for mDNS/P2P -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">*.local</domain>
+        <domain includeSubdomains="true">10.0.0.0/8</domain>
+        <domain includeSubdomains="true">172.16.0.0/12</domain>
+        <domain includeSubdomains="true">192.168.0.0/16</domain>
+    </domain-config>
+
+    <!-- Secure connections for signaling server -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">tallow.app</domain>
+        <domain includeSubdomains="true">api.tallow.app</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+</network-security-config>

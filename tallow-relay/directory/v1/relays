@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "timestamp": "2026-01-31T00:00:00Z",
+  "relays": [
+    {
+      "id": "relay-local-entry-1",
+      "endpoint": "ws://localhost:8441/relay",
+      "publicKey": "BOOTSTRAP_ENTRY_1_PUBLIC_KEY",
+      "roles": ["entry"],
+      "region": "local",
+      "trustScore": 0.95,
+      "bandwidth": 104857600,
+      "latency": 10,
+      "online": true,
+      "version": "1.0.0"
+    },
+    {
+      "id": "relay-local-middle-1",
+      "endpoint": "ws://localhost:8442/relay",
+      "publicKey": "BOOTSTRAP_MIDDLE_1_PUBLIC_KEY",
+      "roles": ["middle"],
+      "region": "local",
+      "trustScore": 0.92,
+      "bandwidth": 104857600,
+      "latency": 15,
+      "online": true,
+      "version": "1.0.0"
+    },
+    {
+      "id": "relay-local-middle-2",
+      "endpoint": "ws://localhost:8443/relay",
+      "publicKey": "BOOTSTRAP_MIDDLE_2_PUBLIC_KEY",
+      "roles": ["middle"],
+      "region": "local",
+      "trustScore": 0.90,
+      "bandwidth": 104857600,
+      "latency": 20,
+      "online": true,
+      "version": "1.0.0"
+    },
+    {
+      "id": "relay-local-exit-1",
+      "endpoint": "ws://localhost:8444/relay",
+      "publicKey": "BOOTSTRAP_EXIT_1_PUBLIC_KEY",
+      "roles": ["exit"],
+      "region": "local",
+      "trustScore": 0.88,
+      "bandwidth": 104857600,
+      "latency": 25,
+      "online": true,
+      "version": "1.0.0"
+    }
+  ]
+}

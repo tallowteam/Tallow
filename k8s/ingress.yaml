@@ -1,0 +1,122 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tallow-ingress
+  namespace: tallow
+  labels:
+    app: tallow
+  annotations:
+    # NGINX Ingress Controller annotations
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-protocols: "TLSv1.2 TLSv1.3"
+    nginx.ingress.kubernetes.io/ssl-ciphers: "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384"
+
+    # Rate limiting
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    nginx.ingress.kubernetes.io/limit-connections: "50"
+
+    # WebSocket support
+    nginx.ingress.kubernetes.io/websocket-services: "tallow-signaling-service"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+
+    # Security headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: SAMEORIGIN";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "X-XSS-Protection: 1; mode=block";
+      more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
+      more_set_headers "Permissions-Policy: camera=(self), microphone=(), geolocation=()";
+
+    # CORS
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://tallow.example.com"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+
+    # Cert Manager (for automated TLS)
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    cert-manager.io/acme-challenge-type: "http01"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - tallow.example.com
+        - www.tallow.example.com
+      secretName: tallow-tls-cert
+  rules:
+    - host: tallow.example.com
+      http:
+        paths:
+          # Health check endpoint (no auth required)
+          - path: /api/health
+            pathType: Prefix
+            backend:
+              service:
+                name: tallow-service
+                port:
+                  number: 3000
+
+          # Readiness check endpoint
+          - path: /api/ready
+            pathType: Prefix
+            backend:
+              service:
+                name: tallow-service
+                port:
+                  number: 3000
+
+          # Signaling WebSocket endpoint
+          - path: /signaling
+            pathType: Prefix
+            backend:
+              service:
+                name: tallow-signaling-service
+                port:
+                  number: 3001
+
+          # API routes
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: tallow-service
+                port:
+                  number: 3000
+
+          # All other routes (Next.js app)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tallow-service
+                port:
+                  number: 3000
+
+    - host: www.tallow.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tallow-service
+                port:
+                  number: 3000
+---
+# ClusterIssuer for Let's Encrypt SSL certificates
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+  namespace: tallow
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: admin@tallow.example.com
+    privateKeySecretRef:
+      name: letsencrypt-prod-key
+    solvers:
+      - http01:
+          ingress:
+            class: nginx

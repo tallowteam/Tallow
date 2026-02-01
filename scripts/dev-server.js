@@ -38,8 +38,9 @@ function isPortAvailable(port) {
 }
 
 async function checkPort() {
-  const port = parseInt(process.env.PORT || '3000', 10);
-  log(`\n🔌 Checking port ${port}...`, colors.blue);
+  // PERMANENTLY CONFIGURED: Tallow always uses port 3000
+  const port = 3000;
+  log(`\n🔌 Checking port ${port} (Tallow exclusive)...`, colors.blue);
 
   const available = await isPortAvailable(port);
 
@@ -49,7 +50,8 @@ async function checkPort() {
     log(`   To find the process: netstat -ano | findstr :${port}`, colors.yellow);
     log(`   To kill it: taskkill /PID <pid> /F`, colors.yellow);
     log('', colors.reset);
-    log(`   Or run: npm run dev:simple -- -p <different-port>`, colors.yellow);
+    log(`   Tallow is permanently configured to use port 3000.`, colors.yellow);
+    log(`   Kill the conflicting process to continue.`, colors.yellow);
     process.exit(1);
   }
 
@@ -138,9 +140,10 @@ function startDevServer() {
   // Use npx on Windows, direct path on Unix
   const isWindows = process.platform === 'win32';
   const nextCommand = isWindows ? 'npx' : './node_modules/.bin/next';
+  // PERMANENTLY CONFIGURED: Tallow always uses port 3000
   const nextArgs = isWindows
-    ? ['next', 'dev', '--webpack', '-H', '0.0.0.0', '-p', process.env.PORT || '3000']
-    : ['./node_modules/.bin/next', 'dev', '--webpack', '-H', '0.0.0.0', '-p', process.env.PORT || '3000'];
+    ? ['next', 'dev', '--webpack', '-H', '0.0.0.0', '-p', '3000']
+    : ['./node_modules/.bin/next', 'dev', '--webpack', '-H', '0.0.0.0', '-p', '3000'];
 
   const devProcess = spawn(
     isWindows ? nextCommand : 'node',

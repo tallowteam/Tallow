@@ -1,0 +1,73 @@
+# Google App Engine configuration for Tallow
+# Deploy with: gcloud app deploy
+
+runtime: nodejs20
+service: default
+instance_class: F2
+
+# Scaling configuration
+automatic_scaling:
+  min_instances: 1
+  max_instances: 10
+  target_cpu_utilization: 0.65
+  target_throughput_utilization: 0.7
+  max_concurrent_requests: 80
+
+# Network settings
+network:
+  forwarded_ports:
+    - 3000
+
+# Environment variables
+env_variables:
+  NODE_ENV: "production"
+  NEXT_TELEMETRY_DISABLED: "1"
+  PORT: "3000"
+
+# Handlers
+handlers:
+  # Static assets with aggressive caching
+  - url: /_next/static
+    static_dir: .next/static
+    secure: always
+    http_headers:
+      Cache-Control: "public, max-age=31536000, immutable"
+      X-Content-Type-Options: "nosniff"
+
+  # Public folder
+  - url: /public
+    static_dir: public
+    secure: always
+    http_headers:
+      Cache-Control: "public, max-age=86400"
+
+  # All other requests to Next.js
+  - url: /.*
+    script: auto
+    secure: always
+
+# Health check
+liveness_check:
+  path: "/health"
+  check_interval_sec: 30
+  timeout_sec: 4
+  failure_threshold: 2
+  success_threshold: 1
+
+readiness_check:
+  path: "/health"
+  check_interval_sec: 30
+  timeout_sec: 4
+  failure_threshold: 2
+  success_threshold: 1
+  app_start_timeout_sec: 300
+
+# VPC connector (optional - for Cloud SQL, etc.)
+# vpc_access_connector:
+#   name: projects/PROJECT_ID/locations/REGION/connectors/CONNECTOR_NAME
+
+# Resources
+resources:
+  cpu: 1
+  memory_gb: 2
+  disk_size_gb: 10

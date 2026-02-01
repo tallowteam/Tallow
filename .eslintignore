@@ -1,0 +1,47 @@
+# ESLint Ignore Configuration
+
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Build outputs
+.next/
+out/
+build/
+dist/
+
+# Test outputs
+coverage/
+.playwright-mcp/
+playwright-report/
+test-results/
+
+# Environment
+.env
+.env.*
+
+# Generated files
+next-env.d.ts
+*.tsbuildinfo
+
+# Config files (already checked)
+*.config.js
+*.config.mjs
+postcss.config.mjs
+
+# External scripts
+signaling-server.js
+proxy.ts
+
+# Documentation
+*.md
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,110 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tallow-config
+  namespace: tallow
+  labels:
+    app.kubernetes.io/name: tallow
+    app.kubernetes.io/component: config
+data:
+  # Application configuration
+  NODE_ENV: "production"
+  NEXT_TELEMETRY_DISABLED: "1"
+
+  # Signaling configuration
+  SIGNALING_PORT: "3001"
+  ALLOWED_ORIGINS: "https://tallow.manisahome.com"
+
+  # Feature flags
+  NEXT_PUBLIC_FORCE_RELAY: "true"
+  NEXT_PUBLIC_ALLOW_DIRECT: "false"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: tallow
+  labels:
+    app.kubernetes.io/name: tallow
+    app.kubernetes.io/component: nginx-config
+data:
+  nginx.conf: |
+    events {
+      worker_connections 4096;
+    }
+
+    http {
+      # Rate limiting
+      limit_req_zone $binary_remote_addr zone=general:10m rate=10r/s;
+      limit_req_zone $binary_remote_addr zone=api:10m rate=20r/s;
+
+      # Connection limiting
+      limit_conn_zone $binary_remote_addr zone=addr:10m;
+
+      upstream web {
+        server tallow-web:3000 max_fails=3 fail_timeout=30s;
+      }
+
+      upstream signaling {
+        server tallow-signaling:3001 max_fails=3 fail_timeout=30s;
+      }
+
+      server {
+        listen 80;
+        server_name _;
+
+        # Security headers
+        add_header X-Frame-Options "DENY" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+        # Rate limiting
+        limit_req zone=general burst=20 nodelay;
+        limit_conn addr 10;
+
+        # Web app
+        location / {
+          proxy_pass http://web;
+          proxy_http_version 1.1;
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection 'upgrade';
+          proxy_set_header Host $host;
+          proxy_cache_bypass $http_upgrade;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+
+          # Timeouts
+          proxy_connect_timeout 60s;
+          proxy_send_timeout 60s;
+          proxy_read_timeout 60s;
+        }
+
+        # Signaling WebSocket
+        location /signaling {
+          limit_req zone=api burst=50 nodelay;
+
+          proxy_pass http://signaling;
+          proxy_http_version 1.1;
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection "upgrade";
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+
+          # WebSocket specific timeouts
+          proxy_connect_timeout 7d;
+          proxy_send_timeout 7d;
+          proxy_read_timeout 7d;
+        }
+
+        # Health check endpoint
+        location /health {
+          access_log off;
+          return 200 "OK\n";
+          add_header Content-Type text/plain;
+        }
+      }
+    }

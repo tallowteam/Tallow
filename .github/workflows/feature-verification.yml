@@ -1,0 +1,149 @@
+# Feature Verification Workflow
+# Automatically verifies all features in the catalog against the codebase
+
+name: Feature Verification
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  verify-features:
+    name: Verify Feature Catalog
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run feature verification
+        id: verification
+        run: |
+          npm run verify:features
+        continue-on-error: true
+
+      - name: Upload verification reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification-reports
+          path: reports/
+          retention-days: 30
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const reportPath = 'reports/verification-*.md';
+            const glob = require('glob');
+
+            const files = glob.sync(reportPath);
+            if (files.length === 0) {
+              console.log('No report found');
+              return;
+            }
+
+            const report = fs.readFileSync(files[0], 'utf8');
+            const truncated = report.length > 65000 ? report.substring(0, 65000) + '\n\n... (truncated)' : report;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Feature Verification Report\n\n${truncated}`
+            });
+
+      - name: Fail if verification rate too low
+        if: steps.verification.outcome == 'failure'
+        run: |
+          echo "Feature verification failed!"
+          echo "Check the uploaded reports for details."
+          exit 1
+
+      - name: Create issue if features missing
+        if: failure() && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const glob = require('glob');
+
+            const files = glob.sync('reports/verification-*.json');
+            if (files.length === 0) return;
+
+            const report = JSON.parse(fs.readFileSync(files[0], 'utf8'));
+
+            if (report.missing > 0 || report.verificationRate < 70) {
+              github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `Feature Verification Failed: ${report.missing} missing features`,
+                body: `
+## Feature Verification Alert
+
+The automated feature verification has detected issues:
+
+- **Verification Rate**: ${report.verificationRate.toFixed(1)}% (target: 70%+)
+- **Missing Features**: ${report.missing}
+- **Partial Features**: ${report.partial}
+- **Total Features**: ${report.totalFeatures}
+
+### Action Required
+
+Please review the [verification report](${context.payload.repository.html_url}/actions/runs/${context.runId}) and address missing or partial features.
+
+### Report Summary
+
+\`\`\`
+Total: ${report.totalFeatures}
+Verified: ${report.verified}
+Partial: ${report.partial}
+Missing: ${report.missing}
+\`\`\`
+
+*This issue was automatically created by the feature verification workflow.*
+                `,
+                labels: ['verification', 'automated']
+              });
+            }
+
+  publish-report:
+    name: Publish Report to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: verify-features
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download verification reports
+        uses: actions/download-artifact@v4
+        with:
+          name: verification-reports
+          path: reports/
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./reports
+          destination_dir: verification
+          keep_files: false

@@ -7,6 +7,19 @@
   ],
   "headers": [
     {
+      "source": "/",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "X-Root-Page",
+          "value": "landing"
+        }
+      ]
+    },
+    {
       "source": "/api/(.*)",
       "headers": [
         {
