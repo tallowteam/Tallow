@@ -85,6 +85,7 @@
 | 014 | Monochrome dark-mode-only design system     | 2026-01-31 | df57605  | [014-monochrome-dark-mode-design-system](./quick/014-monochrome-dark-mode-design-system/)         |
 | 015 | Comprehensive UI subagents audit            | 2026-01-31 | 7fdb960  | [015-comprehensive-ui-subagents-audit](./quick/015-comprehensive-ui-subagents-audit/)             |
 | 016 | Remove all UI/UX code (UI reset)            | 2026-02-01 | 9511cce  | [016-remove-all-ui-ux-code](./quick/016-remove-all-ui-ux-code/)                                   |
+| 016 | Remove all UI/UX code (UI reset)            | 2026-02-01 | 9511cce  | [016-remove-all-ui-ux-code](./quick/016-remove-all-ui-ux-code/)                                   |
 
 ## Files Modified (Security Fix)
 
