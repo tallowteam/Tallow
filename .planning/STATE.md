@@ -1,177 +1,178 @@
-# Tallow - Project State
+# Project State
+
+## Project Reference
+
+See: .planning/PROJECT.md (updated 2025-02-01)
+
+**Core value:** Secure file transfer with premium, responsive UI that feels fast
+and trustworthy **Current focus:** Phase 7 - Pages
 
 ## Current Position
 
-- **Phase:** COMPLETED (20-Agent Full Execution)
-- **Status:** Production-ready, A+ grade (98/100)
-- **Last Action:** All 20 subagents executed with 100% production code
+Phase: 7 of 9 (Pages) - COMPLETE Plan: Ready for Phase 8 Status: Phases 1, 2, 3,
+4, 5, 6, 7 completed Last activity: 2026-02-01 - Phase 7 Pages implemented
 
-## 20-Agent Execution Summary (2026-01-30)
+Progress: [#######---] 77% (7/9 phases complete)
 
-### HIGH Priority (5/5 Complete)
+## Phase Completion Summary
 
-- ✅ pqc-crypto-expert - Counter nonces, Argon2id, security hardening
-- ✅ webrtc-optimizer - Parallel channels (512 Mbps), security config
-- ✅ react-nextjs-expert - 24+ memoized components, React 18 patterns
-- ✅ go-expert - CLI (33 files), relay integration
-- ✅ flutter-pro - Native app architecture ready
+### Phase 1: Foundation
 
-### MEDIUM Priority (8/8 Complete)
+**Files Created:**
 
-- ✅ nat-traversal-expert - Enhanced detection, connection strategy
-- ✅ test-automator - 112 test files, 92% coverage
-- ✅ devops-expert - K8s, Helm, CI/CD
-- ✅ accessibility-expert - WCAG 2.1 AA
-- ✅ framer-motion-expert - 45+ animation presets
-- ✅ documentation-expert - Consolidated docs
-- ✅ i18n-expert - 22 languages, 100% complete
-- ✅ playwright-expert - 20 E2E specs
+- `app/globals.css` - Complete CSS variables (colors, typography, spacing,
+  shadows)
+- `app/layout.tsx` - Root layout with Geist Sans/Mono fonts
+- `app/page.tsx` - Landing page with design system verification
+- `tailwind.config.ts` - Extended with design tokens
+- `postcss.config.mjs` - Tailwind v4 PostCSS setup
+- `lib/utils.ts` - cn() utility + helpers
+- `lib/animations/config.ts` - Durations, easings, presets
+- `lib/animations/variants.ts` - Base animation variants
+- `lib/animations/micro.ts` - Micro-interaction presets
+- `lib/animations/hero.ts` - Hero animation variants
+- `lib/animations/index.ts` - Barrel export
 
-### LOW Priority (7/7 Complete)
+### Phase 2: Base Components
 
-- ✅ mdns-discovery - Unified discovery, daemon, 51 tests
-- ✅ relay-architect - tallow-relay (23 Go files)
-- ✅ protocol-security - Full audit
-- ✅ performance-expert - Core Web Vitals, caching
-- ✅ penetration-tester - Security tests
-- ✅ rust-performance - WASM architecture
-- ✅ monitoring-expert - Full observability
+**Files Created:**
 
-### Key Deliverables
+- `components/ui/Button.tsx` - Button with variants, sizes, loading, IconButton
+- `components/ui/Input.tsx` - Input with label, error, hint, icons, Textarea
+- `components/ui/Card.tsx` - Card with variants and sub-components
+- `components/ui/Badge.tsx` - Badge with variants, StatusBadge preset
 
-- **Go CLI**: 33 files in `tallow-cli/`
-- **Go Relay**: 23 files in `tallow-relay/`
-- **mDNS Daemon**: 8 files in `daemon/`
-- **Tests**: 112 files (81 unit, 20 E2E, 6 security)
+### Phase 3: Radix Components
 
-## Completed Phases
+**Files Created:**
 
-### Phase 1: Core Crypto Fix ✅
+- `components/ui/Dialog.tsx` - Radix Dialog with animated overlay/content,
+  sub-components
+- `components/ui/Tooltip.tsx` - Radix Tooltip with TooltipProvider,
+  SimpleTooltip helper
+- `components/ui/Select.tsx` - Radix Select with animated dropdown, scroll
+  buttons
+- `components/ui/Switch.tsx` - Radix Switch with spring animation, LabeledSwitch
 
-- [x] Fixed hash function (now returns actual SHA-256 via @noble/hashes)
-- [x] Implemented Kyber key generation via pqc-kyber package
-- [x] Implemented hybrid encapsulation/decapsulation (Kyber + X25519)
-- [x] Implemented HKDF key derivation for session keys
-- [x] Fixed key serialization/deserialization
+### Phase 4: Hero Components
 
-### Phase 2: File Encryption Fix ✅
+**Files Created:**
 
-- [x] Updated file encryption to use HKDF
-- [x] Fixed password-based encryption with proper salt
-- [x] Fixed TypeScript compatibility with Web Crypto API
+- `components/transfer/DropZone.tsx` - Drag-and-drop file upload with animations
+- `components/transfer/TransferProgress.tsx` - File transfer progress with
+  animated bar
+- `components/security/EncryptionIndicator.tsx` - SVG ring animation with lock
+  icon
+- `components/connection/ConnectionLine.tsx` - Animated path with pulse effect
 
-### Phase 3: Transfer Integration ✅
+### Phase 5: Transfer Components
 
-- [x] Updated transfer manager to use new crypto types
-- [x] Fixed chunk handling with proper nonce/hash preservation
-- [x] Fixed callback signatures in hooks
+**Files Created:**
 
-## Quick Tasks Completed
+- `components/transfer/FileList.tsx` - File list with file icons, sizes, remove
+  buttons
+- `components/transfer/TransferComplete.tsx` - Success animation with confetti,
+  checkmark
+- `components/connection/DeviceCard.tsx` - Device cards with status, icons,
+  selection
+- `components/connection/ConnectionStatus.tsx` - Connection state display with
+  animations
 
-| #   | Description                                 | Date       | Commit   | Directory                                                                                         |
-| --- | ------------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------- |
-| 001 | Deploy to Synology NAS + Cloudflare         | 2026-01-21 | —        | [001-deploy-to-synology-cloudflare](./quick/001-deploy-to-synology-cloudflare/)                   |
-| 003 | Multi-device responsive UX optimization     | 2026-01-28 | 23e1b30  | [003-multi-device-responsive-ux](./quick/003-multi-device-responsive-ux/)                         |
-| 004 | Visual regression snapshot update           | 2026-01-28 | —        | [004-visual-regression-update](./quick/004-visual-regression-update/)                             |
-| 005 | Comprehensive UI/UX responsive optimization | 2026-01-29 | ccb8462  | [005-comprehensive-uiux-optimization](./quick/005-comprehensive-uiux-optimization/)               |
-| 006 | Responsive UI/UX for TV/4K screens          | 2026-01-29 | af533fa  | [006-responsive-uiux-all-screens](./quick/006-responsive-uiux-all-screens/)                       |
-| 007 | Visual audit - all pages euveka grayscale   | 2026-01-29 | cce7e50  | [007-visual-audit-all-pages](./quick/007-visual-audit-all-pages/)                                 |
-| 008 | UI/UX responsive design fixes               | 2026-01-29 | cc6958b  | [008-fix-ui-ux-responsive-design](./quick/008-fix-ui-ux-responsive-design/)                       |
-| 009 | React 18 adoption improvement               | 2026-01-30 | cf1ef09  | [009-react-18-adoption-improvement](./quick/009-react-18-adoption-improvement/)                   |
-| 010 | mDNS discovery integration testing          | 2026-01-31 | c055456  | [010-mdns-discovery-integration-testing](./quick/010-mdns-discovery-integration-testing/)         |
-| 011 | Onion routing & traffic obfuscation         | 2026-01-31 | b28c876  | [011-onion-routing-obfuscation](./quick/011-onion-routing-obfuscation/)                           |
-| 012 | Intensive onion routing tests               | 2026-01-31 | 3b00129  | [012-intensive-onion-routing-tests](./quick/012-intensive-onion-routing-tests/)                   |
-| 013 | EUVEKA UI/UX - All 22 subagents complete    | 2026-01-31 | multiple | [013-comprehensive-uiux-fixes-all-platforms](./quick/013-comprehensive-uiux-fixes-all-platforms/) |
-| 014 | Monochrome dark-mode-only design system     | 2026-01-31 | df57605  | [014-monochrome-dark-mode-design-system](./quick/014-monochrome-dark-mode-design-system/)         |
-| 015 | Comprehensive UI subagents audit            | 2026-01-31 | 7fdb960  | [015-comprehensive-ui-subagents-audit](./quick/015-comprehensive-ui-subagents-audit/)             |
-| 016 | Remove all UI/UX code (UI reset)            | 2026-02-01 | 9511cce  | [016-remove-all-ui-ux-code](./quick/016-remove-all-ui-ux-code/)                                   |
-| 016 | Remove all UI/UX code (UI reset)            | 2026-02-01 | 9511cce  | [016-remove-all-ui-ux-code](./quick/016-remove-all-ui-ux-code/)                                   |
+### Phase 6: Layout
 
-## Files Modified (Security Fix)
+**Files Created:**
 
-- `lib/crypto/pqc-crypto.ts` - Complete rewrite with proper crypto
-- `lib/crypto/file-encryption-pqc.ts` - Updated for new crypto API
-- `lib/transfer/pqc-transfer-manager.ts` - Fixed type integration
-- `lib/transfer/file-encryption.ts` - Fixed Web Crypto compatibility
-- `lib/hooks/use-pqc-transfer.ts` - Fixed callback signatures
+- `components/layout/Header.tsx` - App header with logo, connection status, menu
+  toggle
+- `components/layout/Sidebar.tsx` - Navigation sidebar with collapsible state,
+  nav items
+- `components/layout/PageLayout.tsx` - Page wrapper with title, description,
+  back button
+- `components/layout/AppShell.tsx` - Complete app shell combining Header +
+  Sidebar + content
 
-## Files Modified (Deployment)
+### Phase 7: Pages
 
-- `docker-compose.yml` - Production URLs for tallow.manisahome.com
-- `DEPLOYMENT.md` - Updated with quick reference and architecture
-- `DEPLOYMENT-GUIDE.md` - New comprehensive deployment guide
+**Files Created:**
 
-## Critical Fixes Applied
+- `app/app/layout.tsx` - AppShell wrapper for /app routes with navigation
+- `app/app/page.tsx` - Main transfer page with DropZone, FileList, DeviceList,
+  TransferProgress
+- `app/app/settings/page.tsx` - Settings page with Device, Appearance, Security,
+  Notifications, Downloads sections
+- `app/app/devices/page.tsx` - Devices page with connected/nearby/offline device
+  lists, device details sidebar
+- `app/app/history/page.tsx` - Transfer history with search, filter, stats
+  summary
 
-1. **Hash function** - Was returning zeros, now uses SHA-256
-2. **Kyber/ML-KEM** - Was not implemented, now uses pqc-kyber
-3. **Key derivation** - Was weak, now uses HKDF
-4. **Hybrid encryption** - Properly combines Kyber + X25519
+**Dependencies Added:**
 
-## Build Status
+- framer-motion, class-variance-authority, clsx, tailwind-merge
+- lucide-react, geist
+- @radix-ui/react-\* (dialog, tooltip, select, switch, slot, etc.)
+- tailwindcss@4.0.7, @tailwindcss/postcss@4.0.7
 
-```
-✓ Compiled successfully
-✓ TypeScript checks passed
-✓ Static pages generated (11/11)
-```
+**Known Issues Resolved:**
+
+- Downgraded Tailwind from 4.1.18 to 4.0.7 to fix "Invalid code point" bug with
+  Next.js 16
+- TypeScript strict mode conflicts with framer-motion resolved using Omit<> and
+  conditional spreads
+- Animation ease arrays need `as const` for TypeScript strict mode
+- Export name conflicts resolved (ConnectionState, ConnectionStatus types
+  renamed)
+
+## Performance Metrics
+
+**Velocity:**
+
+- Total plans completed: 7
+- Average duration: ~1 session
+- Total execution time: 3 sessions
+
+**By Phase:**
+
+| Phase                  | Plans | Status   | Duration  |
+| ---------------------- | ----- | -------- | --------- |
+| 1. Foundation          | 1     | Complete | 1 session |
+| 2. Base Components     | 1     | Complete | 1 session |
+| 3. Radix Components    | 1     | Complete | 1 session |
+| 4. Hero Components     | 1     | Complete | 1 session |
+| 5. Transfer Components | 1     | Complete | 1 session |
+| 6. Layout              | 1     | Complete | 1 session |
+| 7. Pages               | 1     | Complete | 1 session |
 
 ## Accumulated Context
 
+### Decisions
+
+- Use Tailwind CSS v4.0.7 (not 4.1.18) due to Next.js 16 compatibility bug
+- Use Geist fonts via npm package (geist)
+- Component structure: components/{ui,transfer,connection,security,layout}/
+- TypeScript strict mode: Use Omit<HTMLMotionProps<'\*'>, 'children'> for motion
+  components
+- Animation conditionals: Use spread objects instead of inline ternary for
+  whileTap/whileHover
+- Animation ease arrays: Use `as const` assertion for TypeScript compatibility
+- Type naming: ConnectionState in ConnectionLine, ConnectionStatusState in
+  ConnectionStatus
+- Type naming: DeviceConnectionStatus in DeviceCard to avoid conflicts
+- Layout: AppShell combines Header + Sidebar, MinimalShell for marketing pages
+
 ### Pending Todos
 
-- 0 todos pending (all completed)
-
-### Completed Todos
-
-- Security audit checklist — PASSED 19/20 checks (2026-01-19)
-- Deployment configuration — COMPLETE (2026-01-21)
+None yet.
 
 ### Blockers/Concerns
 
-(None active)
+None.
 
 ## Session Continuity
 
-Last activity: 2026-02-01 - Complete UI reset (quick-016) - 351 files removed,
-105K lines deleted
+Last session: 2026-02-01 Stopped at: Phase 7 complete, ready for Phase 8 Resume
+file: None
 
-- quick-016 Complete UI removal (commits 5105e32, 79c79a9, 9511cce)
-  - Removed components/ (234 files)
-  - Removed 21 app page directories
-  - Removed lib/animations, lib/design-system, lib/features, lib/context
-  - Removed UI hooks, UI tests, visual tests
-  - Preserved: crypto, transfer, transport, webrtc, discovery, API routes
-  - Ready for fresh UI development
+---
 
-- quick-012 Intensive onion routing tests (commits 6f85cc7, 3b00129)
-  - 68 TrafficObfuscator unit tests (padding, timing, protocol disguise, cover
-    traffic)
-  - 44 OnionRoutingManager integration tests (with mock relays)
-  - 112 total new tests (320% of 35+ requirement)
-  - Verified PQC transfer manager integration with onion routing
-- quick-010 mDNS discovery testing (commits 0820628, 40df631, c055456, 4ccbe7e)
-  - 38 MDNSBridge unit tests (fixed timeout issues with fake timers)
-  - 23 daemon integration tests
-  - 14 E2E discovery tests
-  - 115 total discovery tests passing in ~5 seconds
-- quick-009 React 18 adoption (commits 3b76ee3, 6670de0, 81d1fd0, af02e5a,
-  cf1ef09)
-- 20-agent full execution (Go CLI, Relay, mDNS, WebRTC, Tests, Monitoring)
-
-## Next Steps
-
-1. **Rebuild UI from scratch** - Fresh component architecture
-2. **Update package.json** - Remove unused UI dependencies
-3. **Create new design system** - Based on project requirements
-4. **Build essential pages** - Landing, app, transfer UI
-5. **Add new tests** - For new UI components
-6. **Deploy to production**: Follow `DEPLOYMENT.md` or `DEPLOYMENT-GUIDE.md`
-
-## Audit Score History
-
-| Date       | Score       | Notes                                       |
-| ---------- | ----------- | ------------------------------------------- |
-| 2026-01-29 | B+ (82/100) | Original 20-agent audit                     |
-| 2026-01-30 | A- (91/100) | Verified - many issues already fixed        |
-| 2026-01-30 | A+ (98/100) | All 20 agents executed with production code |
+_Next: Implement Phase 8 - Hooks (useTransfer, useWebRTC, useCrypto,
+useSignaling)_
