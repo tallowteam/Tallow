@@ -8,7 +8,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { ResumablePQCTransferManager, ResumeOptions } from '../transfer/resumable-transfer';
 import { getResumableTransfers, getTransferStats } from '../storage/transfer-state-db';
-import { toast } from 'sonner';
 import secureLog from '../utils/secure-logger';
 
 export interface ResumableTransferState {
@@ -152,9 +151,6 @@ export function useResumableTransfer(options: UseResumableTransferOptions = {}) 
 
       manager.onResumeAvailable((transferId, progress) => {
         onResumeAvailableRef.current?.(transferId, progress);
-        toast.info('Resume available', {
-          description: `Transfer ${progress.toFixed(1)}% complete`,
-        });
       });
 
       managerRef.current = manager;
@@ -163,10 +159,6 @@ export function useResumableTransfer(options: UseResumableTransferOptions = {}) 
       const publicKeyHex = Array.from(publicKey)
         .map((b) => b.toString(16).padStart(2, '0'))
         .join('');
-
-      toast.success('Session initialized', {
-        description: 'Ready to send files',
-      });
 
       return publicKeyHex;
     } catch (error) {
@@ -212,10 +204,6 @@ export function useResumableTransfer(options: UseResumableTransferOptions = {}) 
 
         onTransferCompleteRef.current?.(blob, filename, relativePath);
 
-        toast.success('File received successfully!', {
-          description: filename,
-        });
-
         loadResumableTransfers();
       });
 
@@ -232,9 +220,6 @@ export function useResumableTransfer(options: UseResumableTransferOptions = {}) 
 
       manager.onResumeAvailable((transferId, progress) => {
         onResumeAvailableRef.current?.(transferId, progress);
-        toast.info('Resume available', {
-          description: `Transfer ${progress.toFixed(1)}% complete`,
-        });
       });
 
       managerRef.current = manager;
@@ -243,10 +228,6 @@ export function useResumableTransfer(options: UseResumableTransferOptions = {}) 
       const publicKeyHex = Array.from(publicKey)
         .map((b) => b.toString(16).padStart(2, '0'))
         .join('');
-
-      toast.success('Receiver initialized', {
-        description: 'Ready to receive files',
-      });
 
       return publicKeyHex;
     } catch (error) {
@@ -280,9 +261,6 @@ export function useResumableTransfer(options: UseResumableTransferOptions = {}) 
         isNegotiating: false,
       }));
 
-      toast.success('Key exchange complete', {
-        description: 'Session is ready for transfer',
-      });
     } catch (error) {
       setState((prev) => ({
         ...prev,
@@ -309,8 +287,6 @@ export function useResumableTransfer(options: UseResumableTransferOptions = {}) 
       setState((prev) => ({ ...prev, connectionLost: true }));
       handleConnectionLost();
     });
-
-    toast.info('Data channel connected');
   }, []);
 
   /**
@@ -340,7 +316,6 @@ export function useResumableTransfer(options: UseResumableTransferOptions = {}) 
         progress: 100,
       }));
 
-      toast.success('File sent successfully!');
       loadResumableTransfers();
     } catch (error) {
       setState((prev) => ({
@@ -367,10 +342,6 @@ export function useResumableTransfer(options: UseResumableTransferOptions = {}) 
       currentTransferId: transferId,
     }));
 
-    toast.info('Resuming transfer...', {
-      description: 'Requesting missing chunks from peer',
-    });
-
     try {
       await managerRef.current.resumeTransfer(transferId);
 
@@ -380,10 +351,6 @@ export function useResumableTransfer(options: UseResumableTransferOptions = {}) 
         isTransferring: true,
       }));
 
-      toast.success('Transfer resumed', {
-        description: 'Receiving missing chunks',
-      });
-
       loadResumableTransfers();
     } catch (error) {
       setState((prev) => ({
@@ -391,10 +358,6 @@ export function useResumableTransfer(options: UseResumableTransferOptions = {}) 
         error: (error as Error).message,
         isResuming: false,
       }));
-
-      toast.error('Failed to resume transfer', {
-        description: (error as Error).message,
-      });
 
       throw error;
     }
@@ -410,10 +373,9 @@ export function useResumableTransfer(options: UseResumableTransferOptions = {}) 
 
     try {
       await managerRef.current.deleteTransfer(transferId);
-      toast.success('Transfer deleted');
       loadResumableTransfers();
     } catch (error) {
-      toast.error('Failed to delete transfer');
+      secureLog.error('Failed to delete transfer:', error);
       throw error;
     }
   }, [loadResumableTransfers]);
@@ -424,10 +386,7 @@ export function useResumableTransfer(options: UseResumableTransferOptions = {}) 
   const handleConnectionLost = useCallback(() => {
     setState((prev) => ({ ...prev, connectionLost: true }));
 
-    toast.error('Connection lost', {
-      description: 'Transfer paused. You can resume when reconnected.',
-      duration: 10000,
-    });
+    secureLog.warn('Connection lost - transfer paused');
 
     loadResumableTransfers();
 
@@ -474,8 +433,6 @@ export function useResumableTransfer(options: UseResumableTransferOptions = {}) 
     if (typeof window !== 'undefined') {
       localStorage.setItem('tallow_auto_resume_enabled', String(enabled));
     }
-
-    toast.success(`Auto-resume ${enabled ? 'enabled' : 'disabled'}`);
   }, []);
 
   /**

@@ -13,7 +13,6 @@ import {
     DiscoveredDeviceWithChannel,
 } from '../discovery/group-discovery-manager';
 import { getLocalDiscovery, DiscoveredDevice } from '../discovery/local-discovery';
-import { toast } from 'sonner';
 import secureLog from '../utils/secure-logger';
 
 export interface GroupDiscoveryState {
@@ -86,16 +85,6 @@ export function useGroupDiscovery(options: UseGroupDiscoveryOptions = {}) {
             }));
 
             onDevicesDiscovered?.(devices);
-
-            if (devices.length === 0) {
-                toast.info('No devices found', {
-                    description: 'Make sure other devices are on the same network',
-                });
-            } else {
-                toast.success(`Found ${devices.length} device${devices.length > 1 ? 's' : ''}`, {
-                    description: 'Select devices to send to',
-                });
-            }
         } catch (error) {
             const errorMsg = (error as Error).message;
             setState((prev) => ({
@@ -103,10 +92,6 @@ export function useGroupDiscovery(options: UseGroupDiscoveryOptions = {}) {
                 isDiscovering: false,
                 error: errorMsg,
             }));
-
-            toast.error('Discovery failed', {
-                description: errorMsg,
-            });
 
             secureLog.error('[useGroupDiscovery] Discovery failed:', error);
         }
@@ -173,9 +158,10 @@ export function useGroupDiscovery(options: UseGroupDiscoveryOptions = {}) {
     const connectToSelectedDevices = useCallback(
         async (timeout: number = 30000) => {
             if (state.selectedDevices.length === 0) {
-                toast.warning('No devices selected', {
-                    description: 'Select at least one device to connect',
-                });
+                setState((prev) => ({
+                    ...prev,
+                    error: 'No devices selected',
+                }));
                 return null;
             }
 
@@ -194,9 +180,6 @@ export function useGroupDiscovery(options: UseGroupDiscoveryOptions = {}) {
                 if (validation.invalid.length > 0) {
                     validation.invalid.forEach(({ device, reason }) => {
                         onDeviceFailed?.(device, reason);
-                        toast.warning(`Cannot connect to ${device.name}`, {
-                            description: reason,
-                        });
                     });
                 }
 
@@ -223,21 +206,6 @@ export function useGroupDiscovery(options: UseGroupDiscoveryOptions = {}) {
 
                 onConnectionComplete?.(result);
 
-                // Show result toast
-                if (result.successCount === validation.valid.length) {
-                    toast.success('Connected to all devices', {
-                        description: `Successfully connected to ${result.successCount} device${result.successCount > 1 ? 's' : ''}`,
-                    });
-                } else if (result.successCount > 0) {
-                    toast.warning('Partial connection success', {
-                        description: `Connected to ${result.successCount} of ${validation.valid.length} devices`,
-                    });
-                } else {
-                    toast.error('Connection failed', {
-                        description: 'Could not connect to any devices',
-                    });
-                }
-
                 return result;
             } catch (error) {
                 const errorMsg = (error as Error).message;
@@ -246,10 +214,6 @@ export function useGroupDiscovery(options: UseGroupDiscoveryOptions = {}) {
                     isConnecting: false,
                     error: errorMsg,
                 }));
-
-                toast.error('Connection failed', {
-                    description: errorMsg,
-                });
 
                 secureLog.error('[useGroupDiscovery] Connection failed:', error);
                 return null;
@@ -269,8 +233,6 @@ export function useGroupDiscovery(options: UseGroupDiscoveryOptions = {}) {
             connectedDevices: [],
             connectionResult: null,
         }));
-
-        toast.info('Disconnected from all devices');
     }, []);
 
     /**

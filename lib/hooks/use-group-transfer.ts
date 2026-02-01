@@ -2,10 +2,9 @@
 
 /**
  * Enhanced React Hook for Group File Transfers
- * Manages state and lifecycle for multi-recipient transfers with improved UX
+ * Manages state and lifecycle for multi-recipient transfers
  *
  * Features:
- * - Enhanced toast notifications for all transfer events
  * - Real-time progress tracking
  * - Detailed error reporting
  * - Success/failure summaries
@@ -18,7 +17,6 @@ import {
   GroupTransferState,
   GroupTransferResult,
 } from '../transfer/group-transfer-manager';
-import { toast } from '../utils/toast';
 import secureLog from '../utils/secure-logger';
 
 export interface GroupTransferHookState {
@@ -38,7 +36,7 @@ export interface UseGroupTransferOptions {
 }
 
 /**
- * Hook for managing group file transfers with enhanced UX
+ * Hook for managing group file transfers
  */
 export function useGroupTransfer(options: UseGroupTransferOptions = {}) {
   const [state, setState] = useState<GroupTransferHookState>({
@@ -54,7 +52,6 @@ export function useGroupTransfer(options: UseGroupTransferOptions = {}) {
   const recipientNamesRef = useRef<Map<string, string>>(new Map());
   const completedRecipientsRef = useRef<Set<string>>(new Set());
   const failedRecipientsRef = useRef<Set<string>>(new Set());
-  const loadingToastRef = useRef<string | number | null>(null);
 
   /**
    * Initialize group transfer
@@ -72,11 +69,6 @@ export function useGroupTransfer(options: UseGroupTransferOptions = {}) {
         error: null,
       }));
 
-      // Show initializing toast
-      const initToastId = toast.loading('Initializing group transfer...', {
-        description: `Preparing to send to ${recipients.length} recipients`,
-      });
-
       try {
         // Store recipient names for callbacks
         recipients.forEach((info) => {
@@ -87,7 +79,7 @@ export function useGroupTransfer(options: UseGroupTransferOptions = {}) {
         completedRecipientsRef.current.clear();
         failedRecipientsRef.current.clear();
 
-        // Create manager with enhanced callbacks
+        // Create manager with callbacks
         const manager = new GroupTransferManager({
           ...(options.bandwidthLimitPerRecipient !== undefined ? { bandwidthLimitPerRecipient: options.bandwidthLimitPerRecipient } : {}),
           onRecipientProgress: (recipientId, progress, _speed) => {
@@ -102,11 +94,7 @@ export function useGroupTransfer(options: UseGroupTransferOptions = {}) {
             // Call user callback
             options.onRecipientComplete?.(recipientId, recipientName);
 
-            // Show success toast
-            toast.success(`Transfer completed`, {
-              description: `Successfully sent to ${recipientName}`,
-              duration: 3000,
-            });
+            secureLog.log(`[GroupTransfer] Transfer completed to ${recipientName}`);
           },
           onRecipientError: (recipientId, error) => {
             const recipientName = recipientNamesRef.current.get(recipientId) || recipientId;
@@ -117,12 +105,7 @@ export function useGroupTransfer(options: UseGroupTransferOptions = {}) {
             // Call user callback
             options.onRecipientError?.(recipientId, recipientName, error.message);
 
-            // Show error toast
-            toast.error(`Transfer failed`, {
-              description: `Failed to send to ${recipientName}: ${error.message}`,
-              persist: false,
-              duration: 5000,
-            });
+            secureLog.error(`[GroupTransfer] Transfer failed to ${recipientName}:`, error.message);
           },
           onOverallProgress: (progress) => {
             // Update overall progress
@@ -139,30 +122,7 @@ export function useGroupTransfer(options: UseGroupTransferOptions = {}) {
           },
           onComplete: (result) => {
             options.onComplete?.(result);
-
-            // Dismiss loading toast if exists
-            if (loadingToastRef.current) {
-              toast.dismiss(loadingToastRef.current);
-              loadingToastRef.current = null;
-            }
-
-            // Show comprehensive summary toast
-            if (result.successfulRecipients.length === result.totalRecipients) {
-              toast.success('Group transfer completed successfully!', {
-                description: `All ${result.totalRecipients} recipients received the file`,
-                duration: 5000,
-              });
-            } else if (result.successfulRecipients.length > 0) {
-              toast.warning('Group transfer partially completed', {
-                description: `${result.successfulRecipients.length} of ${result.totalRecipients} transfers succeeded. ${result.failedRecipients.length} failed.`,
-                duration: 6000,
-              });
-            } else {
-              toast.error('Group transfer failed', {
-                description: 'All transfers failed. Please check your connection and try again.',
-                persist: true,
-              });
-            }
+            secureLog.log(`[GroupTransfer] Complete: ${result.successfulRecipients.length}/${result.totalRecipients} succeeded`);
           },
         });
 
@@ -177,12 +137,7 @@ export function useGroupTransfer(options: UseGroupTransferOptions = {}) {
           groupState: manager.getState(),
         }));
 
-        // Dismiss init toast and show success
-        toast.dismiss(initToastId);
-        toast.success('Group transfer initialized', {
-          description: `Ready to send ${fileName} to ${recipients.length} recipients`,
-          duration: 3000,
-        });
+        secureLog.log(`[GroupTransfer] Initialized for ${fileName} to ${recipients.length} recipients`);
       } catch (error) {
         setState((prev) => ({
           ...prev,
@@ -190,12 +145,7 @@ export function useGroupTransfer(options: UseGroupTransferOptions = {}) {
           error: (error as Error).message,
         }));
 
-        // Dismiss init toast and show error
-        toast.dismiss(initToastId);
-        toast.error('Failed to initialize group transfer', {
-          description: (error as Error).message,
-          persist: true,
-        });
+        secureLog.error('[GroupTransfer] Initialization failed:', error);
 
         throw error;
       }
@@ -217,11 +167,6 @@ export function useGroupTransfer(options: UseGroupTransferOptions = {}) {
       error: null,
     }));
 
-    // Show persistent loading toast
-    loadingToastRef.current = toast.loading('Sending file to all recipients...', {
-      description: 'This may take a while depending on file size and network speed',
-    });
-
     try {
       const result = await managerRef.current.sendToAll(file);
 
@@ -241,17 +186,7 @@ export function useGroupTransfer(options: UseGroupTransferOptions = {}) {
         error: (error as Error).message,
       }));
 
-      // Dismiss loading toast
-      if (loadingToastRef.current) {
-        toast.dismiss(loadingToastRef.current);
-        loadingToastRef.current = null;
-      }
-
-      // Show error toast
-      toast.error('Group transfer failed', {
-        description: (error as Error).message,
-        persist: true,
-      });
+      secureLog.error('[GroupTransfer] Send failed:', error);
 
       throw error;
     }
@@ -266,22 +201,13 @@ export function useGroupTransfer(options: UseGroupTransferOptions = {}) {
       managerRef.current = null;
     }
 
-    // Dismiss loading toast
-    if (loadingToastRef.current) {
-      toast.dismiss(loadingToastRef.current);
-      loadingToastRef.current = null;
-    }
-
     setState((prev) => ({
       ...prev,
       isTransferring: false,
       groupState: null,
     }));
 
-    toast.info('Group transfer cancelled', {
-      description: 'All transfers have been stopped',
-      duration: 3000,
-    });
+    secureLog.log('[GroupTransfer] Cancelled');
   }, []);
 
   /**
@@ -297,12 +223,6 @@ export function useGroupTransfer(options: UseGroupTransferOptions = {}) {
     recipientNamesRef.current.clear();
     completedRecipientsRef.current.clear();
     failedRecipientsRef.current.clear();
-
-    // Dismiss any toasts
-    if (loadingToastRef.current) {
-      toast.dismiss(loadingToastRef.current);
-      loadingToastRef.current = null;
-    }
 
     setState({
       isInitializing: false,
@@ -321,9 +241,6 @@ export function useGroupTransfer(options: UseGroupTransferOptions = {}) {
     return () => {
       if (managerRef.current) {
         managerRef.current.destroy();
-      }
-      if (loadingToastRef.current) {
-        toast.dismiss(loadingToastRef.current);
       }
     };
   }, []);
