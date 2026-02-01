@@ -224,7 +224,7 @@ export class RelayDirectoryService {
      */
     async refreshDirectory(): Promise<void> {
         for (const url of this.config.directoryUrls) {
-            if (!url) continue;
+            if (!url) {continue;}
 
             try {
                 const response = await fetch(url, {

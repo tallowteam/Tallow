@@ -1,7 +1,11 @@
 'use client';
 
+/**
+ * @fileoverview Custom hook for managing P2P WebRTC connections with security features
+ * @module hooks/use-p2p-connection
+ */
+
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Device, Transfer, FileInfo } from '@/lib/types';
 import { downloadFile } from './use-file-transfer';
 import {
     createVerificationSession,
@@ -10,46 +14,187 @@ import {
     markSessionFailed,
     markSessionSkipped,
     isPeerVerified,
-    generateSAS
 } from '@/lib/crypto/peer-authentication';
 import { keyManager, SessionKeyPair } from '@/lib/crypto/key-management';
-import { PrivateTransport, getPrivateTransport } from '@/lib/transport/private-webrtc';
+import { getPrivateTransport } from '@/lib/transport/private-webrtc';
 import secureLog from '@/lib/utils/secure-logger';
 import { generateUUID } from '@/lib/utils/uuid';
 import { x25519 } from '@noble/curves/ed25519.js';
 import { hkdf } from '@noble/hashes/hkdf.js';
 import { sha256 } from '@noble/hashes/sha2.js';
+import { isObject, hasProperty, isString, isNumber, isArrayOf } from '../types/type-guards';
 
-
-// Signaling Message Types
-interface SignalMessage {
-    type: 'offer' | 'answer' | 'candidate' | 'file-start' | 'file-chunk' | 'file-end' | 'ready';
-    payload: any;
-    senderId: string;
-    receiverId?: string;
+/**
+ * DH Public Key Message
+ */
+interface DHPublicKeyMessage {
+  type: 'dh-pubkey';
+  publicKey: number[];
 }
 
-// File transfer progress
+/**
+ * File Start Message
+ */
+interface FileStartMessage {
+  type: 'file-start';
+  fileId: string;
+  name: string;
+  size: number;
+  mimeType?: string;
+}
+
+/**
+ * File Chunk Message
+ */
+interface FileChunkMessage {
+  type: 'file-chunk';
+  fileId: string;
+  chunk: number[];
+  index: number;
+  total: number;
+}
+
+/**
+ * File Complete Message
+ */
+interface FileCompleteMessage {
+  type: 'file-complete';
+  fileId: string;
+}
+
+/**
+ * File End Message
+ */
+interface FileEndMessage {
+  type: 'file-end';
+  fileId: string;
+}
+
+/**
+ * P2P Control Message Types
+ */
+type P2PControlMessage =
+  | DHPublicKeyMessage
+  | FileStartMessage
+  | FileChunkMessage
+  | FileCompleteMessage
+  | FileEndMessage;
+
+/**
+ * Type guard for DHPublicKeyMessage
+ */
+function isDHPublicKeyMessage(value: unknown): value is DHPublicKeyMessage {
+  return (
+    isObject(value) &&
+    hasProperty(value, 'type') && value['type'] === 'dh-pubkey' &&
+    hasProperty(value, 'publicKey') && isArrayOf(value['publicKey'], isNumber)
+  );
+}
+
+/**
+ * Type guard for FileStartMessage
+ */
+function isFileStartMessage(value: unknown): value is FileStartMessage {
+  return (
+    isObject(value) &&
+    hasProperty(value, 'type') && value['type'] === 'file-start' &&
+    hasProperty(value, 'fileId') && isString(value['fileId']) &&
+    hasProperty(value, 'name') && isString(value['name']) &&
+    hasProperty(value, 'size') && isNumber(value['size'])
+  );
+}
+
+/**
+ * Type guard for FileChunkMessage
+ */
+function isFileChunkMessage(value: unknown): value is FileChunkMessage {
+  return (
+    isObject(value) &&
+    hasProperty(value, 'type') && value['type'] === 'file-chunk' &&
+    hasProperty(value, 'fileId') && isString(value['fileId']) &&
+    hasProperty(value, 'chunk') && isArrayOf(value['chunk'], isNumber) &&
+    hasProperty(value, 'index') && isNumber(value['index']) &&
+    hasProperty(value, 'total') && isNumber(value['total'])
+  );
+}
+
+/**
+ * Type guard for FileCompleteMessage
+ */
+function isFileCompleteMessage(value: unknown): value is FileCompleteMessage {
+  return (
+    isObject(value) &&
+    hasProperty(value, 'type') && value['type'] === 'file-complete' &&
+    hasProperty(value, 'fileId') && isString(value['fileId'])
+  );
+}
+
+/**
+ * Type guard for FileEndMessage
+ */
+function isFileEndMessage(value: unknown): value is FileEndMessage {
+  return (
+    isObject(value) &&
+    hasProperty(value, 'type') && value['type'] === 'file-end' &&
+    hasProperty(value, 'fileId') && isString(value['fileId'])
+  );
+}
+
+/**
+ * Type guard for P2PControlMessage
+ */
+function isP2PControlMessage(value: unknown): value is P2PControlMessage {
+  return (
+    isDHPublicKeyMessage(value) ||
+    isFileStartMessage(value) ||
+    isFileChunkMessage(value) ||
+    isFileCompleteMessage(value) ||
+    isFileEndMessage(value)
+  );
+}
+
+/**
+ * File transfer progress information
+ * @interface TransferProgress
+ */
 interface TransferProgress {
+    /** Unique file identifier */
     fileId: string;
+    /** Name of the file being transferred */
     fileName: string;
+    /** Total file size in bytes */
     totalSize: number;
+    /** Bytes transferred so far */
     transferredSize: number;
+    /** Transfer speed in bytes per second */
     speed: number;
+    /** Transfer progress percentage (0-100) */
     progress: number;
 }
 
-// Received file
+/**
+ * Received file information
+ * @interface ReceivedFile
+ */
 interface ReceivedFile {
+    /** File name */
     name: string;
+    /** MIME type */
     type: string;
+    /** File size in bytes */
     size: number;
+    /** File blob data */
     blob: Blob;
 }
 
 const CHUNK_SIZE = 16 * 1024; // 16KB chunks for reliability
 const ICE_GATHERING_TIMEOUT = 10_000; // 10 seconds
 const DH_PUBLIC_KEY_LENGTH = 32; // X25519 public key is always 32 bytes
+
+// Backpressure thresholds for optimal throughput
+// Higher thresholds allow more data in flight, improving bandwidth utilization
+const BUFFER_HIGH_THRESHOLD = 8 * 1024 * 1024; // 8MB - pause sending when exceeded
+const BUFFER_LOW_THRESHOLD = 4 * 1024 * 1024; // 4MB - resume sending when below
 
 // Private transport for relay-only connections (IP leak prevention)
 const privateTransport = getPrivateTransport({
@@ -61,17 +206,62 @@ const privateTransport = getPrivateTransport({
 });
 
 
+/**
+ * P2P connection state interface
+ * @interface P2PConnectionState
+ */
 export interface P2PConnectionState {
+    /** Whether connected to peer */
     isConnected: boolean;
+    /** Whether currently attempting connection */
     isConnecting: boolean;
+    /** Connection code for pairing */
     connectionCode: string;
+    /** Connected peer's ID */
     peerId: string | null;
+    /** Connected peer's name */
     peerName: string | null;
+    /** Connection error message */
     error: string | null;
+    /** Whether verification is pending */
     verificationPending: boolean;
+    /** Current verification session */
     verificationSession: VerificationSession | null;
 }
 
+/**
+ * Custom hook for managing P2P WebRTC connections with end-to-end encryption
+ *
+ * Provides comprehensive P2P connectivity including:
+ * - WebRTC peer connection setup
+ * - Data channel management
+ * - File transfer over P2P
+ * - Peer verification with SAS (Short Authentication String)
+ * - Ephemeral key management
+ * - Privacy-preserving relay-only mode
+ *
+ * @returns P2P connection state and control functions
+ *
+ * @example
+ * ```tsx
+ * const {
+ *   state,
+ *   initializeAsInitiator,
+ *   acceptConnection,
+ *   sendFile,
+ *   disconnect,
+ *   confirmVerification
+ * } = useP2PConnection();
+ *
+ * // As initiator
+ * const offer = await initializeAsInitiator();
+ * // Share offer with peer...
+ *
+ * // As receiver
+ * const answer = await acceptConnection(offer);
+ * // Share answer back...
+ * ```
+ */
 export function useP2PConnection() {
     const [state, setState] = useState<P2PConnectionState>({
         isConnected: false,
@@ -114,7 +304,10 @@ export function useP2PConnection() {
         crypto.getRandomValues(values);
         let code = '';
         for (let i = 0; i < 8; i++) {
-            code += chars[values[i] % chars.length];
+            const value = values[i];
+            if (value !== undefined) {
+                code += chars[value % chars.length];
+            }
         }
         return code;
     }
@@ -302,8 +495,11 @@ export function useP2PConnection() {
     }, []);
 
     // Handle control messages
-    const handleControlMessage = useCallback((message: any) => {
-        if (!message || typeof message.type !== 'string') return;
+    const handleControlMessage = useCallback((message: unknown) => {
+        if (!isP2PControlMessage(message)) {
+            secureLog.warn('Received invalid P2P control message');
+            return;
+        }
 
         switch (message.type) {
             case 'dh-pubkey':
@@ -315,24 +511,26 @@ export function useP2PConnection() {
                     }
 
                     // Validate public key format
-                    if (!Array.isArray(message.publicKey) || message.publicKey.length !== DH_PUBLIC_KEY_LENGTH) {
+                    if (message.publicKey.length !== DH_PUBLIC_KEY_LENGTH) {
                         secureLog.error('Invalid DH public key: wrong length');
                         break;
                     }
 
                     const peerPublicKey = new Uint8Array(message.publicKey);
 
-                    // Reject all-zero key (low-order point)
-                    if (peerPublicKey.every(b => b === 0)) {
-                        secureLog.error('Rejected zero DH public key');
+                    // CRITICAL FIX: Enhanced low-order point validation
+                    // Reject known low-order points and predictable patterns
+                    if (!isValidX25519PublicKey(peerPublicKey)) {
+                        secureLog.error('Rejected invalid or low-order DH public key');
                         break;
                     }
 
                     const rawSharedSecret = x25519.getSharedSecret(dhPrivateKey.current, peerPublicKey);
 
-                    // Reject if shared secret is all zeros (low-order point attack)
-                    if (rawSharedSecret.every(b => b === 0)) {
-                        secureLog.error('DH key exchange produced zero shared secret (low-order point)');
+                    // CRITICAL FIX: Enhanced shared secret validation
+                    // Check for low-entropy or predictable shared secrets
+                    if (!isValidSharedSecret(rawSharedSecret)) {
+                        secureLog.error('DH key exchange produced invalid shared secret (low-order point attack)');
                         break;
                     }
 
@@ -363,23 +561,15 @@ export function useP2PConnection() {
                 break;
 
             case 'file-start': {
-                // Validate required fields
-                if (typeof message.size !== 'number' || message.size <= 0) {
+                // Validate file size
+                if (message.size <= 0) {
                     secureLog.error('Invalid file-start: bad size');
-                    break;
-                }
-                if (typeof message.fileId !== 'string' || message.fileId.length === 0) {
-                    secureLog.error('Invalid file-start: missing fileId');
                     break;
                 }
 
                 // Sanitize filename (strip path separators, limit length)
-                const fileName = typeof message.name === 'string'
-                    ? message.name.replace(/[/\\<>:"|?*]/g, '_').slice(0, 255)
-                    : 'unnamed';
-                const mimeType = typeof message.mimeType === 'string'
-                    ? message.mimeType.slice(0, 128)
-                    : 'application/octet-stream';
+                const fileName = message.name.replace(/[/\\<>:"|?*]/g, '_').slice(0, 255);
+                const mimeType = message.mimeType?.slice(0, 128) ?? 'application/octet-stream';
 
                 receivingFile.current = {
                     name: fileName,
@@ -426,7 +616,7 @@ export function useP2PConnection() {
 
     // Handle file chunk
     const handleFileChunk = useCallback((data: ArrayBuffer) => {
-        if (!receivingFile.current) return;
+        if (!receivingFile.current) {return;}
 
         // Reject if receiving more data than declared size
         if (receivingFile.current.received + data.byteLength > receivingFile.current.size) {
@@ -555,18 +745,36 @@ export function useP2PConnection() {
         let offset = 0;
         const startTime = Date.now();
 
+        // Configure bufferedAmountLowThreshold for event-driven backpressure
+        // This replaces polling with efficient event-based flow control
+        channel.bufferedAmountLowThreshold = BUFFER_LOW_THRESHOLD;
+
         while (offset < file.size) {
             // Check channel is still open
             if (channel.readyState !== 'open') {
                 throw new Error('Data channel closed during transfer');
             }
 
-            // Wait if buffer is getting full (backpressure)
-            while (channel.bufferedAmount > 1024 * 1024) {
+            // Backpressure: wait if buffer exceeds high threshold
+            // Uses event-driven approach instead of polling for better performance
+            if (channel.bufferedAmount > BUFFER_HIGH_THRESHOLD) {
+                await new Promise<void>((resolve) => {
+                    // Check if buffer already drained while we were setting up
+                    if (channel.bufferedAmount <= BUFFER_LOW_THRESHOLD) {
+                        resolve();
+                        return;
+                    }
+                    // Wait for bufferedamountlow event
+                    const handler = (): void => {
+                        channel.onbufferedamountlow = null;
+                        resolve();
+                    };
+                    channel.onbufferedamountlow = handler;
+                });
+                // Verify channel still open after waiting
                 if (channel.readyState !== 'open') {
                     throw new Error('Data channel closed during transfer');
                 }
-                await new Promise(resolve => setTimeout(resolve, 50));
             }
 
             const chunk = file.slice(offset, offset + CHUNK_SIZE);
@@ -603,7 +811,10 @@ export function useP2PConnection() {
     // Send multiple files
     const sendFiles = useCallback(async (files: File[], onProgress?: (fileIndex: number, progress: number) => void) => {
         for (let i = 0; i < files.length; i++) {
-            await sendFile(files[i], (progress) => onProgress?.(i, progress));
+            const file = files[i];
+            if (file) {
+                await sendFile(file, (progress) => onProgress?.(i, progress));
+            }
         }
     }, [sendFile]);
 
@@ -655,6 +866,71 @@ export function useP2PConnection() {
             disconnect();
         };
     }, [disconnect]);
+
+    /**
+     * CRITICAL FIX: Validate X25519 public key against known low-order points
+     * X25519 has 8 low-order points that produce predictable shared secrets
+     */
+    const isValidX25519PublicKey = (publicKey: Uint8Array): boolean => {
+        if (publicKey.length !== 32) {return false;}
+
+        // Check for all-zero key (point 0)
+        if (publicKey.every(b => b === 0)) {return false;}
+
+        // Check for all-ones key
+        if (publicKey.every(b => b === 0xFF)) {return false;}
+
+        // Check for point 1 (0x01 followed by zeros)
+        if (publicKey[0] === 1 && publicKey.slice(1).every(b => b === 0)) {return false;}
+
+        // Check for low-order point patterns (known small-order curve points)
+        const knownLowOrderPoints = [
+            // Point of order 1 (identity)
+            new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+            // Point of order 2
+            new Uint8Array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+            // Point of order 4
+            new Uint8Array([0xe0, 0xeb, 0x7a, 0x7c, 0x3b, 0x41, 0xb8, 0xae, 0x16, 0x56, 0xe3, 0xfa, 0xf1, 0x9f, 0xc4, 0x6a, 0xda, 0x09, 0x8d, 0xeb, 0x9c, 0x32, 0xb1, 0xfd, 0x86, 0x62, 0x05, 0x16, 0x5f, 0x49, 0xb8, 0x00]),
+            // Point of order 8
+            new Uint8Array([0x5f, 0x9c, 0x95, 0xbc, 0xa3, 0x50, 0x8c, 0x24, 0xb1, 0xd0, 0xb1, 0x55, 0x9c, 0x83, 0xef, 0x5b, 0x04, 0x44, 0x5c, 0xc4, 0x58, 0x1c, 0x8e, 0x86, 0xd8, 0x22, 0x4e, 0xdd, 0xd0, 0x9f, 0x11, 0x57]),
+        ];
+
+        for (const lowOrderPoint of knownLowOrderPoints) {
+            if (publicKey.every((b, i) => b === lowOrderPoint[i])) {
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+    /**
+     * CRITICAL FIX: Validate shared secret has sufficient entropy
+     * Prevents low-order point attacks that produce predictable secrets
+     */
+    const isValidSharedSecret = (sharedSecret: Uint8Array): boolean => {
+        if (sharedSecret.length !== 32) {return false;}
+
+        // Check for all-zero secret
+        if (sharedSecret.every(b => b === 0)) {return false;}
+
+        // Check for all-ones secret
+        if (sharedSecret.every(b => b === 0xFF)) {return false;}
+
+        // Check for very low entropy (more than 28 bytes are zero)
+        const zeroCount = sharedSecret.filter(b => b === 0).length;
+        if (zeroCount > 28) {return false;}
+
+        // Check for repeating patterns (like 0x01010101...)
+        const firstByte = sharedSecret[0];
+        if (sharedSecret.every(b => b === firstByte)) {return false;}
+
+        // Additional entropy check: count unique bytes
+        const uniqueBytes = new Set(sharedSecret);
+        if (uniqueBytes.size < 8) {return false;} // Too few unique values
+
+        return true;
+    };
 
     return {
         state,

@@ -4,7 +4,11 @@
  * Secure Storage Module
  * Encrypts sensitive data before storing in localStorage
  * Uses AES-256-GCM with a non-extractable CryptoKey stored in IndexedDB
+ *
+ * SECURITY: Uses counter-based nonces to prevent nonce reuse attacks.
  */
+
+import { NonceManager } from '@/lib/crypto/nonce-manager';
 
 const STORAGE_KEY_SEED = 'tallow_storage_key_seed'; // Legacy, migrated away
 const ENCRYPTED_PREFIX = 'enc:';
@@ -26,6 +30,17 @@ function getSubtleCrypto(): SubtleCrypto | null {
 // In-memory cache of the encryption key (not persisted outside IndexedDB)
 let encryptionKey: CryptoKey | null = null;
 let migrationDone = false;
+
+// Counter-based nonce manager for secure storage encryption
+// Prevents nonce reuse attacks that random nonces are vulnerable to
+let secureStorageNonceManager: NonceManager = new NonceManager();
+
+/**
+ * Reset the secure storage nonce manager (call when key is rotated)
+ */
+export function resetSecureStorageNonceManager(): void {
+  secureStorageNonceManager = new NonceManager();
+}
 
 // ============================================================================
 // IndexedDB Key Storage
@@ -82,7 +97,7 @@ async function storeKey(key: CryptoKey): Promise<void> {
  */
 async function generateMasterKey(): Promise<CryptoKey> {
   const subtle = getSubtleCrypto();
-  if (!subtle) throw new Error('SubtleCrypto not available (requires secure context)');
+  if (!subtle) {throw new Error('SubtleCrypto not available (requires secure context)');}
   return await subtle.generateKey(
     { name: 'AES-GCM', length: 256 },
     false, // NON-EXTRACTABLE - key cannot be read from IndexedDB
@@ -95,7 +110,7 @@ async function generateMasterKey(): Promise<CryptoKey> {
  */
 async function deriveLegacyKey(seed: string): Promise<CryptoKey> {
   const subtle = getSubtleCrypto();
-  if (!subtle) throw new Error('SubtleCrypto not available (requires secure context)');
+  if (!subtle) {throw new Error('SubtleCrypto not available (requires secure context)');}
   const seedBytes = new Uint8Array(seed.match(/.{1,2}/g)!.map(b => parseInt(b, 16)));
   const baseKey = await subtle.importKey(
     'raw',
@@ -128,7 +143,7 @@ async function deriveLegacyKey(seed: string): Promise<CryptoKey> {
  * Priority: in-memory cache → IndexedDB → migrate from legacy seed → generate new
  */
 async function getEncryptionKey(): Promise<CryptoKey> {
-  if (encryptionKey) return encryptionKey;
+  if (encryptionKey) {return encryptionKey;}
 
   // Try IndexedDB first
   const storedKey = await getStoredKey();
@@ -179,7 +194,7 @@ async function getEncryptionKey(): Promise<CryptoKey> {
  * but seed wasn't cleaned up in a previous session)
  */
 async function migrateLegacySeed(): Promise<void> {
-  if (typeof localStorage === 'undefined') return;
+  if (typeof localStorage === 'undefined') {return;}
   const legacySeed = localStorage.getItem(STORAGE_KEY_SEED);
   if (legacySeed) {
     // Seed still exists but we have an IndexedDB key - just remove it
@@ -191,14 +206,14 @@ async function migrateLegacySeed(): Promise<void> {
  * Re-encrypt all localStorage data from oldKey to newKey
  */
 async function reEncryptAll(oldKey: CryptoKey, newKey: CryptoKey): Promise<void> {
-  if (typeof localStorage === 'undefined') return;
+  if (typeof localStorage === 'undefined') {return;}
 
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (!key || key === STORAGE_KEY_SEED) continue;
+    if (!key || key === STORAGE_KEY_SEED) {continue;}
 
     const value = localStorage.getItem(key);
-    if (!value || !value.startsWith(ENCRYPTED_PREFIX)) continue;
+    if (!value || !value.startsWith(ENCRYPTED_PREFIX)) {continue;}
 
     try {
       // Decrypt with old key
@@ -214,8 +229,9 @@ async function reEncryptAll(oldKey: CryptoKey, newKey: CryptoKey): Promise<void>
 
 async function encryptWithKey(value: string, key: CryptoKey): Promise<string> {
   const subtle = getSubtleCrypto();
-  if (!subtle) throw new Error('SubtleCrypto not available (requires secure context)');
-  const iv = crypto.getRandomValues(new Uint8Array(12));
+  if (!subtle) {throw new Error('SubtleCrypto not available (requires secure context)');}
+  // Use counter-based nonce instead of random to prevent collision attacks
+  const iv = secureStorageNonceManager.getNextNonce();
   const encoded = new TextEncoder().encode(value);
 
   const ciphertext = await subtle.encrypt(
@@ -239,7 +255,7 @@ async function decryptWithKey(encrypted: string, key: CryptoKey): Promise<string
   const ciphertext = combined.slice(12);
 
   const subtle = getSubtleCrypto();
-  if (!subtle) throw new Error('SubtleCrypto not available (requires secure context)');
+  if (!subtle) {throw new Error('SubtleCrypto not available (requires secure context)');}
   const decrypted = await subtle.decrypt(
     { name: 'AES-GCM', iv },
     key,
@@ -283,7 +299,7 @@ export const secureStorage = {
 
   async getItem(key: string): Promise<string | null> {
     const value = localStorage.getItem(key);
-    if (value === null) return null;
+    if (value === null) {return null;}
 
     if (!value.startsWith(ENCRYPTED_PREFIX)) {
       if (!getSubtleCrypto()) {
@@ -357,6 +373,13 @@ export async function migrateSensitiveData(): Promise<void> {
       `Data remains unencrypted until resolved.`
     );
   }
+}
+
+/**
+ * Get the secure storage instance
+ */
+export async function getSecureStorage() {
+  return secureStorage;
 }
 
 export default secureStorage;

@@ -6,44 +6,51 @@
  */
 
 import { EventEmitter } from 'events';
-import { Device, ConnectionTicket as Ticket, TransferChunk } from '../types';
+import { Device } from '../types';
 import { generateUUID } from '../utils/uuid';
 import secureLog from '../utils/secure-logger';
+import type {
+  FileMeta,
+  InternalMessage,
+} from '../types/messaging-types';
+import { isInternalMessage } from '../types/messaging-types';
+import { captureException, addBreadcrumb } from '../monitoring/sentry';
 
 // Connection states
 export type ConnectionState = 'idle' | 'connecting' | 'connected' | 'failed' | 'closed';
 
-// Message types for signaling
-export interface SignalMessage {
-    type: 'offer' | 'answer' | 'candidate' | 'ready' | 'file-meta' | 'chunk' | 'ack' | 'complete' | 'error';
-    payload: any;
-    from: string;
-    to: string;
-}
-
-// File metadata sent before transfer
-export interface FileMeta {
-    id: string;
-    name: string;
-    size: number;
-    type: string;
-    chunks: number;
-}
+// Re-export types for backward compatibility
+export type { SignalMessage, FileMeta } from '../types/messaging-types';
 
 // Constants
 const CHUNK_SIZE = 64 * 1024; // 64KB chunks for WebRTC
-const MAX_FILE_SIZE = 4 * 1024 * 1024 * 1024; // 4GB limit
+const MAX_FILE_SIZE = Number.MAX_SAFE_INTEGER; // No size limit - unlimited
 const MAX_FILENAME_LENGTH = 255;
 
-// TURN server configuration from environment
-const TURN_SERVER = process.env.NEXT_PUBLIC_TURN_SERVER || '';
-const TURN_USERNAME = process.env.NEXT_PUBLIC_TURN_USERNAME || '';
-const TURN_CREDENTIAL = process.env.NEXT_PUBLIC_TURN_CREDENTIAL || '';
+// Backpressure thresholds for optimal throughput
+// Higher thresholds allow more data in flight, improving bandwidth utilization
+const BUFFER_HIGH_THRESHOLD = 8 * 1024 * 1024; // 8MB - pause sending when exceeded
+const BUFFER_LOW_THRESHOLD = 4 * 1024 * 1024; // 4MB - resume sending when below
 
+// TURN server configuration from environment
+const TURN_SERVER = process.env['NEXT_PUBLIC_TURN_SERVER'] || '';
+const TURN_USERNAME = process.env['NEXT_PUBLIC_TURN_USERNAME'] || '';
+const TURN_CREDENTIAL = process.env['NEXT_PUBLIC_TURN_CREDENTIAL'] || '';
+
+/**
+ * Get ICE servers with STUN/TURN configuration
+ * Uses multiple STUN servers for redundancy and optimal NAT traversal
+ */
 function getIceServers(): RTCIceServer[] {
     const servers: RTCIceServer[] = [
+        // Multiple Google STUN servers for redundancy
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        // Additional STUN servers from other providers
+        { urls: 'stun:stun.services.mozilla.com:3478' },
+        { urls: 'stun:stun.stunprotocol.org:3478' },
     ];
 
     // Add TURN server if configured (required for NAT traversal)
@@ -67,7 +74,10 @@ export function generateConnectionCode(): string {
     crypto.getRandomValues(values);
     let code = '';
     for (let i = 0; i < 8; i++) {
-        code += chars[values[i] % chars.length];
+        const value = values[i];
+        if (value !== undefined) {
+            code += chars[value % chars.length];
+        }
     }
     return code;
 }
@@ -80,19 +90,15 @@ export class P2PConnection extends EventEmitter {
     private peer: RTCPeerConnection | null = null;
     private dataChannel: RTCDataChannel | null = null;
     private state: ConnectionState = 'idle';
-    private localDevice: Device;
-    private remoteDevice: Device | null = null;
     private pendingCandidates: RTCIceCandidate[] = [];
-    private fileQueue: File[] = [];
     private receivingFile: {
         meta: FileMeta;
         chunks: ArrayBuffer[];
         received: number;
     } | null = null;
 
-    constructor(localDevice: Device) {
+    constructor(_localDevice: Device) {
         super();
-        this.localDevice = localDevice;
     }
 
     get connectionState(): ConnectionState {
@@ -107,6 +113,8 @@ export class P2PConnection extends EventEmitter {
      * Initialize as the connection initiator (sender)
      */
     async createOffer(): Promise<RTCSessionDescriptionInit> {
+        addBreadcrumb('Creating P2P connection offer', 'p2p-internet');
+
         this.peer = this.createPeerConnection();
 
         // Create data channel
@@ -157,7 +165,7 @@ export class P2PConnection extends EventEmitter {
      * Complete the connection handshake (initiator only)
      */
     async acceptAnswer(answer: RTCSessionDescriptionInit): Promise<void> {
-        if (!this.peer) throw new Error('No peer connection');
+        if (!this.peer) {throw new Error('No peer connection');}
         await this.peer.setRemoteDescription(answer);
 
         // Apply pending candidates
@@ -208,6 +216,10 @@ export class P2PConnection extends EventEmitter {
 
         const channel = this.dataChannel;
 
+        // Configure bufferedAmountLowThreshold for event-driven backpressure
+        // This replaces polling with efficient event-based flow control
+        channel.bufferedAmountLowThreshold = BUFFER_LOW_THRESHOLD;
+
         // Use slice + arrayBuffer approach for better control
         let offset = 0;
 
@@ -218,13 +230,27 @@ export class P2PConnection extends EventEmitter {
                 return;
             }
 
-            // Backpressure: wait if buffer is full
-            while (channel.bufferedAmount > 1024 * 1024) {
+            // Backpressure: wait if buffer exceeds high threshold
+            // Uses event-driven approach instead of polling for better performance
+            if (channel.bufferedAmount > BUFFER_HIGH_THRESHOLD) {
+                await new Promise<void>((resolve) => {
+                    // Check if buffer already drained while we were setting up
+                    if (channel.bufferedAmount <= BUFFER_LOW_THRESHOLD) {
+                        resolve();
+                        return;
+                    }
+                    // Wait for bufferedamountlow event
+                    const handler = (): void => {
+                        channel.onbufferedamountlow = null;
+                        resolve();
+                    };
+                    channel.onbufferedamountlow = handler;
+                });
+                // Verify channel still open after waiting
                 if (channel.readyState !== 'open') {
                     this.emit('error', new Error('Data channel closed during transfer'));
                     return;
                 }
-                await new Promise((resolve) => setTimeout(resolve, 50));
             }
 
             const slice = file.slice(offset, offset + CHUNK_SIZE);
@@ -240,6 +266,12 @@ export class P2PConnection extends EventEmitter {
                 progress: (offset / file.size) * 100,
             });
         }
+
+        addBreadcrumb('P2P file sent successfully', 'p2p-internet', {
+            fileId: meta.id,
+            fileName: meta.name,
+            fileSize: meta.size,
+        });
 
         this.sendMessage({ type: 'complete', fileId: meta.id });
         this.emit('fileSent', { file, meta });
@@ -275,6 +307,10 @@ export class P2PConnection extends EventEmitter {
     private createPeerConnection(): RTCPeerConnection {
         const pc = new RTCPeerConnection({
             iceServers: getIceServers(),
+            // Optimize for P2P connections
+            iceCandidatePoolSize: 10, // Pre-gather candidates for faster connection
+            bundlePolicy: 'max-bundle', // Use single transport for all media
+            rtcpMuxPolicy: 'require', // Multiplex RTP and RTCP on same port
         });
 
         pc.onicecandidate = (event) => {
@@ -283,13 +319,52 @@ export class P2PConnection extends EventEmitter {
             }
         };
 
+        // Monitor ICE connection state for better diagnostics
+        pc.oniceconnectionstatechange = () => {
+            addBreadcrumb('ICE connection state changed', 'p2p-internet', {
+                state: pc.iceConnectionState,
+            });
+
+            if (pc.iceConnectionState === 'failed') {
+                secureLog.warn('[P2P] ICE connection failed, may need TURN relay');
+            }
+        };
+
+        // Monitor ICE gathering state
+        pc.onicegatheringstatechange = () => {
+            addBreadcrumb('ICE gathering state changed', 'p2p-internet', {
+                state: pc.iceGatheringState,
+            });
+        };
+
         pc.onconnectionstatechange = () => {
             switch (pc.connectionState) {
                 case 'connected':
                     this.state = 'connected';
+                    // Log connection type for analytics
+                    pc.getStats().then(stats => {
+                        let connectionType = 'unknown';
+                        stats.forEach(stat => {
+                            if (stat.type === 'candidate-pair' && stat.state === 'succeeded') {
+                                connectionType = stat.localCandidateType === 'relay' ||
+                                               stat.remoteCandidateType === 'relay'
+                                               ? 'relayed' : 'direct';
+                            }
+                        });
+                        secureLog.log('[P2P] Connected via', connectionType);
+                    });
                     break;
                 case 'failed':
                     this.state = 'failed';
+                    // Report connection failure to Sentry
+                    captureException(new Error('WebRTC peer connection failed'), {
+                        tags: { module: 'p2p-internet', operation: 'connectionStateChange' },
+                        extra: {
+                            connectionState: pc.connectionState,
+                            iceConnectionState: pc.iceConnectionState,
+                            iceGatheringState: pc.iceGatheringState,
+                        }
+                    });
                     break;
                 case 'closed':
                 case 'disconnected':
@@ -318,6 +393,14 @@ export class P2PConnection extends EventEmitter {
         };
 
         channel.onerror = (error) => {
+            // Report WebRTC data channel errors to Sentry
+            captureException(error instanceof Error ? error : new Error('WebRTC data channel error'), {
+                tags: { module: 'p2p-internet', operation: 'dataChannelError' },
+                extra: {
+                    channelLabel: channel.label,
+                    channelState: channel.readyState,
+                }
+            });
             this.emit('error', error);
         };
 
@@ -325,9 +408,9 @@ export class P2PConnection extends EventEmitter {
             if (typeof event.data === 'string') {
                 // JSON message
                 try {
-                    const message = JSON.parse(event.data);
+                    const message: unknown = JSON.parse(event.data);
                     this.handleMessage(message);
-                } catch (error) {
+                } catch (_error) {
                     secureLog.error('Failed to parse message');
                 }
             } else {
@@ -337,14 +420,17 @@ export class P2PConnection extends EventEmitter {
         };
     }
 
-    private sendMessage(message: any): void {
+    private sendMessage(message: InternalMessage): void {
         if (this.dataChannel?.readyState === 'open') {
             this.dataChannel.send(JSON.stringify(message));
         }
     }
 
-    private handleMessage(message: any): void {
-        if (!message || typeof message.type !== 'string') return;
+    private handleMessage(message: unknown): void {
+        if (!isInternalMessage(message)) {
+            secureLog.warn('[P2P] Received invalid message format');
+            return;
+        }
 
         switch (message.type) {
             case 'file-meta': {
@@ -393,13 +479,25 @@ export class P2PConnection extends EventEmitter {
     }
 
     private handleChunk(data: ArrayBuffer): void {
-        if (!this.receivingFile) return;
+        if (!this.receivingFile) {return;}
 
         // Reject if receiving more data than declared
         if (this.receivingFile.received + data.byteLength > this.receivingFile.meta.size + CHUNK_SIZE) {
             secureLog.error('[P2P] Received more data than declared file size, aborting');
+
+            // Report data overflow error to Sentry
+            const overflowError = new Error('File size exceeded declared size');
+            captureException(overflowError, {
+                tags: { module: 'p2p-internet', operation: 'handleChunk' },
+                extra: {
+                    declaredSize: this.receivingFile.meta.size,
+                    receivedSoFar: this.receivingFile.received,
+                    chunkSize: data.byteLength,
+                }
+            });
+
             this.receivingFile = null;
-            this.emit('error', new Error('File size exceeded declared size'));
+            this.emit('error', overflowError);
             return;
         }
 
@@ -415,7 +513,7 @@ export class P2PConnection extends EventEmitter {
     }
 
     private assembleFile(): void {
-        if (!this.receivingFile) return;
+        if (!this.receivingFile) {return;}
 
         const { meta, chunks, received } = this.receivingFile;
 

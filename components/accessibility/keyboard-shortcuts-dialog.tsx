@@ -8,7 +8,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Keyboard, X } from 'lucide-react';
@@ -85,36 +84,39 @@ export function KeyboardShortcutsDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Keyboard className="w-5 h-5 text-primary" aria-hidden="true" />
-              </div>
-              <div>
-                <DialogTitle>Keyboard Shortcuts</DialogTitle>
-                <DialogDescription>
-                  Use these keyboard shortcuts to navigate and interact with Tallow
-                </DialogDescription>
-              </div>
+      <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col" showCloseButton={false}>
+        <DialogHeader className="pr-12">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#b2987d]/10 dark:bg-[#b2987d]/20 flex items-center justify-center">
+              <Keyboard className="w-5 h-5 text-[#b2987d]" aria-hidden="true" />
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsOpen(false)}
-              aria-label="Close keyboard shortcuts"
-            >
-              <X className="w-4 h-4" aria-hidden="true" />
-            </Button>
+            <div>
+              <DialogTitle>Keyboard Shortcuts</DialogTitle>
+              <DialogDescription>
+                Use these keyboard shortcuts to navigate and interact with Tallow
+              </DialogDescription>
+            </div>
           </div>
         </DialogHeader>
+
+        {/* EUVEKA close button */}
+        <button
+          onClick={() => setIsOpen(false)}
+          aria-label="Close keyboard shortcuts"
+          className="absolute top-6 right-6 flex items-center justify-center w-10 h-10 rounded-full
+            text-[#b2987d] hover:text-[#191610] dark:hover:text-[#fefefc]
+            hover:bg-[#e5dac7]/50 dark:hover:bg-[#544a36]/50
+            transition-all duration-300
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b2987d]/50"
+        >
+          <X className="w-[18px] h-[18px] stroke-[1.5]" aria-hidden="true" />
+        </button>
 
         <div className="flex-1 overflow-y-auto pr-2">
           <div className="space-y-6">
             {categories.map((category) => (
               <div key={category}>
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                <h3 className="text-sm font-semibold text-[#b2987d] uppercase tracking-wider mb-3">
                   {category}
                 </h3>
                 <div className="space-y-2">
@@ -123,18 +125,23 @@ export function KeyboardShortcutsDialog({
                     .map((shortcut, index) => (
                       <Card
                         key={index}
-                        className="p-3 flex items-center justify-between gap-4"
+                        className="p-3 flex items-center justify-between gap-4
+                          bg-[#fefefc] dark:bg-[#191610]
+                          border-[#e5dac7] dark:border-[#544a36]"
                       >
-                        <p className="text-sm flex-1">{shortcut.description}</p>
+                        <p className="text-sm flex-1 text-[#191610] dark:text-[#fefefc]">{shortcut.description}</p>
                         <div className="flex items-center gap-1 shrink-0">
                           {shortcut.keys.map((key, keyIndex) => (
                             <span key={keyIndex} className="flex items-center">
                               {keyIndex > 0 && (
-                                <span className="text-xs text-muted-foreground mx-1">
+                                <span className="text-xs text-[#b2987d] mx-1">
                                   +
                                 </span>
                               )}
-                              <kbd className="px-2 py-1 text-xs font-semibold bg-muted border border-border rounded">
+                              <kbd className="px-2 py-1 text-xs font-semibold
+                                bg-[#e5dac7]/50 dark:bg-[#544a36]/50
+                                border border-[#e5dac7] dark:border-[#544a36]
+                                rounded text-[#191610] dark:text-[#fefefc]">
                                 {key}
                               </kbd>
                             </span>
@@ -148,9 +155,12 @@ export function KeyboardShortcutsDialog({
           </div>
         </div>
 
-        <div className="pt-4 border-t text-center">
-          <p className="text-sm text-muted-foreground">
-            Press <kbd className="px-2 py-1 text-xs font-semibold bg-muted border border-border rounded">?</kbd> anytime to show this dialog
+        <div className="pt-6 mt-6 border-t border-[#e5dac7] dark:border-[#544a36] text-center">
+          <p className="text-sm text-[#b2987d]">
+            Press <kbd className="px-2 py-1 text-xs font-semibold
+              bg-[#e5dac7]/50 dark:bg-[#544a36]/50
+              border border-[#e5dac7] dark:border-[#544a36]
+              rounded text-[#191610] dark:text-[#fefefc]">?</kbd> anytime to show this dialog
           </p>
         </div>
       </DialogContent>

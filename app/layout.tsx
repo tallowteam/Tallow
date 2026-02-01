@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { Providers } from "@/components/providers";
 import "./globals.css";
+import "./toast-styles.css";
 
 // =============================================================================
 // FONTS

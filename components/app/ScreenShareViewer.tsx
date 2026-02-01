@@ -240,7 +240,7 @@ export const ScreenShareViewer = memo(function ScreenShareViewer({
                     </CardTitle>
                     <div className="flex items-center gap-2">
                         {isPiP && <Badge variant="secondary">PiP</Badge>}
-                        <Badge variant="default" className="bg-blue-500 animate-pulse">
+                        <Badge variant="default" className="bg-[#fefefc] animate-pulse">
                             Receiving
                         </Badge>
                     </div>

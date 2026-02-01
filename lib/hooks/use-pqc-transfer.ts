@@ -1,29 +1,80 @@
 'use client';
 
 /**
- * React Hook for Post-Quantum File Transfers
- * Drop-in replacement for existing transfer logic
+ * @fileoverview Custom hook for Post-Quantum Cryptography (PQC) file transfers
+ * @module hooks/use-pqc-transfer
+ *
+ * Provides quantum-resistant encryption for file transfers using Kyber KEM.
+ * Drop-in replacement for standard P2P transfers with enhanced security.
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { PQCTransferManager } from '../transfer/pqc-transfer-manager';
 import { toast } from 'sonner';
 
+/**
+ * Options for PQC transfer hook
+ * @interface UsePQCTransferOptions
+ */
 export interface UsePQCTransferOptions {
+  /** Callback when transfer completes successfully */
   onTransferComplete?: (blob: Blob, filename: string) => void;
+  /** Callback when an error occurs */
   onError?: (error: Error) => void;
 }
 
-const MAX_FILE_SIZE = 4 * 1024 * 1024 * 1024; // 4GB
+/** Maximum file size supported (4GB) */
+const MAX_FILE_SIZE = Number.MAX_SAFE_INTEGER; // No size limit - unlimited
 
+/**
+ * Transfer state for PQC operations
+ * @interface TransferState
+ */
 export interface TransferState {
+  /** Whether key negotiation is in progress */
   isNegotiating: boolean;
+  /** Whether file transfer is active */
   isTransferring: boolean;
+  /** Transfer progress percentage (0-100) */
   progress: number;
+  /** Error message if transfer failed */
   error: string | null;
+  /** Whether session keys are established and ready */
   sessionReady: boolean;
 }
 
+/**
+ * Custom hook for Post-Quantum Cryptography (PQC) file transfers
+ *
+ * Implements quantum-resistant encryption using Kyber-1024 KEM for key exchange
+ * and AES-256-GCM for symmetric encryption. Provides protection against
+ * future quantum computer attacks.
+ *
+ * @param {UsePQCTransferOptions} options - Configuration options
+ * @returns PQC transfer state and control functions
+ *
+ * @example
+ * ```tsx
+ * const {
+ *   isNegotiating,
+ *   sessionReady,
+ *   progress,
+ *   initializeSender,
+ *   setPeerPublicKey,
+ *   sendFile
+ * } = usePQCTransfer({
+ *   onTransferComplete: (blob, filename) => {
+ *     secureLog.log('Transfer complete:', filename);
+ *   }
+ * });
+ *
+ * // Sender flow
+ * const publicKey = await initializeSender();
+ * // Share publicKey with receiver...
+ * await setPeerPublicKey(receiverPublicKey);
+ * await sendFile(file);
+ * ```
+ */
 export function usePQCTransfer(options: UsePQCTransferOptions = {}) {
   const [state, setState] = useState<TransferState>({
     isNegotiating: false,

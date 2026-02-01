@@ -3,7 +3,14 @@
 /**
  * Proxy/Relay Configuration
  * Enables Tor-friendly connections and custom relay servers
+ * SECURITY: Proxy config (including TURN credentials) is now encrypted in localStorage
+ * ENHANCED: TURN credentials are double-encrypted for additional security
  */
+
+import secureStorage from '../storage/secure-storage';
+import CredentialEncryption, {
+  type EncryptedTurnCredentials,
+} from '../security/credential-encryption';
 
 const PROXY_CONFIG_KEY = 'Tallow_proxy_config';
 
@@ -11,7 +18,7 @@ export interface ProxyConfig {
     // Connection mode
     mode: 'auto' | 'relay-only' | 'direct-only';
 
-    // Custom TURN/relay servers
+    // Custom TURN/relay servers (stored encrypted)
     customTurnServers: TurnServer[];
 
     // Use relay for all connections (Tor-friendly)
@@ -23,12 +30,27 @@ export interface ProxyConfig {
     // Retry settings
     maxRetries: number;
     retryDelay: number;
+
+    // Credential rotation timestamp
+    lastCredentialRotation?: number;
 }
 
 export interface TurnServer {
     urls: string[];
     username?: string;
     credential?: string;
+    credentialType?: 'password' | 'oauth';
+}
+
+// Internal storage format with encrypted credentials
+interface ProxyConfigStored {
+    mode: 'auto' | 'relay-only' | 'direct-only';
+    customTurnServers: (EncryptedTurnCredentials | TurnServer)[];
+    forceRelay: boolean;
+    connectionTimeout: number;
+    maxRetries: number;
+    retryDelay: number;
+    lastCredentialRotation?: number;
 }
 
 // Default configuration
@@ -51,38 +73,61 @@ export const DEFAULT_TURN_SERVERS: TurnServer[] = [
     },
 ];
 
-// Get proxy configuration
-export function getProxyConfig(): ProxyConfig {
-    if (typeof window === 'undefined') return DEFAULT_CONFIG;
+// Get proxy configuration (decrypts credentials)
+export async function getProxyConfig(): Promise<ProxyConfig> {
+    if (typeof window === 'undefined') {return DEFAULT_CONFIG;}
 
     try {
-        const stored = localStorage.getItem(PROXY_CONFIG_KEY);
+        const stored = await secureStorage.getItem(PROXY_CONFIG_KEY);
         if (stored) {
-            return { ...DEFAULT_CONFIG, ...JSON.parse(stored) };
+            const parsed: ProxyConfigStored = JSON.parse(stored);
+
+            // Decrypt TURN server credentials
+            const decryptedServers = await CredentialEncryption.decryptCredentials(
+                parsed.customTurnServers as EncryptedTurnCredentials[]
+            );
+
+            return {
+                ...DEFAULT_CONFIG,
+                ...parsed,
+                customTurnServers: decryptedServers
+            };
         }
     } catch { }
 
     return DEFAULT_CONFIG;
 }
 
-// Save proxy configuration
-export function saveProxyConfig(config: Partial<ProxyConfig>): void {
-    if (typeof window === 'undefined') return;
+// Save proxy configuration (encrypts credentials)
+export async function saveProxyConfig(config: Partial<ProxyConfig>): Promise<void> {
+    if (typeof window === 'undefined') {return;}
 
-    const current = getProxyConfig();
+    const current = await getProxyConfig();
     const updated = { ...current, ...config };
-    localStorage.setItem(PROXY_CONFIG_KEY, JSON.stringify(updated));
+
+    // Encrypt TURN server credentials before storage
+    const encryptedServers = await CredentialEncryption.migrateCredentials(
+        updated.customTurnServers
+    );
+
+    const toStore: ProxyConfigStored = {
+        ...updated,
+        customTurnServers: encryptedServers,
+        lastCredentialRotation: Date.now(),
+    };
+
+    await secureStorage.setItem(PROXY_CONFIG_KEY, JSON.stringify(toStore));
 }
 
 // Reset to default
-export function resetProxyConfig(): void {
-    if (typeof window === 'undefined') return;
-    localStorage.removeItem(PROXY_CONFIG_KEY);
+export async function resetProxyConfig(): Promise<void> {
+    if (typeof window === 'undefined') {return;}
+    secureStorage.removeItem(PROXY_CONFIG_KEY);
 }
 
 // Get ICE servers for WebRTC (combines default + custom)
-export function getIceServers(): RTCIceServer[] {
-    const config = getProxyConfig();
+export async function getIceServers(): Promise<RTCIceServer[]> {
+    const config = await getProxyConfig();
 
     const servers: RTCIceServer[] = [];
 
@@ -91,8 +136,8 @@ export function getIceServers(): RTCIceServer[] {
         DEFAULT_TURN_SERVERS.forEach(server => {
             servers.push({
                 urls: server.urls,
-                username: server.username,
-                credential: server.credential,
+                ...(server.username ? { username: server.username } : {}),
+                ...(server.credential ? { credential: server.credential } : {}),
             });
         });
     }
@@ -101,8 +146,8 @@ export function getIceServers(): RTCIceServer[] {
     config.customTurnServers.forEach(server => {
         servers.push({
             urls: server.urls,
-            username: server.username,
-            credential: server.credential,
+            ...(server.username ? { username: server.username } : {}),
+            ...(server.credential ? { credential: server.credential } : {}),
         });
     });
 
@@ -110,9 +155,9 @@ export function getIceServers(): RTCIceServer[] {
 }
 
 // Get WebRTC configuration
-export function getRTCConfiguration(): RTCConfiguration {
-    const config = getProxyConfig();
-    const iceServers = getIceServers();
+export async function getRTCConfiguration(): Promise<RTCConfiguration> {
+    const config = await getProxyConfig();
+    const iceServers = await getIceServers();
 
     return {
         iceServers,
@@ -122,28 +167,52 @@ export function getRTCConfiguration(): RTCConfiguration {
     };
 }
 
-// Add custom TURN server
-export function addCustomTurnServer(server: TurnServer): void {
-    const config = getProxyConfig();
+// Add custom TURN server (credentials will be encrypted)
+export async function addCustomTurnServer(server: TurnServer): Promise<void> {
+    const config = await getProxyConfig();
     config.customTurnServers.push(server);
-    saveProxyConfig(config);
+    await saveProxyConfig(config);
 }
 
 // Remove custom TURN server
-export function removeCustomTurnServer(index: number): void {
-    const config = getProxyConfig();
+export async function removeCustomTurnServer(index: number): Promise<void> {
+    const config = await getProxyConfig();
     config.customTurnServers.splice(index, 1);
-    saveProxyConfig(config);
+    await saveProxyConfig(config);
+}
+
+// Rotate TURN credentials (re-encrypt with new keys)
+export async function rotateTurnCredentials(): Promise<void> {
+    if (typeof window === 'undefined') {return;}
+
+    const config = await getProxyConfig();
+
+    // Re-encrypt all credentials
+    const reEncrypted = await CredentialEncryption.migrateCredentials(
+        config.customTurnServers
+    );
+
+    const toStore: ProxyConfigStored = {
+        mode: config.mode,
+        customTurnServers: reEncrypted,
+        forceRelay: config.forceRelay,
+        connectionTimeout: config.connectionTimeout,
+        maxRetries: config.maxRetries,
+        retryDelay: config.retryDelay,
+        lastCredentialRotation: Date.now(),
+    };
+
+    await secureStorage.setItem(PROXY_CONFIG_KEY, JSON.stringify(toStore));
 }
 
 // Enable relay-only mode (for Tor users)
-export function enableRelayOnlyMode(): void {
-    saveProxyConfig({ mode: 'relay-only', forceRelay: true });
+export async function enableRelayOnlyMode(): Promise<void> {
+    await saveProxyConfig({ mode: 'relay-only', forceRelay: true });
 }
 
 // Disable relay-only mode
-export function disableRelayOnlyMode(): void {
-    saveProxyConfig({ mode: 'auto', forceRelay: false });
+export async function disableRelayOnlyMode(): Promise<void> {
+    await saveProxyConfig({ mode: 'auto', forceRelay: false });
 }
 
 export default {
@@ -154,6 +223,7 @@ export default {
     getRTCConfiguration,
     addCustomTurnServer,
     removeCustomTurnServer,
+    rotateTurnCredentials,
     enableRelayOnlyMode,
     disableRelayOnlyMode,
     DEFAULT_TURN_SERVERS,

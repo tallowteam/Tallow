@@ -2,6 +2,8 @@
 
 import { Transfer, TransferEvent, FileInfo, Device } from '../types';
 import { generateUUID } from '../utils/uuid';
+import { recordTransfer, recordError } from '../monitoring/metrics';
+import { captureException, addBreadcrumb } from '../monitoring/sentry';
 
 // Maximum completed transfers to keep in memory
 const MAX_COMPLETED_TRANSFERS = 100;
@@ -38,6 +40,12 @@ class TransferManager {
     addTransfer(files: FileInfo[], from: Device, to: Device, direction: 'send' | 'receive'): Transfer {
         const totalSize = files.reduce((acc, file) => acc + file.size, 0);
 
+        addBreadcrumb('Starting new transfer', 'transfer', {
+            fileCount: files.length,
+            totalSize,
+            direction,
+        });
+
         const transfer: Transfer = {
             id: generateUUID(),
             files,
@@ -49,10 +57,21 @@ class TransferManager {
             direction,
             totalSize,
             transferredSize: 0,
+            startTime: null,
+            endTime: null,
+            error: null,
+            eta: null,
+            quality: 'good',
+            encryptionMetadata: null,
         };
 
         this.transfers.set(transfer.id, transfer);
-        this.emit({ type: 'progress', transfer });
+        this.emit({
+            type: 'progress',
+            transfer,
+            data: null,
+            timestamp: Date.now()
+        });
         return transfer;
     }
 
@@ -72,7 +91,7 @@ class TransferManager {
 
     updateTransfer(id: string, updates: Partial<Transfer>) {
         const transfer = this.transfers.get(id);
-        if (!transfer) return;
+        if (!transfer) {return;}
 
         // Validate state transition if status is being changed
         if (updates.status && updates.status !== transfer.status) {
@@ -95,14 +114,24 @@ class TransferManager {
             transfer.eta = Math.ceil(remaining / transfer.speed);
         }
 
-        this.emit({ type: 'progress', transfer });
+        this.emit({
+            type: 'progress',
+            transfer,
+            data: null,
+            timestamp: Date.now()
+        });
     }
 
     pauseTransfer(id: string) {
         const transfer = this.transfers.get(id);
         if (transfer && transfer.status === 'transferring') {
             this.updateTransfer(id, { status: 'paused' });
-            this.emit({ type: 'paused', transfer: transfer });
+            this.emit({
+                type: 'paused',
+                transfer: transfer,
+                data: null,
+                timestamp: Date.now()
+            });
         }
     }
 
@@ -110,37 +139,102 @@ class TransferManager {
         const transfer = this.transfers.get(id);
         if (transfer && transfer.status === 'paused') {
             this.updateTransfer(id, { status: 'transferring' });
-            this.emit({ type: 'resumed', transfer: transfer });
+            this.emit({
+                type: 'resumed',
+                transfer: transfer,
+                data: null,
+                timestamp: Date.now()
+            });
         }
     }
 
     cancelTransfer(id: string) {
         const transfer = this.transfers.get(id);
         if (transfer) {
-            this.updateTransfer(id, { status: 'cancelled', endTime: new Date() });
-            this.emit({ type: 'cancelled', transfer: transfer });
+            this.updateTransfer(id, { status: 'cancelled', endTime: Date.now() });
+
+            // Record cancelled transfer metrics
+            const method = (transfer as any).method || 'p2p';
+            recordTransfer('cancelled', method, transfer.totalSize, 0, 'unknown');
+
+            this.emit({
+                type: 'cancelled',
+                transfer: transfer,
+                data: null,
+                timestamp: Date.now()
+            });
         }
     }
 
     completeTransfer(id: string) {
         const transfer = this.transfers.get(id);
         if (transfer) {
+            addBreadcrumb('Transfer completed successfully', 'transfer', {
+                transferId: id,
+                totalSize: transfer.totalSize,
+                fileCount: transfer.files.length,
+            });
+
+            const endTime = Date.now();
             this.updateTransfer(id, {
                 status: 'completed',
                 progress: 100,
                 transferredSize: transfer.totalSize,
-                endTime: new Date()
+                endTime
             });
-            this.emit({ type: 'completed', transfer: transfer });
+
+            // Record successful transfer metrics
+            const startTimeMs = typeof transfer.startTime === 'number' ? transfer.startTime : 0;
+            const duration = startTimeMs > 0 ? (endTime - startTimeMs) / 1000 : 0;
+            const method = (transfer as any).method || 'p2p';
+            recordTransfer('success', method, transfer.totalSize, duration, 'unknown');
+
+            this.emit({
+                type: 'completed',
+                transfer: transfer,
+                data: null,
+                timestamp: Date.now()
+            });
             this.trimOldTransfers();
         }
     }
 
-    failTransfer(id: string, error: string) {
+    failTransfer(id: string, errorMessage: string) {
         const transfer = this.transfers.get(id);
         if (transfer) {
-            this.updateTransfer(id, { status: 'failed', error, endTime: new Date() });
-            this.emit({ type: 'failed', transfer: transfer });
+            const error: import('../types/shared').TransferError = {
+                type: 'transfer',
+                code: 'TRANSFER_FAILED',
+                message: errorMessage,
+                timestamp: Date.now(),
+                transferId: id,
+            };
+
+            // Report to Sentry for error tracking
+            captureException(new Error(errorMessage), {
+                tags: { module: 'transfer-manager', operation: 'failTransfer' },
+                extra: {
+                    transferId: id,
+                    totalSize: transfer.totalSize,
+                    transferredSize: transfer.transferredSize,
+                    fileCount: transfer.files.length,
+                    direction: transfer.direction,
+                }
+            });
+
+            this.updateTransfer(id, { status: 'failed', error, endTime: Date.now() });
+
+            // Record failed transfer metrics
+            const method = (transfer as any).method || 'p2p';
+            recordTransfer('failed', method, transfer.totalSize, 0, 'unknown');
+            recordError('transfer', 'error');
+
+            this.emit({
+                type: 'failed',
+                transfer: transfer,
+                data: null,
+                timestamp: Date.now()
+            });
         }
     }
 
@@ -168,7 +262,7 @@ class TransferManager {
     // Calculate total progress across all active transfers
     getTotalProgress(): number {
         const active = this.getActiveTransfers();
-        if (active.length === 0) return 0;
+        if (active.length === 0) {return 0;}
 
         const totalSize = active.reduce((acc, t) => acc + t.totalSize, 0);
         const transferred = active.reduce((acc, t) => acc + t.transferredSize, 0);

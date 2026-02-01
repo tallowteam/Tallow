@@ -34,6 +34,39 @@ interface TransferCardProps {
     enableGestures?: boolean;
 }
 
+/**
+ * Custom comparison function for TransferCard
+ * Only re-render when transfer data actually changes
+ * This prevents expensive re-renders in long transfer lists
+ */
+function areTransferPropsEqual(
+    prevProps: TransferCardProps,
+    nextProps: TransferCardProps
+): boolean {
+    const prev = prevProps.transfer;
+    const next = nextProps.transfer;
+
+    // Compare transfer properties that affect rendering
+    // Ordered by likelihood of change for faster short-circuit
+    return (
+        prev.progress === next.progress &&
+        prev.status === next.status &&
+        prev.speed === next.speed &&
+        prev.transferredSize === next.transferredSize &&
+        prev.eta === next.eta &&
+        prev.id === next.id &&
+        prev.totalSize === next.totalSize &&
+        prev.error === next.error &&
+        prevProps.enableGestures === nextProps.enableGestures &&
+        // Callback reference equality (assumes stable references from parent)
+        prevProps.onPause === nextProps.onPause &&
+        prevProps.onResume === nextProps.onResume &&
+        prevProps.onCancel === nextProps.onCancel &&
+        prevProps.onRetry === nextProps.onRetry &&
+        prevProps.onDelete === nextProps.onDelete
+    );
+}
+
 function formatFileSize(bytes: number): string {
     if (bytes === 0) {return '0 B';}
     const k = 1024;
@@ -70,9 +103,9 @@ function getStatusConfig(status: Transfer['status']) {
     switch (status) {
         case 'transferring':
             return {
-                bg: 'bg-[#0066FF]/10 dark:bg-[#0066FF]/20',
-                text: 'text-[#0066FF]',
-                border: 'border-[#0066FF]/30',
+                bg: 'bg-[#fefefc]/10 dark:bg-[#fefefc]/20',
+                text: 'text-[#fefefc]',
+                border: 'border-[#fefefc]/30',
                 label: 'Transferring'
             };
         case 'completed':
@@ -179,7 +212,7 @@ export const TransferCard = memo(function TransferCard({
                     {isFailed && (
                         <div
                             className={cn(
-                                'absolute inset-y-0 left-0 flex items-center justify-start px-6 bg-[#0066FF] rounded-2xl transition-all duration-300',
+                                'absolute inset-y-0 left-0 flex items-center justify-start px-6 bg-[#fefefc] rounded-2xl transition-all duration-300',
                                 showRightHint ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
                             )}
                         >
@@ -195,15 +228,15 @@ export const TransferCard = memo(function TransferCard({
                 className={cn(
                     'relative p-4 sm:p-5 3xl:p-6 rounded-xl sm:rounded-2xl 3xl:rounded-3xl border bg-card/80 backdrop-blur-sm touch-none',
                     'transition-all duration-300 ease-out',
-                    'hover:shadow-lg hover:shadow-[#0066FF]/5 dark:hover:shadow-[#0066FF]/10',
-                    'hover:border-[#0066FF]/30 hover:-translate-y-0.5',
+                    'hover:shadow-lg hover:shadow-[#fefefc]/5 dark:hover:shadow-[#fefefc]/10',
+                    'hover:border-[#fefefc]/30 hover:-translate-y-0.5',
                     'dark:bg-zinc-900/80',
-                    isTransferring && 'border-[#0066FF]/40 shadow-md shadow-[#0066FF]/10'
+                    isTransferring && 'border-[#fefefc]/40 shadow-md shadow-[#fefefc]/10'
                 )}
             >
                 {/* Bento-style gradient overlay for active transfers */}
                 {isTransferring && (
-                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#0066FF]/5 via-transparent to-transparent pointer-events-none" />
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#fefefc]/5 via-transparent to-transparent pointer-events-none" />
                 )}
 
                 <div className="relative flex items-start gap-3 sm:gap-4 3xl:gap-5">
@@ -212,16 +245,16 @@ export const TransferCard = memo(function TransferCard({
                         'relative w-12 h-12 sm:w-14 sm:h-14 3xl:w-16 3xl:h-16 rounded-lg sm:rounded-xl 3xl:rounded-2xl flex items-center justify-center shrink-0 overflow-hidden',
                         'transition-all duration-300',
                         transfer.direction === 'send'
-                            ? 'bg-gradient-to-br from-[#0066FF]/20 to-[#0066FF]/5'
+                            ? 'bg-gradient-to-br from-[#fefefc]/20 to-[#fefefc]/5'
                             : 'bg-gradient-to-br from-emerald-500/20 to-emerald-500/5'
                     )}>
                         {/* Pulse animation for active transfers */}
                         {isTransferring && (
-                            <div className="absolute inset-0 animate-pulse bg-[#0066FF]/10 rounded-xl" />
+                            <div className="absolute inset-0 animate-pulse bg-[#fefefc]/10 rounded-xl" />
                         )}
                         {transfer.direction === 'send' ? (
                             <ArrowUp className={cn(
-                                'w-5 h-5 sm:w-6 sm:h-6 3xl:w-7 3xl:h-7 text-[#0066FF] transition-transform duration-300',
+                                'w-5 h-5 sm:w-6 sm:h-6 3xl:w-7 3xl:h-7 text-[#fefefc] transition-transform duration-300',
                                 isTransferring && 'animate-bounce'
                             )} aria-hidden="true" />
                         ) : (
@@ -257,16 +290,16 @@ export const TransferCard = memo(function TransferCard({
                             <span>{formatFileSize(transfer.totalSize)}</span>
                         </div>
 
-                        {/* Progress Bar with blue accent */}
+                        {/* Progress Bar - EUVEKA styled with pill shape */}
                         {(isActive || isPaused) && (
                             <div className="space-y-1.5 sm:space-y-2">
-                                <div className="relative h-2 sm:h-2.5 3xl:h-3 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                                <div className="relative h-2 sm:h-2.5 3xl:h-3 bg-[#e5dac7] dark:bg-[#544a36] rounded-full overflow-hidden">
                                     <div
                                         className={cn(
                                             'absolute inset-y-0 left-0 rounded-full transition-all duration-500 ease-out',
                                             isPaused
                                                 ? 'bg-amber-500'
-                                                : 'bg-gradient-to-r from-[#0066FF] to-[#0088FF]'
+                                                : 'bg-gradient-to-r from-[#fefefc] to-[#fefefc]'
                                         )}
                                         style={{ width: `${transfer.progress}%` }}
                                     />
@@ -285,7 +318,7 @@ export const TransferCard = memo(function TransferCard({
                                     <div className="flex items-center gap-2">
                                         {isTransferring && (
                                             <>
-                                                <div className="flex items-center gap-1 text-[#0066FF] font-medium">
+                                                <div className="flex items-center gap-1 text-[#fefefc] font-medium">
                                                     <Zap className="w-3 h-3" aria-hidden="true" />
                                                     <span>{formatSpeed(transfer.speed)}</span>
                                                 </div>
@@ -349,7 +382,7 @@ export const TransferCard = memo(function TransferCard({
                                 onClick={() => onResume(transfer.id)}
                                 className={cn(
                                     'h-10 w-10 sm:h-11 sm:w-11 3xl:h-14 3xl:w-14 rounded-lg sm:rounded-xl 3xl:rounded-2xl',
-                                    'bg-[#0066FF]/10 hover:bg-[#0066FF]/20 text-[#0066FF]',
+                                    'bg-[#fefefc]/10 hover:bg-[#fefefc]/20 text-[#fefefc]',
                                     'transition-all duration-200 hover:scale-105 active:scale-95'
                                 )}
                                 aria-label={`Resume transfer of ${fileName}`}
@@ -379,7 +412,7 @@ export const TransferCard = memo(function TransferCard({
                                 onClick={() => onRetry(transfer.id)}
                                 className={cn(
                                     'h-10 px-3 sm:h-11 sm:px-4 3xl:h-14 3xl:px-6 rounded-lg sm:rounded-xl 3xl:rounded-2xl text-xs sm:text-sm 3xl:text-base',
-                                    'bg-[#0066FF]/10 hover:bg-[#0066FF]/20 text-[#0066FF] font-medium',
+                                    'bg-[#fefefc]/10 hover:bg-[#fefefc]/20 text-[#fefefc] font-medium',
                                     'transition-all duration-200 hover:scale-105 active:scale-95'
                                 )}
                                 aria-label={`Retry transfer of ${fileName}`}
@@ -412,9 +445,8 @@ export const TransferCard = memo(function TransferCard({
             </div>
         </article>
     );
-});
+}, areTransferPropsEqual);
 
-// Custom comparison function for more granular control
 TransferCard.displayName = 'TransferCard';
 
 export default TransferCard;

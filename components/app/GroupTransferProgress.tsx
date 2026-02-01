@@ -107,22 +107,24 @@ function getDeviceIcon(platform: string) {
 
 /**
  * Get avatar color based on recipient ID
+ * Uses monochrome color palette
  */
 function getAvatarColor(recipientId: string): string {
+  // Monochrome-inspired color palette
   const colors = [
-    'bg-blue-500',
-    'bg-green-500',
-    'bg-purple-500',
-    'bg-orange-500',
-    'bg-pink-500',
-    'bg-teal-500',
+    'bg-[#fefefc]',      // White accent
+    'bg-[#b2987d]',      // Warm neutral
+    'bg-emerald-500',    // Success green
+    'bg-purple-500',     // Variation
+    'bg-[#544a36]',      // Dark neutral
+    'bg-teal-500',       // Variation
   ];
   const hash = recipientId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return colors[hash % colors.length] || 'bg-blue-500';
+  return colors[hash % colors.length] || 'bg-[#fefefc]';
 }
 
 /**
- * Speed Graph Component - Mini visualization of transfer speed
+ * Speed Graph Component - EUVEKA styled mini visualization of transfer speed
  */
 function SpeedGraph({ speed, maxSpeed }: { speed: number; maxSpeed: number }) {
   const percentage = maxSpeed > 0 ? Math.min((speed / maxSpeed) * 100, 100) : 0;
@@ -135,7 +137,7 @@ function SpeedGraph({ speed, maxSpeed }: { speed: number; maxSpeed: number }) {
         <motion.div
           key={i}
           className={`w-1 rounded-full ${
-            i < activeBars ? 'bg-primary' : 'bg-muted'
+            i < activeBars ? 'bg-[#fefefc]' : 'bg-[#e5dac7] dark:bg-[#544a36]'
           }`}
           initial={{ height: 0 }}
           animate={{
@@ -255,15 +257,16 @@ export const GroupTransferProgress = memo(function GroupTransferProgress({
                 </div>
 
                 {/* Statistics Grid */}
+                {/* EUVEKA styled statistics grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
                   <motion.div className="text-center" whileHover={{ scale: 1.05 }}>
-                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                       {groupState.successCount}
                     </div>
                     <div className="text-xs text-muted-foreground">Completed</div>
                   </motion.div>
                   <motion.div className="text-center" whileHover={{ scale: 1.05 }}>
-                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    <div className="text-2xl font-bold text-[#fefefc]">
                       {groupState.pendingCount}
                     </div>
                     <div className="text-xs text-muted-foreground">In Progress</div>
@@ -275,7 +278,7 @@ export const GroupTransferProgress = memo(function GroupTransferProgress({
                     <div className="text-xs text-muted-foreground">Failed</div>
                   </motion.div>
                   <motion.div className="text-center" whileHover={{ scale: 1.05 }}>
-                    <div className="text-2xl font-bold flex items-center justify-center gap-1">
+                    <div className="text-2xl font-bold flex items-center justify-center gap-1 text-[#fefefc]">
                       <Activity className="w-4 h-4" aria-hidden="true" />
                       <span>{formatSpeed(stats.totalSpeed)}</span>
                     </div>
@@ -362,7 +365,7 @@ export const GroupTransferProgress = memo(function GroupTransferProgress({
                                     ) : recipient.status === 'failed' ? (
                                       <XCircle className="w-4 h-4 text-red-600 bg-background rounded-full" aria-hidden="true" />
                                     ) : recipient.status === 'transferring' ? (
-                                      <Loader2 className="w-4 h-4 text-blue-600 bg-background rounded-full animate-spin" aria-hidden="true" />
+                                      <Loader2 className="w-4 h-4 text-[#fefefc] bg-background rounded-full animate-spin" aria-hidden="true" />
                                     ) : null}
                                   </motion.div>
                                 </div>

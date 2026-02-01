@@ -1,30 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStripe, isStripeConfigured } from '@/lib/stripe/config';
 import { secureLog } from '@/lib/utils/secure-logger';
+import { requireCSRFToken } from '@/lib/security/csrf';
+import { strictRateLimiter } from '@/lib/middleware/rate-limit';
+import { addDeprecationHeaders } from '@/lib/api/response';
 
 export async function POST(request: NextRequest) {
+  // Rate limiting (3 requests/minute per IP)
+  const rateLimitResponse = strictRateLimiter.check(request);
+  if (rateLimitResponse) {
+    return addDeprecationHeaders(rateLimitResponse, '/api/v1/stripe/create-checkout-session');
+  }
+
+  // Validate CSRF token for non-GET requests
+  const csrfError = requireCSRFToken(request);
+  if (csrfError) {
+    return addDeprecationHeaders(csrfError, '/api/v1/stripe/create-checkout-session');
+  }
+
   if (!isStripeConfigured()) {
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: 'Stripe is not configured' },
       { status: 503 }
     );
+    return addDeprecationHeaders(response, '/api/v1/stripe/create-checkout-session');
   }
 
   try {
     const { amount } = await request.json();
 
     if (!amount || typeof amount !== 'number' || amount < 100) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'Invalid amount. Minimum donation is $1.00.' },
         { status: 400 }
       );
+      return addDeprecationHeaders(response, '/api/v1/stripe/create-checkout-session');
     }
 
     if (amount > 99999900) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'Amount exceeds maximum.' },
         { status: 400 }
       );
+      return addDeprecationHeaders(response, '/api/v1/stripe/create-checkout-session');
     }
 
     const stripe = getStripe();
@@ -49,12 +67,14 @@ export async function POST(request: NextRequest) {
       cancel_url: `${origin}/donate/cancel`,
     });
 
-    return NextResponse.json({ url: session.url });
+    const response = NextResponse.json({ url: session.url });
+    return addDeprecationHeaders(response, '/api/v1/stripe/create-checkout-session');
   } catch (error) {
     secureLog.error('Stripe checkout error:', error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: 'Failed to create checkout session' },
       { status: 500 }
     );
+    return addDeprecationHeaders(response, '/api/v1/stripe/create-checkout-session');
   }
 }

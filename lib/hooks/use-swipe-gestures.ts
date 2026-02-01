@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback } from 'react';
 
 interface SwipeHandlers {
     onSwipeLeft?: () => void;
@@ -29,6 +29,7 @@ export function useSwipeGestures(handlers: SwipeHandlers) {
 
     const handleTouchStart = useCallback((e: React.TouchEvent | TouchEvent) => {
         const touch = e.touches[0];
+        if (!touch) {return;}
         setSwipeState({
             startX: touch.clientX,
             startY: touch.clientY,
@@ -38,9 +39,10 @@ export function useSwipeGestures(handlers: SwipeHandlers) {
     }, []);
 
     const handleTouchEnd = useCallback((e: React.TouchEvent | TouchEvent) => {
-        if (!swipeState.isSwiping) return;
+        if (!swipeState.isSwiping) {return;}
 
         const touch = e.changedTouches[0];
+        if (!touch) {return;}
         const deltaX = touch.clientX - swipeState.startX;
         const deltaY = touch.clientY - swipeState.startY;
         const deltaTime = Date.now() - startTimeRef.current;
@@ -93,14 +95,18 @@ export function useSwipeToDismiss(onDismiss: () => void, direction: 'left' | 'ri
     const startXRef = useRef(0);
 
     const handleTouchStart = useCallback((e: React.TouchEvent) => {
-        startXRef.current = e.touches[0].clientX;
+        const touch = e.touches[0];
+        if (!touch) {return;}
+        startXRef.current = touch.clientX;
         setIsDragging(true);
     }, []);
 
     const handleTouchMove = useCallback((e: React.TouchEvent) => {
-        if (!isDragging) return;
+        if (!isDragging) {return;}
 
-        const currentX = e.touches[0].clientX;
+        const touch = e.touches[0];
+        if (!touch) {return;}
+        const currentX = touch.clientX;
         const delta = currentX - startXRef.current;
 
         // Only allow swipe in the specified direction

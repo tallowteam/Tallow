@@ -10,9 +10,10 @@
  * PRIORITY: CRITICAL
  */
 
-import { pqCrypto, HybridKeyPair, HybridPublicKey, HybridCiphertext } from './pqc-crypto';
+import { pqCrypto, HybridKeyPair, HybridPublicKey } from './pqc-crypto';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { hkdf } from '@noble/hashes/hkdf.js';
+import { captureException, addBreadcrumb } from '../monitoring/sentry';
 
 // ============================================================================
 // Type Definitions
@@ -115,7 +116,7 @@ export class EphemeralKeyManager {
      */
     getSessionKey(id: string): SessionKeyPair | null {
         const key = this.activeKeys.get(id);
-        if (!key) return null;
+        if (!key) {return null;}
 
         // Check expiration
         if (Date.now() > key.expiresAt) {
@@ -131,7 +132,7 @@ export class EphemeralKeyManager {
      */
     incrementMessageCount(id: string): boolean {
         const key = this.activeKeys.get(id);
-        if (!key) return true; // Force ratchet if key not found
+        if (!key) {return true;} // Force ratchet if key not found
 
         key.messageCount++;
         return key.messageCount >= MAX_MESSAGES_PER_KEY;
@@ -163,7 +164,7 @@ export class EphemeralKeyManager {
      */
     deleteKey(keyId: string): boolean {
         const key = this.activeKeys.get(keyId);
-        if (!key) return false;
+        if (!key) {return false;}
 
         // Securely wipe key material
         this.secureDelete(key.keyPair.kyber.secretKey);
@@ -210,6 +211,12 @@ export class EphemeralKeyManager {
         isInitiator: boolean,
         peerPublicKey?: HybridPublicKey
     ): Promise<RatchetState> {
+        addBreadcrumb('Initializing double ratchet', 'key-management', {
+            sessionId: sessionId.slice(0, 8) + '...',
+            isInitiator,
+            hasPeerPublicKey: !!peerPublicKey,
+        });
+
         const dhKeyPair = await pqCrypto.generateHybridKeypair();
 
         // Derive initial root key from shared secret
@@ -245,7 +252,15 @@ export class EphemeralKeyManager {
     ): Promise<void> {
         const state = this.ratchetStates.get(sessionId);
         if (!state) {
-            throw new Error('Ratchet state not found for session');
+            const error = new Error('Ratchet state not found for session');
+            captureException(error, {
+                tags: { module: 'key-management', operation: 'dhRatchetStep' },
+                extra: {
+                    sessionId: sessionId.slice(0, 8) + '...',
+                    activeRatchetSessions: this.ratchetStates.size,
+                }
+            });
+            throw error;
         }
 
         // Store old state
@@ -282,7 +297,15 @@ export class EphemeralKeyManager {
     getNextSendKey(sessionId: string): MessageKey {
         const state = this.ratchetStates.get(sessionId);
         if (!state) {
-            throw new Error('Ratchet state not found');
+            const error = new Error('Ratchet state not found');
+            captureException(error, {
+                tags: { module: 'key-management', operation: 'getNextSendKey' },
+                extra: {
+                    sessionId: sessionId.slice(0, 8) + '...',
+                    activeRatchetSessions: this.ratchetStates.size,
+                }
+            });
+            throw error;
         }
 
         const messageKey = this.kdfMessageKey(state.sendChainKey);
@@ -298,7 +321,7 @@ export class EphemeralKeyManager {
      */
     getReceiveKey(sessionId: string, messageNumber: number): MessageKey | null {
         const state = this.ratchetStates.get(sessionId);
-        if (!state) return null;
+        if (!state) {return null;}
 
         // Check if it's a skipped message
         const skipped = this.trySkippedMessageKey(
@@ -330,7 +353,7 @@ export class EphemeralKeyManager {
      */
     getCurrentPublicKey(sessionId: string): HybridPublicKey | null {
         const state = this.ratchetStates.get(sessionId);
-        if (!state) return null;
+        if (!state) {return null;}
         return pqCrypto.getPublicKey(state.dhRatchetKeyPair);
     }
 
@@ -339,7 +362,7 @@ export class EphemeralKeyManager {
      */
     private skipMessageKeys(sessionId: string, until: number): void {
         const state = this.ratchetStates.get(sessionId);
-        if (!state) return;
+        if (!state) {return;}
 
         while (state.receiveMessageNumber < until &&
             this.skippedKeys.length < MAX_SKIP) {
@@ -362,7 +385,7 @@ export class EphemeralKeyManager {
         messageNumber: number,
         key: Uint8Array
     ): void {
-        if (!publicKey) return;
+        if (!publicKey) {return;}
 
         const hash = this.hashPublicKey(publicKey);
         this.skippedKeys.push({
@@ -374,7 +397,7 @@ export class EphemeralKeyManager {
         // Limit stored skipped keys
         while (this.skippedKeys.length > MAX_SKIP) {
             const old = this.skippedKeys.shift();
-            if (old) this.secureDelete(old.messageKey);
+            if (old) {this.secureDelete(old.messageKey);}
         }
     }
 
@@ -385,16 +408,17 @@ export class EphemeralKeyManager {
         publicKey: HybridPublicKey | null,
         messageNumber: number
     ): Uint8Array | null {
-        if (!publicKey) return null;
+        if (!publicKey) {return null;}
 
         const hash = this.hashPublicKey(publicKey);
         const index = this.skippedKeys.findIndex(
             k => k.publicKeyHash === hash && k.messageNumber === messageNumber
         );
 
-        if (index === -1) return null;
+        if (index === -1) {return null;}
 
         const skipped = this.skippedKeys.splice(index, 1)[0];
+        if (!skipped) {return null;}
         return skipped.messageKey;
     }
 
@@ -467,13 +491,16 @@ export class EphemeralKeyManager {
      * 3. Marks for garbage collection
      */
     secureDelete(key: Uint8Array): void {
-        if (!key || key.length === 0) return;
+        if (!key || key.length === 0) {return;}
 
         try {
             // Pass 1: Overwrite with random data
             const randomBytes = crypto.getRandomValues(new Uint8Array(key.length));
             for (let i = 0; i < key.length; i++) {
-                key[i] = randomBytes[i];
+                const byte = randomBytes[i];
+                if (byte !== undefined) {
+                    key[i] = byte;
+                }
             }
 
             // Pass 2: Overwrite with zeros
@@ -526,6 +553,12 @@ export class EphemeralKeyManager {
      * Destroy all keys and state (logout/cleanup)
      */
     destroyAll(): void {
+        addBreadcrumb('Destroying all cryptographic keys', 'key-management', {
+            activeKeys: this.activeKeys.size,
+            ratchetSessions: this.ratchetStates.size,
+            skippedKeys: this.skippedKeys.length,
+        });
+
         // Delete all session keys
         const keyIds = Array.from(this.activeKeys.keys());
         for (const id of keyIds) {

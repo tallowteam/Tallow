@@ -130,7 +130,7 @@ export async function getDownloadDirectoryName(): Promise<string | null> {
     }
 
     const handle = await getStoredHandle();
-    if (!handle) return null;
+    if (!handle) {return null;}
 
     // Verify we still have permission
     const permission = await handle.queryPermission({ mode: 'readwrite' });
@@ -159,7 +159,7 @@ export async function saveFileToDirectory(blob: Blob, filename: string, relative
     }
 
     const handle = await getStoredHandle();
-    if (!handle) return false;
+    if (!handle) {return false;}
 
     try {
         // Request permission if needed

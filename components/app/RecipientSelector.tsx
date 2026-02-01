@@ -96,7 +96,7 @@ function getPlatformName(platform: Device['platform']): string {
  */
 function getDeviceAvatarColor(deviceId: string): string {
   const colors = [
-    'bg-blue-500',
+    'bg-[#fefefc]',
     'bg-green-500',
     'bg-purple-500',
     'bg-orange-500',
@@ -104,7 +104,7 @@ function getDeviceAvatarColor(deviceId: string): string {
     'bg-teal-500',
   ];
   const hash = deviceId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return colors[hash % colors.length] || 'bg-blue-500';
+  return colors[hash % colors.length] || 'bg-[#fefefc]';
 }
 
 export const RecipientSelector = memo(function RecipientSelector({

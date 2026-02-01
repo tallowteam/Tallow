@@ -5,13 +5,11 @@ import {
     Heading,
     Hr,
     Html,
-    Img,
     Link,
     Preview,
     Section,
     Text,
 } from '@react-email/components';
-import * as React from 'react';
 
 interface WelcomeEmailProps {
     name: string;
@@ -141,7 +139,7 @@ const container = {
 };
 
 const headerSection = {
-    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%)',
+    background: 'linear-gradient(135deg, #191610 0%, #2a2520 50%, #fefefc 100%)',
     padding: '40px 20px',
     textAlign: 'center' as const,
 };

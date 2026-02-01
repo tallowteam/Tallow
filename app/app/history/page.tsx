@@ -440,7 +440,7 @@ export default function HistoryPage() {
                                     icon={Download}
                                     value={formatDataSize(stats.totalDataReceived)}
                                     label="Data Received"
-                                    accentColor="#0066FF"
+                                    accentColor="#fefefc"
                                     delay={200}
                                 />
                                 <StatCard

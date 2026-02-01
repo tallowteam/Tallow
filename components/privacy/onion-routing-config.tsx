@@ -307,7 +307,7 @@ export function OnionRoutingConfig() {
               <div className="text-sm text-muted-foreground">Success Rate</div>
             </div>
             <div className="p-4 border rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-bold text-gray-600">
                 {stats.averageLatency.toFixed(0)}ms
               </div>
               <div className="text-sm text-muted-foreground">Avg. Latency</div>
@@ -351,11 +351,11 @@ export function OnionRoutingConfig() {
       </div>
 
       {/* Info Box */}
-      <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex items-start gap-3">
-        <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-        <div className="text-sm text-blue-900 dark:text-blue-100">
+      <div className="bg-white/5 dark:bg-white/5 border border-white/20 dark:border-white/10 rounded-lg p-4 flex items-start gap-3">
+        <AlertCircle className="h-5 w-5 text-white flex-shrink-0 mt-0.5" />
+        <div className="text-sm text-white">
           <strong>How Onion Routing Works</strong>
-          <p className="text-blue-700 dark:text-blue-300 mt-2">
+          <p className="text-white mt-2">
             Your data is encrypted in multiple layers and routed through several relay
             nodes. Each node only knows the previous and next hop, preventing any single
             node from knowing both the source and destination.

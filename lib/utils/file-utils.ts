@@ -3,7 +3,7 @@ import { generateUUID } from './uuid';
 // Utility functions for file operations
 
 export function formatFileSize(bytes: number): string {
-    if (bytes === 0) return '0 B';
+    if (bytes === 0) {return '0 B';}
 
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -17,8 +17,8 @@ export function formatSpeed(bytesPerSecond: number): string {
 }
 
 export function formatDuration(seconds: number): string {
-    if (seconds < 60) return `${Math.round(seconds)}s`;
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
+    if (seconds < 60) {return `${Math.round(seconds)}s`;}
+    if (seconds < 3600) {return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;}
 
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
@@ -121,7 +121,7 @@ export function generateDeviceId(): string {
  * Avoids userAgent fingerprinting by using minimal feature detection
  */
 export function getPlatform(): 'mobile' | 'desktop' | 'web' {
-    if (typeof window === 'undefined') return 'web';
+    if (typeof window === 'undefined') {return 'web';}
 
     // Use feature detection instead of userAgent parsing
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;

@@ -329,10 +329,10 @@ export class ChunkCodec {
    */
   static verifyChecksum(data: Uint8Array, expected: Uint8Array): boolean {
     const computed = this.computeChecksum(data);
-    if (computed.length !== expected.length) return false;
+    if (computed.length !== expected.length) {return false;}
 
     for (let i = 0; i < computed.length; i++) {
-      if (computed[i] !== expected[i]) return false;
+      if (computed[i] !== expected[i]) {return false;}
     }
     return true;
   }
@@ -476,7 +476,7 @@ export function generateRoomCode(numWords: number = 3): string {
   for (let i = 0; i < numWords; i++) {
     const idx = (array[i] ?? 0) % words.length;
     const word = words[idx];
-    if (word) selected.push(word);
+    if (word) {selected.push(word);}
   }
 
   return selected.join('-');

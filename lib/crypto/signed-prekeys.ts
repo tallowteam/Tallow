@@ -22,7 +22,6 @@ import secureLog from '../utils/secure-logger';
 // Constants
 // ============================================================================
 
-const PREKEY_SIGNATURE_INFO = new TextEncoder().encode('tallow-prekey-sig-v1');
 const PREKEY_ROTATION_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const MAX_ONE_TIME_PREKEYS = 100;
 
@@ -205,9 +204,10 @@ export function consumeOneTimePrekey(
     keyId: number
 ): HybridKeyPair | null {
     const index = store.oneTimePrekeys.findIndex(pk => pk.public.keyId === keyId);
-    if (index === -1) return null;
+    if (index === -1) {return null;}
 
     const [prekey] = store.oneTimePrekeys.splice(index, 1);
+    if (!prekey) {return null;}
     return prekey.private;
 }
 
@@ -281,14 +281,13 @@ export function getPublicPrekeyBundle(
     store: PrekeyStore
 ): PreKeyBundle {
     // Get the oldest one-time prekey (if available)
-    const oneTimePrekey = store.oneTimePrekeys.length > 0
-        ? store.oneTimePrekeys[0].public
-        : undefined;
+    const firstPrekey = store.oneTimePrekeys[0];
+    const oneTimePrekey = firstPrekey ? firstPrekey.public : undefined;
 
     return {
         identityKey: identityPublicKey,
         signedPrekey: store.signedPrekey.public,
-        oneTimePrekey,
+        ...(oneTimePrekey ? { oneTimePrekey } : {}),
     };
 }
 
@@ -300,7 +299,7 @@ export function getPublicPrekeyBundle(
  * Establish session as initiator (Alice) using peer's prekey bundle
  */
 export async function establishSessionAsInitiator(
-    ourIdentityKey: IdentityKeyPair,
+    _ourIdentityKey: IdentityKeyPair,
     peerBundle: PreKeyBundle
 ): Promise<{
     sharedSecret: Uint8Array;
@@ -372,7 +371,7 @@ export async function establishSessionAsResponder(
         }
     }
 
-    return { signedPrekey, oneTimePrekey };
+    return { signedPrekey, ...(oneTimePrekey ? { oneTimePrekey } : {}) };
 }
 
 // ============================================================================
@@ -388,11 +387,14 @@ export function secureDeletePrekeyPair(keyPair: HybridKeyPair): void {
 }
 
 function secureWipe(data: Uint8Array): void {
-    if (!data) return;
+    if (!data) {return;}
     try {
         const random = crypto.getRandomValues(new Uint8Array(data.length));
         for (let i = 0; i < data.length; i++) {
-            data[i] = random[i];
+            const byte = random[i];
+            if (byte !== undefined) {
+                data[i] = byte;
+            }
         }
         data.fill(0);
     } catch {

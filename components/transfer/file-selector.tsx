@@ -69,7 +69,7 @@ function getFileIconColor(type: string) {
     if (type.startsWith('audio/')) {return 'text-amber-500';}
     if (type.includes('zip') || type.includes('rar') || type.includes('7z') || type.includes('tar')) {return 'text-orange-500';}
     if (type.includes('pdf')) {return 'text-red-500';}
-    if (type.includes('doc') || type.includes('text')) {return 'text-[#0066FF]';}
+    if (type.includes('doc') || type.includes('text')) {return 'text-[#fefefc]';}
     if (type.includes('javascript') || type.includes('typescript') || type.includes('json')) {return 'text-yellow-500';}
     if (type.includes('spreadsheet') || type.includes('excel') || type.includes('csv')) {return 'text-emerald-500';}
     return 'text-zinc-500';
@@ -195,8 +195,8 @@ export function FileSelector({
                         className={cn(
                             'rounded-xl font-medium transition-all duration-300',
                             'data-[state=active]:bg-white data-[state=active]:dark:bg-zinc-900',
-                            'data-[state=active]:shadow-md data-[state=active]:shadow-[#0066FF]/10',
-                            'data-[state=active]:text-[#0066FF]',
+                            'data-[state=active]:shadow-md data-[state=active]:shadow-[#fefefc]/10',
+                            'data-[state=active]:text-[#fefefc]',
                             'flex items-center gap-2'
                         )}
                     >
@@ -208,8 +208,8 @@ export function FileSelector({
                         className={cn(
                             'rounded-xl font-medium transition-all duration-300',
                             'data-[state=active]:bg-white data-[state=active]:dark:bg-zinc-900',
-                            'data-[state=active]:shadow-md data-[state=active]:shadow-[#0066FF]/10',
-                            'data-[state=active]:text-[#0066FF]',
+                            'data-[state=active]:shadow-md data-[state=active]:shadow-[#fefefc]/10',
+                            'data-[state=active]:text-[#fefefc]',
                             'flex items-center gap-2'
                         )}
                     >
@@ -221,8 +221,8 @@ export function FileSelector({
                         className={cn(
                             'rounded-xl font-medium transition-all duration-300',
                             'data-[state=active]:bg-white data-[state=active]:dark:bg-zinc-900',
-                            'data-[state=active]:shadow-md data-[state=active]:shadow-[#0066FF]/10',
-                            'data-[state=active]:text-[#0066FF]',
+                            'data-[state=active]:shadow-md data-[state=active]:shadow-[#fefefc]/10',
+                            'data-[state=active]:text-[#fefefc]',
                             'flex items-center gap-2'
                         )}
                     >
@@ -244,10 +244,10 @@ export function FileSelector({
                                 'relative p-10 border-2 border-dashed cursor-pointer rounded-3xl overflow-hidden',
                                 'bg-zinc-50/50 dark:bg-zinc-900/50',
                                 'transition-all duration-300 ease-out',
-                                'hover:border-[#0066FF]/50 hover:bg-[#0066FF]/5',
-                                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066FF] focus-visible:ring-offset-2',
+                                'hover:border-[#fefefc]/50 hover:bg-[#fefefc]/5',
+                                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fefefc] focus-visible:ring-offset-2',
                                 isDragOver
-                                    ? 'border-[#0066FF] bg-[#0066FF]/10 scale-[1.02]'
+                                    ? 'border-[#fefefc] bg-[#fefefc]/10 scale-[1.02]'
                                     : 'border-zinc-200 dark:border-zinc-700'
                             )}
                             role="button"
@@ -267,7 +267,7 @@ export function FileSelector({
                             {/* Background gradient effect */}
                             <div className={cn(
                                 'absolute inset-0 opacity-0 transition-opacity duration-500',
-                                'bg-gradient-to-br from-[#0066FF]/10 via-transparent to-[#0066FF]/5',
+                                'bg-gradient-to-br from-[#fefefc]/10 via-transparent to-[#fefefc]/5',
                                 isDragOver && 'opacity-100'
                             )} />
 
@@ -281,12 +281,12 @@ export function FileSelector({
                             <div className="relative flex flex-col items-center text-center space-y-4">
                                 <div className={cn(
                                     'w-20 h-20 rounded-2xl flex items-center justify-center',
-                                    'bg-gradient-to-br from-[#0066FF]/20 to-[#0066FF]/5',
+                                    'bg-gradient-to-br from-[#fefefc]/20 to-[#fefefc]/5',
                                     'transition-all duration-300',
-                                    isDragOver && 'scale-110 from-[#0066FF]/30 to-[#0066FF]/10'
+                                    isDragOver && 'scale-110 from-[#fefefc]/30 to-[#fefefc]/10'
                                 )}>
                                     <Upload className={cn(
-                                        'w-10 h-10 text-[#0066FF] transition-transform duration-300',
+                                        'w-10 h-10 text-[#fefefc] transition-transform duration-300',
                                         isDragOver && '-translate-y-1'
                                     )} aria-hidden="true" />
                                 </div>
@@ -373,21 +373,21 @@ export function FileSelector({
                             placeholder="Title (optional)"
                             value={textTitle}
                             onChange={(e) => setTextTitle(e.target.value)}
-                            className="rounded-xl border-zinc-200 dark:border-zinc-700 focus:border-[#0066FF] focus:ring-[#0066FF]/20"
+                            className="rounded-xl border-zinc-200 dark:border-zinc-700 focus:border-[#fefefc] focus:ring-[#fefefc]/20"
                         />
                         <Textarea
                             placeholder="Enter text to share..."
                             value={textContent}
                             onChange={(e) => setTextContent(e.target.value)}
-                            className="min-h-[150px] rounded-xl resize-none border-zinc-200 dark:border-zinc-700 focus:border-[#0066FF] focus:ring-[#0066FF]/20"
+                            className="min-h-[150px] rounded-xl resize-none border-zinc-200 dark:border-zinc-700 focus:border-[#fefefc] focus:ring-[#fefefc]/20"
                         />
                         <Button
                             onClick={handleTextSubmit}
                             disabled={!textContent.trim()}
                             className={cn(
                                 'rounded-xl font-medium transition-all duration-300',
-                                'bg-[#0066FF] hover:bg-[#0055DD] text-white',
-                                'hover:shadow-lg hover:shadow-[#0066FF]/25',
+                                'bg-[#fefefc] hover:bg-[#0055DD] text-white',
+                                'hover:shadow-lg hover:shadow-[#fefefc]/25',
                                 'disabled:opacity-50 disabled:shadow-none'
                             )}
                         >

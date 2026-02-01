@@ -1,6 +1,6 @@
 'use client';
 
-import React, { memo } from 'react';
+import { memo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -91,13 +91,13 @@ function getPlatformGradient(platform: Device['platform']): string {
         case 'android':
             return 'from-green-500 to-emerald-600';
         case 'windows':
-            return 'from-[#0066FF] to-blue-600';
+            return 'from-gray-500 to-gray-700 dark:from-gray-400 dark:to-gray-600';
         case 'linux':
             return 'from-orange-500 to-amber-600';
         case 'web':
             return 'from-purple-500 to-violet-600';
         default:
-            return 'from-[#0066FF] to-blue-600';
+            return 'from-gray-500 to-gray-700 dark:from-gray-400 dark:to-gray-600';
     }
 }
 
@@ -111,7 +111,7 @@ export const DeviceCard = memo(function DeviceCard({
     onToggleFavorite,
     isSelected,
     showSecurityBadge = true
-}: DeviceCardProps): React.ReactElement {
+}: DeviceCardProps) {
     const PlatformIcon = getPlatformIcon(device.platform);
     const isOnline = device.isOnline;
 
@@ -134,7 +134,7 @@ export const DeviceCard = memo(function DeviceCard({
             className={cn(
                 'p-4 sm:p-5 group relative overflow-hidden',
                 !isOnline && 'opacity-60',
-                isSelected && 'ring-2 ring-[#0066FF]/50'
+                isSelected && 'ring-2 ring-[#fefefc]/50'
             )}
             onClick={() => onSelect?.(device)}
         >
@@ -142,7 +142,7 @@ export const DeviceCard = memo(function DeviceCard({
             <div
                 className={cn(
                     'absolute inset-0 opacity-0 transition-opacity duration-300',
-                    'bg-gradient-to-br from-[#0066FF]/5 to-transparent',
+                    'bg-gradient-to-br from-[#fefefc]/5 to-transparent',
                     'group-hover:opacity-100',
                     isSelected && 'opacity-100'
                 )}
@@ -202,10 +202,10 @@ export const DeviceCard = memo(function DeviceCard({
                         )}
                         {showSecurityBadge && isOnline && (
                             <div
-                                className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#0066FF]/10 dark:bg-[#0066FF]/20"
+                                className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#fefefc]/10 dark:bg-[#fefefc]/20"
                                 title="End-to-end encrypted - only you and this device can read transfers"
                             >
-                                <Shield className="w-3 h-3 text-[#0066FF]" aria-hidden="true" />
+                                <Shield className="w-3 h-3 text-[#fefefc]" aria-hidden="true" />
                             </div>
                         )}
                     </div>
@@ -231,7 +231,7 @@ export const DeviceCard = memo(function DeviceCard({
                     {/* Device ID */}
                     <div className="flex items-center gap-1.5">
                         <span className="text-xs text-gray-400 dark:text-gray-500">ID:</span>
-                        <code className="font-mono text-xs tracking-wider text-[#0066FF] dark:text-[#3385FF] bg-[#0066FF]/5 dark:bg-[#0066FF]/10 px-1.5 py-0.5 rounded">
+                        <code className="font-mono text-xs tracking-wider text-[#fefefc] dark:text-[#fefefc] bg-[#fefefc]/5 dark:bg-[#fefefc]/10 px-1.5 py-0.5 rounded">
                             {device.id.slice(0, 12).toUpperCase()}
                         </code>
                     </div>
@@ -268,9 +268,9 @@ export const DeviceCard = memo(function DeviceCard({
                             size="sm"
                             className={cn(
                                 'h-10 px-4 rounded-lg font-medium',
-                                'bg-[#0066FF] hover:bg-[#0052CC] text-white',
-                                'shadow-[0_2px_8px_-2px_rgba(0,102,255,0.4)]',
-                                'hover:shadow-[0_4px_12px_-2px_rgba(0,102,255,0.5)]',
+                                'bg-[#fefefc] hover:bg-[#e5e5e3] text-gray-900',
+                                'shadow-[0_2px_8px_-2px_rgba(254,254,252,0.4)]',
+                                'hover:shadow-[0_4px_12px_-2px_rgba(254,254,252,0.5)]',
                                 'transition-all duration-200',
                                 'group/btn'
                             )}

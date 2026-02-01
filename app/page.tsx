@@ -71,13 +71,13 @@ function AnimatedCounter({
   const isInView = useInView(ref, { once: true, margin: '-100px' });
 
   useEffect(() => {
-    if (!isInView) return;
+    if (!isInView) { return; }
 
     let startTime: number;
     let animationFrame: number;
 
     const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
+      if (!startTime) { startTime = timestamp; }
       const progress = Math.min((timestamp - startTime) / (duration * 1000), 1);
       const easeOut = 1 - Math.pow(1 - progress, 4);
       setCount(Math.floor(easeOut * target));
@@ -147,7 +147,7 @@ function ParallaxContainer({ children, className = '' }: { children: React.React
   const y = useSpring(mouseY, springConfig);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) { return; }
     const rect = containerRef.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
@@ -192,23 +192,24 @@ function BentoCard({
       initial={{ opacity: 0, y: 50, scale: 0.95 }}
       animate={isInView ? { opacity: 1, y: 0, scale: 1 } : {}}
       transition={{ duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] }}
-      className={`group relative overflow-hidden rounded-[24px] bg-[#161614]/80 backdrop-blur-xl border border-[#262626] p-8 md:p-10 3xl:p-12 4xl:p-14 transition-all duration-500 hover:-translate-y-3 hover:border-white/20 hover:shadow-[0_0_60px_-15px_rgba(255,255,255,0.1)] ${className}`}
+      // EUVEKA responsive card with adaptive padding and radius
+      className={`group relative overflow-hidden rounded-xl sm:rounded-2xl md:rounded-[24px] bg-[#161614]/80 backdrop-blur-xl border border-[#262626] p-4 sm:p-5 md:p-6 lg:p-8 3xl:p-12 4xl:p-14 transition-all duration-500 hover:-translate-y-2 md:hover:-translate-y-3 hover:border-white/20 hover:shadow-[0_0_60px_-15px_rgba(255,255,255,0.1)] ${className}`}
     >
       {/* Hover gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-      {/* Icon container */}
-      <div className="relative mb-6">
-        <div className="w-14 h-14 3xl:w-16 3xl:h-16 4xl:w-20 4xl:h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-white/10 group-hover:border-white/20 transition-all duration-500">
-          <Icon className="w-7 h-7 3xl:w-8 3xl:h-8 4xl:w-10 4xl:h-10 text-[#fefefc] group-hover:scale-110 transition-transform duration-500" />
+      {/* Icon container - responsive sizing */}
+      <div className="relative mb-3 sm:mb-4 md:mb-6">
+        <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 lg:w-14 lg:h-14 3xl:w-16 3xl:h-16 4xl:w-20 4xl:h-20 rounded-xl sm:rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-white/10 group-hover:border-white/20 transition-all duration-500">
+          <Icon className="w-5 h-5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6 lg:w-7 lg:h-7 3xl:w-8 3xl:h-8 4xl:w-10 4xl:h-10 text-[#fefefc] group-hover:scale-110 transition-transform duration-500" />
         </div>
       </div>
 
-      {/* Content */}
-      <h3 className="relative text-xl md:text-2xl 3xl:text-3xl 4xl:text-4xl font-serif font-light text-[#fefefc] mb-4 3xl:mb-6 tracking-tight">
+      {/* Content - responsive typography */}
+      <h3 className="relative text-base sm:text-lg md:text-xl 3xl:text-3xl 4xl:text-4xl font-serif font-light text-[#fefefc] tracking-tight">
         {title}
       </h3>
-      <p className="relative text-[#888880] text-base 3xl:text-lg 4xl:text-xl leading-relaxed">
+      <p className="relative text-[#888880] text-xs sm:text-sm md:text-base 3xl:text-lg 4xl:text-xl leading-relaxed mt-1.5 sm:mt-2">
         {description}
       </p>
     </motion.div>
@@ -244,9 +245,9 @@ function HowItWorksStep({
       transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
       className="relative flex flex-col items-center text-center group"
     >
-      {/* Connector line */}
+      {/* Connector line - only show on large screens */}
       {!isLast && (
-        <div className="hidden lg:block absolute top-16 left-[calc(50%+4rem)] w-[calc(100%-8rem)] h-[1px]">
+        <div className="hidden lg:block absolute top-12 lg:top-16 left-[calc(50%+3rem)] lg:left-[calc(50%+4rem)] w-[calc(100%-6rem)] lg:w-[calc(100%-8rem)] h-[1px]">
           <motion.div
             initial={{ scaleX: 0 }}
             animate={isInView ? { scaleX: 1 } : {}}
@@ -256,23 +257,23 @@ function HowItWorksStep({
         </div>
       )}
 
-      {/* Step number badge */}
+      {/* Step number badge - responsive positioning */}
       <motion.div
         initial={{ scale: 0 }}
         animate={isInView ? { scale: 1 } : {}}
         transition={{ duration: 0.6, delay: delay + 0.2, type: 'spring', stiffness: 200 }}
-        className="absolute -top-2 -right-2 md:top-0 md:right-4 w-10 h-10 rounded-full bg-[#fefefc] text-[#0a0a08] text-sm font-bold flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.3)] z-10"
+        className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 md:top-0 md:right-4 w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full bg-[#fefefc] text-[#0a0a08] text-xs sm:text-sm font-bold flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.3)] z-10"
       >
         {number}
       </motion.div>
 
-      {/* Icon container */}
-      <div className="w-32 h-32 rounded-3xl bg-[#161614] border border-[#262626] flex items-center justify-center mb-8 group-hover:border-white/20 group-hover:shadow-[0_0_50px_rgba(255,255,255,0.08)] transition-all duration-500">
-        <Icon className="w-14 h-14 text-[#fefefc] group-hover:scale-110 transition-transform duration-500" />
+      {/* Icon container - responsive sizing */}
+      <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-2xl sm:rounded-3xl bg-[#161614] border border-[#262626] flex items-center justify-center mb-5 sm:mb-6 md:mb-8 group-hover:border-white/20 group-hover:shadow-[0_0_50px_rgba(255,255,255,0.08)] transition-all duration-500">
+        <Icon className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 text-[#fefefc] group-hover:scale-110 transition-transform duration-500" />
       </div>
 
-      <h3 className="font-serif text-2xl font-light text-[#fefefc] mb-3 tracking-tight">{title}</h3>
-      <p className="text-[#888880] text-base leading-relaxed max-w-xs">{description}</p>
+      <h3 className="font-serif text-xl sm:text-2xl font-light text-[#fefefc] mb-2 sm:mb-3 tracking-tight">{title}</h3>
+      <p className="text-[#888880] text-sm sm:text-base leading-relaxed max-w-[280px] sm:max-w-xs">{description}</p>
     </motion.div>
   );
 }
@@ -299,9 +300,10 @@ function SecurityBadge({
       animate={isInView ? { opacity: 1, scale: 1, y: 0 } : {}}
       transition={{ duration: 0.5, delay, type: 'spring', stiffness: 200 }}
       whileHover={{ scale: 1.05, y: -2 }}
-      className="inline-flex items-center gap-2.5 px-5 py-3 rounded-full bg-[#161614]/80 backdrop-blur-sm border border-[#262626] text-sm font-medium text-[#888880] hover:text-[#fefefc] hover:border-white/20 hover:bg-white/5 transition-all duration-300 cursor-default"
+      // EUVEKA responsive badge with touch target
+      className="inline-flex items-center gap-1.5 sm:gap-2 md:gap-2.5 px-3 py-2 sm:px-4 sm:py-2 md:px-5 md:py-2.5 rounded-full bg-[#161614]/80 backdrop-blur-sm border border-[#262626] text-xs sm:text-sm font-medium text-[#888880] hover:text-[#fefefc] hover:border-white/20 hover:bg-white/5 transition-all duration-300 cursor-default min-h-[40px] sm:min-h-[44px]"
     >
-      {Icon && <Icon className="w-4 h-4 text-[#fefefc]" />}
+      {Icon && <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#fefefc]" />}
       {label}
     </motion.div>
   );
@@ -332,17 +334,20 @@ function StatCard({
       initial={{ opacity: 0, y: 40, scale: 0.95 }}
       animate={isInView ? { opacity: 1, y: 0, scale: 1 } : {}}
       transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
-      className="relative p-8 md:p-10 rounded-[24px] bg-[#161614]/60 backdrop-blur-xl border border-[#262626] hover:border-white/20 hover:shadow-[0_20px_60px_-15px_rgba(255,255,255,0.05)] transition-all duration-500 text-center group"
+      // EUVEKA responsive card with padding and radius
+      className="relative p-4 sm:p-5 md:p-6 lg:p-8 rounded-xl sm:rounded-2xl md:rounded-[24px] bg-[#161614]/60 backdrop-blur-xl border border-[#262626] hover:border-white/20 hover:shadow-[0_20px_60px_-15px_rgba(255,255,255,0.05)] transition-all duration-500 text-center group"
     >
-      <div className="font-serif text-5xl md:text-6xl lg:text-7xl font-light text-[#fefefc] mb-4 tracking-tighter group-hover:text-white transition-colors duration-500">
-        {prefix ? (
-          <span>{prefix}</span>
-        ) : (
-          <AnimatedCounter target={number} suffix={suffix} duration={2.5} />
-        )}
-      </div>
-      <div className="text-sm text-[#888880] uppercase tracking-[0.15em] font-medium">
-        {label}
+      <div className="flex flex-col gap-1 sm:gap-2">
+        <div className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-light text-[#fefefc] tracking-tighter group-hover:text-white transition-colors duration-500">
+          {prefix ? (
+            <span>{prefix}</span>
+          ) : (
+            <AnimatedCounter target={number} suffix={suffix} duration={2.5} />
+          )}
+        </div>
+        <div className="text-[10px] sm:text-xs text-[#888880] uppercase tracking-wider font-medium">
+          {label}
+        </div>
       </div>
     </motion.div>
   );
@@ -366,8 +371,11 @@ function PrimaryButton({
   size?: 'default' | 'large';
   className?: string;
 }) {
-  const baseClasses = `inline-flex items-center justify-center gap-2.5 font-semibold transition-all duration-300 rounded-[60px] ${
-    size === 'large' ? 'h-16 px-12 text-lg' : 'h-14 px-10 text-base'
+  // EUVEKA Touch Target: minimum 44px, buttons 56-64px
+  const baseClasses = `inline-flex items-center justify-center gap-2 sm:gap-2.5 font-semibold transition-all duration-300 rounded-[60px] ${
+    size === 'large'
+      ? 'px-6 py-3.5 sm:px-7 sm:py-4 md:px-8 md:py-4 text-base sm:text-lg min-h-[56px] sm:min-h-[60px] md:min-h-[64px]'
+      : 'px-5 py-3 sm:px-6 sm:py-3 text-sm sm:text-base min-h-[44px] sm:min-h-[48px]'
   }`;
 
   const variantClasses = {
@@ -509,12 +517,13 @@ export default function Home() {
         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
           scrolled
-            ? 'bg-[#0a0a08]/90 backdrop-blur-2xl border-b border-[#262626]'
+            ? 'dark:bg-[#0a0a08]/95 bg-white/95 backdrop-blur-2xl border-b dark:border-[#262626] border-gray-200'
             : 'bg-transparent'
         }`}
       >
-        <div className="max-w-[1400px] 3xl:max-w-[1800px] 4xl:max-w-[2200px] mx-auto px-6 md:px-12 3xl:px-16 4xl:px-20">
-          <div className="flex items-center justify-between h-20 md:h-24 3xl:h-28 4xl:h-32">
+        {/* EUVEKA Container: max-width 1320px/1376px with responsive padding 20-40px */}
+        <div className="max-w-[1320px] lg:max-w-[1376px] xl:max-w-[1400px] 3xl:max-w-[1800px] 4xl:max-w-[2200px] mx-auto px-5 sm:px-6 md:px-8 lg:px-10 xl:px-12 3xl:px-16 4xl:px-20">
+          <div className="flex items-center justify-between h-16 sm:h-[72px] md:h-20 lg:h-24 3xl:h-28 4xl:h-32">
             {/* Logo */}
             <Link href="/" className="group flex items-center gap-3">
               <motion.div
@@ -528,13 +537,13 @@ export default function Home() {
               </span>
             </Link>
 
-            {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center gap-10 3xl:gap-14 4xl:gap-16">
+            {/* Desktop Navigation - responsive gap */}
+            <div className="hidden lg:flex items-center gap-6 xl:gap-8 2xl:gap-10 3xl:gap-14 4xl:gap-16">
               {navLinks.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="relative text-[#888880] hover:text-[#fefefc] text-sm font-medium tracking-wide transition-colors duration-300 group"
+                  className="relative dark:text-[#a3a3a3] text-[#666666] dark:hover:text-[#fefefc] hover:text-[#0a0a08] text-sm font-medium tracking-wide transition-colors duration-300 group"
                 >
                   {item.label}
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#fefefc] group-hover:w-full transition-all duration-300" />
@@ -543,10 +552,11 @@ export default function Home() {
             </div>
 
             {/* Right side */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              {/* EUVEKA Touch Target: 44px minimum */}
               <button
                 onClick={() => setMobileMenuOpen(true)}
-                className="lg:hidden p-2.5 text-[#888880] hover:text-[#fefefc] transition-colors rounded-xl hover:bg-white/5"
+                className="lg:hidden p-3 min-h-[44px] min-w-[44px] flex items-center justify-center dark:text-[#a3a3a3] text-[#666666] dark:hover:text-[#fefefc] hover:text-[#0a0a08] transition-colors rounded-xl hover:bg-white/5"
                 aria-label="Open menu"
               >
                 <Menu className="w-6 h-6" />
@@ -554,7 +564,7 @@ export default function Home() {
 
               <PrimaryButton href="/app" className="hidden sm:flex">
                 Get Started
-                <ArrowRight className="w-5 h-5" />
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </PrimaryButton>
             </div>
           </div>
@@ -576,7 +586,7 @@ export default function Home() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-[#0a0a08]/98 backdrop-blur-2xl"
+              className="absolute inset-0 dark:bg-[#0a0a08] bg-white backdrop-blur-2xl"
               onClick={() => setMobileMenuOpen(false)}
             />
 
@@ -587,14 +597,15 @@ export default function Home() {
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               className="relative h-full flex flex-col p-8"
             >
-              <div className="flex items-center justify-between mb-16">
+              <div className="flex items-center justify-between mb-10 sm:mb-12 md:mb-16">
                 <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3">
                   <TallowLogo size={40} />
                   <span className="text-[#fefefc] text-xl font-serif font-light">Tallow</span>
                 </Link>
+                {/* EUVEKA Touch Target: 44px minimum */}
                 <button
                   onClick={() => setMobileMenuOpen(false)}
-                  className="p-2.5 text-[#888880] hover:text-[#fefefc] transition-colors rounded-xl hover:bg-white/5"
+                  className="p-3 min-h-[44px] min-w-[44px] flex items-center justify-center dark:text-[#a3a3a3] text-[#666666] dark:hover:text-[#fefefc] hover:text-[#0a0a08] transition-colors rounded-xl hover:bg-white/5"
                   aria-label="Close menu"
                 >
                   <X className="w-6 h-6" />
@@ -620,7 +631,7 @@ export default function Home() {
                 ))}
               </nav>
 
-              <div className="pt-8 border-t border-[#262626]">
+              <div className="pt-8 border-t dark:border-[#262626] border-gray-200">
                 <PrimaryButton href="/app" size="large" className="w-full" onClick={() => setMobileMenuOpen(false)}>
                   Get Started
                   <ArrowRight className="w-5 h-5" />
@@ -638,7 +649,7 @@ export default function Home() {
         <motion.section
           ref={heroRef}
           style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
-          className="relative min-h-screen flex items-center justify-center pt-24 pb-20 3xl:py-48 3xl:px-16 4xl:py-56 4xl:px-20 overflow-hidden"
+          className="relative min-h-screen flex items-center justify-center py-20 md:py-32 lg:py-40 3xl:py-48 4xl:py-56 overflow-hidden"
         >
           {/* Subtle floating elements */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -680,15 +691,15 @@ export default function Home() {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] 3xl:w-[1200px] 3xl:h-[800px] 4xl:w-[1600px] 4xl:h-[1000px] bg-white/[0.02] rounded-full blur-[120px] 3xl:blur-[150px] 4xl:blur-[180px]" />
           </div>
 
-          {/* Hero Content */}
-          <ParallaxContainer className="relative z-10 max-w-[1400px] 3xl:max-w-[1800px] 4xl:max-w-[2400px] mx-auto px-6 md:px-12 3xl:px-16">
-            <div className="max-w-5xl mx-auto text-center">
-              {/* Badge */}
+          {/* Hero Content - EUVEKA Container: 1320px/1376px max with responsive padding */}
+          <ParallaxContainer className="relative z-10 max-w-[1320px] lg:max-w-[1376px] xl:max-w-7xl 3xl:max-w-[1800px] 4xl:max-w-[2400px] mx-auto px-5 sm:px-6 md:px-8 lg:px-10">
+            <div className="max-w-4xl lg:max-w-5xl mx-auto text-center">
+              {/* Badge - responsive padding and margin */}
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8 }}
-                className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 mb-10"
+                className="inline-flex items-center gap-2 sm:gap-3 px-4 py-2 sm:px-5 sm:py-2.5 md:px-6 md:py-3 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 mb-6 sm:mb-8"
               >
                 <motion.div
                   className="w-2.5 h-2.5 rounded-full bg-[#fefefc]"
@@ -705,17 +716,17 @@ export default function Home() {
                 initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-                className="font-serif tracking-[-0.04em] leading-[0.9] mb-12"
+                className="font-serif tracking-tight leading-tight mb-6"
               >
                 <span
                   className="block text-[#fefefc] font-light"
-                  style={{ fontSize: 'clamp(3.5rem, 10vw, 7rem)' }}
+                  style={{ fontSize: 'clamp(2.5rem, 8vw + 1rem, 7rem)' }}
                 >
                   Transfer files
                 </span>
                 <motion.span
                   className="block text-[#fefefc]/80 italic font-light"
-                  style={{ fontSize: 'clamp(3.5rem, 10vw, 7rem)' }}
+                  style={{ fontSize: 'clamp(2.5rem, 8vw + 1rem, 7rem)' }}
                   initial={{ opacity: 0, x: -30 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 1, delay: 0.3 }}
@@ -724,12 +735,12 @@ export default function Home() {
                 </motion.span>
               </motion.h1>
 
-              {/* Subtitle */}
+              {/* Subtitle - responsive text and spacing */}
               <motion.p
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
-                className="text-xl md:text-2xl text-[#888880] max-w-2xl mx-auto mb-14 leading-relaxed font-light"
+                className="text-base sm:text-lg md:text-xl lg:text-2xl text-[#888880] max-w-xl sm:max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed tracking-normal font-light px-2 sm:px-0"
               >
                 The most secure way to share files. End-to-end encrypted, peer-to-peer,
                 and protected against quantum computers.
@@ -740,7 +751,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.5 }}
-                className="flex flex-col sm:flex-row justify-center gap-5"
+                className="flex flex-col sm:flex-row justify-center gap-4"
               >
                 <PrimaryButton href="/app" size="large">
                   Get Started
@@ -758,25 +769,25 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.5 }}
-            className="absolute bottom-12 left-1/2 -translate-x-1/2"
+            className="absolute bottom-8 md:bottom-12 left-1/2 -translate-x-1/2"
           >
             <motion.div
-              animate={{ y: [0, 12, 0] }}
+              animate={{ y: [0, 8, 0] }}
               transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-              className="flex flex-col items-center gap-3 text-[#888880]"
+              className="flex flex-col items-center gap-2 text-[#888880]"
             >
-              <span className="text-xs uppercase tracking-[0.25em] font-medium">Scroll</span>
+              <span className="text-xs uppercase tracking-widest font-medium">Scroll</span>
               <ChevronDown className="w-5 h-5" />
             </motion.div>
           </motion.div>
         </motion.section>
 
         {/* ================================================================
-            STATS SECTION
+            STATS SECTION - EUVEKA Container and responsive gaps
             ================================================================ */}
-        <section className="relative py-28 3xl:py-36 4xl:py-44 border-y border-[#262626] bg-[#111110]/50">
-          <div className="max-w-[1400px] 3xl:max-w-[1800px] 4xl:max-w-[2400px] mx-auto px-6 md:px-12 3xl:px-16">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 3xl:gap-8 4xl:gap-10">
+        <section className="relative py-12 sm:py-16 md:py-20 lg:py-24 border-y border-[#262626] bg-[#111110]/50">
+          <div className="max-w-[1320px] lg:max-w-[1376px] xl:max-w-[1400px] 3xl:max-w-[1800px] 4xl:max-w-[2400px] mx-auto px-5 sm:px-6 md:px-8 lg:px-10 xl:px-12 3xl:px-16">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6 lg:gap-8">
               {stats.map((stat, i) => (
                 <StatCard
                   key={i}
@@ -792,22 +803,22 @@ export default function Home() {
         </section>
 
         {/* ================================================================
-            FEATURES SECTION - Bento Grid
+            FEATURES SECTION - Bento Grid - EUVEKA Container
             ================================================================ */}
-        <section className="py-32 md:py-40 3xl:py-48 4xl:py-56">
-          <div className="max-w-[1400px] 3xl:max-w-[1800px] 4xl:max-w-[2400px] mx-auto px-6 md:px-12 3xl:px-16">
-            {/* Section header */}
+        <section className="py-16 sm:py-20 md:py-28 lg:py-32 3xl:py-48 4xl:py-56">
+          <div className="max-w-[1320px] lg:max-w-[1376px] xl:max-w-[1400px] 3xl:max-w-[1800px] 4xl:max-w-[2400px] mx-auto px-5 sm:px-6 md:px-8 lg:px-10 xl:px-12 3xl:px-16">
+            {/* Section header - responsive margins */}
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-100px' }}
               transition={{ duration: 0.8 }}
-              className="max-w-3xl mb-20"
+              className="max-w-2xl lg:max-w-3xl mb-8 sm:mb-10 md:mb-12 lg:mb-16"
             >
-              <span className="text-[#fefefc] text-sm font-semibold uppercase tracking-[0.2em] mb-6 block">
+              <span className="text-[#fefefc] text-xs sm:text-sm font-semibold uppercase tracking-[0.15em] sm:tracking-[0.2em] mb-4 sm:mb-6 block">
                 Features
               </span>
-              <h2 className="font-serif text-[clamp(2.5rem,5vw,4.5rem)] font-light text-[#fefefc] tracking-tight mb-8 leading-[1.1]">
+              <h2 className="font-serif text-[clamp(2rem,5vw,4.5rem)] font-light text-[#fefefc] tracking-tight mb-4 sm:mb-6 md:mb-8 leading-[1.1]">
                 Built for privacy.{' '}
                 <span className="text-[#888880] italic">Designed for speed.</span>
               </h2>
@@ -817,8 +828,8 @@ export default function Home() {
               </p>
             </motion.div>
 
-            {/* Bento Grid - 6 cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 3xl:grid-cols-3 4xl:grid-cols-4 gap-6 3xl:gap-8 4xl:gap-10">
+            {/* Bento Grid - 6 cards - EUVEKA responsive gaps and tablet handling */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 3xl:grid-cols-3 4xl:grid-cols-4 gap-4 sm:gap-5 md:gap-6 lg:gap-8 3xl:gap-8 4xl:gap-10">
               {features.map((feature, i) => (
                 <BentoCard
                   key={i}
@@ -833,22 +844,22 @@ export default function Home() {
         </section>
 
         {/* ================================================================
-            HOW IT WORKS SECTION
+            HOW IT WORKS SECTION - EUVEKA Container
             ================================================================ */}
-        <section className="py-32 md:py-40 3xl:py-48 4xl:py-56 border-t border-[#262626] bg-[#111110]/30">
-          <div className="max-w-[1400px] 3xl:max-w-[1800px] 4xl:max-w-[2400px] mx-auto px-6 md:px-12 3xl:px-16">
-            {/* Section header */}
+        <section className="py-20 sm:py-24 md:py-32 lg:py-40 3xl:py-48 4xl:py-56 border-t border-[#262626] bg-[#111110]/30">
+          <div className="max-w-[1320px] lg:max-w-[1376px] xl:max-w-[1400px] 3xl:max-w-[1800px] 4xl:max-w-[2400px] mx-auto px-5 sm:px-6 md:px-8 lg:px-10 xl:px-12 3xl:px-16">
+            {/* Section header - responsive margins */}
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-100px' }}
               transition={{ duration: 0.8 }}
-              className="text-center mb-24"
+              className="text-center mb-12 sm:mb-16 md:mb-20 lg:mb-24"
             >
-              <span className="text-[#fefefc] text-sm font-semibold uppercase tracking-[0.2em] mb-6 block">
+              <span className="text-[#fefefc] text-xs sm:text-sm font-semibold uppercase tracking-[0.15em] sm:tracking-[0.2em] mb-4 sm:mb-6 block">
                 How It Works
               </span>
-              <h2 className="font-serif text-[clamp(2.5rem,5vw,4.5rem)] font-light text-[#fefefc] tracking-tight mb-8">
+              <h2 className="font-serif text-[clamp(2rem,5vw,4.5rem)] font-light text-[#fefefc] tracking-tight mb-4 sm:mb-6 md:mb-8">
                 Three steps to{' '}
                 <span className="text-[#888880] italic">secure transfers</span>
               </h2>
@@ -858,8 +869,8 @@ export default function Home() {
               </p>
             </motion.div>
 
-            {/* Steps */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 lg:gap-8">
+            {/* Steps - responsive grid for tablet (640-1023px) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10 lg:gap-8">
               <HowItWorksStep
                 number={1}
                 icon={Globe}
@@ -884,13 +895,13 @@ export default function Home() {
               />
             </div>
 
-            {/* CTA */}
+            {/* CTA - responsive margin */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.8, delay: 0.6 }}
-              className="text-center mt-20"
+              className="text-center mt-12 sm:mt-16 md:mt-20"
             >
               <PrimaryButton href="/app" size="large">
                 Try It Now
@@ -900,11 +911,80 @@ export default function Home() {
           </div>
         </section>
 
+
         {/* ================================================================
-            SECURITY SECTION
+            CHOOSE YOUR CONNECTION SECTION - EUVEKA Container
             ================================================================ */}
-        <section className="py-32 md:py-40 3xl:py-48 4xl:py-56 border-t border-[#262626]">
-          <div className="max-w-[1400px] 3xl:max-w-[1800px] 4xl:max-w-[2400px] mx-auto px-6 md:px-12 3xl:px-16">
+        <section className="py-16 sm:py-20 md:py-28 lg:py-32 3xl:py-48 4xl:py-56 border-t dark:border-[#262626] border-gray-200">
+          <div className="max-w-[1320px] lg:max-w-[1376px] xl:max-w-[1400px] 3xl:max-w-[1800px] 4xl:max-w-[2400px] mx-auto px-5 sm:px-6 md:px-8 lg:px-10 xl:px-12 3xl:px-16">
+            {/* Section header - responsive */}
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-100px' }}
+              transition={{ duration: 0.8 }}
+              className="text-center mb-8 sm:mb-10 md:mb-12"
+            >
+              <span className="text-foreground text-xs sm:text-sm font-semibold uppercase tracking-[0.15em] sm:tracking-[0.2em] mb-4 sm:mb-6 block">
+                Flexibility
+              </span>
+              <h2 className="font-serif text-[clamp(2rem,5vw,4.5rem)] font-light text-foreground tracking-tight mb-4 sm:mb-6 md:mb-8">
+                Choose Your Connection
+              </h2>
+            </motion.div>
+
+            {/* Connection Cards - responsive gaps and tablet handling */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 md:gap-6 lg:gap-8 max-w-4xl mx-auto">
+              {/* Local Network Card - EUVEKA responsive */}
+              <motion.div
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-80px' }}
+                transition={{ duration: 0.7, delay: 0 }}
+                className="group relative overflow-hidden rounded-xl sm:rounded-2xl md:rounded-[24px] dark:bg-[#161614] bg-white backdrop-blur-xl dark:border-[#262626] border-gray-200 border p-4 sm:p-5 md:p-6 lg:p-8 transition-all duration-500 hover:-translate-y-2 hover:shadow-lg"
+              >
+                <div className="mb-4 sm:mb-5 md:mb-6">
+                  <div className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-xl sm:rounded-2xl dark:bg-white/10 bg-gray-100 dark:border-white/20 border-gray-200 border flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+                    <WifiOff className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 dark:text-[#fefefc] text-[#0a0a08]" />
+                  </div>
+                </div>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-light text-foreground mb-2 sm:mb-3 md:mb-4 tracking-tight">
+                  Local Network
+                </h3>
+                <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
+                  Maximum speed transfers over your local WiFi. Perfect for offices and home networks.
+                </p>
+              </motion.div>
+
+              {/* Internet P2P Card - EUVEKA responsive */}
+              <motion.div
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-80px' }}
+                transition={{ duration: 0.7, delay: 0.1 }}
+                className="group relative overflow-hidden rounded-xl sm:rounded-2xl md:rounded-[24px] dark:bg-[#161614] bg-white backdrop-blur-xl dark:border-[#262626] border-gray-200 border p-4 sm:p-5 md:p-6 lg:p-8 transition-all duration-500 hover:-translate-y-2 hover:shadow-lg"
+              >
+                <div className="mb-4 sm:mb-5 md:mb-6">
+                  <div className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-xl sm:rounded-2xl dark:bg-white/10 bg-gray-100 dark:border-white/20 border-gray-200 border flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+                    <Globe className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 dark:text-[#fefefc] text-[#0a0a08]" />
+                  </div>
+                </div>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-light text-foreground mb-2 sm:mb-3 md:mb-4 tracking-tight">
+                  Internet P2P
+                </h3>
+                <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
+                  Send files to anyone, anywhere in the world. NAT traversal handles the complexity.
+                </p>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* ================================================================
+            SECURITY SECTION - EUVEKA Container
+            ================================================================ */}
+        <section className="py-20 sm:py-24 md:py-32 lg:py-40 3xl:py-48 4xl:py-56 border-t border-[#262626]">
+          <div className="max-w-[1320px] lg:max-w-[1376px] xl:max-w-[1400px] 3xl:max-w-[1800px] 4xl:max-w-[2400px] mx-auto px-5 sm:px-6 md:px-8 lg:px-10 xl:px-12 3xl:px-16">
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -912,28 +992,28 @@ export default function Home() {
               transition={{ duration: 0.8 }}
               className="max-w-3xl mx-auto text-center"
             >
-              {/* Large Shield Icon */}
+              {/* Large Shield Icon - responsive sizing */}
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
                 whileInView={{ scale: 1, rotate: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 1, type: 'spring', stiffness: 120 }}
-                className="w-28 h-28 rounded-3xl bg-[#161614] border border-[#262626] flex items-center justify-center mx-auto mb-12 shadow-[0_0_60px_rgba(255,255,255,0.05)]"
+                className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl sm:rounded-3xl bg-[#161614] border border-[#262626] flex items-center justify-center mx-auto mb-8 sm:mb-10 md:mb-12 shadow-[0_0_60px_rgba(255,255,255,0.05)]"
               >
-                <Shield className="w-14 h-14 text-[#fefefc]" />
+                <Shield className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 text-[#fefefc]" />
               </motion.div>
 
-              <h2 className="font-serif text-[clamp(2.5rem,5vw,4.5rem)] font-light text-[#fefefc] tracking-tight mb-8">
+              <h2 className="font-serif text-[clamp(2rem,5vw,4.5rem)] font-light text-[#fefefc] tracking-tight mb-4 sm:mb-6 md:mb-8">
                 Security you can trust.{' '}
                 <span className="text-[#888880] italic">Always.</span>
               </h2>
-              <p className="text-xl text-[#888880] leading-relaxed mb-16">
+              <p className="text-base sm:text-lg md:text-xl text-[#888880] leading-relaxed mb-10 sm:mb-12 md:mb-16 px-2 sm:px-0">
                 Built on cutting-edge cryptographic standards. Audited, open-source,
                 and designed to protect your data against current and future threats.
               </p>
 
-              {/* Security Badges as Pills */}
-              <div className="flex flex-wrap justify-center gap-4">
+              {/* Security Badges as Pills - responsive gaps */}
+              <div className="flex flex-wrap justify-center gap-2 sm:gap-3 md:gap-4">
                 {securityBadges.map((badge, i) => (
                   <SecurityBadge
                     key={badge.label}
@@ -948,9 +1028,9 @@ export default function Home() {
         </section>
 
         {/* ================================================================
-            FINAL CTA SECTION
+            FINAL CTA SECTION - "Ready to Share?" - EUVEKA responsive
             ================================================================ */}
-        <section className="relative py-40 md:py-52 3xl:py-60 4xl:py-72 border-t border-[#262626] overflow-hidden">
+        <section className="relative py-16 sm:py-20 md:py-28 lg:py-32 border-t border-[#262626] overflow-hidden">
           {/* Background glow */}
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[1000px] h-[400px] bg-white/[0.02] rounded-full blur-[150px]" />
@@ -972,7 +1052,7 @@ export default function Home() {
             />
           </div>
 
-          <div className="relative z-10 max-w-[1400px] 3xl:max-w-[1800px] 4xl:max-w-[2400px] mx-auto px-6 md:px-12 3xl:px-16">
+          <div className="relative z-10 max-w-[1320px] lg:max-w-[1376px] xl:max-w-[1400px] 3xl:max-w-[1800px] 4xl:max-w-[2400px] mx-auto px-5 sm:px-6 md:px-8 lg:px-10 xl:px-12 3xl:px-16">
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -980,28 +1060,28 @@ export default function Home() {
               transition={{ duration: 1 }}
               className="max-w-3xl mx-auto text-center"
             >
-              {/* Badge */}
+              {/* Badge - responsive sizing */}
               <motion.div
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ duration: 3, repeat: Infinity }}
-                className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-white/5 border border-white/10 mb-12"
+                className="inline-flex items-center gap-2 sm:gap-3 px-4 py-2 sm:px-5 sm:py-2.5 md:px-6 md:py-3 rounded-full bg-white/5 border border-white/10 mb-8 sm:mb-10 md:mb-12"
               >
-                <Send className="w-5 h-5 text-[#fefefc]" />
-                <span className="text-sm font-semibold text-[#fefefc]">Free Forever</span>
+                <Send className="w-4 h-4 sm:w-5 sm:h-5 text-[#fefefc]" />
+                <span className="text-xs sm:text-sm font-semibold text-[#fefefc]">Free Forever</span>
               </motion.div>
 
-              <h2 className="font-serif text-[clamp(2.5rem,6vw,5rem)] font-light text-[#fefefc] tracking-tight mb-10 leading-[1.1]">
+              <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light text-[#fefefc] tracking-tight mb-4 sm:mb-6 leading-[1.1]">
                 Ready to share files
                 <br />
                 <span className="text-[#888880] italic">securely</span>?
               </h2>
-              <p className="text-xl text-[#888880] mb-14 leading-relaxed">
+              <p className="text-base sm:text-lg md:text-xl text-[#888880] mb-6 sm:mb-8 leading-relaxed px-2 sm:px-0">
                 Join thousands of users who trust Tallow for their most sensitive files.
                 No sign-up required.
               </p>
 
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row justify-center gap-5 mb-16">
+              {/* CTA Buttons - responsive gaps */}
+              <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 md:gap-5 mb-8 sm:mb-10">
                 <PrimaryButton href="/app" size="large">
                   Start Transferring Now
                   <ArrowRight className="w-5 h-5" />
@@ -1037,28 +1117,28 @@ export default function Home() {
       </main>
 
       {/* ================================================================
-          FOOTER - 4 Column Links
+          FOOTER - 4 Column Links - EUVEKA Container
           ================================================================ */}
-      <footer className="border-t border-[#262626] py-20 3xl:py-24 4xl:py-28 bg-[#111110]/50">
-        <div className="max-w-[1400px] 3xl:max-w-[1800px] 4xl:max-w-[2400px] mx-auto px-6 md:px-12 3xl:px-16">
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-10 3xl:gap-14 4xl:gap-16 mb-20 3xl:mb-24">
-            {/* Brand */}
-            <div className="col-span-2">
-              <Link href="/" className="flex items-center gap-3 mb-6">
+      <footer className="border-t dark:border-[#262626] border-gray-200 py-12 sm:py-16 md:py-20 dark:bg-[#0a0a08] bg-white">
+        <div className="max-w-[1320px] lg:max-w-[1376px] xl:max-w-[1400px] 3xl:max-w-[1800px] 4xl:max-w-[2400px] mx-auto px-5 sm:px-6 md:px-8 lg:px-10 xl:px-12 3xl:px-16">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 sm:gap-8 md:gap-10 lg:gap-12 mb-12 sm:mb-16 md:mb-20 3xl:mb-24">
+            {/* Brand - spans full width on small mobile, 2 cols on sm+ */}
+            <div className="col-span-2 sm:col-span-3 lg:col-span-2">
+              <Link href="/" className="flex items-center gap-3 mb-4 sm:mb-6">
                 <TallowLogo size={40} />
-                <span className="text-[#fefefc] text-2xl font-serif font-light">Tallow</span>
+                <span className="text-foreground text-2xl font-serif font-light">Tallow</span>
               </Link>
-              <p className="text-[#888880] text-sm leading-relaxed max-w-xs mb-6">
+              <p className="dark:text-[#a3a3a3] text-[#666666] text-xs sm:text-sm leading-relaxed max-w-xs mb-4 sm:mb-6">
                 Secure file transfer without limits. End-to-end encrypted,
                 peer-to-peer, and protected against quantum computers.
               </p>
-              {/* Social icons */}
-              <div className="flex items-center gap-4">
+              {/* Social icons - EUVEKA Touch Target: 44px minimum */}
+              <div className="flex items-center gap-3 sm:gap-4">
                 <a
                   href="https://github.com/tallow"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-xl bg-[#161614] border border-[#262626] flex items-center justify-center text-[#888880] hover:text-[#fefefc] hover:border-white/20 transition-all duration-300"
+                  className="w-11 h-11 sm:w-10 sm:h-10 min-w-[44px] min-h-[44px] rounded-xl dark:bg-[#161614] bg-gray-100 border dark:border-[#262626] border-gray-200 flex items-center justify-center dark:text-[#a3a3a3] text-[#666666] dark:hover:text-[#fefefc] hover:text-[#0a0a08] dark:hover:border-white/20 hover:border-gray-400 transition-all duration-300"
                   aria-label="GitHub"
                 >
                   <Github className="w-5 h-5" />
@@ -1067,7 +1147,7 @@ export default function Home() {
                   href="https://twitter.com/tallow"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-xl bg-[#161614] border border-[#262626] flex items-center justify-center text-[#888880] hover:text-[#fefefc] hover:border-white/20 transition-all duration-300"
+                  className="w-11 h-11 sm:w-10 sm:h-10 min-w-[44px] min-h-[44px] rounded-xl dark:bg-[#161614] bg-gray-100 border dark:border-[#262626] border-gray-200 flex items-center justify-center dark:text-[#a3a3a3] text-[#666666] dark:hover:text-[#fefefc] hover:text-[#0a0a08] dark:hover:border-white/20 hover:border-gray-400 transition-all duration-300"
                   aria-label="Twitter"
                 >
                   <Twitter className="w-5 h-5" />
@@ -1076,7 +1156,7 @@ export default function Home() {
                   href="https://linkedin.com/company/tallow"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-xl bg-[#161614] border border-[#262626] flex items-center justify-center text-[#888880] hover:text-[#fefefc] hover:border-white/20 transition-all duration-300"
+                  className="w-11 h-11 sm:w-10 sm:h-10 min-w-[44px] min-h-[44px] rounded-xl dark:bg-[#161614] bg-gray-100 border dark:border-[#262626] border-gray-200 flex items-center justify-center dark:text-[#a3a3a3] text-[#666666] dark:hover:text-[#fefefc] hover:text-[#0a0a08] dark:hover:border-white/20 hover:border-gray-400 transition-all duration-300"
                   aria-label="LinkedIn"
                 >
                   <Linkedin className="w-5 h-5" />
@@ -1086,13 +1166,13 @@ export default function Home() {
 
             {/* Product */}
             <div>
-              <h4 className="text-[#fefefc] text-sm font-semibold uppercase tracking-wider mb-5">Product</h4>
-              <div className="flex flex-col gap-3">
+              <h4 className="text-foreground text-xs sm:text-sm font-semibold uppercase tracking-wider mb-3 sm:mb-4 md:mb-6">Product</h4>
+              <div className="flex flex-col gap-2 sm:gap-3">
                 {footerLinks.product.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="text-[#888880] text-sm hover:text-[#fefefc] transition-colors"
+                    className="dark:text-[#a3a3a3] text-[#666666] text-xs sm:text-sm dark:hover:text-[#fefefc] hover:text-[#0a0a08] transition-colors py-1 min-h-[44px] flex items-center sm:min-h-0 sm:py-0"
                   >
                     {link.label}
                   </Link>
@@ -1102,13 +1182,13 @@ export default function Home() {
 
             {/* Resources */}
             <div>
-              <h4 className="text-[#fefefc] text-sm font-semibold uppercase tracking-wider mb-5">Resources</h4>
-              <div className="flex flex-col gap-3">
+              <h4 className="text-foreground text-xs sm:text-sm font-semibold uppercase tracking-wider mb-3 sm:mb-4 md:mb-6">Resources</h4>
+              <div className="flex flex-col gap-2 sm:gap-3">
                 {footerLinks.resources.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="text-[#888880] text-sm hover:text-[#fefefc] transition-colors"
+                    className="dark:text-[#a3a3a3] text-[#666666] text-xs sm:text-sm dark:hover:text-[#fefefc] hover:text-[#0a0a08] transition-colors py-1 min-h-[44px] flex items-center sm:min-h-0 sm:py-0"
                   >
                     {link.label}
                   </Link>
@@ -1118,13 +1198,13 @@ export default function Home() {
 
             {/* Company */}
             <div>
-              <h4 className="text-[#fefefc] text-sm font-semibold uppercase tracking-wider mb-5">Company</h4>
-              <div className="flex flex-col gap-3">
+              <h4 className="text-foreground text-xs sm:text-sm font-semibold uppercase tracking-wider mb-3 sm:mb-4 md:mb-6">Company</h4>
+              <div className="flex flex-col gap-2 sm:gap-3">
                 {footerLinks.company.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="text-[#888880] text-sm hover:text-[#fefefc] transition-colors"
+                    className="dark:text-[#a3a3a3] text-[#666666] text-xs sm:text-sm dark:hover:text-[#fefefc] hover:text-[#0a0a08] transition-colors py-1 min-h-[44px] flex items-center sm:min-h-0 sm:py-0"
                   >
                     {link.label}
                   </Link>
@@ -1134,13 +1214,13 @@ export default function Home() {
 
             {/* Legal */}
             <div>
-              <h4 className="text-[#fefefc] text-sm font-semibold uppercase tracking-wider mb-5">Legal</h4>
-              <div className="flex flex-col gap-3">
+              <h4 className="text-foreground text-xs sm:text-sm font-semibold uppercase tracking-wider mb-3 sm:mb-4 md:mb-6">Legal</h4>
+              <div className="flex flex-col gap-2 sm:gap-3">
                 {footerLinks.legal.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="text-[#888880] text-sm hover:text-[#fefefc] transition-colors"
+                    className="dark:text-[#a3a3a3] text-[#666666] text-xs sm:text-sm dark:hover:text-[#fefefc] hover:text-[#0a0a08] transition-colors py-1 min-h-[44px] flex items-center sm:min-h-0 sm:py-0"
                   >
                     {link.label}
                   </Link>
@@ -1149,9 +1229,9 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Bottom bar with status indicator */}
-          <div className="pt-10 border-t border-[#262626] flex flex-col md:flex-row items-center justify-between gap-6">
-            <p className="text-[#888880] text-sm">
+          {/* Bottom bar with status indicator - responsive */}
+          <div className="pt-6 sm:pt-8 mt-6 sm:mt-8 border-t dark:border-[#262626] border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
+            <p className="dark:text-[#a3a3a3] text-[#666666] text-xs sm:text-sm">
               {new Date().getFullYear()} Tallow. All rights reserved.
             </p>
 
@@ -1163,7 +1243,7 @@ export default function Home() {
                   animate={{ scale: [1, 1.2, 1], opacity: [1, 0.7, 1] }}
                   transition={{ duration: 2, repeat: Infinity }}
                 />
-                <span className="text-[#888880] text-sm">All systems operational</span>
+                <span className="dark:text-[#a3a3a3] text-[#666666] text-sm">All systems operational</span>
               </div>
             </div>
           </div>
