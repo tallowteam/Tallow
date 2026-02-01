@@ -1,75 +1,222 @@
-# Tallow Security Fix - Roadmap
+# Roadmap: Tallow UI Foundation
 
 ## Overview
-3 phases to fix all critical and high-severity crypto issues.
+
+This roadmap delivers a complete UI foundation for Tallow, the post-quantum
+secure P2P file transfer application. Starting with design system infrastructure
+and progressing through component layers, we build from CSS tokens through base
+components, Radix primitives, hero animations, transfer UI, layout, pages, and
+finally wire everything to the existing lib/ transfer logic for a working
+end-to-end file transfer experience.
+
+## Phases
+
+**Phase Numbering:**
+
+- Integer phases (1, 2, 3): Planned milestone work
+- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
+
+Decimal phases appear between their surrounding integers in numeric order.
+
+- [x] **Phase 1: Foundation** - Design system infrastructure (CSS tokens,
+      Tailwind, animations) ✓ Completed 2026-02-01
+- [x] **Phase 2: Base Components** - Core UI primitives (Button, Input, Card,
+      Badge) ✓ Completed 2026-02-01
+- [x] **Phase 3: Radix Components** - Accessible overlays and controls (Dialog,
+      Tooltip, Select, Switch) ✓ Completed 2026-02-01
+- [x] **Phase 4: Hero Components** - Signature animated elements (DropZone,
+      TransferProgress, EncryptionIndicator, ConnectionLine) ✓ Completed
+      2026-02-01
+- [x] **Phase 5: Transfer Components** - File and connection display (FileList,
+      TransferComplete, DeviceCard, ConnectionStatus) ✓ Completed 2026-02-01
+- [x] **Phase 6: Layout** - Application structure (Header, Sidebar, PageLayout,
+      responsive) ✓ Completed 2026-02-01
+- [x] **Phase 7: Pages** - Application screens (Home, Settings, Devices,
+      History) ✓ Completed 2026-02-01
+- [ ] **Phase 8: Hooks** - Integration with existing lib/ (useTransfer,
+      useWebRTC, useCrypto, useSignaling)
+- [ ] **Phase 9: Integration** - End-to-end file transfer working with new UI
+
+## Phase Details
+
+### Phase 1: Foundation
+
+**Goal**: Design system infrastructure is in place and working **Depends on**:
+Nothing (first phase) **Requirements**: FOUND-01, FOUND-02, FOUND-03, FOUND-04,
+FOUND-05, FOUND-06, FOUND-07, FOUND-08 **Success Criteria** (what must be TRUE):
+
+1. CSS variables render correct colors/spacing when inspected in browser
+   devtools
+2. Tailwind classes using design tokens (bg-surface, text-secondary, etc.) work
+   in any component
+3. Animation variants can be imported and applied to motion elements
+4. Geist fonts load and display correctly on page
+5. cn() utility merges classes correctly (tested with conflicting Tailwind
+   classes) **Plans**: TBD
+
+Plans:
+
+- [ ] 01-01: TBD
+
+### Phase 2: Base Components
+
+**Goal**: Core UI primitives are usable across the application **Depends on**:
+Phase 1 **Requirements**: BASE-01, BASE-02, BASE-03, BASE-04, BASE-05, BASE-06,
+BASE-07, BASE-08, BASE-09 **Success Criteria** (what must be TRUE):
+
+1. User can see and interact with all button variants (primary, secondary,
+   ghost, etc.) with correct colors and hover states
+2. User can type in Input fields with visible focus rings and see error/hint
+   states
+3. Card components display content with correct backgrounds and optional hover
+   elevation
+4. Badge components show status labels with appropriate semantic colors
+5. All components respond to disabled state (reduced opacity, no pointer events)
+   **Plans**: TBD
+
+Plans:
+
+- [ ] 02-01: TBD
+
+### Phase 3: Radix Components
+
+**Goal**: Accessible overlay and control components are ready for use **Depends
+on**: Phase 2 **Requirements**: RADIX-01, RADIX-02, RADIX-03, RADIX-04,
+RADIX-05, RADIX-06 **Success Criteria** (what must be TRUE):
+
+1. User can open/close Dialog with animated overlay, use keyboard to navigate,
+   and close with Escape
+2. User can hover elements and see Tooltip after brief delay with proper
+   animation
+3. User can click Select/Dropdown and choose options from animated menu
+4. User can toggle Switch on/off with visible state change and animation
+5. All components maintain focus correctly and support keyboard navigation
+   **Plans**: TBD
+
+Plans:
+
+- [ ] 03-01: TBD
+
+### Phase 4: Hero Components
+
+**Goal**: Signature animated components that define the Tallow visual experience
+**Depends on**: Phase 3 **Requirements**: HERO-01, HERO-02, HERO-03, HERO-04,
+HERO-05, HERO-06, HERO-07, HERO-08, HERO-09, HERO-10, HERO-11, HERO-12, HERO-13,
+HERO-14 **Success Criteria** (what must be TRUE):
+
+1. User can drag files onto DropZone and see visual feedback (glow, icon
+   animation, state changes)
+2. User can see TransferProgress displaying file info with animated progress bar
+   and glow effects
+3. User can see EncryptionIndicator with SVG ring animation and lock icon spring
+   effect
+4. User can see ConnectionLine animating between connected peers with pulse
+   effect
+5. All hero components smoothly transition between their states (idle, active,
+   complete) **Plans**: TBD
+
+Plans:
+
+- [ ] 04-01: TBD
+
+### Phase 5: Transfer Components
+
+**Goal**: File and connection display components are functional **Depends on**:
+Phase 4 **Requirements**: XFER-01, XFER-02, XFER-03, XFER-04, XFER-05, XFER-06,
+XFER-07, XFER-08 **Success Criteria** (what must be TRUE):
+
+1. User can see list of selected files with formatted sizes and remove
+   individual files
+2. User can see animated checkmark and ring burst when transfer completes
+3. User can see peer devices with connection status indicators
+4. ConnectionStatus component shows clear state (disconnected, connecting,
+   connected) **Plans**: TBD
+
+Plans:
+
+- [ ] 05-01: TBD
+
+### Phase 6: Layout
+
+**Goal**: Application shell provides consistent navigation and structure
+**Depends on**: Phase 5 **Requirements**: LAYOUT-01, LAYOUT-02, LAYOUT-03,
+LAYOUT-04 **Success Criteria** (what must be TRUE):
+
+1. User sees consistent Header with navigation across all pages
+2. User can navigate using Sidebar to different sections
+3. Page content renders within PageLayout wrapper with correct padding/margins
+4. Layout adapts appropriately to different viewport sizes **Plans**: TBD
+
+Plans:
+
+- [ ] 06-01: TBD
+
+### Phase 7: Pages
+
+**Goal**: Application screens are navigable and display appropriate content
+**Depends on**: Phase 6 **Requirements**: PAGE-01, PAGE-02, PAGE-03, PAGE-04
+**Success Criteria** (what must be TRUE):
+
+1. User can access Home page with DropZone ready to receive files
+2. User can see file list and transfer progress on Home page after selecting
+   files
+3. User can access Settings page with configurable options
+4. User can access Connections page showing available/connected peers **Plans**:
+   TBD
+
+Plans:
+
+- [ ] 07-01: TBD
+
+### Phase 8: Hooks
+
+**Goal**: React hooks connect UI to existing lib/ functionality **Depends on**:
+Phase 7 **Requirements**: INTG-01, INTG-02, INTG-03, INTG-04 **Success
+Criteria** (what must be TRUE):
+
+1. useTransfer hook returns transfer state and methods that work with
+   lib/transfer/
+2. useWebRTC hook manages peer connections using lib/webrtc/
+3. useCrypto hook provides encryption status from lib/crypto/
+4. useSignaling hook connects to signaling server via lib/signaling/ **Plans**:
+   TBD
+
+Plans:
+
+- [ ] 08-01: TBD
+
+### Phase 9: Integration
+
+**Goal**: End-to-end file transfer works through the new UI **Depends on**:
+Phase 8 **Requirements**: INTG-05 **Success Criteria** (what must be TRUE):
+
+1. User can select files via DropZone on Home page
+2. User can see connected peers and initiate transfer
+3. User can observe encryption indicator during key exchange
+4. User can watch transfer progress with live updates
+5. User sees transfer complete animation when files are received **Plans**: TBD
+
+Plans:
+
+- [ ] 09-01: TBD
+
+## Progress
+
+**Execution Order:** Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
+-> 7 -> 8 -> 9
+
+| Phase                  | Plans Complete | Status      | Completed  |
+| ---------------------- | -------------- | ----------- | ---------- |
+| 1. Foundation          | 1/1            | Complete    | 2026-02-01 |
+| 2. Base Components     | 1/1            | Complete    | 2026-02-01 |
+| 3. Radix Components    | 1/1            | Complete    | 2026-02-01 |
+| 4. Hero Components     | 1/1            | Complete    | 2026-02-01 |
+| 5. Transfer Components | 1/1            | Complete    | 2026-02-01 |
+| 6. Layout              | 1/1            | Complete    | 2026-02-01 |
+| 7. Pages               | 1/1            | Complete    | 2026-02-01 |
+| 8. Hooks               | 0/?            | Not started | -          |
+| 9. Integration         | 0/?            | Not started | -          |
 
 ---
 
-## Phase 1: Core Crypto Fix
-**Goal:** Fix the fundamental crypto primitives (hash, Kyber, HKDF)
-
-**Requirements:** CRYPTO-01, CRYPTO-02, CRYPTO-03, CRYPTO-04, CRYPTO-05, CRYPTO-06, SERIAL-01, SERIAL-02, SERIAL-03
-
-**Success Criteria:**
-1. `pqCrypto.hash()` returns actual SHA-256 digest
-2. `pqCrypto.generateHybridKeypair()` produces Kyber + X25519 keys
-3. `pqCrypto.encapsulate()` works with hybrid keys
-4. `pqCrypto.decapsulate()` recovers matching shared secret
-5. `pqCrypto.deriveSessionKeys()` uses proper HKDF
-6. Key serialization/deserialization round-trips correctly
-
-**Files to modify:**
-- `lib/crypto/pqc-crypto.ts` (main changes)
-
----
-
-## Phase 2: File Encryption Fix
-**Goal:** Fix file encryption to use proper crypto
-
-**Requirements:** CRYPTO-07, FILE-01, FILE-02, FILE-03, FILE-04, VALID-01, VALID-02, VALID-03, SERIAL-04
-
-**Success Criteria:**
-1. File encryption uses properly derived session keys
-2. Per-chunk hashes are computed and verified
-3. Full file hash verification works
-4. Encrypt → Decrypt produces identical file
-5. Input validation prevents invalid operations
-
-**Files to modify:**
-- `lib/crypto/file-encryption-pqc.ts`
-- `lib/crypto/pqc-crypto.ts` (add auth)
-
----
-
-## Phase 3: Transfer Integration
-**Goal:** Integrate fixed crypto into transfer manager
-
-**Requirements:** XFER-01, XFER-02, XFER-03
-
-**Success Criteria:**
-1. PQC transfer manager uses fixed crypto layer
-2. Key exchange completes successfully
-3. File transfer works end-to-end with PQC encryption
-4. PQC test page demonstrates working transfer
-
-**Files to modify:**
-- `lib/transfer/pqc-transfer-manager.ts`
-- `lib/hooks/use-pqc-transfer.ts`
-- `app/pqc-test/page.tsx` (verify)
-
----
-
-## Phase Summary
-
-| # | Phase | Requirements | Status |
-|---|-------|--------------|--------|
-| 1 | Core Crypto Fix | CRYPTO-01 to CRYPTO-06, SERIAL-01 to SERIAL-03 | Not Started |
-| 2 | File Encryption Fix | CRYPTO-07, FILE-01 to FILE-04, VALID-01 to VALID-03, SERIAL-04 | Not Started |
-| 3 | Transfer Integration | XFER-01 to XFER-03 | Not Started |
-
----
-
-## Execution Order
-1. `/gsd:execute-phase 1` - Fix core crypto
-2. `/gsd:execute-phase 2` - Fix file encryption
-3. `/gsd:execute-phase 3` - Integrate and test
+_Created: 2025-02-01_ _Last updated: 2025-02-01_
