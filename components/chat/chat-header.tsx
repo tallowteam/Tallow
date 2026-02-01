@@ -21,7 +21,7 @@ export const ChatHeader = memo(function ChatHeader({ peerName, isOnline, onClose
       <div className="flex items-center space-x-3">
         {/* Avatar */}
         <div className="relative">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-white/20 to-purple-600 flex items-center justify-center text-white font-semibold">
             {peerName.charAt(0).toUpperCase()}
           </div>
 

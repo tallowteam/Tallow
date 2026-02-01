@@ -49,34 +49,42 @@ export function VerificationDialog({
         <Dialog open={open} onOpenChange={isPreviouslyVerified ? onOpenChange : () => {}}>
             <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                        <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-accent" aria-hidden="true" />
-                        Verify Connection
+                    <DialogTitle className="flex items-center gap-3 text-lg sm:text-xl text-[#191610] dark:text-[#fefefc]">
+                        <div className="p-2 rounded-xl bg-[#b2987d]/10 dark:bg-[#b2987d]/20">
+                            <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-[#b2987d]" aria-hidden="true" />
+                        </div>
+                        <span>Verify Connection</span>
                     </DialogTitle>
-                    <DialogDescription className="text-sm sm:text-base">
-                        Confirm you&apos;re connected to <strong>{peerName}</strong> by verifying the code matches on both devices.
+                    <DialogDescription>
+                        Confirm you&apos;re connected to <strong className="text-[#191610] dark:text-[#fefefc]">{peerName}</strong> by verifying the code matches on both devices.
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4 sm:space-y-6 py-4">
                     {/* Verification Code Display */}
                     <div className="text-center">
-                        <p className="text-sm sm:text-base text-muted-foreground mb-3">
+                        <p className="text-sm sm:text-base text-[#b2987d] mb-3">
                             Your verification code:
                         </p>
                         <button
                             type="button"
-                            className="inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl bg-secondary border border-border cursor-pointer hover:bg-secondary/80 active:bg-secondary/90 transition-colors min-h-[56px] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+                            className="inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 rounded-xl
+                                bg-gradient-to-br from-[#b2987d]/5 to-[#b2987d]/10
+                                dark:from-[#b2987d]/10 dark:to-[#b2987d]/15
+                                border border-[#e5dac7] dark:border-[#544a36]
+                                cursor-pointer hover:border-[#b2987d]/40
+                                transition-all duration-300 min-h-[56px]
+                                focus-visible:ring-2 focus-visible:ring-[#b2987d]/50 focus-visible:ring-offset-2 focus-visible:outline-none"
                             onClick={handleCopy}
                             aria-label={copied ? 'Verification code copied' : 'Copy verification code'}
                         >
-                            <code className="text-xl sm:text-2xl font-bold tracking-wider text-foreground break-all">
+                            <code className="text-xl sm:text-2xl font-bold tracking-wider text-[#191610] dark:text-[#fefefc] break-all">
                                 {session.sas.phrase}
                             </code>
                             {copied ? (
-                                <Check className="w-5 h-5 sm:w-6 sm:h-6 text-accent shrink-0" aria-hidden="true" />
+                                <Check className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500 shrink-0" aria-hidden="true" />
                             ) : (
-                                <Copy className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground shrink-0" aria-hidden="true" />
+                                <Copy className="w-5 h-5 sm:w-6 sm:h-6 text-[#b2987d] shrink-0" aria-hidden="true" />
                             )}
                         </button>
                     </div>
@@ -89,18 +97,20 @@ export function VerificationDialog({
                     </div>
 
                     {/* Instructions */}
-                    <div className="bg-muted/50 rounded-xl p-4 text-sm text-muted-foreground space-y-2">
+                    <div className="rounded-xl p-4 text-sm text-[#b2987d] space-y-2
+                        bg-gradient-to-br from-[#b2987d]/5 to-transparent
+                        border border-[#e5dac7] dark:border-[#544a36]">
                         <p className="flex items-start gap-2">
-                            <span className="text-foreground font-medium">1.</span>
-                            Ask <strong className="text-foreground">{peerName}</strong> to read their code
+                            <span className="text-[#191610] dark:text-[#fefefc] font-medium">1.</span>
+                            Ask <strong className="text-[#191610] dark:text-[#fefefc]">{peerName}</strong> to read their code
                         </p>
                         <p className="flex items-start gap-2">
-                            <span className="text-foreground font-medium">2.</span>
-                            If both codes match, tap <strong className="text-foreground">Verified</strong>
+                            <span className="text-[#191610] dark:text-[#fefefc] font-medium">2.</span>
+                            If both codes match, tap <strong className="text-[#191610] dark:text-[#fefefc]">Verified</strong>
                         </p>
                         <p className="flex items-start gap-2">
-                            <span className="text-foreground font-medium">3.</span>
-                            If codes don&apos;t match, tap <strong className="text-foreground">Codes Don&apos;t Match</strong>
+                            <span className="text-[#191610] dark:text-[#fefefc] font-medium">3.</span>
+                            If codes don&apos;t match, tap <strong className="text-[#191610] dark:text-[#fefefc]">Codes Don&apos;t Match</strong>
                         </p>
                     </div>
                 </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { io, Socket } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
 import { PQCTransferManager } from '@/lib/transfer/pqc-transfer-manager';
 import { downloadFile, formatFileSize } from '@/lib/hooks/use-file-transfer';
 import { Card } from '@/components/ui/card';
@@ -20,8 +20,8 @@ interface ReceivedFile {
 type PageState = 'connecting' | 'downloading' | 'complete' | 'error';
 
 function getSignalingUrl(): string {
-    const envUrl = process.env.NEXT_PUBLIC_SIGNALING_URL;
-    if (envUrl) return envUrl;
+    const envUrl = process.env['NEXT_PUBLIC_SIGNALING_URL'];
+    if (envUrl) {return envUrl;}
     if (window.location.hostname.includes('manisahome.com')) {
         return 'wss://signaling.manisahome.com';
     }
@@ -35,7 +35,7 @@ const iceServers = [
 
 export default function ShareDownloadPage() {
     const params = useParams();
-    const id = params.id as string;
+    const id = params?.['id'] as string | undefined;
 
     const [pageState, setPageState] = useState<PageState>('connecting');
     const [receivedFiles, setReceivedFiles] = useState<ReceivedFile[]>([]);
@@ -51,16 +51,16 @@ export default function ShareDownloadPage() {
     const pendingCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
 
     const formatEta = useCallback((progressValue: number): string => {
-        if (progressValue <= 0 || transferStartTimeRef.current === 0) return '';
+        if (progressValue <= 0 || transferStartTimeRef.current === 0) {return '';}
         const elapsed = Date.now() - transferStartTimeRef.current;
         const totalEstimated = (elapsed / progressValue) * 100;
         const remaining = Math.max(0, totalEstimated - elapsed);
-        if (remaining < 1000) return '';
+        if (remaining < 1000) {return '';}
         const secs = Math.ceil(remaining / 1000);
-        if (secs < 60) return `${secs}s left`;
+        if (secs < 60) {return `${secs}s left`;}
         const mins = Math.floor(secs / 60);
         const remSecs = secs % 60;
-        if (mins < 60) return `${mins}m ${remSecs}s left`;
+        if (mins < 60) {return `${mins}m ${remSecs}s left`;}
         const hrs = Math.floor(mins / 60);
         return `${hrs}h ${mins % 60}m left`;
     }, []);
@@ -85,7 +85,7 @@ export default function ShareDownloadPage() {
 
     const flushPendingCandidates = useCallback(async () => {
         const pc = peerConnectionRef.current;
-        if (!pc || !pc.remoteDescription) return;
+        if (!pc || !pc.remoteDescription) {return;}
         const candidates = pendingCandidatesRef.current.splice(0);
         for (const candidate of candidates) {
             try {
@@ -98,7 +98,7 @@ export default function ShareDownloadPage() {
 
     const addIceCandidate = useCallback(async (candidate: RTCIceCandidateInit) => {
         const pc = peerConnectionRef.current;
-        if (!pc) return;
+        if (!pc) {return;}
         if (pc.remoteDescription) {
             try {
                 await pc.addIceCandidate(candidate);
@@ -111,151 +111,166 @@ export default function ShareDownloadPage() {
     }, []);
 
     useEffect(() => {
-        if (!id) return;
+        if (!id) {return;}
 
         const signalingUrl = getSignalingUrl();
         if (!signalingUrl) {
             setPageState('error');
             return;
         }
-        const socket = io(signalingUrl, {
-            transports: ['websocket'],
-            reconnection: true,
-            reconnectionAttempts: 5,
-            reconnectionDelay: 1000,
-        });
-        socketRef.current = socket;
 
-        const roomId = `share-${id}`;
+        let isMounted = true;
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-        socket.on('connect', () => {
-            secureLog.log('[Share] Connected to signaling server');
-            socket.emit('join-room', roomId);
-        });
+        // Lazy-load socket.io-client to reduce initial bundle size
+        const initSocket = async () => {
+            const { io } = await import('socket.io-client');
+            if (!isMounted) {return;}
 
-        socket.on('connect_error', () => {
-            setPageState('error');
-        });
+            const socket = io(signalingUrl, {
+                transports: ['websocket'],
+                reconnection: true,
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000,
+            });
+            socketRef.current = socket;
 
-        socket.on('offer', async (data: { offer: RTCSessionDescriptionInit; from: string }) => {
-            secureLog.log('[Share] Received WebRTC offer from sender');
+            const roomId = `share-${id}`;
 
-            const pc = new RTCPeerConnection({ iceServers });
-            peerConnectionRef.current = pc;
+            socket.on('connect', () => {
+                secureLog.log('[Share] Connected to signaling server');
+                socket.emit('join-room', roomId);
+            });
 
-            pc.onicecandidate = (event) => {
-                if (event.candidate) {
-                    socket.emit('ice-candidate', {
-                        candidate: event.candidate.toJSON(),
-                        to: data.from,
-                        room: roomId,
-                    });
-                }
-            };
+            socket.on('connect_error', () => {
+                setPageState('error');
+            });
 
-            pc.onconnectionstatechange = () => {
-                if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
-                    if (pageState === 'connecting') {
-                        setPageState('error');
+            socket.on('offer', async (data: { offer: RTCSessionDescriptionInit; from: string }) => {
+                secureLog.log('[Share] Received WebRTC offer from sender');
+
+                const pc = new RTCPeerConnection({ iceServers });
+                peerConnectionRef.current = pc;
+
+                pc.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        socket.emit('ice-candidate', {
+                            candidate: event.candidate.toJSON(),
+                            to: data.from,
+                            room: roomId,
+                        });
                     }
-                }
-            };
+                };
 
-            pc.ondatachannel = (event) => {
-                const channel = event.channel;
-                dataChannelRef.current = channel;
-                channel.binaryType = 'arraybuffer';
-
-                channel.onopen = async () => {
-                    secureLog.log('[Share] Data channel open, initializing PQC session');
-                    setPageState('downloading');
-
-                    const manager = new PQCTransferManager();
-                    pqcManagerRef.current = manager;
-
-                    await manager.initializeSession('receive');
-                    manager.setDataChannel(channel);
-
-                    manager.onSessionReady(() => {
-                        secureLog.log('[Share] PQC session ready, waiting for files');
-                    });
-
-                    manager.onProgress((p) => {
-                        setProgress(p);
-                        setEta(formatEta(p));
-                    });
-
-                    manager.onComplete((blob, filename) => {
-                        const file: ReceivedFile = {
-                            name: filename,
-                            blob,
-                            size: blob.size,
-                        };
-                        setReceivedFiles((prev) => [...prev, file]);
-                        setProgress(0);
-                        setCurrentFileName('');
-                        setPageState('complete');
-                        // Auto-trigger download
-                        downloadFile(blob, filename);
-                    });
-
-                    manager.onFileIncoming((meta) => {
-                        setCurrentFileName(`${meta.mimeCategory} (${formatFileSize(meta.size)})`);
-                        setProgress(0);
-                        transferStartTimeRef.current = Date.now();
-                        setPageState('downloading');
-                    });
-
-                    manager.onError((error) => {
-                        secureLog.error('[Share] Transfer error:', error);
-                        setPageState('error');
-                    });
-
-                    // Route messages to PQC manager
-                    channel.onmessage = async (event) => {
-                        if (typeof event.data === 'string' && pqcManagerRef.current) {
-                            await pqcManagerRef.current.handleIncomingMessage(event.data);
+                pc.onconnectionstatechange = () => {
+                    if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+                        if (pageState === 'connecting') {
+                            setPageState('error');
                         }
+                    }
+                };
+
+                pc.ondatachannel = (event) => {
+                    const channel = event.channel;
+                    dataChannelRef.current = channel;
+                    channel.binaryType = 'arraybuffer';
+
+                    channel.onopen = async () => {
+                        secureLog.log('[Share] Data channel open, initializing PQC session');
+                        setPageState('downloading');
+
+                        const manager = new PQCTransferManager();
+                        pqcManagerRef.current = manager;
+
+                        await manager.initializeSession('receive');
+                        manager.setDataChannel(channel);
+
+                        manager.onSessionReady(() => {
+                            secureLog.log('[Share] PQC session ready, waiting for files');
+                        });
+
+                        manager.onProgress((p) => {
+                            setProgress(p);
+                            setEta(formatEta(p));
+                        });
+
+                        manager.onComplete((blob, filename) => {
+                            const file: ReceivedFile = {
+                                name: filename,
+                                blob,
+                                size: blob.size,
+                            };
+                            setReceivedFiles((prev) => [...prev, file]);
+                            setProgress(0);
+                            setCurrentFileName('');
+                            setPageState('complete');
+                            // Auto-trigger download
+                            downloadFile(blob, filename);
+                        });
+
+                        manager.onFileIncoming((meta) => {
+                            setCurrentFileName(`${meta.mimeCategory} (${formatFileSize(meta.size)})`);
+                            setProgress(0);
+                            transferStartTimeRef.current = Date.now();
+                            setPageState('downloading');
+                        });
+
+                        manager.onError((error) => {
+                            secureLog.error('[Share] Transfer error:', error);
+                            setPageState('error');
+                        });
+
+                        // Route messages to PQC manager
+                        channel.onmessage = async (event) => {
+                            if (typeof event.data === 'string' && pqcManagerRef.current) {
+                                await pqcManagerRef.current.handleIncomingMessage(event.data);
+                            }
+                        };
+                    };
+
+                    channel.onclose = () => {
+                        secureLog.log('[Share] Data channel closed');
+                        if (receivedFiles.length === 0 && pageState !== 'complete') {
+                            setPageState('error');
+                        }
+                    };
+
+                    channel.onerror = () => {
+                        setPageState('error');
                     };
                 };
 
-                channel.onclose = () => {
-                    secureLog.log('[Share] Data channel closed');
-                    if (receivedFiles.length === 0 && pageState !== 'complete') {
-                        setPageState('error');
-                    }
-                };
+                await pc.setRemoteDescription(data.offer);
+                await flushPendingCandidates();
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
 
-                channel.onerror = () => {
-                    setPageState('error');
-                };
-            };
-
-            await pc.setRemoteDescription(data.offer);
-            await flushPendingCandidates();
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-
-            socket.emit('answer', {
-                answer,
-                to: data.from,
-                room: roomId,
+                socket.emit('answer', {
+                    answer,
+                    to: data.from,
+                    room: roomId,
+                });
             });
-        });
 
-        socket.on('ice-candidate', async (data: { candidate: RTCIceCandidateInit }) => {
-            await addIceCandidate(data.candidate);
-        });
+            socket.on('ice-candidate', async (data: { candidate: RTCIceCandidateInit }) => {
+                await addIceCandidate(data.candidate);
+            });
 
-        // Timeout: if no offer received within 60 seconds, show expired state
-        const timeout = setTimeout(() => {
-            if (pageState === 'connecting') {
-                setPageState('error');
-            }
-        }, 60000);
+            // Timeout: if no offer received within 60 seconds, show expired state
+            timeoutId = setTimeout(() => {
+                if (pageState === 'connecting') {
+                    setPageState('error');
+                }
+            }, 60000);
+        };
+
+        initSocket();
 
         return () => {
-            clearTimeout(timeout);
+            isMounted = false;
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
             cleanup();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps

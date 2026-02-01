@@ -17,6 +17,17 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+/**
+ * EUVEKA Design System Colors for Transfer Progress
+ *
+ * Primary accent: #fefefc (electric blue)
+ * Secondary accent: #b2987d (warm)
+ * Track light: #e5dac7
+ * Track dark: #544a36
+ * Background dark: #191610
+ * Background light: #fefefc
+ */
+
 interface TransferProgressProps {
     fileName: string;
     fileSize: number;
@@ -47,24 +58,25 @@ function formatTime(seconds: number): string {
 }
 
 function getStatusConfig(status: string, direction: string) {
+    // EUVEKA color palette status configurations
     const configs: Record<string, { icon: any; color: string; bgColor: string; label: string; animate?: boolean }> = {
         waiting: {
             icon: Clock,
-            color: 'text-zinc-500 dark:text-zinc-400',
-            bgColor: 'bg-zinc-500/10',
+            color: 'text-[#b2987d]',
+            bgColor: 'bg-[#b2987d]/10',
             label: 'Waiting...'
         },
         connecting: {
             icon: Loader2,
-            color: 'text-[#0066FF]',
-            bgColor: 'bg-[#0066FF]/10',
+            color: 'text-[#fefefc]',
+            bgColor: 'bg-[#fefefc]/10',
             label: 'Connecting...',
             animate: true
         },
         transferring: {
             icon: direction === 'send' ? ArrowUp : ArrowDown,
-            color: 'text-[#0066FF]',
-            bgColor: 'bg-[#0066FF]/10',
+            color: 'text-[#fefefc]',
+            bgColor: 'bg-[#fefefc]/10',
             label: direction === 'send' ? 'Sending...' : 'Receiving...'
         },
         completed: {
@@ -119,13 +131,13 @@ export const TransferProgress = memo(function TransferProgress({
         <Card className={cn(
             'relative p-5 rounded-2xl border bg-card/80 backdrop-blur-sm overflow-hidden',
             'transition-all duration-300 ease-out',
-            'hover:shadow-lg hover:shadow-[#0066FF]/5 dark:hover:shadow-[#0066FF]/10',
+            'hover:shadow-lg hover:shadow-[#fefefc]/5 dark:hover:shadow-[#fefefc]/10',
             'dark:bg-zinc-900/80',
-            isTransferring && 'border-[#0066FF]/30 shadow-md shadow-[#0066FF]/10'
+            isTransferring && 'border-[#fefefc]/30 shadow-md shadow-[#fefefc]/10'
         )}>
             {/* Bento-style gradient overlay for active transfers */}
             {isTransferring && (
-                <div className="absolute inset-0 bg-gradient-to-br from-[#0066FF]/5 via-transparent to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-br from-[#fefefc]/5 via-transparent to-transparent pointer-events-none" />
             )}
 
             {/* Live region for screen reader progress announcements (WCAG 4.1.3) */}
@@ -145,10 +157,10 @@ export const TransferProgress = memo(function TransferProgress({
                 {/* File icon with gradient background */}
                 <div className={cn(
                     'relative w-12 h-12 rounded-xl flex items-center justify-center shrink-0',
-                    'bg-gradient-to-br from-[#0066FF]/20 to-[#0066FF]/5',
+                    'bg-gradient-to-br from-[#fefefc]/20 to-[#fefefc]/5',
                     isTransferring && 'animate-pulse'
                 )}>
-                    <File className="w-6 h-6 text-[#0066FF]" aria-hidden="true" />
+                    <File className="w-6 h-6 text-[#fefefc]" aria-hidden="true" />
                 </div>
 
                 {/* Content */}
@@ -172,8 +184,8 @@ export const TransferProgress = memo(function TransferProgress({
                         </div>
                     </div>
 
-                    {/* Progress bar - modern blue design */}
-                    <div className="relative h-3 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden mb-3">
+                    {/* Progress bar - EUVEKA styled with pill shape */}
+                    <div className="relative h-3 bg-[#e5dac7] dark:bg-[#544a36] rounded-full overflow-hidden mb-3">
                         <div
                             className={cn(
                                 'absolute inset-y-0 left-0 rounded-full transition-all duration-500 ease-out',
@@ -183,7 +195,7 @@ export const TransferProgress = memo(function TransferProgress({
                                         ? 'bg-gradient-to-r from-red-500 to-red-400'
                                         : status === 'paused'
                                             ? 'bg-gradient-to-r from-amber-500 to-amber-400'
-                                            : 'bg-gradient-to-r from-[#0066FF] to-[#0088FF]'
+                                            : 'bg-gradient-to-r from-[#fefefc] to-[#fefefc]/80'
                             )}
                             style={{ width: `${percentage}%` }}
                         />
@@ -206,7 +218,7 @@ export const TransferProgress = memo(function TransferProgress({
                                 {formatBytes(bytesTransferred)} / {formatBytes(fileSize)}
                             </span>
                             {speed > 0 && isTransferring && (
-                                <div className="flex items-center gap-1 text-[#0066FF] font-medium">
+                                <div className="flex items-center gap-1 text-[#fefefc] font-medium">
                                     <Zap className="w-3 h-3" aria-hidden="true" />
                                     <span>{formatSpeed(speed)}</span>
                                 </div>
@@ -237,7 +249,7 @@ export const TransferProgress = memo(function TransferProgress({
                             aria-label={`Retry transfer of ${fileName}`}
                             className={cn(
                                 'h-11 px-4 sm:h-9 sm:px-3 rounded-xl',
-                                'bg-[#0066FF]/10 hover:bg-[#0066FF]/20 text-[#0066FF] font-medium',
+                                'bg-[#fefefc]/10 hover:bg-[#fefefc]/20 text-[#fefefc] font-medium',
                                 'transition-all duration-200 hover:scale-105 active:scale-95'
                             )}
                         >
@@ -313,11 +325,11 @@ export const TransferQueueProgress = memo(function TransferQueueProgress({
             'relative p-5 rounded-2xl border bg-card/80 backdrop-blur-sm overflow-hidden',
             'transition-all duration-300 ease-out',
             'dark:bg-zinc-900/80',
-            isInProgress && 'border-[#0066FF]/30 shadow-md shadow-[#0066FF]/10'
+            isInProgress && 'border-[#fefefc]/30 shadow-md shadow-[#fefefc]/10'
         )}>
             {/* Bento-style gradient overlay */}
             {isInProgress && (
-                <div className="absolute inset-0 bg-gradient-to-br from-[#0066FF]/5 via-transparent to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-br from-[#fefefc]/5 via-transparent to-transparent pointer-events-none" />
             )}
 
             {/* Live region for queue progress announcements (WCAG 4.1.3) */}
@@ -336,7 +348,7 @@ export const TransferQueueProgress = memo(function TransferQueueProgress({
                 <div>
                     <h3 className="font-semibold text-foreground flex items-center gap-2">
                         {direction === 'send' ? (
-                            <ArrowUp className="w-4 h-4 text-[#0066FF]" aria-hidden="true" />
+                            <ArrowUp className="w-4 h-4 text-[#fefefc]" aria-hidden="true" />
                         ) : (
                             <ArrowDown className="w-4 h-4 text-emerald-500" aria-hidden="true" />
                         )}
@@ -363,10 +375,10 @@ export const TransferQueueProgress = memo(function TransferQueueProgress({
                 )}
             </div>
 
-            {/* Overall progress bar */}
-            <div className="relative h-4 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden mb-3">
+            {/* Overall progress bar - EUVEKA styled */}
+            <div className="relative h-4 bg-[#e5dac7] dark:bg-[#544a36] rounded-full overflow-hidden mb-3">
                 <div
-                    className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#0066FF] to-[#0088FF] transition-all duration-500 ease-out"
+                    className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#fefefc] to-[#fefefc]/80 transition-all duration-500 ease-out"
                     style={{ width: `${overallPercentage}%` }}
                 />
                 {isInProgress && overallPercentage > 0 && (
@@ -383,7 +395,7 @@ export const TransferQueueProgress = memo(function TransferQueueProgress({
             <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
                 <span className="font-semibold text-foreground">{overallPercentage}% complete</span>
                 {totalSpeed > 0 && (
-                    <div className="flex items-center gap-1 text-[#0066FF] font-medium">
+                    <div className="flex items-center gap-1 text-[#fefefc] font-medium">
                         <Zap className="w-3.5 h-3.5" aria-hidden="true" />
                         <span>{formatSpeed(totalSpeed)}</span>
                     </div>
@@ -404,7 +416,7 @@ export const TransferQueueProgress = memo(function TransferQueueProgress({
                                 'flex items-center gap-3 p-3 rounded-xl',
                                 'bg-zinc-100/50 dark:bg-zinc-800/50',
                                 'transition-all duration-200',
-                                item.status === 'transferring' && 'bg-[#0066FF]/5 dark:bg-[#0066FF]/10'
+                                item.status === 'transferring' && 'bg-[#fefefc]/5 dark:bg-[#fefefc]/10'
                             )}
                         >
                             <div className={cn(
@@ -429,9 +441,9 @@ export const TransferQueueProgress = memo(function TransferQueueProgress({
                                     {item.fileName}
                                 </span>
                                 {item.status === 'transferring' && (
-                                    <div className="h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full mt-1.5 overflow-hidden">
+                                    <div className="h-1.5 bg-[#e5dac7] dark:bg-[#544a36] rounded-full mt-1.5 overflow-hidden">
                                         <div
-                                            className="h-full bg-[#0066FF] rounded-full transition-all duration-300"
+                                            className="h-full bg-[#fefefc] rounded-full transition-all duration-300"
                                             style={{ width: `${itemPercentage}%` }}
                                         />
                                     </div>
@@ -441,7 +453,7 @@ export const TransferQueueProgress = memo(function TransferQueueProgress({
                                 {item.status === 'completed' ? (
                                     <CheckCircle className="w-5 h-5 text-emerald-500" aria-hidden="true" />
                                 ) : item.status === 'transferring' ? (
-                                    <span className="text-[#0066FF]">{itemPercentage}%</span>
+                                    <span className="text-[#fefefc]">{itemPercentage}%</span>
                                 ) : item.status === 'failed' ? (
                                     <AlertCircle className="w-5 h-5 text-red-500" aria-hidden="true" />
                                 ) : (

@@ -7,55 +7,68 @@
  *
  * File Encryption Utilities
  * AES-256-GCM encryption for secure file transfers
+ *
+ * SECURITY: Uses counter-based nonces to prevent nonce reuse attacks.
  */
+
+import { NonceManager } from '@/lib/crypto/nonce-manager';
+
+// Counter-based nonce manager for file encryption
+let fileEncryptionNonceManager: NonceManager = new NonceManager();
+
+/**
+ * Reset the file encryption nonce manager (call when key is rotated)
+ */
+export function resetFileEncryptionNonceManager(): void {
+    fileEncryptionNonceManager = new NonceManager();
+}
 
 // Convert Uint8Array to ArrayBuffer for Web Crypto API compatibility
 function toArrayBuffer(data: Uint8Array): ArrayBuffer {
     return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
 }
 
-// Derive a key from password using PBKDF2
+// Derive a key from password using Argon2id (with PBKDF2 fallback)
 async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
-    const encoder = new TextEncoder();
-    const passwordBuffer = encoder.encode(password);
+    // Import Argon2 module dynamically
+    const { deriveKeyFromPassword } = await import('@/lib/crypto/argon2-browser');
 
-    const baseKey = await crypto.subtle.importKey(
+    // Derive key bytes using Argon2id (or PBKDF2 fallback)
+    const keyBytes = await deriveKeyFromPassword(password, salt);
+
+    // Import the derived bytes as a CryptoKey for AES-GCM
+    return crypto.subtle.importKey(
         'raw',
-        toArrayBuffer(passwordBuffer),
-        'PBKDF2',
-        false,
-        ['deriveKey']
-    );
-
-    return crypto.subtle.deriveKey(
-        {
-            name: 'PBKDF2',
-            salt: toArrayBuffer(salt),
-            iterations: 100000,
-            hash: 'SHA-256'
-        },
-        baseKey,
+        toArrayBuffer(keyBytes),
         { name: 'AES-GCM', length: 256 },
         false,
         ['encrypt', 'decrypt']
     );
 }
 
-// Generate random bytes
+// Generate random bytes (for salt only, not for nonces)
 function randomBytes(length: number): Uint8Array {
     return crypto.getRandomValues(new Uint8Array(length));
+}
+
+// Get counter-based nonce for encryption (prevents nonce reuse attacks)
+function getNextNonce(): Uint8Array {
+    return fileEncryptionNonceManager.getNextNonce();
 }
 
 /**
  * Encrypt file data with a password
  * Returns encrypted blob with salt and IV prepended
+ *
+ * SECURITY: Uses counter-based nonces to prevent nonce reuse attacks.
  */
 export async function encryptFileWithPassword(
     data: ArrayBuffer,
     password: string
 ): Promise<ArrayBuffer> {
     const salt = randomBytes(16);
-    const iv = randomBytes(12);
+    // Use counter-based nonce instead of random to prevent collision attacks
+    const iv = getNextNonce();
     const key = await deriveKey(password, salt);
 
     const encrypted = await crypto.subtle.encrypt(

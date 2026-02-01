@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from 'react';
 import {
-    SASResult,
     VerificationSession,
     VerificationStatus,
     createVerificationSession,

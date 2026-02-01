@@ -10,6 +10,25 @@ import { secureStorage } from './secure-storage';
 
 const TRANSFER_STATE_KEY = 'Tallow_transfer_states';
 
+/**
+ * Serialized transfer state for JSON storage
+ */
+interface SerializedTransferState {
+    id: string;
+    fileName: string;
+    fileType: string;
+    fileSize: number;
+    totalChunks: number;
+    chunkSize: number;
+    receivedChunks: number[];
+    receivedBytes: number;
+    senderDeviceId: string;
+    startedAt: string;
+    lastUpdated: string;
+    status: 'in-progress' | 'paused' | 'completed' | 'failed';
+    chunks: ArrayBuffer[];
+}
+
 export interface ChunkInfo {
     index: number;
     size: number;
@@ -35,16 +54,20 @@ export interface TransferState {
 
 // Get all transfer states
 export async function getTransferStates(): Promise<Record<string, TransferState>> {
-    if (typeof window === 'undefined') return {};
+    if (typeof window === 'undefined') {return {};}
 
     try {
         const stored = await secureStorage.getItem(TRANSFER_STATE_KEY);
         if (stored) {
-            const states = JSON.parse(stored);
+            const serializedStates = JSON.parse(stored) as Record<string, SerializedTransferState>;
+            const states: Record<string, TransferState> = {};
             // Convert dates
-            Object.values(states).forEach((state: any) => {
-                state.startedAt = new Date(state.startedAt);
-                state.lastUpdated = new Date(state.lastUpdated);
+            Object.entries(serializedStates).forEach(([key, state]) => {
+                states[key] = {
+                    ...state,
+                    startedAt: new Date(state.startedAt),
+                    lastUpdated: new Date(state.lastUpdated),
+                };
             });
             return states;
         }
@@ -61,7 +84,7 @@ export async function getTransferState(transferId: string): Promise<TransferStat
 
 // Save transfer state
 export async function saveTransferState(state: TransferState): Promise<void> {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {return;}
 
     const states = await getTransferStates();
     states[state.id] = {
@@ -72,7 +95,7 @@ export async function saveTransferState(state: TransferState): Promise<void> {
 
     try {
         await secureStorage.setItem(TRANSFER_STATE_KEY, JSON.stringify(states));
-    } catch (e) {
+    } catch (_e) {
         secureLog.error('Failed to save transfer state');
     }
 }
@@ -115,7 +138,7 @@ export async function updateTransferProgress(
     chunkData: ArrayBuffer
 ): Promise<TransferState | null> {
     const state = await getTransferState(transferId);
-    if (!state) return null;
+    if (!state) {return null;}
 
     if (!state.receivedChunks.includes(chunkIndex)) {
         state.receivedChunks.push(chunkIndex);
@@ -145,7 +168,7 @@ export async function pauseTransfer(transferId: string): Promise<void> {
 // Get missing chunks for resume
 export async function getMissingChunks(transferId: string): Promise<number[]> {
     const state = await getTransferState(transferId);
-    if (!state) return [];
+    if (!state) {return [];}
 
     const missing: number[] = [];
     for (let i = 0; i < state.totalChunks; i++) {
@@ -181,7 +204,7 @@ export async function removeTransferState(transferId: string): Promise<void> {
 
 // Clear all transfer states
 export function clearAllTransferStates(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {return;}
     secureStorage.removeItem(TRANSFER_STATE_KEY);
 }
 

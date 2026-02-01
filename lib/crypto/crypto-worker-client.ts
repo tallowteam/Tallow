@@ -3,9 +3,12 @@
 /**
  * Crypto Worker Client
  * Provides a clean API for using the crypto WebWorker
+ *
+ * SECURITY: Uses counter-based nonces to prevent nonce reuse attacks.
  */
 
 import { generateUUID } from '../utils/uuid';
+import { NonceManager } from './nonce-manager';
 
 type WorkerResponse = {
     id: string;
@@ -19,13 +22,15 @@ class CryptoWorkerClient {
     private pendingRequests: Map<string, { resolve: (value: unknown) => void; reject: (error: Error) => void }> = new Map();
     private isReady = false;
     private readyPromise: Promise<void> | null = null;
+    // Counter-based nonce manager to prevent nonce reuse attacks
+    private nonceManager: NonceManager = new NonceManager();
 
     /**
      * Initialize the worker
      */
     async init(): Promise<void> {
-        if (this.worker) return;
-        if (typeof window === 'undefined') return;
+        if (this.worker) {return;}
+        if (typeof window === 'undefined') {return;}
 
         // Create worker
         this.worker = new Worker(
@@ -88,10 +93,25 @@ class CryptoWorkerClient {
     }
 
     /**
+     * Reset the nonce manager (call when key is rotated)
+     *
+     * SECURITY: Must be called whenever the encryption key changes
+     */
+    resetNonceManager(): void {
+        this.nonceManager = new NonceManager();
+    }
+
+    /**
      * Encrypt data using AES-256-GCM
+     *
+     * SECURITY: Uses counter-based nonces generated client-side to prevent
+     * nonce reuse attacks. The nonce is passed to the worker to ensure
+     * consistent nonce management across the application.
      */
     async encrypt(data: ArrayBuffer, key: ArrayBuffer): Promise<{ ciphertext: ArrayBuffer; nonce: ArrayBuffer }> {
-        return this.request('encrypt', { data, key });
+        // Generate counter-based nonce client-side for consistency
+        const nonce = this.nonceManager.getNextNonce();
+        return this.request('encrypt', { data, key, nonce: nonce.buffer });
     }
 
     /**

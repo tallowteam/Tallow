@@ -68,9 +68,11 @@ export function TransferOptionsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Settings2 className="w-5 h-5" />
-            Transfer Options
+          <DialogTitle className="flex items-center gap-3 text-[#191610] dark:text-[#fefefc]">
+            <div className="p-2 rounded-xl bg-[#b2987d]/10 dark:bg-[#b2987d]/20">
+              <Settings2 className="w-5 h-5 text-[#b2987d]" />
+            </div>
+            <span>Transfer Options</span>
           </DialogTitle>
           <DialogDescription>
             {fileName
@@ -83,12 +85,12 @@ export function TransferOptionsDialog({
           {/* Password Protection */}
           <div className="flex items-center justify-between space-x-4">
             <div className="flex items-start gap-3 flex-1">
-              <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+              <Shield className="w-5 h-5 text-[#b2987d] mt-0.5" />
               <div className="space-y-1">
-                <Label htmlFor="password-toggle" className="text-base cursor-pointer">
+                <Label htmlFor="password-toggle" className="text-base cursor-pointer text-[#191610] dark:text-[#fefefc]">
                   Password Protection
                 </Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-[#b2987d]">
                   Require password to decrypt file
                 </p>
               </div>
@@ -105,12 +107,12 @@ export function TransferOptionsDialog({
           {/* Digital Signature */}
           <div className="flex items-center justify-between space-x-4">
             <div className="flex items-start gap-3 flex-1">
-              <FileSignature className="w-5 h-5 text-purple-600 dark:text-purple-400 mt-0.5" />
+              <FileSignature className="w-5 h-5 text-[#b2987d] mt-0.5" />
               <div className="space-y-1">
-                <Label htmlFor="sign-toggle" className="text-base cursor-pointer">
+                <Label htmlFor="sign-toggle" className="text-base cursor-pointer text-[#191610] dark:text-[#fefefc]">
                   Digital Signature
                 </Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-[#b2987d]">
                   Sign file to verify authenticity
                 </p>
               </div>
@@ -127,12 +129,12 @@ export function TransferOptionsDialog({
           {/* One-Time Transfer */}
           <div className="flex items-center justify-between space-x-4">
             <div className="flex items-start gap-3 flex-1">
-              <Download className="w-5 h-5 text-orange-600 dark:text-orange-400 mt-0.5" />
+              <Download className="w-5 h-5 text-[#b2987d] mt-0.5" />
               <div className="space-y-1">
-                <Label htmlFor="onetime-toggle" className="text-base cursor-pointer">
+                <Label htmlFor="onetime-toggle" className="text-base cursor-pointer text-[#191610] dark:text-[#fefefc]">
                   One-Time Transfer
                 </Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-[#b2987d]">
                   Auto-delete after first download
                 </p>
               </div>
@@ -149,12 +151,12 @@ export function TransferOptionsDialog({
           {/* Expiration Time */}
           <div className="space-y-3">
             <div className="flex items-start gap-3">
-              <Clock className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" />
+              <Clock className="w-5 h-5 text-[#b2987d] mt-0.5" />
               <div className="space-y-1 flex-1">
-                <Label htmlFor="expiration" className="text-base">
+                <Label htmlFor="expiration" className="text-base text-[#191610] dark:text-[#fefefc]">
                   Auto-Expiration
                 </Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-[#b2987d]">
                   Automatically delete transfer after time period
                 </p>
               </div>
@@ -182,9 +184,12 @@ export function TransferOptionsDialog({
           </div>
 
           {/* Summary */}
-          <div className="p-3 bg-muted rounded-md space-y-1">
-            <p className="text-sm font-medium">Selected Options:</p>
-            <ul className="text-xs text-muted-foreground space-y-0.5">
+          <div className="p-4 rounded-xl space-y-1
+            bg-gradient-to-br from-[#b2987d]/5 to-[#b2987d]/10
+            dark:from-[#b2987d]/10 dark:to-[#b2987d]/5
+            border border-[#e5dac7] dark:border-[#544a36]">
+            <p className="text-sm font-semibold text-[#191610] dark:text-[#fefefc]">Selected Options:</p>
+            <ul className="text-xs text-[#b2987d] space-y-0.5">
               {options.passwordProtected && <li>• Password protected</li>}
               {options.signed && <li>• Digitally signed</li>}
               {options.oneTime && <li>• One-time download</li>}

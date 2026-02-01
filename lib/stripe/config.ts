@@ -4,7 +4,7 @@ let stripeInstance: Stripe | null = null;
 
 export function getStripe(): Stripe {
   if (!stripeInstance) {
-    const key = process.env.STRIPE_SECRET_KEY;
+    const key = process.env['STRIPE_SECRET_KEY'];
     if (!key) {
       throw new Error('STRIPE_SECRET_KEY is not configured');
     }
@@ -23,7 +23,7 @@ export const DONATION_AMOUNTS = [
 
 export function isStripeConfigured(): boolean {
   return !!(
-    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY &&
-    process.env.STRIPE_SECRET_KEY
+    process.env['NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'] &&
+    process.env['STRIPE_SECRET_KEY']
   );
 }

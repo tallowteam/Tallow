@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Copy, Download, Share2, Check } from 'lucide-react';
 import { useState } from 'react';
 
-interface QRCodeGeneratorProps {
+export interface QRCodeGeneratorProps {
     value: string;
     title?: string;
     subtitle?: string;
@@ -31,7 +31,7 @@ export function QRCodeGenerator({
     useEffect(() => {
         const generateQR = async () => {
             const canvas = canvasRef.current;
-            if (!canvas) return;
+            if (!canvas) {return;}
 
             try {
                 // Dynamically import QRCode library
@@ -75,7 +75,7 @@ export function QRCodeGenerator({
 
     const handleDownload = () => {
         const canvas = canvasRef.current;
-        if (!canvas) return;
+        if (!canvas) {return;}
 
         const link = document.createElement('a');
         link.download = 'Tallow-qr.png';
@@ -86,10 +86,11 @@ export function QRCodeGenerator({
     const handleShare = async () => {
         if (navigator.share) {
             try {
+                const url = value.startsWith('http') ? value : undefined;
                 await navigator.share({
                     title: 'Tallow Connection',
                     text: value,
-                    url: value.startsWith('http') ? value : undefined
+                    ...(url ? { url } : {})
                 });
             } catch {
                 // User cancelled or share failed - silently ignore
@@ -108,7 +109,7 @@ export function QRCodeGenerator({
 
                 {/* QR Code */}
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30">
-                    <canvas ref={canvasRef} width={size} height={size} className="rounded-lg" />
+                    <canvas ref={canvasRef} width={size} height={size} className="rounded-lg" aria-label="QR code for connection" />
                 </div>
 
                 {/* Connection Code Display */}
@@ -126,32 +127,37 @@ export function QRCodeGenerator({
                 {/* Action Buttons */}
                 <div className="flex items-center gap-2">
                     {showCopyButton && (
-                        <Button variant="outline" size="sm" onClick={handleCopy}>
+                        <Button variant="outline" size="sm" onClick={handleCopy} aria-label={copied ? "Code copied to clipboard" : "Copy connection code"}>
                             {copied ? (
                                 <>
-                                    <Check className="w-4 h-4 mr-2 text-green-500" />
+                                    <Check className="w-4 h-4 mr-2 text-green-500" aria-hidden="true" />
                                     Copied!
                                 </>
                             ) : (
                                 <>
-                                    <Copy className="w-4 h-4 mr-2" />
+                                    <Copy className="w-4 h-4 mr-2" aria-hidden="true" />
                                     Copy
                                 </>
                             )}
                         </Button>
                     )}
                     {showDownloadButton && (
-                        <Button variant="outline" size="sm" onClick={handleDownload}>
-                            <Download className="w-4 h-4 mr-2" />
+                        <Button variant="outline" size="sm" onClick={handleDownload} aria-label="Download QR code as image">
+                            <Download className="w-4 h-4 mr-2" aria-hidden="true" />
                             Download
                         </Button>
                     )}
                     {showShareButton && (
-                        <Button variant="outline" size="sm" onClick={handleShare}>
-                            <Share2 className="w-4 h-4 mr-2" />
+                        <Button variant="outline" size="sm" onClick={handleShare} aria-label="Share connection code">
+                            <Share2 className="w-4 h-4 mr-2" aria-hidden="true" />
                             Share
                         </Button>
                     )}
+                
+                    {/* Live region for copy feedback */}
+                    <div role="status" aria-live="polite" className="sr-only">
+                        {copied ? 'Connection code copied to clipboard' : ''}
+                    </div>
                 </div>
             </div>
         </Card>

@@ -42,7 +42,8 @@ const WORD_LIST = [
 function secureRandomIndex(max: number): number {
     const array = new Uint32Array(1);
     crypto.getRandomValues(array);
-    return array[0] % max;
+    const value = array[0];
+    return value !== undefined ? value % max : 0;
 }
 
 /**
@@ -57,8 +58,11 @@ export function generateWordPhrase(wordCount: number = 4): string {
     while (words.length < wordCount) {
         const index = secureRandomIndex(WORD_LIST.length);
         if (!usedIndices.has(index)) {
-            usedIndices.add(index);
-            words.push(WORD_LIST[index]);
+            const word = WORD_LIST[index];
+            if (word) {
+                usedIndices.add(index);
+                words.push(word);
+            }
         }
     }
 
@@ -77,7 +81,10 @@ export function generateShortCode(): string {
 
     let code = '';
     for (let i = 0; i < 8; i++) {
-        code += chars[values[i] % chars.length];
+        const value = values[i];
+        if (value !== undefined) {
+            code += chars[value % chars.length];
+        }
     }
     return code;
 }
@@ -108,14 +115,14 @@ export function phraseToHash(phrase: string): string {
 // Validate word phrase format
 export function isValidWordPhrase(input: string): boolean {
     const words = input.toLowerCase().trim().split('-');
-    if (words.length < 2 || words.length > 5) return false;
+    if (words.length < 2 || words.length > 5) {return false;}
     return words.every(word => WORD_LIST.includes(word));
 }
 
 // Validate short code format (only unambiguous alphanumeric, no special chars)
 export function isValidShortCode(input: string): boolean {
     const code = input.toUpperCase().trim();
-    if (code.length < 6 || code.length > 8) return false;
+    if (code.length < 6 || code.length > 8) {return false;}
     return /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]+$/.test(code);
 }
 

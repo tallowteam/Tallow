@@ -30,16 +30,28 @@ export interface ClipboardHistoryItem {
 const HISTORY_KEY = 'Tallow_clipboard_history';
 const MAX_HISTORY = 20;
 
+/**
+ * Serialized format stored in local storage
+ */
+interface SerializedClipboardHistoryItem {
+    id: string;
+    content: string;
+    fromDevice: string;
+    fromName: string;
+    receivedAt: string;
+    isLocal: boolean;
+}
+
 // Get clipboard history from storage
 export async function getClipboardHistory(): Promise<ClipboardHistoryItem[]> {
-    if (typeof window === 'undefined') return [];
+    if (typeof window === 'undefined') {return [];}
 
     try {
         const stored = await secureStorage.getItem(HISTORY_KEY);
-        if (!stored) return [];
+        if (!stored) {return [];}
 
-        const items = JSON.parse(stored);
-        return items.map((item: any) => ({
+        const items = JSON.parse(stored) as SerializedClipboardHistoryItem[];
+        return items.map((item: SerializedClipboardHistoryItem) => ({
             ...item,
             receivedAt: new Date(item.receivedAt),
         }));
@@ -73,7 +85,7 @@ export function clearClipboardHistory(): void {
 // Read from system clipboard
 export async function readClipboard(): Promise<string | null> {
     try {
-        if (!navigator.clipboard) return null;
+        if (!navigator.clipboard) {return null;}
         const text = await navigator.clipboard.readText();
         return text || null;
     } catch {
@@ -84,7 +96,7 @@ export async function readClipboard(): Promise<string | null> {
 // Write to system clipboard
 export async function writeClipboard(text: string): Promise<boolean> {
     try {
-        if (!navigator.clipboard) return false;
+        if (!navigator.clipboard) {return false;}
         await navigator.clipboard.writeText(text);
         return true;
     } catch {
@@ -108,22 +120,24 @@ export function createClipboardMessage(
 }
 
 // Parse incoming clipboard message
-export function parseClipboardMessage(data: any): ClipboardMessage | null {
-    if (data?.type !== 'clipboard') return null;
-    if (typeof data.content !== 'string') return null;
+export function parseClipboardMessage(data: unknown): ClipboardMessage | null {
+    if (!data || typeof data !== 'object') {return null;}
+    const msg = data as Record<string, unknown>;
+    if (msg['type'] !== 'clipboard') {return null;}
+    if (typeof msg['content'] !== 'string') {return null;}
 
     return {
         type: 'clipboard',
-        content: data.content,
-        timestamp: data.timestamp || Date.now(),
-        senderId: data.senderId || 'unknown',
-        senderName: data.senderName || 'Unknown Device',
+        content: msg['content'] as string,
+        timestamp: (msg['timestamp'] as number) || Date.now(),
+        senderId: (msg['senderId'] as string) || 'unknown',
+        senderName: (msg['senderName'] as string) || 'Unknown Device',
     };
 }
 
 // Truncate long clipboard content for display
 export function truncateContent(content: string, maxLength: number = 50): string {
-    if (content.length <= maxLength) return content;
+    if (content.length <= maxLength) {return content;}
     return content.slice(0, maxLength) + '...';
 }
 

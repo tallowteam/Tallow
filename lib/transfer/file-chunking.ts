@@ -50,6 +50,7 @@ export async function* chunkFile(
             totalChunks,
             data,
             hash: chunkHash,
+            encrypted: false,
         };
 
         offset += chunkSize;
@@ -122,7 +123,7 @@ export class ChunkCollector {
      * Check if all chunks have been received
      */
     isComplete(): boolean {
-        if (!this.meta) return false;
+        if (!this.meta) {return false;}
         return this.chunks.size === this.meta.totalChunks;
     }
 
@@ -130,7 +131,7 @@ export class ChunkCollector {
      * Get the current progress (0-100)
      */
     getProgress(): number {
-        if (!this.meta) return 0;
+        if (!this.meta) {return 0;}
         return (this.chunks.size / this.meta.totalChunks) * 100;
     }
 
@@ -145,7 +146,7 @@ export class ChunkCollector {
      * Get missing chunk indices
      */
     getMissingChunks(): number[] {
-        if (!this.meta) return [];
+        if (!this.meta) {return [];}
 
         const missing: number[] = [];
         for (let i = 0; i < this.meta.totalChunks; i++) {
@@ -160,13 +161,13 @@ export class ChunkCollector {
      * Assemble the file from chunks
      */
     assemble(): Blob | null {
-        if (!this.isComplete() || !this.meta) return null;
+        if (!this.isComplete() || !this.meta) {return null;}
 
         // Sort chunks by index and combine
         const sortedChunks: ArrayBuffer[] = [];
         for (let i = 0; i < this.meta.totalChunks; i++) {
             const chunk = this.chunks.get(i);
-            if (!chunk) return null;
+            if (!chunk) {return null;}
             sortedChunks.push(chunk);
         }
 
@@ -216,7 +217,7 @@ export function estimateTransferTime(
     fileSize: number,
     speedBytesPerSecond: number
 ): number {
-    if (speedBytesPerSecond <= 0) return Infinity;
+    if (speedBytesPerSecond <= 0) {return Infinity;}
     return Math.ceil(fileSize / speedBytesPerSecond);
 }
 
@@ -224,7 +225,7 @@ export function estimateTransferTime(
  * Format file size for display
  */
 export function formatFileSize(bytes: number): string {
-    if (bytes === 0) return '0 B';
+    if (bytes === 0) {return '0 B';}
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -242,7 +243,7 @@ export function formatSpeed(bytesPerSecond: number): string {
  * Format time duration for display
  */
 export function formatDuration(seconds: number): string {
-    if (!isFinite(seconds) || seconds < 0) return '--:--';
+    if (!isFinite(seconds) || seconds < 0) {return '--:--';}
 
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);

@@ -220,7 +220,7 @@ export function EmailFallbackDialog({
                 </div>
                 <div className="flex-shrink-0">
                   {mode === 'link' ? (
-                    <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
+                    <div className="flex items-center gap-1 text-xs text-[#fefefc] dark:text-[#fefefc]">
                       <Upload className="h-3 w-3" />
                       <span>Link</span>
                     </div>

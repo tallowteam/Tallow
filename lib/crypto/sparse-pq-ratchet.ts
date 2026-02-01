@@ -195,7 +195,7 @@ export class SparsePQRatchet {
             messageKey,
             epoch: this.state.epoch,
             messageNumber,
-            kemCiphertext,
+            ...(kemCiphertext ? { kemCiphertext } : {}),
         };
     }
 
@@ -239,10 +239,11 @@ export class SparsePQRatchet {
         // Generate new keypair for next epoch
         const newKeyPair = await pqCrypto.generateHybridKeypair();
 
-        // Securely delete old keys
+        // Securely delete old keys and shared secret
         this.secureDelete(this.state.ourKeyPair.kyber.secretKey);
         this.secureDelete(this.state.ourKeyPair.x25519.privateKey);
         this.secureDelete(this.state.epochSecret);
+        this.secureDelete(sharedSecret);
 
         // Update state
         this.state.epoch = targetEpoch;
@@ -259,7 +260,7 @@ export class SparsePQRatchet {
      * Confirm our outbound KEM was received and processed
      */
     async confirmEpochAdvance(): Promise<void> {
-        if (!this.state.pendingOutboundKEM) return;
+        if (!this.state.pendingOutboundKEM) {return;}
 
         const { epoch, secret } = this.state.pendingOutboundKEM;
 
@@ -269,10 +270,11 @@ export class SparsePQRatchet {
         // Generate new keypair
         const newKeyPair = await pqCrypto.generateHybridKeypair();
 
-        // Securely delete old keys
+        // Securely delete old keys and pending secret
         this.secureDelete(this.state.ourKeyPair.kyber.secretKey);
         this.secureDelete(this.state.ourKeyPair.x25519.privateKey);
         this.secureDelete(this.state.epochSecret);
+        this.secureDelete(secret);
 
         // Update state
         this.state.epoch = epoch;
@@ -300,18 +302,26 @@ export class SparsePQRatchet {
         const combined = new Uint8Array(secret1.length + secret2.length);
         combined.set(secret1, 0);
         combined.set(secret2, secret1.length);
-        return hkdf(sha256, combined, undefined, SCKA_INFO, 32);
+        const result = hkdf(sha256, combined, undefined, SCKA_INFO, 32);
+
+        // Secure cleanup of intermediate data
+        combined.fill(0);
+
+        return result;
     }
 
     /**
      * Securely wipe key material
      */
     private secureDelete(data: Uint8Array): void {
-        if (!data) return;
+        if (!data) {return;}
         try {
             const random = crypto.getRandomValues(new Uint8Array(data.length));
             for (let i = 0; i < data.length; i++) {
-                data[i] = random[i];
+                const byte = random[i];
+                if (byte !== undefined) {
+                    data[i] = byte;
+                }
             }
             data.fill(0);
         } catch {

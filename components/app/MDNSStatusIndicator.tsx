@@ -43,14 +43,14 @@ export function MDNSStatusIndicator({
         ws = new WebSocket('ws://localhost:53318');
 
         ws.onopen = () => {
-          if (!mounted) return;
+          if (!mounted) {return;}
           setStatus('connected');
           // Request device list
           ws?.send(JSON.stringify({ type: 'get-devices' }));
         };
 
         ws.onmessage = (event) => {
-          if (!mounted) return;
+          if (!mounted) {return;}
           try {
             const data = JSON.parse(event.data);
             if (data.type === 'device-list') {
@@ -71,12 +71,12 @@ export function MDNSStatusIndicator({
         };
 
         ws.onerror = () => {
-          if (!mounted) return;
+          if (!mounted) {return;}
           setStatus('disconnected');
         };
 
         ws.onclose = () => {
-          if (!mounted) return;
+          if (!mounted) {return;}
           setStatus('disconnected');
         };
       } catch {
@@ -128,7 +128,7 @@ export function MDNSStatusIndicator({
     discovering: {
       icon: Radio,
       label: 'Discovering...',
-      color: 'text-blue-500',
+      color: 'text-[#fefefc]',
       animate: 'animate-pulse',
     },
   };
@@ -160,5 +160,3 @@ export function MDNSStatusIndicator({
     </div>
   );
 }
-
-export default MDNSStatusIndicator;

@@ -19,7 +19,7 @@ import type { LucideIcon, LucideProps } from 'lucide-react';
    - Primary icon color: #b2987d
    - Dark mode icons: #fefefc
    - Light mode icons: #191610
-   - Accent: #0099ff
+   - Accent: #fefefc
 
    Size Standards:
    - h-4 w-4 (16px): Small/compact
@@ -429,7 +429,7 @@ const statusColorMap = {
   success: 'bg-emerald-500',
   warning: 'bg-amber-500',
   error: 'bg-red-500',
-  info: 'bg-blue-500',
+  info: 'bg-[#fefefc]',
   neutral: 'bg-zinc-400',
 };
 

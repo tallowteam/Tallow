@@ -76,8 +76,12 @@ export function generateSAS(sharedSecret: Uint8Array, sessionId?: string): SASRe
     const words: string[] = [];
     for (let i = 0; i < SAS_WORD_COUNT; i++) {
         // Use 2 bytes per word for better distribution
-        const index = (hash[i * 2] << 8 | hash[i * 2 + 1]) % WORD_LIST.length;
-        words.push(WORD_LIST[index]);
+        const byte1 = hash[i * 2];
+        const byte2 = hash[i * 2 + 1];
+        if (byte1 === undefined || byte2 === undefined) {continue;}
+        const index = (byte1 << 8 | byte2) % WORD_LIST.length;
+        const word = WORD_LIST[index];
+        if (word) {words.push(word);}
     }
 
     return {
@@ -108,7 +112,13 @@ export function generateNumericSAS(sharedSecret: Uint8Array): string {
     const hash = pqCrypto.hash(sharedSecret);
 
     // Use first 3 bytes to generate 6 digits
-    const num = (hash[0] << 16 | hash[1] << 8 | hash[2]) % 1000000;
+    const byte0 = hash[0];
+    const byte1 = hash[1];
+    const byte2 = hash[2];
+    if (byte0 === undefined || byte1 === undefined || byte2 === undefined) {
+        return '000000'; // fallback
+    }
+    const num = (byte0 << 16 | byte1 << 8 | byte2) % 1000000;
     return num.toString().padStart(6, '0');
 }
 
@@ -141,7 +151,7 @@ let cacheLoading: Promise<void> | null = null;
  * Load sessions from secure storage into cache
  */
 async function loadSessionsCache(): Promise<VerificationSession[]> {
-    if (sessionsCache !== null) return sessionsCache;
+    if (sessionsCache !== null) {return sessionsCache;}
 
     if (typeof window === 'undefined') {
         sessionsCache = [];
@@ -171,7 +181,7 @@ export function initVerificationCache(): Promise<void> {
  * Save verification session (async, updates cache)
  */
 export async function saveVerificationSession(session: VerificationSession): Promise<void> {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {return;}
 
     const sessions = await loadSessionsCache();
     const existingIndex = sessions.findIndex(s => s.id === session.id);

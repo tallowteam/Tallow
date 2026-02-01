@@ -62,9 +62,11 @@ export function MetadataStripDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-amber-500" />
-            Sensitive Metadata Detected
+          <DialogTitle className="flex items-center gap-3 text-[#191610] dark:text-[#fefefc]">
+            <div className="p-2 rounded-xl bg-amber-500/10 dark:bg-amber-500/20">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+            </div>
+            <span>Sensitive Metadata Detected</span>
           </DialogTitle>
           <DialogDescription>
             {totalSensitiveFiles === 1
@@ -75,14 +77,14 @@ export function MetadataStripDialog({
 
         <div className="space-y-4 py-4">
           {/* Warning Card */}
-          <Card className="p-4 border-amber-500/50 bg-amber-500/10">
+          <Card className="p-4 border-amber-500/30 dark:border-amber-500/40 bg-amber-500/10 dark:bg-amber-500/15">
             <div className="flex items-start gap-3">
               <FileWarning className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
               <div className="flex-1 text-sm">
-                <p className="font-medium text-amber-500 mb-2">
+                <p className="font-medium text-amber-600 dark:text-amber-400 mb-2">
                   Privacy Warning
                 </p>
-                <p className="text-muted-foreground">
+                <p className="text-[#b2987d]">
                   The selected files contain the following sensitive information that could
                   reveal your identity or location:
                 </p>
@@ -92,10 +94,10 @@ export function MetadataStripDialog({
 
           {/* Sensitive Data Types */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Detected Information:</Label>
+            <Label className="text-sm font-semibold text-[#191610] dark:text-[#fefefc]">Detected Information:</Label>
             <div className="flex flex-wrap gap-2">
               {Array.from(sensitiveTypes).map((type, index) => (
-                <Badge key={index} variant="outline" className="border-amber-500/50">
+                <Badge key={index} variant="outline" className="border-amber-500/50 text-amber-600 dark:text-amber-400">
                   {type}
                 </Badge>
               ))}
@@ -106,18 +108,20 @@ export function MetadataStripDialog({
 
           {/* Files List */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Affected Files:</Label>
+            <Label className="text-sm font-semibold text-[#191610] dark:text-[#fefefc]">Affected Files:</Label>
             <div className="max-h-32 overflow-y-auto space-y-1">
               {filesWithSensitiveData.slice(0, 5).map((file, index) => (
                 <div
                   key={index}
-                  className="text-sm text-muted-foreground truncate px-3 py-1.5 rounded-md bg-secondary"
+                  className="text-sm text-[#b2987d] truncate px-3 py-1.5 rounded-xl
+                    bg-[#e5dac7]/30 dark:bg-[#544a36]/30
+                    border border-[#e5dac7] dark:border-[#544a36]"
                 >
                   {file.name}
                 </div>
               ))}
               {filesWithSensitiveData.length > 5 && (
-                <div className="text-sm text-muted-foreground text-center py-1">
+                <div className="text-sm text-[#b2987d] text-center py-1">
                   +{filesWithSensitiveData.length - 5} more files
                 </div>
               )}
@@ -125,14 +129,14 @@ export function MetadataStripDialog({
           </div>
 
           {/* Info Card */}
-          <Card className="p-4 border-blue-500/50 bg-blue-500/10">
+          <Card className="p-4 border-[#b2987d]/30 dark:border-[#b2987d]/40 bg-[#b2987d]/10 dark:bg-[#b2987d]/15">
             <div className="flex items-start gap-3">
-              <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+              <Info className="w-5 h-5 text-[#b2987d] shrink-0 mt-0.5" />
               <div className="text-sm">
-                <p className="font-medium text-blue-500 mb-1">
+                <p className="font-medium text-[#b2987d] mb-1">
                   Recommended: Strip Metadata
                 </p>
-                <p className="text-muted-foreground">
+                <p className="text-[#b2987d]/80">
                   We recommend removing this information before sharing to protect your privacy.
                   Image quality will not be affected.
                 </p>

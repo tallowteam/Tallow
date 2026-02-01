@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Shield, Lock, Key, Eye, Fingerprint, Layers, Radio, Globe } from "lucide-react";
 import { SiteNav } from "@/components/site-nav";
+
+export const metadata: Metadata = {
+    title: "Security | Tallow - Post-Quantum Encryption & Zero-Knowledge Architecture",
+    description: "Tallow's security: ML-KEM-768 + X25519 hybrid encryption, AES-256-GCM, Triple Ratchet Protocol, SAS verification, traffic obfuscation, and onion routing.",
+};
 
 const securityFeatures = [
     {
@@ -63,13 +69,13 @@ export default function SecurityPage() {
 
             {/* Hero */}
             <section className="section-hero-dark pt-32 pb-20">
-                <div className="container mx-auto px-6 relative z-10">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="max-w-4xl mx-auto text-center">
                         <div className="w-16 h-16 rounded-full flex items-center justify-center bg-hero-fg/10 mx-auto mb-6 animate-fade-up">
                             <Shield className="w-8 h-8" />
                         </div>
-                        <h1 className="display-lg mb-6 animate-fade-up stagger-1">Security</h1>
-                        <p className="body-xl max-w-2xl mx-auto animate-fade-up stagger-2 text-hero-muted">
+                        <h1 className="text-display-lg mb-6 animate-fade-up stagger-1">Security</h1>
+                        <p className="text-body-xl max-w-2xl mx-auto animate-fade-up stagger-2 text-hero-muted">
                             Military-grade encryption with post-quantum protection.
                             Your files are secure against both current and future threats.
                         </p>
@@ -78,24 +84,24 @@ export default function SecurityPage() {
             </section>
 
             {/* Security Features Grid */}
-            <section className="section-content-lg">
-                <div className="container mx-auto px-6">
+            <section className="py-16 sm:py-20 lg:py-24 bg-background">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="max-w-5xl mx-auto">
-                        <h2 className="heading-xl mb-12 text-center">How We Protect You</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <h2 className="text-heading-xl mb-10 sm:mb-12 text-center">How We Protect You</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                             {securityFeatures.map((feature, i) => (
                                 <div
                                     key={i}
-                                    className="card-feature animate-fade-up"
+                                    className="card-dark p-5 sm:p-6 animate-fade-up"
                                     style={{ animationDelay: `${i * 0.08}s` }}
                                 >
                                     <div className="flex items-start gap-4">
-                                        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-secondary shrink-0">
-                                            <feature.icon className="w-5 h-5" />
+                                        <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-secondary shrink-0">
+                                            <feature.icon className="w-6 h-6" />
                                         </div>
-                                        <div>
-                                            <h3 className="heading-sm mb-2">{feature.title}</h3>
-                                            <p className="body-md">{feature.desc}</p>
+                                        <div className="min-w-0">
+                                            <h3 className="text-heading-sm mb-2">{feature.title}</h3>
+                                            <p className="text-body-md">{feature.desc}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -106,19 +112,19 @@ export default function SecurityPage() {
             </section>
 
             {/* Protocol Table */}
-            <section className="section-dark">
-                <div className="container mx-auto px-6">
+            <section className="section-dark py-16 sm:py-20 lg:py-24">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="max-w-4xl mx-auto">
-                        <h2 className="heading-xl mb-12 text-center">Cryptographic Protocols</h2>
-                        <div className="space-y-4">
+                        <h2 className="text-heading-xl mb-10 sm:mb-12 text-center">Cryptographic Protocols</h2>
+                        <div className="space-y-3 sm:space-y-4">
                             {protocols.map((protocol, i) => (
                                 <div
                                     key={i}
-                                    className="flex items-center justify-between p-5 rounded-xl bg-hero-fg/5 border border-hero-fg/10 animate-fade-up"
+                                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 sm:p-5 rounded-xl bg-hero-fg/5 border border-hero-fg/10 animate-fade-up gap-1 sm:gap-4"
                                     style={{ animationDelay: `${i * 0.06}s` }}
                                 >
-                                    <span className="font-medium">{protocol.name}</span>
-                                    <span className="text-hero-muted font-mono text-sm">{protocol.value}</span>
+                                    <span className="font-medium text-sm sm:text-base">{protocol.name}</span>
+                                    <span className="text-hero-muted font-mono text-xs sm:text-sm">{protocol.value}</span>
                                 </div>
                             ))}
                         </div>
@@ -127,61 +133,61 @@ export default function SecurityPage() {
             </section>
 
             {/* Architecture */}
-            <section className="section-content border-t border-border">
-                <div className="container mx-auto px-6">
+            <section className="py-16 sm:py-20 lg:py-24 border-t border-border bg-background">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="max-w-4xl mx-auto">
-                        <h2 className="heading-xl mb-8">Security Architecture</h2>
-                        <div className="space-y-8">
-                            <div>
-                                <h3 className="heading-sm mb-3">End-to-End Encryption</h3>
-                                <p className="body-lg text-muted-foreground">
+                        <h2 className="text-heading-xl mb-8 sm:mb-10">Security Architecture</h2>
+                        <div className="space-y-8 sm:space-y-10">
+                            <article>
+                                <h3 className="text-heading-sm mb-3 sm:mb-4">End-to-End Encryption</h3>
+                                <p className="text-body-lg text-muted-foreground leading-relaxed">
                                     Files are encrypted on your device before any network transmission occurs.
                                     The encryption key is derived from a hybrid post-quantum key exchange that combines
                                     ML-KEM-768 (NIST-standardized) with X25519 elliptic curve Diffie-Hellman.
                                     Even if our signaling server were compromised, attackers cannot decrypt your files.
                                 </p>
-                            </div>
-                            <div>
-                                <h3 className="heading-sm mb-3">Forward Secrecy</h3>
-                                <p className="body-lg text-muted-foreground">
+                            </article>
+                            <article>
+                                <h3 className="text-heading-sm mb-3 sm:mb-4">Forward Secrecy</h3>
+                                <p className="text-body-lg text-muted-foreground leading-relaxed">
                                     The Triple Ratchet protocol continuously rotates encryption keys. Each message uses a unique
                                     key derived from the current chain state. The Sparse PQ Ratchet periodically performs
                                     fresh post-quantum key exchanges, ensuring long-lived sessions remain secure against
                                     quantum attacks.
                                 </p>
-                            </div>
-                            <div>
-                                <h3 className="heading-sm mb-3">Peer Authentication</h3>
-                                <p className="body-lg text-muted-foreground">
+                            </article>
+                            <article>
+                                <h3 className="text-heading-sm mb-3 sm:mb-4">Peer Authentication</h3>
+                                <p className="text-body-lg text-muted-foreground leading-relaxed">
                                     Signed prekeys bind each session to a verified identity. The Short Authentication String (SAS)
                                     protocol allows you to verify your peer out-of-band using emoji or word sequences,
                                     preventing man-in-the-middle attacks even against a compromised signaling server.
                                 </p>
-                            </div>
-                            <div>
-                                <h3 className="heading-sm mb-3">Open Source Audit</h3>
-                                <p className="body-lg text-muted-foreground">
+                            </article>
+                            <article>
+                                <h3 className="text-heading-sm mb-3 sm:mb-4">Open Source Audit</h3>
+                                <p className="text-body-lg text-muted-foreground leading-relaxed">
                                     All cryptographic code is open source and available for public audit. We use well-established
                                     libraries (noble-hashes, pqc-kyber) and follow NIST standards for post-quantum cryptography.
                                 </p>
-                            </div>
+                            </article>
                         </div>
                     </div>
                 </div>
             </section>
 
             {/* Footer */}
-            <footer className="border-t border-border py-12 bg-background">
-                <div className="container mx-auto px-6">
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <footer className="border-t border-border py-12 sm:py-16 bg-background">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
                         <Link href="/" className="text-xl tracking-tight lowercase font-serif text-foreground">
                             tallow
                         </Link>
-                        <div className="flex items-center gap-6">
+                        <nav className="flex items-center gap-6 sm:gap-8" aria-label="Footer navigation">
                             <Link href="/privacy" className="text-xs font-medium uppercase tracking-widest text-foreground hover:opacity-70 transition-opacity">Privacy</Link>
                             <Link href="/security" className="text-xs font-medium uppercase tracking-widest text-foreground hover:opacity-70 transition-opacity">Security</Link>
                             <Link href="/terms" className="text-xs font-medium uppercase tracking-widest text-foreground hover:opacity-70 transition-opacity">Terms</Link>
-                        </div>
+                        </nav>
                         <p className="text-sm text-muted-foreground">Open source &bull; Privacy first</p>
                     </div>
                 </div>

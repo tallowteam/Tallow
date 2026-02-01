@@ -11,10 +11,23 @@ import { LanguageDropdown } from "@/components/language-dropdown";
 import { useLanguage } from "@/lib/i18n/language-context";
 
 // ============================================================================
-// CONSTANTS
+// EUVEKA DESIGN CONSTANTS
 // ============================================================================
 
-const NAV_HEIGHT = 80; // px - used for inline styles
+/**
+ * EUVEKA Navigation Design Specifications:
+ * - Clean minimal design
+ * - Button radius: 60px (rounded-[60px])
+ * - Border: subtle #e5dac7 (light) / #544a36 (dark)
+ * - Height: 56-64px for nav buttons
+ * - Nav Heights: Mobile 64px, Tablet 72px, Desktop 80px, 3xl 88px, 4xl 96px
+ *
+ * Color Reference:
+ * - Border: #e5dac7 (light) / #544a36 (dark)
+ * - Background: #fefefc (light) / #191610 (dark)
+ * - Text primary: #191610 (light) / #fefefc (dark)
+ * - Text muted: #666666 (light) / #a3a3a3 (dark)
+ */
 
 // Navigation link configuration - labels are translation keys
 const NAV_LINK_CONFIG = [
@@ -146,6 +159,12 @@ function NavLink({
 // CTA BUTTON COMPONENT
 // ============================================================================
 
+/**
+ * CTA Button - EUVEKA Styled
+ * - 60px border radius
+ * - 56-64px height range
+ * - Subtle border with theme-aware colors
+ */
 function CTAButton({
   className,
   onClick,
@@ -161,10 +180,19 @@ function CTAButton({
       {...(onClick ? { onClick } : {})}
       className={cn(
         "inline-flex items-center justify-center",
-        "px-4 py-2 md:px-6 md:py-2.5 3xl:px-8 3xl:py-3 4xl:px-10 4xl:py-4 rounded-[60px]",
+        // EUVEKA: 60px radius, 56-64px height
+        "px-6 py-3 md:px-8 md:py-3 3xl:px-10 3xl:py-4 4xl:px-12 4xl:py-4",
+        "rounded-[60px]",
+        "min-h-[56px] md:min-h-[56px] 3xl:min-h-[60px] 4xl:min-h-[64px]",
         "text-sm 3xl:text-base 4xl:text-lg font-semibold",
-        "bg-[#fefefc] text-[#0a0a08]",
-        "hover:bg-[#e5e5e3] hover:shadow-[0_0_20px_rgba(254,254,252,0.3)]",
+        // EUVEKA: subtle border
+        "border border-[#e5dac7] dark:border-[#544a36]",
+        // EUVEKA: theme colors
+        "bg-[#fefefc] dark:bg-[#191610]",
+        "text-[#191610] dark:text-[#fefefc]",
+        // EUVEKA: hover state
+        "hover:bg-[#f3ede2] dark:hover:bg-[#242018]",
+        "hover:shadow-[0_0_20px_rgba(229,218,199,0.4)] dark:hover:shadow-[0_0_20px_rgba(84,74,54,0.4)]",
         "transition-all duration-300",
         className
       )}
@@ -195,7 +223,8 @@ function MobileNavLink({
         href={href}
         onClick={onClick}
         className={cn(
-          "block text-3xl font-medium py-4 transition-colors duration-200",
+          // EUVEKA Touch Target: 44px minimum height for mobile links
+          "block text-2xl sm:text-3xl font-medium py-4 min-h-[56px] flex items-center transition-colors duration-200",
           isActive
             ? "dark:text-[#fefefc] text-[#0a0a08]"
             : "dark:text-[#a3a3a3] text-[#666666] dark:hover:text-[#fefefc] hover:text-[#0a0a08]"
@@ -256,18 +285,19 @@ export function SiteNav() {
 
   return (
     <>
-      {/* Header */}
+      {/* Header - EUVEKA Responsive: Mobile 64px, Tablet 72px, Desktop 80px, 3xl 88px, 4xl 96px */}
       <header
         className={cn(
           "fixed top-0 left-0 right-0 z-50",
-          "h-16 md:h-20",
+          "h-16 md:h-[72px] lg:h-20 3xl:h-[88px] 4xl:h-24",
           "transition-all duration-300",
           scrolled
-            ? "dark:bg-[#0a0a08]/95 bg-white/95 backdrop-blur-xl border-b dark:border-[#262626] border-gray-200"
+            // EUVEKA: theme-aware background with subtle border
+            ? "bg-[#fefefc]/95 dark:bg-[#191610]/95 backdrop-blur-xl border-b border-[#e5dac7] dark:border-[#544a36]"
             : "bg-transparent border-b border-transparent"
         )}
       >
-        <nav id="site-navigation" aria-label="Main navigation" className="h-full max-w-[1400px] 3xl:max-w-[1800px] 4xl:max-w-[2200px] mx-auto px-4 md:px-6 lg:px-8 flex items-center justify-between">
+        <nav id="site-navigation" aria-label="Main navigation" className="h-full max-w-[1320px] lg:max-w-[1376px] xl:max-w-[1400px] 3xl:max-w-[1800px] 4xl:max-w-[2200px] mx-auto px-5 sm:px-6 md:px-8 lg:px-10 3xl:px-12 4xl:px-16 flex items-center justify-between">
           {/* Logo */}
           <TallowLogo />
 
@@ -290,11 +320,11 @@ export function SiteNav() {
             <CTAButton label={t("nav.getStarted")} />
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu Button - EUVEKA Touch Target: 44px minimum */}
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 -mr-2"
+            className="md:hidden p-3 -mr-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl hover:bg-white/5 dark:hover:bg-white/5 transition-colors"
             aria-label={mobileMenuOpen ? t("nav.closeMenu") : t("nav.openMenu")}
             aria-expanded={mobileMenuOpen}
             aria-controls="mobile-menu"
@@ -319,7 +349,7 @@ export function SiteNav() {
               aria-hidden="true"
             />
 
-            {/* Menu Panel */}
+            {/* Menu Panel - EUVEKA styled */}
             <motion.div
               variants={mobileMenuVariants}
               initial="closed"
@@ -332,21 +362,22 @@ export function SiteNav() {
               className={cn(
                 "fixed top-0 right-0 bottom-0 z-50",
                 "w-full max-w-md",
-                "dark:bg-[#0a0a08] bg-white",
+                // EUVEKA: theme colors with subtle border
+                "bg-[#fefefc] dark:bg-[#191610]",
+                "border-l border-[#e5dac7] dark:border-[#544a36]",
                 "md:hidden"
               )}
             >
               <div className="flex flex-col h-full">
-                {/* Mobile Header */}
+                {/* Mobile Header - EUVEKA styled border */}
                 <div
-                  className="flex items-center justify-between px-6 border-b dark:border-[#262626] border-gray-200"
-                  style={{ height: NAV_HEIGHT }}
+                  className="flex items-center justify-between px-5 sm:px-6 border-b border-[#e5dac7] dark:border-[#544a36] h-16"
                 >
                   <TallowLogo />
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={closeMobileMenu}
-                    className="p-2 -mr-2"
+                    className="p-3 -mr-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl hover:bg-white/5 dark:hover:bg-white/5 transition-colors"
                     aria-label={t("nav.closeMenu")}
                   >
                     <X className="w-6 h-6 dark:text-[#fefefc] text-[#0a0a08]" aria-hidden="true" />
@@ -372,8 +403,8 @@ export function SiteNav() {
                   ))}
                 </motion.nav>
 
-                {/* Mobile Settings Row */}
-                <div className="px-6 pb-6 flex items-center justify-between border-t dark:border-[#262626] border-gray-200 pt-6">
+                {/* Mobile Settings Row - EUVEKA styled border */}
+                <div className="px-6 pb-6 flex items-center justify-between border-t border-[#e5dac7] dark:border-[#544a36] pt-6">
                   <span className="text-sm dark:text-[#a3a3a3] text-[#666666]">{t("app.settings")}</span>
                   <div className="flex items-center gap-4">
                     <LanguageDropdown />
@@ -395,8 +426,8 @@ export function SiteNav() {
         )}
       </AnimatePresence>
 
-      {/* Spacer to prevent content from going under fixed header */}
-      <div style={{ height: NAV_HEIGHT }} />
+      {/* Spacer to prevent content from going under fixed header - Responsive */}
+      <div className="h-16 md:h-[72px] lg:h-20 3xl:h-[88px] 4xl:h-24" />
     </>
   );
 }

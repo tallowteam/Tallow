@@ -92,9 +92,11 @@ export function FriendSettingsDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <Settings className="w-5 h-5" />
-                        Friend Settings
+                    <DialogTitle className="flex items-center gap-3 text-[#191610] dark:text-[#fefefc]">
+                        <div className="p-2 rounded-xl bg-[#b2987d]/10 dark:bg-[#b2987d]/20">
+                            <Settings className="w-5 h-5 text-[#b2987d]" />
+                        </div>
+                        <span>Friend Settings</span>
                     </DialogTitle>
                     <DialogDescription>
                         Manage settings for {friend.name}
@@ -105,15 +107,18 @@ export function FriendSettingsDialog({
                     <>
                         <div className="space-y-6 py-4">
                             {/* Friend Info */}
-                            <div className="flex items-center gap-4 p-4 rounded-lg bg-secondary/50">
-                                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                                    <span className="text-lg font-bold">
+                            <div className="flex items-center gap-4 p-4 rounded-xl
+                                bg-gradient-to-br from-[#b2987d]/5 to-[#b2987d]/10
+                                dark:from-[#b2987d]/10 dark:to-[#b2987d]/5
+                                border border-[#e5dac7] dark:border-[#544a36]">
+                                <div className="w-12 h-12 rounded-xl bg-[#b2987d]/20 flex items-center justify-center">
+                                    <span className="text-lg font-bold text-[#b2987d]">
                                         {friend.name.charAt(0).toUpperCase()}
                                     </span>
                                 </div>
                                 <div className="flex-1">
-                                    <p className="font-medium">{friend.name}</p>
-                                    <code className="text-xs text-muted-foreground font-mono">
+                                    <p className="font-medium text-[#191610] dark:text-[#fefefc]">{friend.name}</p>
+                                    <code className="text-xs text-[#b2987d] font-mono">
                                         {formatFriendCode(friend.friendCode)}
                                     </code>
                                 </div>
@@ -134,8 +139,8 @@ export function FriendSettingsDialog({
 
                             {/* Security Settings */}
                             <div className="space-y-4">
-                                <h4 className="text-sm font-medium flex items-center gap-2">
-                                    <Shield className="w-4 h-4" />
+                                <h4 className="text-sm font-semibold flex items-center gap-2 text-[#191610] dark:text-[#fefefc]">
+                                    <Shield className="w-4 h-4 text-[#b2987d]" />
                                     Security
                                 </h4>
 
@@ -176,8 +181,8 @@ export function FriendSettingsDialog({
 
                             {/* Notification Settings */}
                             <div className="space-y-4">
-                                <h4 className="text-sm font-medium flex items-center gap-2">
-                                    <Bell className="w-4 h-4" />
+                                <h4 className="text-sm font-semibold flex items-center gap-2 text-[#191610] dark:text-[#fefefc]">
+                                    <Bell className="w-4 h-4 text-[#b2987d]" />
                                     Notifications
                                 </h4>
 
@@ -200,7 +205,7 @@ export function FriendSettingsDialog({
 
                             {/* Connection Info */}
                             {friend.lastConnected && (
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <div className="flex items-center gap-2 text-xs text-[#b2987d]">
                                     <Clock className="w-3 h-3" />
                                     Last connected: {friend.lastConnected.toLocaleDateString()}
                                 </div>

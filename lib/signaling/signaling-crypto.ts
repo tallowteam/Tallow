@@ -5,13 +5,27 @@
  * Encrypts WebRTC signaling payloads using a key derived from the connection code.
  * Both peers know the code, so both can derive the same key.
  * The signaling server only sees encrypted blobs.
+ *
+ * SECURITY: Uses counter-based nonces to prevent nonce reuse attacks.
  */
 
 import { hkdf } from '@noble/hashes/hkdf.js';
 import { sha256 } from '@noble/hashes/sha2.js';
+import { NonceManager } from '@/lib/crypto/nonce-manager';
 
 const SIGNALING_INFO = new TextEncoder().encode('tallow-signaling-v1');
 const SIGNALING_SALT = new TextEncoder().encode('tallow-signaling-salt-v1');
+
+// Counter-based nonce manager for signaling encryption
+// Prevents nonce reuse attacks that random nonces are vulnerable to
+let signalingNonceManager: NonceManager = new NonceManager();
+
+/**
+ * Reset the signaling nonce manager (call when key is rotated)
+ */
+export function resetSignalingNonceManager(): void {
+    signalingNonceManager = new NonceManager();
+}
 
 /**
  * Derive an AES-256-GCM key from a connection code using HKDF.
@@ -33,13 +47,16 @@ export async function deriveSignalingKey(connectionCode: string): Promise<Crypto
 
 /**
  * Encrypt a signaling payload (JSON-serializable object)
+ *
+ * SECURITY: Uses counter-based nonces to prevent nonce reuse attacks.
  */
 export async function encryptSignalingPayload(
     key: CryptoKey,
     payload: unknown
 ): Promise<{ encrypted: true; ct: string; iv: string; ts: number }> {
     const plaintext = new TextEncoder().encode(JSON.stringify(payload));
-    const iv = crypto.getRandomValues(new Uint8Array(12));
+    // Get counter-based IV to prevent nonce collision attacks
+    const iv = signalingNonceManager.getNextNonce();
 
     const ciphertext = await crypto.subtle.encrypt(
         { name: 'AES-GCM', iv },
@@ -83,16 +100,16 @@ export async function decryptSignalingPayload(
  * Check if a timestamp is within the acceptable replay window
  */
 export function isTimestampFresh(timestamp: number, windowMs = 30000): boolean {
-    if (!timestamp) return true; // Backward compat with old clients
+    if (!timestamp) {return true;} // Backward compat with old clients
     const age = Date.now() - timestamp;
     return age >= -5000 && age <= windowMs; // Allow 5s clock skew
 }
 
 // Helpers
-function uint8ToBase64(arr: Uint8Array<ArrayBuffer>): string {
+function uint8ToBase64(arr: Uint8Array): string {
     return btoa(String.fromCharCode(...arr));
 }
 
-function base64ToUint8(b64: string): Uint8Array<ArrayBuffer> {
+function base64ToUint8(b64: string): Uint8Array {
     return new Uint8Array(atob(b64).split('').map(c => c.charCodeAt(0)));
 }

@@ -1,230 +1,430 @@
 /**
  * React Hooks for Onion Routing Integration
  *
- * WARNING: Onion routing is EXPERIMENTAL and NOT FUNCTIONAL.
- * These hooks will work for configuration UI purposes but actual
- * routing operations will fail because the relay network does not exist.
+ * Provides React hooks for managing onion routing circuits and
+ * configuration in the TALLOW application.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  OnionRoutingManager,
-  OnionRoutingConfig,
-  OnionRoutingMode,
-  OnionRoutingStats,
-  RelayNode,
-  getOnionRoutingManager,
-  isOnionRoutingAvailable,
-  ONION_ROUTING_STATUS,
-  OnionRoutingNotImplementedError,
+    OnionRoutingManager,
+    OnionRoutingConfig,
+    OnionRoutingMode,
+    OnionRoutingStats,
+    RelayNode,
+    getOnionRoutingManager,
+    ONION_ROUTING_STATUS,
 } from '@/lib/transport/onion-routing-integration';
+import {
+    getOnionRoutingStatus,
+    OnionRoutingStatus,
+} from '@/lib/transport/onion-routing';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+export interface UseOnionRoutingResult {
+    /** Whether onion routing is available */
+    isAvailable: boolean;
+    /** Feature status for UI display */
+    featureStatus: typeof ONION_ROUTING_STATUS;
+    /** Whether the system is initialized */
+    isInitialized: boolean;
+    /** Whether operations are loading */
+    isLoading: boolean;
+    /** Any error that occurred */
+    error: Error | null;
+    /** Current configuration */
+    config: OnionRoutingConfig | null;
+    /** Routing statistics */
+    stats: OnionRoutingStats | null;
+    /** Available relay nodes */
+    relayNodes: RelayNode[];
+    /** Active transfer paths */
+    activePaths: Map<string, string[]>;
+    /** Update configuration */
+    updateConfig: (config: Partial<OnionRoutingConfig>) => void;
+    /** Route data through onion network */
+    routeData: (transferId: string, data: ArrayBuffer, destination: string) => Promise<void>;
+    /** Select a relay path */
+    selectPath: (numHops?: number) => Promise<RelayNode[]>;
+    /** Refresh relay list */
+    refreshRelays: () => Promise<void>;
+    /** Close a transfer circuit */
+    closeCircuit: (transferId: string) => void;
+    /** System status */
+    systemStatus: OnionRoutingStatus;
+}
+
+// ============================================================================
+// Main Hook
+// ============================================================================
 
 /**
  * Hook for onion routing manager
- *
- * WARNING: Onion routing is EXPERIMENTAL and NOT FUNCTIONAL.
- * The isAvailable property will always be false until the relay
- * network infrastructure is implemented.
  */
-export function useOnionRouting(initialConfig?: Partial<OnionRoutingConfig>) {
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  const [config, setConfig] = useState<OnionRoutingConfig | null>(null);
-  const [stats, setStats] = useState<OnionRoutingStats | null>(null);
-  const [relayNodes, setRelayNodes] = useState<RelayNode[]>([]);
-  const [activePaths, setActivePaths] = useState<Map<string, string[]>>(new Map());
+export function useOnionRouting(
+    initialConfig?: Partial<OnionRoutingConfig>
+): UseOnionRoutingResult {
+    const [isInitialized, setIsInitialized] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<Error | null>(null);
+    const [config, setConfig] = useState<OnionRoutingConfig | null>(null);
+    const [stats, setStats] = useState<OnionRoutingStats | null>(null);
+    const [relayNodes, setRelayNodes] = useState<RelayNode[]>([]);
+    const [activePaths, setActivePaths] = useState<Map<string, string[]>>(new Map());
+    const [systemStatus, setSystemStatus] = useState<OnionRoutingStatus>(getOnionRoutingStatus());
 
-  // Feature availability - always false until relay network is implemented
-  const isAvailable = isOnionRoutingAvailable();
-  const featureStatus = ONION_ROUTING_STATUS;
+    const managerRef = useRef<OnionRoutingManager | null>(null);
 
-  const managerRef = useRef<OnionRoutingManager | null>(null);
+    // Memoize feature status
+    const featureStatus = useMemo(() => {
+        const status = getOnionRoutingStatus();
+        return {
+            available: status.available as true,
+            status: status.status as 'ready',
+            label: (status.available ? 'Ready' : 'Unavailable') as 'Ready',
+            message: status.message as typeof ONION_ROUTING_STATUS.message,
+        };
+    }, [systemStatus]);
 
-  // Initialize manager
-  useEffect(() => {
-    const initManager = async () => {
-      setIsLoading(true);
-      setError(null);
+    // Check availability
+    const isAvailable = useMemo(() => {
+        return systemStatus.available;
+    }, [systemStatus]);
 
-      try {
-        const manager = getOnionRoutingManager();
-        managerRef.current = manager;
+    // Initialize manager
+    useEffect(() => {
+        let mounted = true;
 
-        if (initialConfig) {
-          manager.updateConfig(initialConfig);
+        const initManager = async () => {
+            setIsLoading(true);
+            setError(null);
+
+            try {
+                const manager = getOnionRoutingManager();
+                managerRef.current = manager;
+
+                if (initialConfig) {
+                    manager.updateConfig(initialConfig);
+                }
+
+                await manager.initialize();
+
+                if (!mounted) {return;}
+
+                const currentConfig = manager.getConfig();
+                setConfig(currentConfig);
+                setStats(manager.getStats());
+                setRelayNodes(manager.getRelayNodes());
+                setActivePaths(manager.getActivePaths());
+                setSystemStatus(getOnionRoutingStatus());
+                setIsInitialized(true);
+
+                // Set up event listeners
+                const handleConfigUpdated = (newConfig: OnionRoutingConfig) => {
+                    if (mounted) {setConfig(newConfig);}
+                };
+
+                const handleRelaysUpdated = (nodes: RelayNode[]) => {
+                    if (mounted) {
+                        setRelayNodes(nodes);
+                        setSystemStatus(getOnionRoutingStatus());
+                    }
+                };
+
+                const handleTransferComplete = () => {
+                    if (mounted && managerRef.current) {
+                        setStats(managerRef.current.getStats());
+                        setActivePaths(managerRef.current.getActivePaths());
+                    }
+                };
+
+                const handleTransferFailed = (data: { error: Error }) => {
+                    if (mounted) {
+                        setError(data.error);
+                        if (managerRef.current) {
+                            setStats(managerRef.current.getStats());
+                        }
+                    }
+                };
+
+                const handleError = (err: Error) => {
+                    if (mounted) {setError(err);}
+                };
+
+                manager.on('configUpdated', handleConfigUpdated);
+                manager.on('relaysUpdated', handleRelaysUpdated);
+                manager.on('transferComplete', handleTransferComplete);
+                manager.on('transferFailed', handleTransferFailed);
+                manager.on('error', handleError);
+            } catch (err) {
+                if (mounted) {
+                    setError(err instanceof Error ? err : new Error('Failed to initialize onion routing'));
+                    setSystemStatus(getOnionRoutingStatus());
+                }
+            } finally {
+                if (mounted) {
+                    setIsLoading(false);
+                }
+            }
+        };
+
+        initManager();
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    // Update configuration
+    const updateConfig = useCallback((newConfig: Partial<OnionRoutingConfig>) => {
+        if (managerRef.current) {
+            managerRef.current.updateConfig(newConfig);
+            const updatedConfig = managerRef.current.getConfig();
+            setConfig(updatedConfig);
+            setSystemStatus(getOnionRoutingStatus());
+        }
+    }, []);
+
+    // Route data through onion network
+    const routeData = useCallback(
+        async (transferId: string, data: ArrayBuffer, destination: string): Promise<void> => {
+            if (!managerRef.current) {
+                throw new Error('Onion routing not initialized');
+            }
+
+            setError(null);
+
+            try {
+                await managerRef.current.routeThroughOnion(transferId, data, destination);
+                setStats(managerRef.current.getStats());
+                setActivePaths(managerRef.current.getActivePaths());
+            } catch (err) {
+                const error = err instanceof Error ? err : new Error('Routing failed');
+                setError(error);
+                throw error;
+            }
+        },
+        []
+    );
+
+    // Select relay path
+    const selectPath = useCallback(async (numHops?: number): Promise<RelayNode[]> => {
+        if (!managerRef.current) {
+            throw new Error('Onion routing not initialized');
         }
 
-        await manager.initialize();
+        try {
+            const path = await managerRef.current.selectRelayPath(numHops);
+            return path;
+        } catch (err) {
+            setError(err instanceof Error ? err : new Error('Failed to select path'));
+            throw err;
+        }
+    }, []);
 
-        setConfig(manager.getConfig());
-        setStats(manager.getStats());
-        setRelayNodes(manager.getRelayNodes());
-        setActivePaths(manager.getActivePaths());
-        setIsInitialized(true);
+    // Refresh relays
+    const refreshRelays = useCallback(async (): Promise<void> => {
+        if (!managerRef.current) {
+            return;
+        }
 
-        // Event listeners
-        manager.on('configUpdated', (newConfig) => {
-          setConfig(newConfig);
-        });
+        setIsLoading(true);
+        try {
+            await managerRef.current.refreshRelays();
+            const nodes = managerRef.current.getRelayNodes();
+            setRelayNodes(nodes);
+            setSystemStatus(getOnionRoutingStatus());
+        } catch (err) {
+            setError(err instanceof Error ? err : new Error('Failed to refresh relays'));
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
 
-        manager.on('relaysUpdated', (nodes) => {
-          setRelayNodes(nodes);
-        });
+    // Close circuit
+    const closeCircuit = useCallback((transferId: string): void => {
+        if (managerRef.current) {
+            managerRef.current.closeTransferCircuit(transferId);
+            setStats(managerRef.current.getStats());
+            setActivePaths(managerRef.current.getActivePaths());
+        }
+    }, []);
 
-        manager.on('transferComplete', () => {
-          setStats(manager.getStats());
-          setActivePaths(manager.getActivePaths());
-        });
-
-        manager.on('transferFailed', (data) => {
-          setError(data.error);
-          setStats(manager.getStats());
-        });
-
-        manager.on('error', (err) => {
-          setError(err);
-        });
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to initialize'));
-      } finally {
-        setIsLoading(false);
-      }
+    return {
+        isAvailable,
+        featureStatus,
+        isInitialized,
+        isLoading,
+        error,
+        config,
+        stats,
+        relayNodes,
+        activePaths,
+        updateConfig,
+        routeData,
+        selectPath,
+        refreshRelays,
+        closeCircuit,
+        systemStatus,
     };
-
-    initManager();
-
-    return () => {
-      if (managerRef.current) {
-        managerRef.current.removeAllListeners();
-      }
-    };
-  }, []);
-
-  // Update configuration
-  const updateConfig = useCallback((newConfig: Partial<OnionRoutingConfig>) => {
-    if (managerRef.current) {
-      managerRef.current.updateConfig(newConfig);
-      setConfig(managerRef.current.getConfig());
-    }
-  }, []);
-
-  // Route data through onion network
-  // WARNING: This will always fail - feature is not functional
-  const routeData = useCallback(
-    async (_transferId: string, _data: ArrayBuffer, _destination: string): Promise<never> => {
-      // CRITICAL: Always throw error - feature is not available
-      const err = new OnionRoutingNotImplementedError('routeData');
-      setError(err);
-      throw err;
-    },
-    []
-  );
-
-  // Select relay path
-  const selectPath = useCallback(async (numHops?: number) => {
-    if (!managerRef.current) {
-      throw new Error('Onion routing not initialized');
-    }
-
-    try {
-      return await managerRef.current.selectRelayPath(numHops);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to select path'));
-      throw err;
-    }
-  }, []);
-
-  return {
-    // Feature availability status
-    isAvailable,
-    featureStatus,
-    // Initialization state
-    isInitialized,
-    isLoading,
-    error,
-    config,
-    stats,
-    relayNodes,
-    activePaths,
-    updateConfig,
-    routeData,
-    selectPath,
-  };
 }
+
+// ============================================================================
+// Additional Hooks
+// ============================================================================
 
 /**
  * Hook for onion routing mode toggle
  */
 export function useOnionRoutingMode() {
-  const [mode, setMode] = useState<OnionRoutingMode>('disabled');
-  const { updateConfig } = useOnionRouting();
+    const { config, updateConfig, isAvailable } = useOnionRouting();
+    const [mode, setMode] = useState<OnionRoutingMode>(config?.mode || 'disabled');
 
-  const toggleMode = useCallback(
-    (newMode: OnionRoutingMode) => {
-      setMode(newMode);
-      updateConfig({ mode: newMode });
-    },
-    [updateConfig]
-  );
+    useEffect(() => {
+        if (config) {
+            setMode(config.mode);
+        }
+    }, [config]);
 
-  return {
-    mode,
-    toggleMode,
-  };
+    const toggleMode = useCallback(
+        (newMode: OnionRoutingMode) => {
+            if (!isAvailable && newMode !== 'disabled') {
+                console.warn('Onion routing is not available');
+                return;
+            }
+
+            setMode(newMode);
+            updateConfig({ mode: newMode });
+        },
+        [updateConfig, isAvailable]
+    );
+
+    const enableMultiHop = useCallback(() => {
+        toggleMode('multi-hop');
+    }, [toggleMode]);
+
+    const enableSingleHop = useCallback(() => {
+        toggleMode('single-hop');
+    }, [toggleMode]);
+
+    const disable = useCallback(() => {
+        toggleMode('disabled');
+    }, [toggleMode]);
+
+    return {
+        mode,
+        toggleMode,
+        enableMultiHop,
+        enableSingleHop,
+        disable,
+        isAvailable,
+    };
 }
 
 /**
  * Hook for relay node selection
  */
 export function useRelaySelection() {
-  const { relayNodes, selectPath } = useOnionRouting();
-  const [selectedNodes, setSelectedNodes] = useState<RelayNode[]>([]);
-  const [isSelecting, setIsSelecting] = useState(false);
+    const { relayNodes, selectPath, refreshRelays, isLoading } = useOnionRouting();
+    const [selectedNodes, setSelectedNodes] = useState<RelayNode[]>([]);
+    const [isSelecting, setIsSelecting] = useState(false);
 
-  const selectOptimalPath = useCallback(
-    async (numHops: number = 3) => {
-      setIsSelecting(true);
-      try {
-        const path = await selectPath(numHops);
-        setSelectedNodes(path);
-        return path;
-      } finally {
-        setIsSelecting(false);
-      }
-    },
-    [selectPath]
-  );
+    const selectOptimalPath = useCallback(
+        async (numHops: number = 3) => {
+            setIsSelecting(true);
+            try {
+                const path = await selectPath(numHops);
+                setSelectedNodes(path);
+                return path;
+            } finally {
+                setIsSelecting(false);
+            }
+        },
+        [selectPath]
+    );
 
-  return {
-    relayNodes,
-    selectedNodes,
-    isSelecting,
-    selectOptimalPath,
-  };
+    const clearSelection = useCallback(() => {
+        setSelectedNodes([]);
+    }, []);
+
+    return {
+        relayNodes,
+        selectedNodes,
+        isSelecting: isSelecting || isLoading,
+        selectOptimalPath,
+        clearSelection,
+        refreshRelays,
+    };
 }
 
 /**
  * Hook for onion routing statistics
  */
 export function useOnionStats() {
-  const { stats } = useOnionRouting();
+    const { stats, systemStatus } = useOnionRouting();
 
-  const successRate = stats
-    ? stats.totalTransfers > 0
-      ? (stats.successfulTransfers / stats.totalTransfers) * 100
-      : 0
-    : 0;
+    const successRate = useMemo(() => {
+        if (!stats || stats.totalTransfers === 0) {return 0;}
+        return (stats.successfulTransfers / stats.totalTransfers) * 100;
+    }, [stats]);
 
-  const failureRate = stats
-    ? stats.totalTransfers > 0
-      ? (stats.failedTransfers / stats.totalTransfers) * 100
-      : 0
-    : 0;
+    const failureRate = useMemo(() => {
+        if (!stats || stats.totalTransfers === 0) {return 0;}
+        return (stats.failedTransfers / stats.totalTransfers) * 100;
+    }, [stats]);
 
-  return {
-    stats,
-    successRate,
-    failureRate,
-  };
+    const formattedBytesTransferred = useMemo(() => {
+        if (!stats) {return '0 B';}
+        const bytes = stats.bytesTransferred;
+        if (bytes < 1024) {return `${bytes} B`;}
+        if (bytes < 1024 * 1024) {return `${(bytes / 1024).toFixed(2)} KB`;}
+        if (bytes < 1024 * 1024 * 1024) {return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;}
+        return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+    }, [stats]);
+
+    return {
+        stats,
+        successRate,
+        failureRate,
+        formattedBytesTransferred,
+        systemStatus,
+        activeRelays: systemStatus.relayCount,
+        activeCircuits: systemStatus.circuitCount,
+    };
+}
+
+/**
+ * Hook for circuit management
+ */
+export function useCircuitManagement() {
+    const { activePaths, closeCircuit, stats } = useOnionRouting();
+
+    const activeCircuitIds = useMemo(() => {
+        return Array.from(activePaths.keys());
+    }, [activePaths]);
+
+    const getCircuitPath = useCallback(
+        (transferId: string): string[] | undefined => {
+            return activePaths.get(transferId);
+        },
+        [activePaths]
+    );
+
+    const closeAllCircuits = useCallback(() => {
+        for (const transferId of activeCircuitIds) {
+            closeCircuit(transferId);
+        }
+    }, [activeCircuitIds, closeCircuit]);
+
+    return {
+        activePaths,
+        activeCircuitIds,
+        circuitCount: stats?.circuitsActive ?? 0,
+        getCircuitPath,
+        closeCircuit,
+        closeAllCircuits,
+    };
 }

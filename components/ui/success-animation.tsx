@@ -29,7 +29,7 @@ const euvekaTransition: Transition = {
   ease: EUVEKA_EASING,
 };
 
-// Note: euvekaTransitionSlow exported for future use
+// EUVEKA transition - used by external consumers
 export const euvekaTransitionSlow: Transition = {
   duration: 0.5,
   ease: EUVEKA_EASING,
@@ -409,7 +409,7 @@ export function CompletionBadge({
 
   const variantClasses = {
     success: 'bg-green-500/20 text-green-400 border-green-500/30',
-    info: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    info: 'bg-[#fefefc]/20 text-[#fefefc] border-[#fefefc]/30',
     warning: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
   };
 

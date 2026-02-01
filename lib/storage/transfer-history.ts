@@ -28,11 +28,33 @@ const DB_NAME = 'TallowDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'transfers';
 
+/**
+ * Serialized format stored in IndexedDB
+ */
+interface SerializedTransferRecord {
+    id: string;
+    direction: 'send' | 'receive';
+    files: Array<{
+        name: string;
+        size: number;
+        type: string;
+    }>;
+    totalSize: number;
+    peerName: string;
+    peerEmail?: string;
+    peerId: string;
+    status: 'completed' | 'failed' | 'cancelled';
+    startedAt: string;
+    completedAt: string;
+    duration: number;
+    speed: number;
+}
+
 let db: IDBDatabase | null = null;
 
 // Open database
 async function openDB(): Promise<IDBDatabase> {
-    if (db) return db;
+    if (db) {return db;}
 
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -87,7 +109,7 @@ export async function getAllTransfers(): Promise<TransferRecord[]> {
         const request = store.getAll();
 
         request.onsuccess = () => {
-            const records = request.result.map((r: any) => ({
+            const records = (request.result as SerializedTransferRecord[]).map((r: SerializedTransferRecord) => ({
                 ...r,
                 startedAt: new Date(r.startedAt),
                 completedAt: new Date(r.completedAt),
@@ -185,7 +207,7 @@ export async function exportHistory(): Promise<string> {
 
 // Format data size for display
 export function formatDataSize(bytes: number): string {
-    if (bytes === 0) return '0 B';
+    if (bytes === 0) {return '0 B';}
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));

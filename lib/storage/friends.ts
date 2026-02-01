@@ -63,7 +63,7 @@ let requestsCache: FriendRequest[] | null = null;
  * Initialize friends cache from secure storage (call on app startup)
  */
 export async function initFriendsCache(): Promise<void> {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {return;}
 
     try {
         const stored = await secureStorage.getItem(FRIENDS_KEY);
@@ -103,7 +103,10 @@ export function generateFriendCode(): string {
     crypto.getRandomValues(values);
     let code = '';
     for (let i = 0; i < FRIEND_CODE_LENGTH; i++) {
-        code += FRIEND_CODE_CHARS[values[i] % FRIEND_CODE_CHARS.length];
+        const value = values[i];
+        if (value !== undefined) {
+            code += FRIEND_CODE_CHARS[value % FRIEND_CODE_CHARS.length];
+        }
     }
     return code;
 }
@@ -113,7 +116,7 @@ export function generateFriendCode(): string {
  */
 export function isValidFriendCode(code: string): boolean {
     const normalized = code.replace(/-/g, '').toUpperCase();
-    if (normalized.length !== FRIEND_CODE_LENGTH) return false;
+    if (normalized.length !== FRIEND_CODE_LENGTH) {return false;}
     const validCharsRegex = new RegExp(`^[${FRIEND_CODE_CHARS}]+$`);
     return validCharsRegex.test(normalized);
 }
@@ -132,9 +135,9 @@ function sanitizeName(name: string): string {
  * Get current user's friend code (generates one if doesn't exist)
  */
 export function getMyFriendCode(): string {
-    if (typeof window === 'undefined') return '';
+    if (typeof window === 'undefined') {return '';}
 
-    if (friendCodeCache) return friendCodeCache;
+    if (friendCodeCache) {return friendCodeCache;}
 
     // Generate new code if not cached
     const code = generateFriendCode();
@@ -148,7 +151,7 @@ export function getMyFriendCode(): string {
  * Format friend code for display (XXXX-XXXX)
  */
 export function formatFriendCode(code: string): string {
-    if (code.length !== 8) return code;
+    if (code.length !== 8) {return code;}
     return `${code.slice(0, 4)}-${code.slice(4)}`;
 }
 
@@ -168,7 +171,7 @@ export function parseFriendCode(code: string): string {
  * Get all saved friends (synchronous, reads from cache)
  */
 export function getFriends(): Friend[] {
-    if (typeof window === 'undefined') return [];
+    if (typeof window === 'undefined') {return [];}
     return friendsCache || [];
 }
 
@@ -230,11 +233,12 @@ export function addFriend(friend: Omit<Friend, 'id' | 'addedAt' | 'connectionPre
         throw new Error('Cannot add yourself as a friend');
     }
 
+    const trimmedEmail = friend.email ? friend.email.trim().slice(0, MAX_EMAIL_LENGTH) : undefined;
     const newFriend: Friend = {
         ...friend,
         id: generateUUID(),
         name: sanitizeName(friend.name),
-        email: friend.email ? friend.email.trim().slice(0, MAX_EMAIL_LENGTH) : undefined,
+        ...(trimmedEmail ? { email: trimmedEmail } : {}),
         friendCode: normalizedCode,
         addedAt: new Date(),
         requirePasscode: friend.requirePasscode ?? false,
@@ -258,7 +262,7 @@ export function removeFriend(id: string): boolean {
     const friends = getFriends();
     const filtered = friends.filter(f => f.id !== id);
 
-    if (filtered.length === friends.length) return false;
+    if (filtered.length === friends.length) {return false;}
 
     saveFriends(filtered);
     return true;
@@ -287,7 +291,7 @@ export function updateFriendSettings(
     const friends = getFriends();
     const friendIndex = friends.findIndex(f => f.id === id);
 
-    if (friendIndex === -1) return null;
+    if (friendIndex === -1) {return null;}
 
     // Sanitize name if provided
     const sanitizedSettings = { ...settings };
@@ -298,13 +302,16 @@ export function updateFriendSettings(
         }
     }
 
+    const existingFriend = friends[friendIndex];
+    if (!existingFriend) {return null;}
+
     friends[friendIndex] = {
-        ...friends[friendIndex],
+        ...existingFriend,
         ...sanitizedSettings,
-    };
+    } as Friend;
 
     saveFriends(friends);
-    return friends[friendIndex];
+    return friends[friendIndex] || null;
 }
 
 /**
@@ -348,7 +355,7 @@ export function requiresPasscode(deviceId: string): boolean {
  * Get all friend requests (synchronous, reads from cache)
  */
 export function getFriendRequests(): FriendRequest[] {
-    if (typeof window === 'undefined') return [];
+    if (typeof window === 'undefined') {return [];}
     return requestsCache || [];
 }
 
@@ -403,11 +410,12 @@ export function createFriendRequest(toCode: string, fromName: string, fromEmail?
         return existing;
     }
 
+    const trimmedFromEmail = fromEmail?.trim().slice(0, MAX_EMAIL_LENGTH);
     const request: FriendRequest = {
         id: generateUUID(),
         fromCode: myCode,
         fromName: sanitizeName(fromName),
-        fromEmail: fromEmail?.trim().slice(0, MAX_EMAIL_LENGTH),
+        ...(trimmedFromEmail ? { fromEmail: trimmedFromEmail } : {}),
         toCode: normalizedToCode,
         status: 'pending',
         createdAt: new Date(),
@@ -427,16 +435,18 @@ export function acceptFriendRequest(requestId: string): Friend | null {
     const requests = getFriendRequests();
     const requestIndex = requests.findIndex(r => r.id === requestId);
 
-    if (requestIndex === -1) return null;
+    if (requestIndex === -1) {return null;}
 
     const request = requests[requestIndex];
+    if (!request) {return null;}
+
     request.status = 'accepted';
     saveFriendRequests(requests);
 
     // Add as friend
     const friend = addFriend({
         name: request.fromName,
-        email: request.fromEmail,
+        ...(request.fromEmail ? { email: request.fromEmail } : {}),
         friendCode: request.fromCode,
         requirePasscode: false,
         trustLevel: 'trusted',
@@ -452,9 +462,12 @@ export function rejectFriendRequest(requestId: string): boolean {
     const requests = getFriendRequests();
     const requestIndex = requests.findIndex(r => r.id === requestId);
 
-    if (requestIndex === -1) return false;
+    if (requestIndex === -1) {return false;}
 
-    requests[requestIndex].status = 'rejected';
+    const request = requests[requestIndex];
+    if (!request) {return false;}
+
+    request.status = 'rejected';
     saveFriendRequests(requests);
 
     return true;

@@ -25,9 +25,9 @@ const categoryColors: Record<
   }
 > = {
   encryption: {
-    bg: "bg-blue-100 dark:bg-blue-950 high-contrast:bg-blue-200 high-contrast:dark:bg-blue-900",
-    icon: "text-blue-600 dark:text-blue-400 high-contrast:text-blue-900 high-contrast:dark:text-blue-100",
-    border: "border-blue-300 dark:border-blue-800",
+    bg: "bg-gray-100 dark:bg-gray-950 high-contrast:bg-gray-200 high-contrast:dark:bg-gray-900",
+    icon: "text-gray-600 dark:text-gray-400 high-contrast:text-gray-900 high-contrast:dark:text-gray-100",
+    border: "border-gray-300 dark:border-gray-800",
   },
   transfer: {
     bg: "bg-purple-100 dark:bg-purple-950 high-contrast:bg-purple-200 high-contrast:dark:bg-purple-900",

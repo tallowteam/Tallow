@@ -76,7 +76,7 @@ function LocalCryptoTest({ onBack }: { onBack: () => void }) {
       // Test 3: Encapsulation
       let ciphertext, senderSecret;
       try {
-        if (!receiverKeys) throw new Error('No receiver keys');
+        if (!receiverKeys) {throw new Error('No receiver keys');}
         const result = await pqCrypto.encapsulate(pqCrypto.getPublicKey(receiverKeys));
         ciphertext = result.ciphertext;
         senderSecret = result.sharedSecret;
@@ -99,7 +99,7 @@ function LocalCryptoTest({ onBack }: { onBack: () => void }) {
       // Test 4: Decapsulation
       let receiverSecret;
       try {
-        if (!ciphertext || !receiverKeys) throw new Error('Missing data');
+        if (!ciphertext || !receiverKeys) {throw new Error('Missing data');}
         receiverSecret = await pqCrypto.decapsulate(ciphertext, receiverKeys);
         const passed = receiverSecret.length === 32;
         testResults.push({
@@ -116,7 +116,7 @@ function LocalCryptoTest({ onBack }: { onBack: () => void }) {
 
       // Test 5: Shared Secret Match
       try {
-        if (!senderSecret || !receiverSecret) throw new Error('Missing secrets');
+        if (!senderSecret || !receiverSecret) {throw new Error('Missing secrets');}
         const passed = pqCrypto.constantTimeEqual(senderSecret, receiverSecret);
         testResults.push({
           name: 'Shared Secret Match',
@@ -133,7 +133,7 @@ function LocalCryptoTest({ onBack }: { onBack: () => void }) {
       // Test 6: Session Key Derivation
       let sessionKeys;
       try {
-        if (!senderSecret) throw new Error('No shared secret');
+        if (!senderSecret) {throw new Error('No shared secret');}
         sessionKeys = pqCrypto.deriveSessionKeys(senderSecret);
         const passed =
           sessionKeys.encryptionKey.length === 32 &&
@@ -153,7 +153,7 @@ function LocalCryptoTest({ onBack }: { onBack: () => void }) {
 
       // Test 7: AES-256-GCM Encryption/Decryption
       try {
-        if (!sessionKeys) throw new Error('No session keys');
+        if (!sessionKeys) {throw new Error('No session keys');}
         const plaintext = new TextEncoder().encode('Hello, Post-Quantum World!');
         const encrypted = await pqCrypto.encrypt(plaintext, sessionKeys.encryptionKey);
         const decrypted = await pqCrypto.decrypt(encrypted, sessionKeys.encryptionKey);
@@ -172,7 +172,7 @@ function LocalCryptoTest({ onBack }: { onBack: () => void }) {
 
       // Test 8: Key Serialization Round-trip
       try {
-        if (!senderKeys) throw new Error('No sender keys');
+        if (!senderKeys) {throw new Error('No sender keys');}
         const publicKey = pqCrypto.getPublicKey(senderKeys);
         const serialized = pqCrypto.serializePublicKey(publicKey);
         const deserialized = pqCrypto.deserializePublicKey(serialized);
@@ -193,7 +193,7 @@ function LocalCryptoTest({ onBack }: { onBack: () => void }) {
 
       // Test 9: File Encryption (simulated transfer)
       try {
-        if (!sessionKeys) throw new Error('No session keys');
+        if (!sessionKeys) {throw new Error('No session keys');}
         // Create a test file
         const testContent = 'Hello, Post-Quantum World! This is a test file for encryption.';
         const testBlob = new Blob([testContent], { type: 'text/plain' });
@@ -219,7 +219,7 @@ function LocalCryptoTest({ onBack }: { onBack: () => void }) {
       // Test 10: File Decryption
       let decryptedBlob: Blob | null = null;
       try {
-        if (!sessionKeys) throw new Error('No session keys');
+        if (!sessionKeys) {throw new Error('No session keys');}
         const testContent = 'Hello, Post-Quantum World! This is a test file for encryption.';
         const testBlob = new Blob([testContent], { type: 'text/plain' });
         const testFile = new File([testBlob], 'test.txt', { type: 'text/plain' });
@@ -242,7 +242,7 @@ function LocalCryptoTest({ onBack }: { onBack: () => void }) {
 
       // Test 11: File Integrity (content match)
       try {
-        if (!decryptedBlob) throw new Error('No decrypted blob');
+        if (!decryptedBlob) {throw new Error('No decrypted blob');}
         const testContent = 'Hello, Post-Quantum World! This is a test file for encryption.';
         const decryptedText = await decryptedBlob.text();
         const passed = decryptedText === testContent;
@@ -353,7 +353,7 @@ function ManualKeyExchange({
   const [myPublicKeyHex, setMyPublicKeyHex] = useState('');
   const [peerPublicKeyHex, setPeerPublicKeyHex] = useState('');
   const [ciphertextHex, setCiphertextHex] = useState('');
-  const [sharedSecret, setSharedSecret] = useState<Uint8Array | null>(null);
+  const [_sharedSecret, setSharedSecret] = useState<Uint8Array | null>(null);
   const [sessionKeys, setSessionKeys] = useState<ReturnType<typeof pqCrypto.deriveSessionKeys> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -482,12 +482,13 @@ function ManualKeyExchange({
 
         {/* Step 1: Show my public key */}
         <div className="space-y-2">
-          <label className="text-sm font-medium flex items-center gap-2">
+          <label htmlFor="my-public-key" className="text-sm font-medium flex items-center gap-2">
             <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs">1</span>
             Your Public Key
           </label>
           <div className="flex gap-2">
             <Input
+              id="my-public-key"
               value={myPublicKeyHex}
               readOnly
               className="font-mono text-xs"
@@ -511,12 +512,13 @@ function ManualKeyExchange({
         {/* Step 2: Enter peer's public key (both roles) */}
         {role === 'send' && step < 3 && (
           <div className="space-y-2">
-            <label className="text-sm font-medium flex items-center gap-2">
+            <label htmlFor="peer-public-key" className="text-sm font-medium flex items-center gap-2">
               <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs">2</span>
-              Receiver's Public Key
+              Receiver&apos;s Public Key
             </label>
             <div className="flex gap-2">
               <Input
+                id="peer-public-key"
                 value={peerPublicKeyHex}
                 onChange={(e) => setPeerPublicKeyHex(e.target.value)}
                 className="font-mono text-xs"
@@ -531,12 +533,13 @@ function ManualKeyExchange({
 
         {role === 'receive' && step < 3 && (
           <div className="space-y-2">
-            <label className="text-sm font-medium flex items-center gap-2">
+            <label htmlFor="sender-ciphertext" className="text-sm font-medium flex items-center gap-2">
               <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs">2</span>
-              Sender's Ciphertext
+              Sender&apos;s Ciphertext
             </label>
             <div className="flex gap-2">
               <Input
+                id="sender-ciphertext"
                 value={ciphertextHex}
                 onChange={(e) => setCiphertextHex(e.target.value)}
                 className="font-mono text-xs"
@@ -556,12 +559,13 @@ function ManualKeyExchange({
         {role === 'send' && step === 3 && (
           <>
             <div className="space-y-2">
-              <label className="text-sm font-medium flex items-center gap-2">
+              <label htmlFor="ciphertext-output" className="text-sm font-medium flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-green-500 dark:bg-green-600 text-primary-foreground flex items-center justify-center text-xs">3</span>
                 Ciphertext (share with receiver)
               </label>
               <div className="flex gap-2">
                 <Input
+                  id="ciphertext-output"
                   value={ciphertextHex}
                   readOnly
                   className="font-mono text-xs"
@@ -624,7 +628,7 @@ export function PQCTransferDemo() {
   };
 
   const handleEncryptFile = async () => {
-    if (!selectedFile || !sessionKeys) return;
+    if (!selectedFile || !sessionKeys) {return;}
     setIsEncrypting(true);
     try {
       const encrypted = await fileEncryption.encrypt(selectedFile, sessionKeys.encryptionKey);
@@ -745,8 +749,9 @@ export function PQCTransferDemo() {
         {mode === 'send' && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Select File</label>
+              <label htmlFor="file-select" className="text-sm font-medium">Select File</label>
               <Input
+                id="file-select"
                 type="file"
                 onChange={handleFileSelect}
                 disabled={isEncrypting}

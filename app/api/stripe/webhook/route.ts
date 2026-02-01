@@ -2,24 +2,27 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getStripe } from '@/lib/stripe/config';
 import Stripe from 'stripe';
 import { secureLog } from '@/lib/utils/secure-logger';
+import { addDeprecationHeaders } from '@/lib/api/response';
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
   const signature = request.headers.get('stripe-signature');
 
   if (!signature) {
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: 'Missing stripe-signature header' },
       { status: 400 }
     );
+    return addDeprecationHeaders(response, '/api/v1/stripe/webhook');
   }
 
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const webhookSecret = process.env['STRIPE_WEBHOOK_SECRET'];
   if (!webhookSecret) {
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: 'Webhook secret not configured' },
       { status: 503 }
     );
+    return addDeprecationHeaders(response, '/api/v1/stripe/webhook');
   }
 
   let event: Stripe.Event;
@@ -30,10 +33,11 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     secureLog.error('Webhook signature verification failed:', message);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: `Webhook Error: ${message}` },
       { status: 400 }
     );
+    return addDeprecationHeaders(response, '/api/v1/stripe/webhook');
   }
 
   switch (event.type) {
@@ -58,5 +62,6 @@ export async function POST(request: NextRequest) {
       break;
   }
 
-  return NextResponse.json({ received: true });
+  const response = NextResponse.json({ received: true });
+  return addDeprecationHeaders(response, '/api/v1/stripe/webhook');
 }

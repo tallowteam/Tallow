@@ -35,7 +35,7 @@ export const EUVEKA_ICON_COLORS = {
   primary: 'text-[#b2987d]',
   foreground: 'text-[#191610] dark:text-[#fefefc]',
   muted: 'text-[#b2987d]',
-  accent: 'text-[#0099ff]',
+  accent: 'text-[#fefefc]',
 } as const;
 
 export const EUVEKA_ICON_SIZES = {
@@ -787,7 +787,7 @@ export const IconButtonWrapper = React.forwardRef<HTMLButtonElement, IconButtonW
           'rounded-xl',
           'transition-colors duration-200',
           'focus-visible:outline-none focus-visible:ring-2',
-          'focus-visible:ring-[#0099ff] focus-visible:ring-offset-2',
+          'focus-visible:ring-[#fefefc] focus-visible:ring-offset-2',
           'focus-visible:ring-offset-[#fefefc] dark:focus-visible:ring-offset-[#191610]',
           'disabled:opacity-50 disabled:pointer-events-none',
           buttonSizeClasses[size],

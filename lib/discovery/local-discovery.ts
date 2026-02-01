@@ -2,13 +2,39 @@
 
 /**
  * Device Discovery via Signaling Server
+ *
  * Discovers other Tallow devices on the same network by joining
  * a common discovery room on the signaling server.
+ *
+ * This module works in conjunction with:
+ * - mdns-bridge.ts: Local network discovery via mDNS daemon
+ * - unified-discovery.ts: Combines both discovery methods
+ *
+ * For most use cases, prefer using unified-discovery.ts which
+ * automatically falls back between mDNS and signaling.
  */
 
 import { getDeviceId } from '@/lib/auth/user-identity';
-import { io, Socket } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
 import secureLog from '@/lib/utils/secure-logger';
+import type { GroupInviteData } from '@/lib/signaling/socket-signaling';
+
+// Lazy-load socket.io-client to reduce initial bundle size (~35KB)
+let socketModule: typeof import('socket.io-client') | null = null;
+
+async function getSocketIO(): Promise<typeof import('socket.io-client')> {
+    if (!socketModule) {
+        socketModule = await import('socket.io-client');
+    }
+    return socketModule;
+}
+
+export interface DeviceCapabilities {
+    supportsGroupTransfer: boolean;
+    supportsPQC: boolean;
+    maxConnections: number;
+    protocolVersion: string;
+}
 
 export interface DiscoveredDevice {
     id: string;
@@ -17,6 +43,9 @@ export interface DiscoveredDevice {
     lastSeen: Date;
     isOnline: boolean;
     socketId?: string;
+    capabilities?: DeviceCapabilities;
+    connectionQuality?: 'excellent' | 'good' | 'fair' | 'poor';
+    lastTransferTime?: Date;
 }
 
 const DISCOVERY_ROOM = 'tallow-discovery';
@@ -25,9 +54,9 @@ const OFFLINE_TIMEOUT = 10000; // 10 seconds
 const PRESENCE_DEBOUNCE = 500; // 500ms debounce for presence broadcasts
 
 function getSignalingUrl(): string {
-    if (typeof window === 'undefined') return '';
-    const envUrl = process.env.NEXT_PUBLIC_SIGNALING_URL;
-    if (envUrl) return envUrl;
+    if (typeof window === 'undefined') {return '';}
+    const envUrl = process.env['NEXT_PUBLIC_SIGNALING_URL'];
+    if (envUrl) {return envUrl;}
     if (window.location.hostname.includes('manisahome.com')) {
         return 'wss://signaling.manisahome.com';
     }
@@ -40,15 +69,17 @@ export interface LocalSignalingEvents {
     onOffer?: (data: { offer: RTCSessionDescriptionInit; from: string }) => void;
     onAnswer?: (data: { answer: RTCSessionDescriptionInit; from: string }) => void;
     onIceCandidate?: (data: { candidate: RTCIceCandidateInit; from: string }) => void;
+    onGroupInvite?: (data: GroupInviteData) => void;
 }
 
-interface PresenceData {
+export interface PresenceData {
     deviceId: string; // Now a hashed ID (not the real device ID)
     timestamp: number;
     socketId?: string;
     // name and platform no longer sent over discovery (privacy)
     name?: string;
     platform?: string;
+    capabilities?: DeviceCapabilities;
 }
 
 class LocalDiscovery {
@@ -62,6 +93,12 @@ class LocalDiscovery {
     private myHashedId: string = '';
     private socket: Socket | null = null;
     private started = false;
+    private myCapabilities: DeviceCapabilities = {
+        supportsGroupTransfer: true,
+        supportsPQC: true,
+        maxConnections: 10,
+        protocolVersion: '2.0.0',
+    };
 
     constructor() {
         if (typeof window !== 'undefined') {
@@ -83,9 +120,9 @@ class LocalDiscovery {
     }
 
     // Start discovery
-    start(): void {
-        if (typeof window === 'undefined') return;
-        if (this.started) return;
+    async start(): Promise<void> {
+        if (typeof window === 'undefined') {return;}
+        if (this.started) {return;}
         this.started = true;
 
         const url = getSignalingUrl();
@@ -93,6 +130,9 @@ class LocalDiscovery {
             this.started = false;
             return;
         }
+
+        // Lazy-load socket.io-client
+        const { io } = await getSocketIO();
 
         this.socket = io(url, {
             path: '/signaling',
@@ -112,7 +152,7 @@ class LocalDiscovery {
     }
 
     private setupSocketHandlers(): void {
-        if (!this.socket) return;
+        if (!this.socket) {return;}
 
         this.socket.on('connect', async () => {
             secureLog.log('[Discovery] Connected to signaling server');
@@ -229,11 +269,11 @@ class LocalDiscovery {
      * Validate incoming presence data
      */
     private isValidPresence(data: unknown): data is PresenceData {
-        if (!data || typeof data !== 'object') return false;
+        if (!data || typeof data !== 'object') {return false;}
         const d = data as Record<string, unknown>;
         return (
-            typeof d.deviceId === 'string' && d.deviceId.length > 0 &&
-            typeof d.timestamp === 'number'
+            typeof d['deviceId'] === 'string' && (d['deviceId'] as string).length > 0 &&
+            typeof d['timestamp'] === 'number'
         );
     }
 
@@ -252,29 +292,35 @@ class LocalDiscovery {
 
     // Send presence to the discovery room (privacy-preserving: no name/platform)
     private sendPresence(): void {
-        if (!this.socket?.connected || !this.myHashedId) return;
+        if (!this.socket?.connected || !this.myHashedId) {return;}
 
         this.socket.emit('presence', {
             room: DISCOVERY_ROOM,
             deviceId: this.myHashedId,
             timestamp: Date.now(),
+            capabilities: this.myCapabilities,
         });
     }
 
     // Handle incoming presence from another device
     private handlePresence(data: PresenceData): void {
-        if (data.deviceId === this.myHashedId) return;
+        if (data.deviceId === this.myHashedId) {return;}
 
         // Reject stale presence (older than 30 seconds)
-        if (Date.now() - data.timestamp > 30000) return;
+        if (Date.now() - data.timestamp > 30000) {return;}
+
+        const existing = this.devices.get(data.deviceId);
 
         const device: DiscoveredDevice = {
             id: data.deviceId,
-            name: 'Nearby Device',
-            platform: 'unknown',
+            name: existing?.name || 'Nearby Device',
+            platform: existing?.platform || 'unknown',
             lastSeen: new Date(),
             isOnline: true,
-            socketId: data.socketId,
+            ...(data.socketId ? { socketId: data.socketId } : {}),
+            ...(data.capabilities ? { capabilities: data.capabilities } : {}),
+            ...(existing?.connectionQuality ? { connectionQuality: existing.connectionQuality } : {}),
+            ...(existing?.lastTransferTime ? { lastTransferTime: existing.lastTransferTime } : {}),
         };
 
         this.devices.set(device.id, device);
@@ -285,11 +331,36 @@ class LocalDiscovery {
      * Update a discovered device with real info after WebRTC connects.
      * Called from the data channel message handler.
      */
-    updateDeviceInfo(deviceId: string, name: string, platform: string): void {
+    updateDeviceInfo(deviceId: string, name: string, platform: string, capabilities?: DeviceCapabilities): void {
         const device = this.devices.get(deviceId);
         if (device) {
             device.name = name;
             device.platform = platform;
+            if (capabilities) {
+                device.capabilities = capabilities;
+            }
+            this.notifyListeners();
+        }
+    }
+
+    /**
+     * Update device connection quality based on RTT/packet loss
+     */
+    updateConnectionQuality(deviceId: string, quality: 'excellent' | 'good' | 'fair' | 'poor'): void {
+        const device = this.devices.get(deviceId);
+        if (device) {
+            device.connectionQuality = quality;
+            this.notifyListeners();
+        }
+    }
+
+    /**
+     * Mark device as recently used for transfer
+     */
+    markTransferComplete(deviceId: string): void {
+        const device = this.devices.get(deviceId);
+        if (device) {
+            device.lastTransferTime = new Date();
             this.notifyListeners();
         }
     }
@@ -343,7 +414,7 @@ class LocalDiscovery {
 
     // Get platform info (privacy-preserving)
     private getPlatform(): string {
-        if (typeof navigator === 'undefined') return 'unknown';
+        if (typeof navigator === 'undefined') {return 'unknown';}
 
         const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         const isStandalone = (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
@@ -366,19 +437,19 @@ class LocalDiscovery {
 
     // Send WebRTC offer to a discovered device's socket
     sendOffer(targetSocketId: string, offer: RTCSessionDescriptionInit): void {
-        if (!this.socket?.connected) return;
+        if (!this.socket?.connected) {return;}
         this.socket.emit('offer', { target: targetSocketId, offer, ts: Date.now() });
     }
 
     // Send WebRTC answer to a device
     sendAnswer(targetSocketId: string, answer: RTCSessionDescriptionInit): void {
-        if (!this.socket?.connected) return;
+        if (!this.socket?.connected) {return;}
         this.socket.emit('answer', { target: targetSocketId, answer, ts: Date.now() });
     }
 
     // Send ICE candidate to a device
     sendIceCandidate(targetSocketId: string, candidate: RTCIceCandidateInit): void {
-        if (!this.socket?.connected) return;
+        if (!this.socket?.connected) {return;}
         this.socket.emit('ice-candidate', { target: targetSocketId, candidate, ts: Date.now() });
     }
 
@@ -410,6 +481,79 @@ class LocalDiscovery {
     // Get device by ID
     getDevice(id: string): DiscoveredDevice | undefined {
         return this.devices.get(id);
+    }
+
+    /**
+     * Filter devices by group transfer capability
+     */
+    getGroupTransferCapableDevices(): DiscoveredDevice[] {
+        return this.getDevices().filter(
+            device => device.capabilities?.supportsGroupTransfer === true
+        );
+    }
+
+    /**
+     * Get devices sorted by priority for group transfers
+     * Priority: recent transfers > connection quality > last seen
+     */
+    getPrioritizedDevices(): DiscoveredDevice[] {
+        const devices = this.getDevices();
+
+        return devices.sort((a, b) => {
+            // Priority 1: Recent transfer partners
+            if (a.lastTransferTime && !b.lastTransferTime) {return -1;}
+            if (!a.lastTransferTime && b.lastTransferTime) {return 1;}
+            if (a.lastTransferTime && b.lastTransferTime) {
+                const timeDiff = b.lastTransferTime.getTime() - a.lastTransferTime.getTime();
+                if (timeDiff !== 0) {return timeDiff;}
+            }
+
+            // Priority 2: Connection quality
+            const qualityOrder = { excellent: 0, good: 1, fair: 2, poor: 3 };
+            const aQuality = a.connectionQuality ? qualityOrder[a.connectionQuality] : 999;
+            const bQuality = b.connectionQuality ? qualityOrder[b.connectionQuality] : 999;
+            if (aQuality !== bQuality) {return aQuality - bQuality;}
+
+            // Priority 3: Most recently seen
+            return b.lastSeen.getTime() - a.lastSeen.getTime();
+        });
+    }
+
+    /**
+     * Get multiple devices by IDs with validation
+     */
+    getMultipleDevices(deviceIds: string[]): DiscoveredDevice[] {
+        const devices: DiscoveredDevice[] = [];
+        for (const id of deviceIds) {
+            const device = this.devices.get(id);
+            if (device && device.isOnline) {
+                devices.push(device);
+            }
+        }
+        return devices;
+    }
+
+    /**
+     * Get device capabilities
+     */
+    getDeviceCapabilities(deviceId: string): DeviceCapabilities | undefined {
+        return this.devices.get(deviceId)?.capabilities;
+    }
+
+    /**
+     * Set my device capabilities
+     */
+    setMyCapabilities(capabilities: Partial<DeviceCapabilities>): void {
+        this.myCapabilities = { ...this.myCapabilities, ...capabilities };
+        // Re-broadcast presence with updated capabilities
+        this.sendPresence();
+    }
+
+    /**
+     * Get my device capabilities
+     */
+    getMyCapabilities(): DeviceCapabilities {
+        return { ...this.myCapabilities };
     }
 }
 
