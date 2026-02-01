@@ -2,22 +2,27 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  // Get the pathname
   const { pathname } = request.nextUrl;
 
-  // Prevent any redirect from root to /app
-  // The root path should always serve the landing page
-  if (pathname === '/' && request.headers.get('x-middleware-rewrite')) {
-    return NextResponse.next();
+  // CRITICAL: The root path (/) must NEVER redirect to /app
+  // Root should always serve the landing page at app/page.tsx
+  if (pathname === '/') {
+    // Add cache control headers to prevent browsers/CDNs from caching any redirects
+    const response = NextResponse.next();
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    response.headers.set('X-Middleware-Cache', 'no-cache');
+    return response;
   }
 
-  // Let Next.js handle the routing normally
+  // Let Next.js handle all other routing normally
   return NextResponse.next();
 }
 
 // Configure which paths the middleware runs on
 export const config = {
-  // Run on all paths except static files and API routes  matcher: [
+  matcher: [
     /*
      * Match all request paths except for the ones starting with:
      * - api (API routes)

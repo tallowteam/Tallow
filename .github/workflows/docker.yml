@@ -1,0 +1,289 @@
+name: Docker Build & Push
+
+on:
+  push:
+    branches: [main, master, develop]
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches: [main, master, develop]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ============================================================================
+  # Build Multi-Arch Docker Images
+  # ============================================================================
+  docker-build-multiarch:
+    name: Build ${{ matrix.image }} (${{ matrix.platform }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [web, signaling]
+        platform:
+          - linux/amd64
+          - linux/arm64
+          - linux/arm/v7
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=host
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request' && secrets.DOCKERHUB_USERNAME != ''
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.image }}
+            ${{ secrets.DOCKERHUB_USERNAME != '' && format('{0}/tallow-{1}', secrets.DOCKERHUB_USERNAME, matrix.image) || '' }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.image == 'web' && 'Dockerfile' || 'Dockerfile.signaling' }}
+          platforms: ${{ matrix.platform }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.image }}-${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}-${{ matrix.platform }}
+          build-args: |
+            VERSION=${{ steps.meta.outputs.version }}
+            BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+            VCS_REF=${{ github.sha }}
+            NODE_ENV=production
+            NEXT_TELEMETRY_DISABLED=1
+
+  # ============================================================================
+  # Scan Docker Images for Vulnerabilities
+  # ============================================================================
+  docker-security-scan:
+    name: Security Scan - ${{ matrix.image }}
+    needs: [docker-build-multiarch]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    strategy:
+      matrix:
+        image: [web, signaling]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build image for scanning
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.image == 'web' && 'Dockerfile' || 'Dockerfile.signaling' }}
+          load: true
+          tags: tallow-${{ matrix.image }}:scan
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: tallow-${{ matrix.image }}:scan
+          format: 'sarif'
+          output: 'trivy-${{ matrix.image }}.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-${{ matrix.image }}.sarif'
+          category: docker-${{ matrix.image }}
+
+      - name: Run Snyk vulnerability scanner
+        if: secrets.SNYK_TOKEN != ''
+        uses: snyk/actions/docker@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          image: tallow-${{ matrix.image }}:scan
+          args: --severity-threshold=high
+
+  # ============================================================================
+  # Test Docker Images
+  # ============================================================================
+  docker-test:
+    name: Test Docker Images
+    needs: [docker-build-multiarch]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      matrix:
+        image: [web, signaling]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build test image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.image == 'web' && 'Dockerfile' || 'Dockerfile.signaling' }}
+          load: true
+          tags: tallow-${{ matrix.image }}:test
+
+      - name: Test container startup
+        run: |
+          # Start container
+          docker run -d --name test-${{ matrix.image }} \
+            -p ${{ matrix.image == 'web' && '3000:3000' || '3001:3001' }} \
+            tallow-${{ matrix.image }}:test
+
+          # Wait for container to start
+          sleep 10
+
+          # Check container is running
+          docker ps | grep test-${{ matrix.image }}
+
+          # Test health endpoint
+          if [ "${{ matrix.image }}" == "web" ]; then
+            curl -f http://localhost:3000/api/health || exit 1
+          else
+            curl -f http://localhost:3001/health || exit 1
+          fi
+
+          # Check logs for errors
+          docker logs test-${{ matrix.image }} 2>&1 | tee logs.txt
+          ! grep -i "error\|fatal\|exception" logs.txt || exit 1
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker stop test-${{ matrix.image }} || true
+          docker rm test-${{ matrix.image }} || true
+
+  # ============================================================================
+  # Docker Compose Test
+  # ============================================================================
+  docker-compose-test:
+    name: Test Docker Compose Stack
+    needs: [docker-build-multiarch]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start Docker Compose stack
+        run: |
+          docker compose -f docker-compose.yml up -d
+          sleep 30
+
+      - name: Check all containers are running
+        run: |
+          docker compose ps
+          docker compose ps | grep -q "Up" || exit 1
+
+      - name: Test web service
+        run: |
+          curl -f http://localhost:3000/api/health || exit 1
+
+      - name: Test signaling service
+        run: |
+          curl -f http://localhost:3001/health || exit 1
+
+      - name: Check logs for errors
+        run: |
+          docker compose logs | tee compose-logs.txt
+          ! grep -i "fatal\|unhandled" compose-logs.txt || exit 1
+
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-compose-logs
+          path: compose-logs.txt
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v
+
+  # ============================================================================
+  # Image Size Analysis
+  # ============================================================================
+  image-size-analysis:
+    name: Analyze Image Sizes
+    needs: [docker-build-multiarch]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build images
+        run: |
+          docker build -t tallow-web:size -f Dockerfile .
+          docker build -t tallow-signaling:size -f Dockerfile.signaling .
+
+      - name: Analyze image sizes
+        run: |
+          echo "## Docker Image Size Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | Size | Layers |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          for image in tallow-web:size tallow-signaling:size; do
+            SIZE=$(docker images $image --format "{{.Size}}")
+            LAYERS=$(docker history $image --format "{{.ID}}" | wc -l)
+            echo "| $image | $SIZE | $LAYERS |" >> $GITHUB_STEP_SUMMARY
+          done
+
+      - name: Install dive
+        run: |
+          wget https://github.com/wagoodman/dive/releases/download/v0.11.0/dive_0.11.0_linux_amd64.deb
+          sudo dpkg -i dive_0.11.0_linux_amd64.deb
+
+      - name: Analyze with dive
+        run: |
+          dive tallow-web:size --ci --lowestEfficiency=0.9 || true
+          dive tallow-signaling:size --ci --lowestEfficiency=0.9 || true

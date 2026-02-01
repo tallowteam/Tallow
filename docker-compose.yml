@@ -1,0 +1,123 @@
+# Docker Compose for Production Environment
+# Optimized builds, health checks, and resource limits
+
+version: '3.8'
+
+services:
+  # Tallow Web App
+  tallow:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=production
+    image: tallow:latest
+    container_name: tallow
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      # Signaling uses same origin with /signaling path via Cloudflare Tunnel
+      - NEXT_PUBLIC_SIGNALING_URL=${NEXT_PUBLIC_SIGNALING_URL:-}
+      - NEXT_PUBLIC_TURN_SERVER=${NEXT_PUBLIC_TURN_SERVER:-}
+      - NEXT_PUBLIC_TURN_USERNAME=${NEXT_PUBLIC_TURN_USERNAME:-}
+      - NEXT_PUBLIC_TURN_CREDENTIAL=${NEXT_PUBLIC_TURN_CREDENTIAL:-}
+      - NEXT_PUBLIC_FORCE_RELAY=${NEXT_PUBLIC_FORCE_RELAY:-true}
+      - NEXT_PUBLIC_ALLOW_DIRECT=${NEXT_PUBLIC_ALLOW_DIRECT:-false}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
+    depends_on:
+      signaling:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    networks:
+      - tallow-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Signaling Server for P2P WebRTC connections
+  signaling:
+    build:
+      context: .
+      dockerfile: Dockerfile.signaling
+    image: tallow-signaling:latest
+    container_name: tallow-signaling
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - SIGNALING_PORT=3001
+      - NODE_ENV=production
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://tallow.manisahome.com}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    networks:
+      - tallow-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Playwright E2E Test Runner
+  playwright:
+    build:
+      context: .
+      dockerfile: Dockerfile.playwright
+    container_name: tallow-playwright
+    depends_on:
+      tallow:
+        condition: service_healthy
+    environment:
+      - BASE_URL=http://tallow:3000
+    volumes:
+      - ./test-results:/app/test-results
+      - ./playwright-report:/app/playwright-report
+    networks:
+      - tallow-network
+    profiles:
+      - test
+
+networks:
+  tallow-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.19.0.0/16
+
+volumes:
+  # Placeholder for future persistent data needs
+  app-data:
+    driver: local

@@ -1,0 +1,56 @@
+# Tallow Relay Server Configuration
+
+# Server settings
+server:
+  # Address to listen on
+  listen_addr: ":8080"
+
+  # TLS certificate and key (optional)
+  # tls_cert: "/path/to/cert.pem"
+  # tls_key: "/path/to/key.pem"
+
+# Room settings
+rooms:
+  # Default room time-to-live
+  ttl: 30m
+
+  # Maximum clients per room
+  max_clients: 2
+
+  # Maximum rooms
+  max_rooms: 10000
+
+# Rate limiting
+rate_limit:
+  # Requests per second per IP
+  rate: 10
+
+  # Burst size
+  burst: 20
+
+  # Maximum connections per IP
+  max_connections_per_ip: 10
+
+# Metrics
+metrics:
+  # Enable Prometheus metrics
+  enabled: true
+
+  # Metrics endpoint address
+  addr: ":9090"
+
+# Logging
+logging:
+  # Log level: debug, info, warn, error
+  level: info
+
+  # Log format: text, json
+  format: text
+
+# Security
+security:
+  # Allowed origins for WebSocket connections (empty = allow all)
+  allowed_origins: []
+
+  # Maximum message size (bytes)
+  max_message_size: 1048576  # 1 MB

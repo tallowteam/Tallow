@@ -1,0 +1,166 @@
+# DigitalOcean App Platform specification for Tallow
+# Deploy with: doctl apps create --spec app.yaml
+
+name: tallow
+region: nyc
+
+# Ingress configuration
+ingress:
+  rules:
+    - component:
+        name: web
+      match:
+        path:
+          prefix: /
+    - component:
+        name: signaling
+      match:
+        path:
+          prefix: /signaling
+
+# Services
+services:
+  # Main web application
+  - name: web
+    github:
+      repo: yourusername/tallow
+      branch: main
+      deploy_on_push: true
+
+    build_command: npm run build
+    run_command: npm start
+
+    environment_slug: node-js
+    instance_count: 2
+    instance_size_slug: basic-xs  # $5/month per instance
+
+    http_port: 3000
+
+    envs:
+      - key: NODE_ENV
+        value: production
+        scope: RUN_TIME
+        type: GENERAL
+
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+        scope: RUN_TIME
+        type: GENERAL
+
+      - key: PORT
+        value: "3000"
+        scope: RUN_TIME
+        type: GENERAL
+
+      - key: API_SECRET_KEY
+        value: ${API_SECRET_KEY}
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: RESEND_API_KEY
+        value: ${RESEND_API_KEY}
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: NEXT_PUBLIC_TURN_SERVER
+        value: ${NEXT_PUBLIC_TURN_SERVER}
+        scope: RUN_TIME
+        type: GENERAL
+
+      - key: NEXT_PUBLIC_TURN_USERNAME
+        value: ${NEXT_PUBLIC_TURN_USERNAME}
+        scope: RUN_TIME
+        type: GENERAL
+
+      - key: NEXT_PUBLIC_TURN_CREDENTIAL
+        value: ${NEXT_PUBLIC_TURN_CREDENTIAL}
+        scope: RUN_TIME
+        type: SECRET
+
+    routes:
+      - path: /
+
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 30
+      period_seconds: 10
+      timeout_seconds: 3
+      success_threshold: 1
+      failure_threshold: 3
+
+    # Autoscaling
+    autoscaling:
+      min_instance_count: 1
+      max_instance_count: 5
+      metrics:
+        cpu:
+          percent: 75
+
+  # Signaling server
+  - name: signaling
+    github:
+      repo: yourusername/tallow
+      branch: main
+
+    build_command: npm install
+    run_command: node signaling-server.js
+
+    environment_slug: node-js
+    instance_count: 1
+    instance_size_slug: basic-xxs  # $2.50/month per instance
+
+    http_port: 3001
+
+    envs:
+      - key: SIGNALING_PORT
+        value: "3001"
+        scope: RUN_TIME
+        type: GENERAL
+
+      - key: ALLOWED_ORIGINS
+        value: https://tallow-APP_ID.ondigitalocean.app
+        scope: RUN_TIME
+        type: GENERAL
+
+    routes:
+      - path: /signaling
+
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 20
+      period_seconds: 10
+      timeout_seconds: 3
+      success_threshold: 1
+      failure_threshold: 3
+
+# Static sites (optional - for docs, etc.)
+# static_sites:
+#   - name: docs
+#     github:
+#       repo: yourusername/tallow-docs
+#       branch: main
+#     output_dir: /build
+
+# Databases (optional - if needed in future)
+# databases:
+#   - name: tallow-db
+#     engine: PG
+#     version: "14"
+#     size: db-s-dev-database
+#     num_nodes: 1
+#     production: true
+
+# Domains
+domains:
+  - domain: tallow.yourdomain.com
+    type: PRIMARY
+    zone: yourdomain.com
+
+# Alerts
+alerts:
+  - rule: DEPLOYMENT_FAILED
+  - rule: DOMAIN_FAILED
+  - rule: CPU_UTILIZATION
+    value: 80
+  - rule: MEM_UTILIZATION
+    value: 80

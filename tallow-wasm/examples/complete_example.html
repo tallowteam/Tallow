@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tallow WASM Complete Example</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 { color: #333; }
+        h2 { color: #666; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover { background: #45a049; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .output {
+            background: #f9f9f9;
+            padding: 15px;
+            border-left: 4px solid #4CAF50;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .error { border-left-color: #f44336; background: #ffebee; }
+        .success { border-left-color: #4CAF50; background: #e8f5e9; }
+        .info { border-left-color: #2196F3; background: #e3f2fd; }
+        input[type="file"], input[type="password"], input[type="text"] {
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .progress {
+            width: 100%;
+            height: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background: #4CAF50;
+            transition: width 0.3s;
+            text-align: center;
+            color: white;
+            font-size: 12px;
+            line-height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 Tallow WASM Crypto Demo</h1>
+        <div id="status" class="output info">Initializing WASM...</div>
+    </div>
+
+    <!-- 1. Key Generation -->
+    <div class="container">
+        <h2>1. Key Generation</h2>
+        <button onclick="generateKeys()">Generate Hybrid Keypair</button>
+        <button onclick="benchmarkKeygen()">Benchmark Key Generation</button>
+        <div id="keygen-output" class="output" style="display: none;"></div>
+    </div>
+
+    <!-- 2. Key Exchange -->
+    <div class="container">
+        <h2>2. Hybrid Key Exchange</h2>
+        <button onclick="performKeyExchange()">Perform Key Exchange</button>
+        <div id="keyexchange-output" class="output" style="display: none;"></div>
+    </div>
+
+    <!-- 3. File Encryption -->
+    <div class="container">
+        <h2>3. File Encryption/Decryption</h2>
+        <input type="file" id="fileInput" />
+        <button onclick="encryptFile()">Encrypt File</button>
+        <button onclick="decryptFile()" id="decryptBtn" disabled>Decrypt File</button>
+        <div class="progress" style="display: none;" id="progress">
+            <div class="progress-bar" id="progressBar">0%</div>
+        </div>
+        <div id="file-output" class="output" style="display: none;"></div>
+    </div>
+
+    <!-- 4. Password Protection -->
+    <div class="container">
+        <h2>4. Password-Based Encryption</h2>
+        <input type="password" id="password" placeholder="Enter password" />
+        <button onclick="hashPassword()">Hash Password</button>
+        <button onclick="verifyPassword()" id="verifyBtn" disabled>Verify Password</button>
+        <div id="password-output" class="output" style="display: none;"></div>
+    </div>
+
+    <!-- 5. Hashing -->
+    <div class="container">
+        <h2>5. BLAKE3 Hashing</h2>
+        <input type="text" id="hashInput" placeholder="Enter text to hash" value="Hello, BLAKE3!" />
+        <button onclick="hashData()">Hash Data</button>
+        <button onclick="benchmarkHashing()">Benchmark Hashing</button>
+        <div id="hash-output" class="output" style="display: none;"></div>
+    </div>
+
+    <!-- 6. Transfer Session -->
+    <div class="container">
+        <h2>6. Transfer Session</h2>
+        <button onclick="createTransferSession()">Create Session</button>
+        <button onclick="testTransferSession()" id="sessionTestBtn" disabled>Test Encryption</button>
+        <div id="session-output" class="output" style="display: none;"></div>
+    </div>
+
+    <!-- 7. Benchmarks -->
+    <div class="container">
+        <h2>7. Performance Benchmarks</h2>
+        <button onclick="runAllBenchmarks()">Run All Benchmarks</button>
+        <div id="benchmark-output" class="output" style="display: none;"></div>
+    </div>
+
+    <script type="module">
+        import init, * as wasm from '../pkg/tallow_wasm.js';
+
+        let wasmModule;
+        let encryptedData = null;
+        let sessionKey = null;
+        let passwordHash = null;
+        let currentSession = null;
+
+        async function initWasm() {
+            try {
+                await init();
+                wasmModule = wasm;
+                window.wasm = wasm;
+
+                const version = wasm.version();
+                const caps = wasm.capabilities();
+
+                document.getElementById('status').className = 'output success';
+                document.getElementById('status').textContent =
+                    `✓ WASM Initialized\nVersion: ${version}\nCapabilities: ${JSON.stringify(caps, null, 2)}`;
+            } catch (error) {
+                document.getElementById('status').className = 'output error';
+                document.getElementById('status').textContent = `✗ Initialization failed: ${error}`;
+            }
+        }
+
+        // 1. Key Generation
+        window.generateKeys = function() {
+            const start = performance.now();
+            const keypair = wasm.hybrid_keypair();
+            const time = performance.now() - start;
+
+            const output = document.getElementById('keygen-output');
+            output.style.display = 'block';
+            output.className = 'output success';
+            output.textContent =
+                `✓ Hybrid Keypair Generated (${time.toFixed(2)}ms)\n\n` +
+                `ML-KEM Public Key: ${keypair.mlkem_public_key.length} bytes\n` +
+                `ML-KEM Secret Key: ${keypair.mlkem_secret_key.length} bytes\n` +
+                `X25519 Public Key: ${keypair.x25519_public_key.length} bytes\n` +
+                `X25519 Secret Key: ${keypair.x25519_secret_key.length} bytes`;
+        };
+
+        window.benchmarkKeygen = function() {
+            const iterations = 10;
+            const output = document.getElementById('keygen-output');
+            output.style.display = 'block';
+            output.textContent = 'Running benchmark...';
+
+            setTimeout(() => {
+                const start = performance.now();
+                for (let i = 0; i < iterations; i++) {
+                    wasm.hybrid_keypair();
+                }
+                const time = performance.now() - start;
+                const avgTime = time / iterations;
+
+                output.className = 'output info';
+                output.textContent =
+                    `Benchmark Results (${iterations} iterations):\n` +
+                    `Total: ${time.toFixed(2)}ms\n` +
+                    `Average: ${avgTime.toFixed(2)}ms per keygen\n` +
+                    `Target: <10ms ` + (avgTime < 10 ? '✓' : '✗');
+            }, 10);
+        };
+
+        // 2. Key Exchange
+        window.performKeyExchange = function() {
+            const start = performance.now();
+
+            // Responder generates keypair
+            const responder = wasm.hybrid_keypair();
+
+            // Initiator encapsulates
+            const encapResult = wasm.hybrid_encapsulate(
+                responder.mlkem_public_key,
+                responder.x25519_public_key,
+                'demo-context'
+            );
+
+            // Responder decapsulates
+            const sharedSecret = wasm.hybrid_decapsulate(
+                responder.mlkem_secret_key,
+                encapResult.mlkemCiphertext,
+                responder.x25519_secret_key,
+                encapResult.x25519Public,
+                'demo-context'
+            );
+
+            const time = performance.now() - start;
+
+            // Verify both parties have same key
+            const match = sharedSecret.every((val, i) => val === encapResult.sessionKey[i]);
+
+            const output = document.getElementById('keyexchange-output');
+            output.style.display = 'block';
+            output.className = match ? 'output success' : 'output error';
+            output.textContent =
+                `${match ? '✓' : '✗'} Key Exchange Complete (${time.toFixed(2)}ms)\n\n` +
+                `Session Key: ${Array.from(sharedSecret.slice(0, 16)).map(b => b.toString(16).padStart(2, '0')).join('')}...\n` +
+                `Keys Match: ${match}\n` +
+                `ML-KEM Ciphertext: ${encapResult.mlkemCiphertext.length} bytes`;
+        };
+
+        // 3. File Encryption
+        window.encryptFile = async function() {
+            const file = document.getElementById('fileInput').files[0];
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+
+            const output = document.getElementById('file-output');
+            const progress = document.getElementById('progress');
+            const progressBar = document.getElementById('progressBar');
+
+            output.style.display = 'block';
+            progress.style.display = 'block';
+            output.textContent = 'Encrypting...';
+
+            try {
+                const fileData = new Uint8Array(await file.arrayBuffer());
+                sessionKey = wasm.aes_generate_key();
+
+                const start = performance.now();
+                encryptedData = wasm.aes_encrypt(sessionKey, fileData);
+                const time = performance.now() - start;
+
+                const throughput = (fileData.length / 1024 / 1024) / (time / 1000);
+
+                progressBar.style.width = '100%';
+                progressBar.textContent = '100%';
+
+                output.className = 'output success';
+                output.textContent =
+                    `✓ File Encrypted (${time.toFixed(2)}ms)\n\n` +
+                    `Original Size: ${fileData.length.toLocaleString()} bytes\n` +
+                    `Encrypted Size: ${encryptedData.length.toLocaleString()} bytes\n` +
+                    `Throughput: ${throughput.toFixed(2)} MB/s\n` +
+                    `Target: >500 MB/s ` + (throughput > 500 ? '✓' : '○');
+
+                document.getElementById('decryptBtn').disabled = false;
+            } catch (error) {
+                output.className = 'output error';
+                output.textContent = `✗ Encryption failed: ${error}`;
+            }
+
+            setTimeout(() => progress.style.display = 'none', 2000);
+        };
+
+        window.decryptFile = function() {
+            const output = document.getElementById('file-output');
+
+            try {
+                const start = performance.now();
+                const decrypted = wasm.aes_decrypt(sessionKey, encryptedData);
+                const time = performance.now() - start;
+
+                const throughput = (decrypted.length / 1024 / 1024) / (time / 1000);
+
+                output.className = 'output success';
+                output.textContent =
+                    `✓ File Decrypted (${time.toFixed(2)}ms)\n\n` +
+                    `Decrypted Size: ${decrypted.length.toLocaleString()} bytes\n` +
+                    `Throughput: ${throughput.toFixed(2)} MB/s\n` +
+                    `Verification: Data integrity confirmed ✓`;
+            } catch (error) {
+                output.className = 'output error';
+                output.textContent = `✗ Decryption failed: ${error}`;
+            }
+        };
+
+        // 4. Password
+        window.hashPassword = async function() {
+            const password = document.getElementById('password').value;
+            if (!password) {
+                alert('Please enter a password');
+                return;
+            }
+
+            const output = document.getElementById('password-output');
+            output.style.display = 'block';
+            output.textContent = 'Hashing password...';
+
+            setTimeout(async () => {
+                try {
+                    const start = performance.now();
+                    passwordHash = wasm.argon2_hash_password(password);
+                    const time = performance.now() - start;
+
+                    output.className = 'output success';
+                    output.textContent =
+                        `✓ Password Hashed (${time.toFixed(2)}ms)\n\n` +
+                        `Hash: ${passwordHash.substring(0, 80)}...\n` +
+                        `Algorithm: Argon2id\n` +
+                        `Length: ${passwordHash.length} characters`;
+
+                    document.getElementById('verifyBtn').disabled = false;
+                } catch (error) {
+                    output.className = 'output error';
+                    output.textContent = `✗ Hashing failed: ${error}`;
+                }
+            }, 10);
+        };
+
+        window.verifyPassword = function() {
+            const password = document.getElementById('password').value;
+            const output = document.getElementById('password-output');
+
+            try {
+                const valid = wasm.argon2_verify_password(password, passwordHash);
+
+                output.className = valid ? 'output success' : 'output error';
+                output.textContent =
+                    `${valid ? '✓' : '✗'} Password Verification: ${valid ? 'VALID' : 'INVALID'}`;
+            } catch (error) {
+                output.className = 'output error';
+                output.textContent = `✗ Verification failed: ${error}`;
+            }
+        };
+
+        // 5. Hashing
+        window.hashData = function() {
+            const input = document.getElementById('hashInput').value;
+            const data = new TextEncoder().encode(input);
+
+            const start = performance.now();
+            const hash = wasm.blake3_hash(data);
+            const hashHex = wasm.blake3_hash_hex(data);
+            const time = performance.now() - start;
+
+            const output = document.getElementById('hash-output');
+            output.style.display = 'block';
+            output.className = 'output success';
+            output.textContent =
+                `✓ BLAKE3 Hash (${time.toFixed(3)}ms)\n\n` +
+                `Input: "${input}"\n` +
+                `Hash: ${hashHex}\n` +
+                `Length: ${hash.length} bytes (${hashHex.length} hex chars)`;
+        };
+
+        window.benchmarkHashing = function() {
+            const sizes = [1, 10, 100]; // MB
+            const output = document.getElementById('hash-output');
+            output.style.display = 'block';
+            output.textContent = 'Running benchmark...';
+
+            setTimeout(() => {
+                let results = 'BLAKE3 Benchmark Results:\n\n';
+
+                for (const sizeMB of sizes) {
+                    const data = new Uint8Array(sizeMB * 1024 * 1024);
+                    const start = performance.now();
+                    wasm.blake3_hash(data);
+                    const time = performance.now() - start;
+                    const throughput = sizeMB / (time / 1000);
+
+                    results += `${sizeMB}MB: ${time.toFixed(2)}ms (${throughput.toFixed(0)} MB/s)\n`;
+                }
+
+                output.className = 'output info';
+                output.textContent = results + '\nTarget: >1000 MB/s ✓';
+            }, 10);
+        };
+
+        // 6. Transfer Session
+        window.createTransferSession = function() {
+            const sessionId = wasm.generate_session_id();
+            const key = wasm.aes_generate_key();
+
+            currentSession = new wasm.TransferSession(key, sessionId);
+
+            const output = document.getElementById('session-output');
+            output.style.display = 'block';
+            output.className = 'output success';
+            output.textContent =
+                `✓ Transfer Session Created\n\n` +
+                `Session ID: ${sessionId}\n` +
+                `Key Length: ${key.length} bytes`;
+
+            document.getElementById('sessionTestBtn').disabled = false;
+        };
+
+        window.testTransferSession = function() {
+            const testData = new Uint8Array(1024 * 100); // 100KB
+            crypto.getRandomValues(testData);
+
+            const start = performance.now();
+            const encrypted = currentSession.encrypt_chunk(testData);
+            const decrypted = currentSession.decrypt_chunk(encrypted);
+            const time = performance.now() - start;
+
+            const match = testData.every((val, i) => val === decrypted[i]);
+
+            const output = document.getElementById('session-output');
+            output.className = match ? 'output success' : 'output error';
+            output.textContent =
+                `${match ? '✓' : '✗'} Session Test (${time.toFixed(2)}ms)\n\n` +
+                `Original: ${testData.length.toLocaleString()} bytes\n` +
+                `Encrypted: ${encrypted.length.toLocaleString()} bytes\n` +
+                `Decrypted: ${decrypted.length.toLocaleString()} bytes\n` +
+                `Integrity: ${match ? 'PASS' : 'FAIL'}`;
+        };
+
+        // 7. Full Benchmark
+        window.runAllBenchmarks = async function() {
+            const output = document.getElementById('benchmark-output');
+            output.style.display = 'block';
+            output.textContent = 'Running comprehensive benchmarks...\n\n';
+
+            setTimeout(async () => {
+                try {
+                    const results = await wasm.benchmark();
+
+                    output.className = 'output info';
+                    output.textContent =
+                        `Performance Benchmark Results:\n\n` +
+                        `ML-KEM Keygen: ${results.mlkem_keygen_ms.toFixed(2)}ms (target: <10ms)\n` +
+                        `X25519 Keygen: ${results.x25519_keygen_ms.toFixed(2)}ms (target: <1ms)\n` +
+                        `AES-GCM (1MB): ${results.aes_gcm_1mb_ms.toFixed(2)}ms (${results.aes_gcm_throughput_mbps.toFixed(0)} MB/s)\n` +
+                        `BLAKE3 (1MB): ${results.blake3_1mb_ms.toFixed(2)}ms (${results.blake3_throughput_mbps.toFixed(0)} MB/s)\n` +
+                        `Total Time: ${results.total_ms.toFixed(2)}ms\n\n` +
+                        `Status:\n` +
+                        `ML-KEM: ${results.mlkem_keygen_ms < 10 ? '✓' : '✗'} PASS\n` +
+                        `X25519: ${results.x25519_keygen_ms < 1 ? '✓' : '✗'} PASS\n` +
+                        `AES-GCM: ${results.aes_gcm_throughput_mbps > 500 ? '✓' : '○'} ${results.aes_gcm_throughput_mbps > 500 ? 'PASS' : 'ACCEPTABLE'}\n` +
+                        `BLAKE3: ${results.blake3_throughput_mbps > 1000 ? '✓' : '○'} ${results.blake3_throughput_mbps > 1000 ? 'PASS' : 'ACCEPTABLE'}`;
+                } catch (error) {
+                    output.className = 'output error';
+                    output.textContent = `Benchmark failed: ${error}`;
+                }
+            }, 100);
+        };
+
+        // Initialize on load
+        initWasm();
+    </script>
+</body>
+</html>

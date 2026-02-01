@@ -195,7 +195,7 @@ class MockWebSocket extends EventEmitter {
   }
 
   getLastMessage(): ServerMessage | null {
-    if (this.sentMessages.length === 0) return null;
+    if (this.sentMessages.length === 0) {return null;}
     return JSON.parse(this.sentMessages[this.sentMessages.length - 1]) as ServerMessage;
   }
 

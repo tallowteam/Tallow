@@ -1,0 +1,47 @@
+# Signaling Server Dockerfile
+# Lightweight Node.js container for WebSocket signaling
+
+# Build stage
+FROM node:20.11-alpine3.19 AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install only production dependencies for signaling server
+RUN npm ci --production --ignore-scripts
+
+# Production stage
+FROM node:20.11-alpine3.19 AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV SIGNALING_PORT=3001
+
+# Install wget for health checks
+RUN apk add --no-cache wget
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 signaling
+
+# Copy dependencies
+COPY --from=builder /app/node_modules ./node_modules
+
+# Copy signaling server
+COPY signaling-server.js ./
+
+# Set ownership
+RUN chown -R signaling:nodejs /app
+
+USER signaling
+
+EXPOSE 3001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3001/health || exit 1
+
+CMD ["node", "signaling-server.js"]

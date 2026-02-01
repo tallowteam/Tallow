@@ -132,7 +132,7 @@ async function main(): Promise<void> {
   // Apply environment variables
   if (process.env['TALLOW_WS_PORT']) {
     const port = parseInt(process.env['TALLOW_WS_PORT'], 10);
-    if (!isNaN(port)) config.wsPort = port;
+    if (!isNaN(port)) {config.wsPort = port;}
   }
   if (process.env['TALLOW_DEVICE_ID']) {
     config.deviceId = process.env['TALLOW_DEVICE_ID'];

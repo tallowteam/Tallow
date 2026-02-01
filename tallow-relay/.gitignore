@@ -1,0 +1,49 @@
+# Binaries
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+tallow-relay
+
+# Test coverage
+coverage.out
+coverage.html
+
+# Vendor directory (if not committing vendor)
+# vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+*.tar.gz
+
+# Logs
+*.log
+
+# Local configuration
+configs/local.yaml
+configs/*.local.yaml
+
+# Secrets
+*.pem
+*.key
+secrets/
+
+# Docker
+.docker/
+
+# Temporary files
+tmp/
+temp/

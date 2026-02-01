@@ -1,0 +1,69 @@
+# Tallow Onion Relay Dockerfile
+# Multi-stage build for minimal production image
+
+# Build stage
+FROM golang:1.22-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache git ca-certificates
+
+# Set working directory
+WORKDIR /app
+
+# Copy go mod files
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build the onion relay binary
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -ldflags="-w -s -X main.version=$(git describe --tags --always 2>/dev/null || echo 'dev') -X main.buildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X main.gitCommit=$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')" \
+    -o /tallow-relay-onion \
+    ./cmd/relay
+
+# Production stage
+FROM alpine:3.19
+
+# Install runtime dependencies
+RUN apk add --no-cache ca-certificates tzdata
+
+# Create non-root user
+RUN adduser -D -g '' tallow
+
+# Create directories
+RUN mkdir -p /var/lib/tallow-relay/keys && \
+    chown -R tallow:tallow /var/lib/tallow-relay
+
+# Copy binary from builder
+COPY --from=builder /tallow-relay-onion /usr/local/bin/tallow-relay
+
+# Copy default config
+COPY configs/relay-onion.yaml /etc/tallow-relay/config.yaml
+
+# Switch to non-root user
+USER tallow
+
+# Expose ports
+# 8080 - Main WebSocket/HTTP server
+# 9090 - Prometheus metrics
+EXPOSE 8080 9090
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+
+# Set environment variables
+ENV RELAY_HOST=0.0.0.0 \
+    RELAY_PORT=8080 \
+    RELAY_MODE=middle \
+    RELAY_KEY_STORE_PATH=/var/lib/tallow-relay/keys \
+    LOG_LEVEL=info \
+    LOG_FORMAT=json
+
+# Run the relay
+ENTRYPOINT ["/usr/local/bin/tallow-relay"]
+CMD ["-config", "/etc/tallow-relay/config.yaml"]

@@ -1,0 +1,86 @@
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+/**
+ * Generate a cryptographically secure nonce for CSP
+ */
+function generateNonce(): string {
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  return Buffer.from(array).toString('base64');
+}
+
+/**
+ * Security Proxy
+ * Adds Content Security Policy and other security headers
+ */
+export function proxy(_request: NextRequest) {
+  const response = NextResponse.next();
+  const nonce = generateNonce();
+  const isProduction = process.env['NODE_ENV'] === 'production';
+
+  // Content Security Policy - relaxed for Next.js compatibility
+  // Still protects against clickjacking, mixed content, and restricts connections
+  const csp = [
+    "default-src 'self'",
+    // Scripts: allow inline for Next.js + Stripe.js
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
+    // Styles: allow inline for Tailwind/CSS-in-JS
+    "style-src 'self' 'unsafe-inline'",
+    // Images: self + data URIs for QR codes + blob for file previews
+    "img-src 'self' data: blob:",
+    // Fonts: self only
+    "font-src 'self'",
+    // Connect: self + WebSocket for signaling + TURN servers + Stripe + any for dev (LAN testing)
+    `connect-src 'self' wss: ws: https://relay.metered.ca:443 https://api.stripe.com${isProduction ? '' : ' http://* ws://*'}`,
+    // WebRTC: allow peer connections
+    "media-src 'self' blob:",
+    // Frames: Stripe checkout
+    "frame-src https://js.stripe.com",
+    // Object/embed: none (no plugins)
+    "object-src 'none'",
+    // Base URI: self only
+    "base-uri 'self'",
+    // Form action: self only
+    "form-action 'self'",
+    // Frame ancestors: none (prevent clickjacking)
+    "frame-ancestors 'none'",
+    // Upgrade insecure requests in production
+    ...(isProduction ? ["upgrade-insecure-requests"] : []),
+  ].join('; ');
+
+  // Security headers
+  response.headers.set('Content-Security-Policy', csp);
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Permissions-Policy',
+    'accelerometer=(), camera=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(self), usb=()'
+  );
+
+  // HSTS - enforces HTTPS for 1 year, includes subdomains
+  // Only enable in production to avoid issues during local development
+  if (isProduction) {
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  }
+
+  // Pass nonce to the app via header (for use in Script components)
+  response.headers.set('X-Nonce', nonce);
+
+  return response;
+}
+
+// Apply to all routes except static files and API routes that need different CSP
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+};

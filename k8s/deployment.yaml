@@ -1,0 +1,271 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tallow-app
+  namespace: tallow
+  labels:
+    app: tallow
+    component: app
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: tallow
+      component: app
+  template:
+    metadata:
+      labels:
+        app: tallow
+        component: app
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/api/metrics"
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - tallow
+                topologyKey: kubernetes.io/hostname
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: tallow
+          image: tallow:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          env:
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: tallow-config
+                  key: NODE_ENV
+            - name: NEXT_TELEMETRY_DISABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: tallow-config
+                  key: NEXT_TELEMETRY_DISABLED
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: tallow-config
+                  key: PORT
+            - name: NEXT_PUBLIC_FORCE_RELAY
+              valueFrom:
+                configMapKeyRef:
+                  name: tallow-config
+                  key: NEXT_PUBLIC_FORCE_RELAY
+            - name: NEXT_PUBLIC_ALLOW_DIRECT
+              valueFrom:
+                configMapKeyRef:
+                  name: tallow-config
+                  key: NEXT_PUBLIC_ALLOW_DIRECT
+            - name: RESEND_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tallow-secrets
+                  key: resend-api-key
+                  optional: true
+            - name: STRIPE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tallow-secrets
+                  key: stripe-secret-key
+                  optional: true
+            - name: STRIPE_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: tallow-secrets
+                  key: stripe-webhook-secret
+                  optional: true
+            - name: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tallow-secrets
+                  key: stripe-publishable-key
+                  optional: true
+            - name: NEXT_PUBLIC_TURN_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: tallow-secrets
+                  key: turn-username
+                  optional: true
+            - name: NEXT_PUBLIC_TURN_CREDENTIAL
+              valueFrom:
+                secretKeyRef:
+                  name: tallow-secrets
+                  key: turn-credential
+                  optional: true
+            - name: NEXT_PUBLIC_SIGNALING_URL
+              value: "https://tallow.example.com"
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/ready
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: next-cache
+              mountPath: /app/.next/cache
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: next-cache
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tallow-signaling
+  namespace: tallow
+  labels:
+    app: tallow
+    component: signaling
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: tallow
+      component: signaling
+  template:
+    metadata:
+      labels:
+        app: tallow
+        component: signaling
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: component
+                      operator: In
+                      values:
+                        - signaling
+                topologyKey: kubernetes.io/hostname
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      containers:
+        - name: signaling
+          image: tallow-signaling:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: websocket
+              containerPort: 3001
+              protocol: TCP
+          env:
+            - name: SIGNALING_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: tallow-config
+                  key: SIGNALING_PORT
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: tallow-config
+                  key: NODE_ENV
+            - name: ALLOWED_ORIGINS
+              valueFrom:
+                configMapKeyRef:
+                  name: tallow-config
+                  key: ALLOWED_ORIGINS
+          resources:
+            requests:
+              cpu: 250m
+              memory: 128Mi
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: websocket
+              scheme: HTTP
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: websocket
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            successThreshold: 1
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

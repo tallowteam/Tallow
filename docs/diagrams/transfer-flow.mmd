@@ -1,0 +1,111 @@
+```mermaid
+sequenceDiagram
+    actor Sender
+    participant App as TALLOW App
+    participant Signal as Signaling Server
+    participant WebRTC as WebRTC
+    actor Receiver
+
+    Note over Sender,Receiver: File Transfer Sequence
+
+    Sender->>App: Select files to send
+    App->>App: Calculate file hashes
+    App->>App: Generate connection code
+    App->>Signal: Create room with code
+    Signal-->>App: Room created
+    App-->>Sender: Display QR code + code
+
+    Note over Sender,Receiver: Waiting for receiver...
+
+    Receiver->>App: Enter connection code
+    App->>Signal: Join room with code
+    Signal-->>App: Joined successfully
+    Signal->>App: Notify sender of new peer
+    App-->>Sender: Show "Receiver connected"
+    App-->>Receiver: Show "Connected to sender"
+
+    Note over Sender,Receiver: PQC Handshake
+
+    App->>App: Generate PQC keypair
+    App->>Signal: Send PQC public key
+    Signal->>App: Forward to receiver
+    App->>App: Encapsulate (create secret)
+    App->>Signal: Send ciphertext
+    Signal->>App: Forward to sender
+    App->>App: Decapsulate (derive secret)
+
+    Note over Sender,Receiver: WebRTC Connection
+
+    App->>WebRTC: Create offer
+    WebRTC-->>App: SDP offer
+    App->>App: Encrypt offer
+    App->>Signal: Send encrypted offer
+    Signal->>App: Forward to receiver
+    App->>App: Decrypt offer
+    App->>WebRTC: Set remote description
+    WebRTC-->>App: Generate answer
+    App->>App: Encrypt answer
+    App->>Signal: Send encrypted answer
+    Signal->>App: Forward to sender
+    App->>App: Decrypt answer
+    App->>WebRTC: Set remote description
+
+    Note over Sender,Receiver: ICE Candidates
+
+    WebRTC->>App: Generate ICE candidates
+    App->>Signal: Send candidates
+    Signal->>App: Forward candidates
+    App->>WebRTC: Add ICE candidates
+
+    WebRTC-->>WebRTC: P2P connection established
+
+    Note over Sender,Receiver: File Metadata Exchange
+
+    App->>App: Create file manifest
+    App->>App: Encrypt manifest
+    App->>WebRTC: Send via data channel
+    WebRTC->>App: Deliver to receiver
+    App->>App: Decrypt manifest
+    App-->>Receiver: Show file list + size
+
+    Receiver->>App: Accept transfer
+    App->>WebRTC: Send acceptance
+    WebRTC->>App: Deliver to sender
+    App-->>Sender: "Transfer starting..."
+
+    Note over Sender,Receiver: File Transfer (Chunked)
+
+    loop For each file
+        loop For each chunk
+            App->>App: Read chunk (256KB)
+            App->>App: Encrypt with AES-GCM
+            App->>App: Generate HMAC tag
+            App->>WebRTC: Send encrypted chunk
+            WebRTC->>App: Deliver chunk
+            App->>App: Verify HMAC tag
+            App->>App: Decrypt chunk
+            App->>App: Write to disk
+            App->>WebRTC: Send ACK
+            WebRTC->>App: Deliver ACK
+            App-->>Sender: Update progress
+            App-->>Receiver: Update progress
+        end
+        App->>App: Verify file hash
+        App-->>Receiver: File complete
+    end
+
+    Note over Sender,Receiver: Transfer Complete
+
+    App->>WebRTC: Send completion signal
+    WebRTC->>App: Deliver signal
+    App-->>Receiver: "Transfer complete! ✓"
+    App-->>Sender: "Transfer complete! ✓"
+
+    App->>App: Close WebRTC connection
+    App->>Signal: Leave room
+    Signal-->>App: Left room
+    App->>App: Wipe encryption keys
+    App->>App: Save to transfer history
+
+    Note over Sender,Receiver: Connection closed
+```

@@ -1,0 +1,2196 @@
+openapi: 3.1.0
+info:
+  title: Tallow API
+  version: 1.0.0
+  description: |
+    Secure, privacy-focused file sharing platform with post-quantum cryptography.
+
+    ## Authentication
+
+    Most endpoints require API key authentication via the `X-API-Key` header.
+
+    ```
+    X-API-Key: your-api-secret-key
+    ```
+
+    ## Rate Limiting
+
+    All endpoints are rate-limited per IP address:
+    - Email endpoints: 3-5 requests/minute
+    - Stripe checkout: 3 requests/minute
+    - Room operations: 10-60 requests/minute
+    - CSRF token: 30 requests/minute
+    - File downloads: 10 requests/minute
+
+    Rate limit headers are included in responses:
+    - `X-RateLimit-Limit`: Maximum requests allowed
+    - `X-RateLimit-Remaining`: Requests remaining
+    - `X-RateLimit-Reset`: Unix timestamp when limit resets
+
+  contact:
+    name: Tallow Support
+    url: https://github.com/your-org/tallow
+    email: support@tallow.example
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://tallow.manisahome.com/api
+    description: Production
+  - url: http://localhost:3000/api
+    description: Development
+
+security:
+  - ApiKeyAuth: []
+
+tags:
+  - name: Payments
+    description: Stripe payment integration for donations
+  - name: Email
+    description: Email notification and file transfer endpoints
+  - name: Email Transfer
+    description: Email-based file transfer endpoints
+  - name: Webhooks
+    description: Webhook event handlers
+  - name: Rooms
+    description: Transfer room management
+  - name: Security
+    description: Security and authentication endpoints
+  - name: Health
+    description: Health check and monitoring endpoints
+  - name: Files
+    description: File download and management endpoints
+  - name: Cron
+    description: Scheduled maintenance tasks
+
+paths:
+  # ============================================================================
+  # STRIPE PAYMENT ENDPOINTS
+  # ============================================================================
+  /stripe/create-checkout-session:
+    post:
+      summary: Create Stripe checkout session
+      description: Creates a Stripe checkout session for processing donations
+      operationId: createCheckoutSession
+      tags:
+        - Payments
+      security: []  # No API key required for public donations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+              properties:
+                amount:
+                  type: integer
+                  minimum: 100
+                  maximum: 99999900
+                  description: Donation amount in cents (e.g., 100 = $1.00)
+                  example: 500
+            examples:
+              smallDonation:
+                summary: $5 donation
+                value:
+                  amount: 500
+              largeDonation:
+                summary: $100 donation
+                value:
+                  amount: 10000
+      responses:
+        '200':
+          description: Checkout session created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    format: uri
+                    description: Stripe checkout URL to redirect user
+                    example: https://checkout.stripe.com/c/pay/cs_test_abc123
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /stripe/webhook:
+    post:
+      summary: Stripe webhook handler
+      description: Receives and processes Stripe webhook events
+      operationId: stripeWebhook
+      tags:
+        - Webhooks
+      security: []  # Verified via Stripe signature
+      parameters:
+        - name: stripe-signature
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Stripe webhook signature for verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Stripe event object
+      responses:
+        '200':
+          description: Webhook processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  received:
+                    type: boolean
+                    example: true
+                  cached:
+                    type: boolean
+                    description: True if event was already processed (idempotency)
+                    example: false
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  # ============================================================================
+  # LEGACY EMAIL ENDPOINTS
+  # ============================================================================
+  /send-welcome:
+    post:
+      summary: Send welcome email
+      description: Sends a welcome email to new users
+      operationId: sendWelcomeEmail
+      tags:
+        - Email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - name
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Recipient email address
+                  example: user@example.com
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  description: Recipient name
+                  example: John Doe
+      responses:
+        '200':
+          description: Email sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Welcome email sent successfully
+                  data:
+                    type: object
+                    description: Resend API response
+                  skipped:
+                    type: boolean
+                    description: True if email service not configured
+                    example: false
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /send-share-email:
+    post:
+      summary: Send file sharing notification
+      description: Sends an email notification when files are shared
+      operationId: sendShareEmail
+      tags:
+        - Email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - shareId
+                - fileCount
+                - totalSize
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Recipient email address
+                  example: recipient@example.com
+                shareId:
+                  type: string
+                  description: Unique share identifier
+                  example: abc123xyz
+                senderName:
+                  type: string
+                  description: Name of person sharing files (optional)
+                  example: Jane Smith
+                fileCount:
+                  type: integer
+                  minimum: 1
+                  description: Number of files being shared
+                  example: 3
+                totalSize:
+                  type: integer
+                  minimum: 0
+                  description: Total size of files in bytes
+                  example: 1048576
+            examples:
+              singleFile:
+                summary: Single file share
+                value:
+                  email: recipient@example.com
+                  shareId: xyz789
+                  senderName: Alice
+                  fileCount: 1
+                  totalSize: 524288
+              multipleFiles:
+                summary: Multiple files share
+                value:
+                  email: recipient@example.com
+                  shareId: abc123
+                  fileCount: 5
+                  totalSize: 10485760
+      responses:
+        '200':
+          description: Email sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  shareUrl:
+                    type: string
+                    format: uri
+                    description: URL to access shared files
+                    example: https://tallow.manisahome.com/share/abc123
+                  emailSkipped:
+                    type: boolean
+                    description: True if email service not configured
+                    example: false
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  # ============================================================================
+  # ROOM ENDPOINTS
+  # ============================================================================
+  /rooms:
+    get:
+      summary: Get room information
+      description: |
+        Retrieves information about a transfer room by its code.
+        Returns room details excluding sensitive data like password hashes.
+      operationId: getRoom
+      tags:
+        - Rooms
+      security: []  # Public endpoint
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^[A-Z0-9]{4,8}$'
+          description: Room code (4-8 alphanumeric characters, uppercase)
+          example: ABCD1234
+      responses:
+        '200':
+          description: Room found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomInfo'
+        '400':
+          description: Invalid room code format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingCode:
+                  value:
+                    error: Room code is required
+                invalidFormat:
+                  value:
+                    error: Invalid room code format
+        '404':
+          description: Room not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Room not found
+        '410':
+          description: Room has expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Room has expired
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    post:
+      summary: Create a new room
+      description: |
+        Creates a new transfer room with optional password protection.
+        Rooms expire after a maximum of 7 days.
+        Rate limited to 10 requests/minute to prevent spam.
+      operationId: createRoom
+      tags:
+        - Rooms
+      security: []  # Public endpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoomRequest'
+            examples:
+              basicRoom:
+                summary: Basic room without password
+                value:
+                  id: room-uuid-123
+                  code: ABCD1234
+                  name: My Transfer Room
+                  ownerId: user-uuid-456
+                  ownerName: John Doe
+                  maxMembers: 10
+              passwordProtectedRoom:
+                summary: Password-protected room
+                value:
+                  id: room-uuid-789
+                  code: XYZ98765
+                  name: Secure Files
+                  ownerId: user-uuid-abc
+                  ownerName: Jane Smith
+                  password: mysecretpassword
+                  expiresAt: '2026-02-01T12:00:00Z'
+                  maxMembers: 5
+      responses:
+        '201':
+          description: Room created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  room:
+                    $ref: '#/components/schemas/RoomInfo'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidJson:
+                  value:
+                    error: Invalid JSON body
+                missingId:
+                  value:
+                    error: Valid room ID is required
+                invalidCode:
+                  value:
+                    error: Room code must be 4-8 alphanumeric characters
+                invalidPassword:
+                  value:
+                    error: Password must be 4-128 characters
+                invalidExpiration:
+                  value:
+                    error: Expiration cannot be more than 7 days in the future
+        '409':
+          description: Room code already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Room code already exists
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    delete:
+      summary: Delete a room
+      description: |
+        Deletes a transfer room. Only the room owner can delete a room.
+        Rate limited to 30 requests/minute.
+      operationId: deleteRoom
+      tags:
+        - Rooms
+      security: []  # Verified via ownerId
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^[A-Z0-9]{4,8}$'
+          description: Room code
+          example: ABCD1234
+        - name: ownerId
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9-]{1,64}$'
+          description: Owner's unique identifier
+          example: user-uuid-456
+      responses:
+        '200':
+          description: Room deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Room deleted successfully
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingCode:
+                  value:
+                    error: Room code is required
+                missingOwnerId:
+                  value:
+                    error: Owner ID is required
+        '403':
+          description: Not authorized to delete room
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Only the room owner can delete the room
+        '404':
+          description: Room not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Room not found
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  # ============================================================================
+  # EMAIL TRANSFER ENDPOINTS
+  # ============================================================================
+  /email/send:
+    post:
+      summary: Send file transfer email
+      description: |
+        Sends files to a recipient via email with optional encryption and expiration.
+        Supports password protection, virus scanning, and delivery tracking.
+        Rate limited to 3 requests/minute.
+      operationId: sendEmailTransfer
+      tags:
+        - Email Transfer
+      security:
+        - CSRFToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailTransferRequest'
+            examples:
+              basicTransfer:
+                summary: Basic file transfer
+                value:
+                  recipientEmail: recipient@example.com
+                  senderName: John Doe
+                  files:
+                    - filename: document.pdf
+                      content: base64encodedcontent
+                      size: 102400
+                      contentType: application/pdf
+              secureTransfer:
+                summary: Password-protected transfer with expiration
+                value:
+                  recipientEmail: recipient@example.com
+                  senderName: John Doe
+                  files:
+                    - filename: secret.zip
+                      content: base64encodedcontent
+                      size: 512000
+                      contentType: application/zip
+                  password: secretpassword
+                  expiresIn: 86400000
+                  maxDownloads: 5
+                  notifyOnDownload: true
+      responses:
+        '200':
+          description: Email transfer initiated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  transfer:
+                    $ref: '#/components/schemas/EmailDeliveryStatus'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingEmail:
+                  value:
+                    error: recipientEmail is required
+                missingFiles:
+                  value:
+                    error: At least one file is required
+                invalidEmail:
+                  value:
+                    error: Invalid email format
+        '403':
+          description: CSRF token invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Invalid CSRF token
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /email/batch:
+    post:
+      summary: Send batch file transfer emails
+      description: |
+        Sends the same files to multiple recipients in a single batch.
+        Maximum 50 recipients per batch. Rate limited to 3 requests/minute.
+      operationId: sendBatchEmailTransfer
+      tags:
+        - Email Transfer
+      security:
+        - CSRFToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailBatchRequest'
+            examples:
+              teamShare:
+                summary: Share files with team
+                value:
+                  recipients:
+                    - alice@example.com
+                    - bob@example.com
+                    - charlie@example.com
+                  senderName: Project Manager
+                  files:
+                    - filename: report.pdf
+                      content: base64encodedcontent
+                      size: 204800
+                      contentType: application/pdf
+                  expiresIn: 604800000
+      responses:
+        '200':
+          description: Batch transfer initiated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  batch:
+                    $ref: '#/components/schemas/EmailBatchStatus'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingRecipients:
+                  value:
+                    error: recipients array is required
+                tooManyRecipients:
+                  value:
+                    error: Maximum 50 recipients per batch
+                invalidEmail:
+                  value:
+                    error: 'Invalid email format: invalid-email'
+        '403':
+          description: CSRF token invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Invalid CSRF token
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /email/download/{id}:
+    get:
+      summary: Download transferred file
+      description: |
+        Downloads a file from an email transfer. For non-password-protected transfers only.
+        Rate limited to 5 requests/minute.
+      operationId: downloadEmailTransfer
+      tags:
+        - Email Transfer
+      security: []  # Token-based access
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Transfer ID
+          example: transfer-uuid-123
+      responses:
+        '200':
+          description: File download successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  transfer:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      files:
+                        type: array
+                        items:
+                          type: object
+                      senderName:
+                        type: string
+                      expiresAt:
+                        type: integer
+                      downloadsCount:
+                        type: integer
+                      maxDownloads:
+                        type: integer
+                  encryptedFile:
+                    type: object
+                    description: Encrypted file data for client-side decryption
+                  storageMetadata:
+                    type: object
+                    description: Storage metadata
+        '400':
+          description: Invalid transfer ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Transfer ID is required
+        '401':
+          description: Password required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Password required
+                  passwordProtected:
+                    type: boolean
+                    example: true
+        '404':
+          description: Transfer not found or file not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Transfer not found
+        '410':
+          description: Transfer has expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Transfer has expired
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    post:
+      summary: Download password-protected file
+      description: |
+        Downloads a file from a password-protected email transfer.
+        Requires the password set during transfer creation.
+        Rate limited to 5 requests/minute.
+      operationId: downloadPasswordProtectedTransfer
+      tags:
+        - Email Transfer
+      security: []  # Password-based access
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Transfer ID
+          example: transfer-uuid-123
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+              properties:
+                password:
+                  type: string
+                  description: Password set during transfer creation
+                  example: mysecretpassword
+      responses:
+        '200':
+          description: File download successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  transfer:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      files:
+                        type: array
+                        items:
+                          type: object
+                      senderName:
+                        type: string
+                      expiresAt:
+                        type: integer
+                      downloadsCount:
+                        type: integer
+                      maxDownloads:
+                        type: integer
+                  encryptedFile:
+                    type: object
+                    description: Encrypted file data for client-side decryption
+                  storageMetadata:
+                    type: object
+                    description: Storage metadata
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingPassword:
+                  value:
+                    error: Password is required
+                notPasswordProtected:
+                  value:
+                    error: This transfer is not password protected
+        '401':
+          description: Invalid password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Invalid password
+        '404':
+          description: Transfer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Transfer not found
+        '410':
+          description: Transfer has expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Transfer has expired
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /email/status/{id}:
+    get:
+      summary: Get transfer delivery status
+      description: |
+        Retrieves the delivery status of an email transfer including
+        open, click, and download tracking. Rate limited to 10 requests/minute.
+      operationId: getEmailTransferStatus
+      tags:
+        - Email Transfer
+      security: []  # Token-based access
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Transfer ID
+          example: transfer-uuid-123
+      responses:
+        '200':
+          description: Status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    $ref: '#/components/schemas/EmailDeliveryStatus'
+        '400':
+          description: Invalid transfer ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Transfer ID is required
+        '404':
+          description: Transfer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Transfer not found
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /email/webhook:
+    post:
+      summary: Email delivery webhook handler
+      description: |
+        Receives and processes email delivery events from Resend.
+        Signature verification is mandatory in production.
+        Returns 200 even on processing errors to prevent retries for invalid data.
+      operationId: emailWebhook
+      tags:
+        - Webhooks
+      security: []  # Verified via Resend signature
+      parameters:
+        - name: resend-signature
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Resend webhook signature (HMAC-SHA256)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendWebhookPayload'
+      responses:
+        '200':
+          description: Webhook processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  error:
+                    type: string
+                    description: Error message if processing failed
+        '400':
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: No transfer_id found
+        '401':
+          description: Invalid signature
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Invalid webhook signature
+        '503':
+          description: Webhook verification not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Webhook verification not configured
+
+  # ============================================================================
+  # V1 API ENDPOINTS
+  # ============================================================================
+  /v1/download-file:
+    get:
+      summary: Download encrypted file
+      description: |
+        Downloads and decrypts a file using the provided encryption key.
+        The key is passed via URL parameter for link sharing and is never logged or stored.
+        Rate limited to 10 requests/minute to prevent brute-force attacks.
+      operationId: downloadFile
+      tags:
+        - Files
+      security: []  # Token-based access
+      parameters:
+        - name: fileId
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9]+-[a-f0-9]{32}$'
+          description: File ID (timestamp-uuid format)
+          example: 1706500000000-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-f0-9]{64}$'
+          description: Download token (256-bit hex)
+          example: a1b2c3d4e5f6...64chars
+        - name: key
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-f0-9]{64}$'
+          description: Encryption key (256-bit AES key in hex)
+          example: f1e2d3c4b5a6...64chars
+      responses:
+        '200':
+          description: File downloaded successfully
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+              description: Attachment with filename
+            Content-Length:
+              schema:
+                type: integer
+              description: File size in bytes
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store, no-cache, must-revalidate, private
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingFileId:
+                  value:
+                    error: fileId is required
+                invalidFileId:
+                  value:
+                    error: Invalid file ID format
+                invalidKey:
+                  value:
+                    error: Unable to decrypt file. Invalid key or corrupted data.
+        '403':
+          description: Invalid download token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Invalid download token
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: File not found or has expired
+        '410':
+          description: Download link already used
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: This download link has already been used
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/send-file-email:
+    post:
+      summary: Send file transfer email
+      description: |
+        Sends a file transfer notification email with either an attachment or download link.
+        Supports two modes: 'attachment' (file embedded in email) or 'link' (download URL).
+        Rate limited to 3 requests/minute.
+      operationId: sendFileEmail
+      tags:
+        - Email
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendFileEmailRequest'
+            examples:
+              attachmentMode:
+                summary: Send as attachment
+                value:
+                  recipientEmail: recipient@example.com
+                  senderName: John Doe
+                  fileName: report.pdf
+                  fileSize: 102400
+                  fileData: base64encodedfiledata
+                  expiresAt: 1706600000000
+                  mode: attachment
+              linkMode:
+                summary: Send as download link
+                value:
+                  recipientEmail: recipient@example.com
+                  senderName: John Doe
+                  fileName: large-file.zip
+                  fileSize: 104857600
+                  downloadUrl: https://tallow.manisahome.com/download/abc123?key=xyz
+                  expiresAt: 1706600000000
+                  mode: link
+      responses:
+        '200':
+          description: Email sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  emailId:
+                    type: string
+                    description: Resend email ID
+                    example: re_abc123xyz
+                  message:
+                    type: string
+                    example: File transfer email sent successfully
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingFields:
+                  value:
+                    error: 'Missing required fields: recipientEmail, senderName, fileName, fileSize, expiresAt, mode'
+                invalidEmail:
+                  value:
+                    error: Invalid email format
+                invalidMode:
+                  value:
+                    error: Invalid mode. Must be "attachment" or "link"
+                missingFileData:
+                  value:
+                    error: File data required for attachment mode
+                invalidDownloadUrl:
+                  value:
+                    error: Invalid download URL domain
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          description: Email service not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Email service not configured
+
+  # ============================================================================
+  # SECURITY ENDPOINTS
+  # ============================================================================
+  /csrf-token:
+    get:
+      summary: Get CSRF token
+      description: |
+        Generates and returns a CSRF token for protecting state-changing requests.
+        Also sets the token in a cookie. Call this on app initialization.
+        Rate limited to 30 requests/minute.
+      operationId: getCSRFToken
+      tags:
+        - Security
+      security: []  # Public endpoint
+      responses:
+        '200':
+          description: Token generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: CSRF token to include in subsequent requests
+                    example: a1b2c3d4e5f6g7h8i9j0
+                  message:
+                    type: string
+                    example: CSRF token generated
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: CSRF token cookie
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  # ============================================================================
+  # HEALTH CHECK ENDPOINTS
+  # ============================================================================
+  /health:
+    get:
+      summary: Liveness probe
+      description: |
+        Basic health check endpoint for container orchestration.
+        Returns 200 OK if the application is running.
+        Does not check dependencies for fast response times.
+      operationId: healthCheck
+      tags:
+        - Health
+      security: []  # Public endpoint
+      responses:
+        '200':
+          description: Application is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: ok
+                service: tallow
+                version: 1.0.0
+                timestamp: '2026-01-29T12:00:00.000Z'
+                uptime: 3600.5
+        '503':
+          description: Application is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: error
+                service: tallow
+                timestamp: '2026-01-29T12:00:00.000Z'
+                error: Unknown error
+
+  /ready:
+    get:
+      summary: Readiness probe
+      description: |
+        Comprehensive readiness check that verifies dependencies.
+        Checks PQC library availability, signaling server, and environment.
+        Use for Kubernetes readiness probes.
+      operationId: readinessCheck
+      tags:
+        - Health
+      security: []  # Public endpoint
+      responses:
+        '200':
+          description: Application is ready to serve traffic
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+              example:
+                status: ok
+                service: tallow
+                timestamp: '2026-01-29T12:00:00.000Z'
+                checks:
+                  pqcLibrary: true
+                  signalingServer: true
+                  environment: true
+        '503':
+          description: Application is not ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+              example:
+                status: error
+                service: tallow
+                timestamp: '2026-01-29T12:00:00.000Z'
+                checks:
+                  pqcLibrary: false
+                  signalingServer: true
+                  environment: true
+                errors:
+                  - PQC library not available
+
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      description: |
+        Exposes application metrics in Prometheus format.
+        Requires Bearer token authentication when METRICS_TOKEN env var is set.
+        In development mode (no METRICS_TOKEN), access is unrestricted.
+      operationId: getMetrics
+      tags:
+        - Health
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Metrics returned successfully
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: |
+                # HELP http_requests_total Total number of HTTP requests
+                # TYPE http_requests_total counter
+                http_requests_total{method="GET",path="/api/health",status="200"} 42
+          headers:
+            Content-Type:
+              schema:
+                type: string
+              description: text/plain; version=0.0.4; charset=utf-8
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store, no-cache, must-revalidate
+        '401':
+          description: Unauthorized (missing or invalid token)
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Unauthorized
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    head:
+      summary: Metrics endpoint health check
+      description: Checks if the metrics endpoint is accessible
+      operationId: headMetrics
+      tags:
+        - Health
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Metrics endpoint is healthy
+        '401':
+          description: Unauthorized
+
+  # ============================================================================
+  # CRON ENDPOINTS
+  # ============================================================================
+  /cron/cleanup:
+    get:
+      summary: Run cleanup job
+      description: |
+        Cleans up expired files from S3 storage and expired transfer records.
+        Requires cron authorization (Vercel Cron header or Bearer token).
+        In development mode, no authentication required.
+      operationId: runCleanup
+      tags:
+        - Cron
+      security:
+        - CronAuth: []
+      parameters:
+        - name: x-vercel-cron
+          in: header
+          schema:
+            type: string
+          description: Vercel Cron verification header (automatically set by Vercel)
+        - name: authorization
+          in: header
+          schema:
+            type: string
+          description: Bearer token matching CRON_SECRET env var
+          example: Bearer your-cron-secret
+      responses:
+        '200':
+          description: Cleanup completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CleanupResponse'
+              example:
+                success: true
+                filesDeleted: 15
+                transfersDeleted: 8
+                duration: 1250
+                timestamp: '2026-01-29T12:00:00.000Z'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Unauthorized
+        '500':
+          description: Cleanup failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: Cleanup failed
+
+    post:
+      summary: Trigger cleanup job manually
+      description: Same as GET - triggers the cleanup job. Use POST for manual triggers.
+      operationId: triggerCleanup
+      tags:
+        - Cron
+      security:
+        - CronAuth: []
+      responses:
+        '200':
+          description: Cleanup completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CleanupResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Unauthorized
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication. Generate using `openssl rand -hex 32`
+
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: Bearer token authentication for metrics endpoint
+
+    CSRFToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+      description: CSRF token obtained from /api/csrf-token endpoint
+
+    CronAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Bearer token matching CRON_SECRET env var, or Vercel Cron header
+
+  responses:
+    BadRequest:
+      description: Bad request - Invalid input parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            invalidEmail:
+              summary: Invalid email format
+              value:
+                error: Invalid email format
+            missingField:
+              summary: Missing required field
+              value:
+                error: Email and name are required
+            invalidAmount:
+              summary: Invalid amount
+              value:
+                error: Invalid amount. Minimum donation is $1.00.
+
+    Unauthorized:
+      description: Unauthorized - Invalid or missing API key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Unauthorized - Invalid or missing API key
+
+    Forbidden:
+      description: Forbidden - Access denied
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Access denied
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Resource not found
+
+    TooManyRequests:
+      description: Rate limit exceeded
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+          description: Maximum requests allowed
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+          description: Requests remaining (will be 0)
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+          description: Unix timestamp when limit resets
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds until rate limit resets
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Too many requests
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            generic:
+              summary: Generic error
+              value:
+                error: Internal server error
+            emailFailed:
+              summary: Email send failed
+              value:
+                error: Failed to send email
+                details: SMTP connection timeout
+
+    ServiceUnavailable:
+      description: Service temporarily unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            stripeNotConfigured:
+              summary: Stripe not configured
+              value:
+                error: Stripe is not configured
+            emailNotConfigured:
+              summary: Email service not configured
+              value:
+                message: Email service not configured
+                skipped: true
+
+  schemas:
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+        details:
+          type: string
+          description: Additional error details (optional)
+        field:
+          type: string
+          description: Field name for validation errors (optional)
+
+    # Room schemas
+    RoomInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique room identifier
+          example: room-uuid-123
+        code:
+          type: string
+          description: Room code for joining
+          example: ABCD1234
+        name:
+          type: string
+          description: Room display name
+          example: My Transfer Room
+        ownerId:
+          type: string
+          description: Owner's unique identifier
+          example: user-uuid-456
+        ownerName:
+          type: string
+          description: Owner's display name
+          example: John Doe
+        createdAt:
+          type: string
+          format: date-time
+          description: Room creation timestamp
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Room expiration timestamp
+        isPasswordProtected:
+          type: boolean
+          description: Whether room requires password
+        maxMembers:
+          type: integer
+          minimum: 2
+          maximum: 50
+          description: Maximum number of members allowed
+        memberCount:
+          type: integer
+          description: Current number of members
+
+    CreateRoomRequest:
+      type: object
+      required:
+        - id
+        - code
+        - ownerId
+        - ownerName
+      properties:
+        id:
+          type: string
+          pattern: '^[a-zA-Z0-9-]{1,64}$'
+          description: Unique room identifier
+        code:
+          type: string
+          pattern: '^[A-Z0-9]{4,8}$'
+          description: Room code (4-8 alphanumeric characters)
+        name:
+          type: string
+          maxLength: 50
+          description: Room display name
+        ownerId:
+          type: string
+          pattern: '^[a-zA-Z0-9-]{1,64}$'
+          description: Owner's unique identifier
+        ownerName:
+          type: string
+          maxLength: 50
+          description: Owner's display name
+        password:
+          type: string
+          minLength: 4
+          maxLength: 128
+          description: Optional room password
+        expiresAt:
+          type: string
+          format: date-time
+          description: Room expiration (max 7 days from now)
+        maxMembers:
+          type: integer
+          minimum: 2
+          maximum: 50
+          default: 10
+          description: Maximum members allowed
+
+    # Email Transfer schemas
+    EmailFileAttachment:
+      type: object
+      required:
+        - filename
+        - content
+        - size
+      properties:
+        filename:
+          type: string
+          description: File name
+        content:
+          type: string
+          description: Base64 encoded file content
+        size:
+          type: integer
+          description: File size in bytes
+        contentType:
+          type: string
+          description: MIME type
+        checksum:
+          type: string
+          description: SHA-256 checksum for integrity verification
+
+    EmailTransferRequest:
+      type: object
+      required:
+        - recipientEmail
+        - senderName
+        - files
+      properties:
+        recipientEmail:
+          type: string
+          format: email
+          description: Recipient email address
+        senderName:
+          type: string
+          description: Sender's display name
+        senderEmail:
+          type: string
+          format: email
+          description: Sender's email address
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmailFileAttachment'
+          minItems: 1
+          description: Files to transfer
+        compress:
+          type: boolean
+          default: true
+          description: Auto-compress multiple files into zip
+        password:
+          type: string
+          description: Password protection for download
+        virusScan:
+          type: boolean
+          default: false
+          description: Scan files for viruses before sending
+        expiresAt:
+          type: integer
+          description: Custom expiration timestamp (Unix ms)
+        expiresIn:
+          type: integer
+          description: Duration in milliseconds until expiration
+        maxDownloads:
+          type: integer
+          description: Limit number of downloads
+        notifyOnDownload:
+          type: boolean
+          default: false
+          description: Send notification when file is downloaded
+        notifyOnExpire:
+          type: boolean
+          default: false
+          description: Send notification when transfer expires
+        webhookUrl:
+          type: string
+          format: uri
+          description: Webhook URL for delivery events
+        priority:
+          type: string
+          enum: [low, normal, high]
+          default: normal
+          description: Email delivery priority
+        retryOnFailure:
+          type: boolean
+          default: true
+          description: Retry sending on failure
+        maxRetries:
+          type: integer
+          default: 3
+          description: Maximum retry attempts
+        template:
+          type: string
+          description: Custom email template ID
+        templateData:
+          type: object
+          additionalProperties: true
+          description: Custom template data
+        branding:
+          $ref: '#/components/schemas/EmailBranding'
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+          description: Custom metadata
+        trackOpens:
+          type: boolean
+          default: true
+          description: Track email opens
+        trackClicks:
+          type: boolean
+          default: true
+          description: Track link clicks
+
+    EmailBranding:
+      type: object
+      properties:
+        companyName:
+          type: string
+        logoUrl:
+          type: string
+          format: uri
+        primaryColor:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+        brandUrl:
+          type: string
+          format: uri
+        supportEmail:
+          type: string
+          format: email
+
+    EmailDeliveryStatus:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Transfer ID
+        status:
+          type: string
+          enum: [pending, sent, delivered, opened, clicked, downloaded, expired, failed]
+          description: Current delivery status
+        recipientEmail:
+          type: string
+          format: email
+        sentAt:
+          type: integer
+          description: Timestamp when email was sent
+        deliveredAt:
+          type: integer
+          description: Timestamp when email was delivered
+        openedAt:
+          type: integer
+          description: Timestamp when email was opened
+        clickedAt:
+          type: integer
+          description: Timestamp when link was clicked
+        downloadedAt:
+          type: integer
+          description: Timestamp of first download
+        downloadsCount:
+          type: integer
+          description: Total number of downloads
+        expiresAt:
+          type: integer
+          description: Expiration timestamp
+        error:
+          type: string
+          description: Error message if failed
+        retryCount:
+          type: integer
+          description: Number of retry attempts
+        lastRetryAt:
+          type: integer
+          description: Timestamp of last retry
+
+    EmailBatchRequest:
+      type: object
+      required:
+        - recipients
+        - senderName
+        - files
+      properties:
+        recipients:
+          type: array
+          items:
+            type: string
+            format: email
+          minItems: 1
+          maxItems: 50
+          description: List of recipient email addresses (max 50)
+        senderName:
+          type: string
+          description: Sender's display name
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmailFileAttachment'
+          minItems: 1
+          description: Files to transfer
+        senderEmail:
+          type: string
+          format: email
+        compress:
+          type: boolean
+          default: true
+        password:
+          type: string
+        virusScan:
+          type: boolean
+          default: false
+        expiresAt:
+          type: integer
+        expiresIn:
+          type: integer
+        maxDownloads:
+          type: integer
+        notifyOnDownload:
+          type: boolean
+          default: false
+        notifyOnExpire:
+          type: boolean
+          default: false
+        webhookUrl:
+          type: string
+          format: uri
+        priority:
+          type: string
+          enum: [low, normal, high]
+          default: normal
+        batchId:
+          type: string
+          description: Optional batch identifier
+
+    EmailBatchStatus:
+      type: object
+      properties:
+        batchId:
+          type: string
+          description: Batch identifier
+        total:
+          type: integer
+          description: Total recipients in batch
+        sent:
+          type: integer
+          description: Successfully sent count
+        delivered:
+          type: integer
+          description: Confirmed delivered count
+        failed:
+          type: integer
+          description: Failed count
+        pending:
+          type: integer
+          description: Pending count
+        startedAt:
+          type: integer
+          description: Batch start timestamp
+        completedAt:
+          type: integer
+          description: Batch completion timestamp
+        failures:
+          type: array
+          items:
+            type: object
+            properties:
+              email:
+                type: string
+              error:
+                type: string
+          description: List of failures with details
+
+    ResendWebhookPayload:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - email.sent
+            - email.delivered
+            - email.delivery_delayed
+            - email.complained
+            - email.bounced
+            - email.opened
+            - email.clicked
+          description: Event type
+        created_at:
+          type: string
+          format: date-time
+        data:
+          type: object
+          properties:
+            email_id:
+              type: string
+            from:
+              type: string
+            to:
+              type: array
+              items:
+                type: string
+            subject:
+              type: string
+            created_at:
+              type: string
+            tags:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  value:
+                    type: string
+
+    SendFileEmailRequest:
+      type: object
+      required:
+        - recipientEmail
+        - senderName
+        - fileName
+        - fileSize
+        - expiresAt
+        - mode
+      properties:
+        recipientEmail:
+          type: string
+          format: email
+          description: Recipient email address
+        senderName:
+          type: string
+          maxLength: 100
+          description: Sender's display name
+        fileName:
+          type: string
+          description: File name
+        fileSize:
+          type: integer
+          minimum: 1
+          description: File size in bytes
+        fileData:
+          type: string
+          description: Base64 encoded file data (required for attachment mode)
+        downloadUrl:
+          type: string
+          format: uri
+          description: Download URL (required for link mode)
+        expiresAt:
+          type: integer
+          description: Expiration timestamp (Unix ms, must be in future)
+        mode:
+          type: string
+          enum: [attachment, link]
+          description: Delivery mode
+
+    # Health schemas
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, error]
+        service:
+          type: string
+          example: tallow
+        version:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        uptime:
+          type: number
+          description: Process uptime in seconds
+        error:
+          type: string
+          description: Error message if status is error
+
+    ReadinessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, error]
+        service:
+          type: string
+          example: tallow
+        timestamp:
+          type: string
+          format: date-time
+        checks:
+          type: object
+          properties:
+            pqcLibrary:
+              type: boolean
+              description: PQC library availability
+            signalingServer:
+              type: boolean
+              description: Signaling server connectivity
+            environment:
+              type: boolean
+              description: Environment configuration status
+        errors:
+          type: array
+          items:
+            type: string
+          description: List of errors if status is error
+
+    CleanupResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        filesDeleted:
+          type: integer
+          description: Number of expired files deleted from S3
+        transfersDeleted:
+          type: integer
+          description: Number of expired transfer records deleted
+        duration:
+          type: integer
+          description: Cleanup duration in milliseconds
+        timestamp:
+          type: string
+          format: date-time
+
+    # Legacy schemas (kept for backward compatibility)
+    CheckoutSessionRequest:
+      type: object
+      required:
+        - amount
+      properties:
+        amount:
+          type: integer
+          minimum: 100
+          maximum: 99999900
+          description: Amount in cents
+
+    CheckoutSessionResponse:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+
+    WelcomeEmailRequest:
+      type: object
+      required:
+        - email
+        - name
+      properties:
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+
+    ShareEmailRequest:
+      type: object
+      required:
+        - email
+        - shareId
+        - fileCount
+        - totalSize
+      properties:
+        email:
+          type: string
+          format: email
+        shareId:
+          type: string
+        senderName:
+          type: string
+        fileCount:
+          type: integer
+          minimum: 1
+        totalSize:
+          type: integer
+          minimum: 0
+
+x-readme:
+  samples-languages:
+    - curl
+    - javascript
+    - python
+    - go

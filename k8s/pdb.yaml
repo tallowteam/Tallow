@@ -1,0 +1,33 @@
+# Pod Disruption Budget for Web
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tallow-web-pdb
+  namespace: tallow
+  labels:
+    app.kubernetes.io/name: tallow
+    app.kubernetes.io/component: web-pdb
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tallow
+      app.kubernetes.io/component: web
+  unhealthyPodEvictionPolicy: IfHealthyBudget
+---
+# Pod Disruption Budget for Signaling
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tallow-signaling-pdb
+  namespace: tallow
+  labels:
+    app.kubernetes.io/name: tallow
+    app.kubernetes.io/component: signaling-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tallow
+      app.kubernetes.io/component: signaling
+  unhealthyPodEvictionPolicy: IfHealthyBudget
