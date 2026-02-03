@@ -1,0 +1,884 @@
+/**
+ * Tallow App Page Styles
+ *
+ * Dark theme with glassmorphism effects, smooth transitions,
+ * and responsive design for mobile, tablet, and desktop.
+ */
+
+/* ============================================================================
+   CONTAINER & LAYOUT
+   ============================================================================ */
+
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #000000 0%, #0a0a0a 100%);
+  color: #ffffff;
+}
+
+/* ============================================================================
+   HEADER
+   ============================================================================ */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10, 10, 10, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 1rem 0;
+}
+
+.headerContent {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logoText {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #ffffff 0%, #8B9A7D 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.statusBadge {
+  font-size: 0.875rem;
+}
+
+.settingsLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  color: #ffffff;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.settingsLink:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #8B9A7D;
+}
+
+.settingsLink:focus-visible {
+  outline: 2px solid #8B9A7D;
+  outline-offset: 2px;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ============================================================================
+   MAIN CONTENT
+   ============================================================================ */
+
+.main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+/* ============================================================================
+   SECTIONS
+   ============================================================================ */
+
+.sendSection,
+.connectionSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.sendCard,
+.connectionCard,
+.devicesCard {
+  height: fit-content;
+}
+
+/* ============================================================================
+   CARD COMPONENTS
+   ============================================================================ */
+
+.cardTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+}
+
+.cardDescription {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0.25rem 0 0;
+}
+
+/* ============================================================================
+   DROP ZONE
+   ============================================================================ */
+
+.dropZone {
+  border: 2px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.02);
+  position: relative;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dropZone:hover {
+  border-color: rgba(139, 154, 125, 0.4);
+  background: rgba(139, 154, 125, 0.05);
+  transform: translateY(-2px);
+}
+
+.dropZone:focus-visible {
+  outline: 2px solid #8B9A7D;
+  outline-offset: 2px;
+}
+
+.dropZoneActive {
+  border-color: #8B9A7D;
+  background: rgba(139, 154, 125, 0.1);
+  transform: scale(1.02);
+}
+
+.dropZoneWithFiles {
+  min-height: 120px;
+  padding: 1.5rem;
+}
+
+.dropZoneContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.dropZoneContent svg {
+  width: 48px;
+  height: 48px;
+  opacity: 0.6;
+}
+
+.dropZoneText {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0;
+  color: #ffffff;
+}
+
+.dropZoneHint {
+  font-size: 0.875rem;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ============================================================================
+   FILES LIST
+   ============================================================================ */
+
+.filesList {
+  margin-top: 1.5rem;
+}
+
+.filesHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.filesCount {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.filesItems {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+/* Custom scrollbar */
+.filesItems::-webkit-scrollbar {
+  width: 6px;
+}
+
+.filesItems::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.filesItems::-webkit-scrollbar-thumb {
+  background: rgba(139, 154, 125, 0.3);
+  border-radius: 3px;
+}
+
+.filesItems::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 154, 125, 0.5);
+}
+
+.fileItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.fileItem:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.fileInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.fileName {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fileSize {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.removeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.removeButton:hover {
+  background: rgba(220, 38, 38, 0.1);
+  border-color: rgba(220, 38, 38, 0.3);
+  color: #ef4444;
+}
+
+.removeButton:focus-visible {
+  outline: 2px solid #ef4444;
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+   CONNECTION CODE
+   ============================================================================ */
+
+.codeSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.codeLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+}
+
+.codeDisplay {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: rgba(139, 154, 125, 0.1);
+  border: 1px solid rgba(139, 154, 125, 0.2);
+  border-radius: 8px;
+}
+
+.codeText {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #8B9A7D;
+  font-family: 'Courier New', monospace;
+}
+
+.copyButton {
+  flex-shrink: 0;
+}
+
+/* ============================================================================
+   QR CODE
+   ============================================================================ */
+
+.qrCode {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.qrCodePlaceholder {
+  width: 200px;
+  height: 200px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qrCodeText {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 500;
+}
+
+/* ============================================================================
+   DIVIDER
+   ============================================================================ */
+
+.divider {
+  position: relative;
+  text-align: center;
+  margin: 1.5rem 0;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dividerText {
+  position: relative;
+  display: inline-block;
+  padding: 0 1rem;
+  background: var(--card-bg, #0a0a0a);
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+}
+
+/* ============================================================================
+   CONNECT SECTION
+   ============================================================================ */
+
+.connectSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ============================================================================
+   CONNECTED DEVICE
+   ============================================================================ */
+
+.connectedDevice {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(139, 154, 125, 0.05);
+  border: 1px solid rgba(139, 154, 125, 0.2);
+  border-radius: 12px;
+}
+
+.deviceAvatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #8B9A7D 0%, #6B7A5D 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.deviceInitial {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.deviceInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.deviceName {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.devicePlatform {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: capitalize;
+}
+
+/* ============================================================================
+   SECURITY INDICATORS
+   ============================================================================ */
+
+.securityIndicators {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.securityItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(34, 197, 94, 0.05);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 8px;
+  color: #22c55e;
+}
+
+.securityText {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* ============================================================================
+   DISCOVERED DEVICES
+   ============================================================================ */
+
+.devicesList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.deviceButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.875rem 1rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.deviceButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(139, 154, 125, 0.3);
+  transform: translateX(4px);
+}
+
+.deviceButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.deviceButton:focus-visible {
+  outline: 2px solid #8B9A7D;
+  outline-offset: 2px;
+}
+
+.deviceButton .deviceAvatar {
+  width: 40px;
+  height: 40px;
+}
+
+.deviceButton .deviceInitial {
+  font-size: 1rem;
+}
+
+/* ============================================================================
+   TRANSFER PROGRESS
+   ============================================================================ */
+
+.transferProgress {
+  margin-top: 2rem;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.progressHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.progressInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.progressTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 0.5rem;
+}
+
+.progressStats {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.progressDot {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.progressBarContainer {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.progressBar {
+  height: 100%;
+  background: linear-gradient(90deg, #8B9A7D 0%, #6B7A5D 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.progressBar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.progressPercentage {
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #8B9A7D;
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+/* Tablet and below */
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .main {
+    padding: 1.5rem 1rem;
+  }
+
+  .headerContent {
+    padding: 0 1rem;
+  }
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .header {
+    padding: 0.75rem 0;
+  }
+
+  .headerContent {
+    padding: 0 1rem;
+  }
+
+  .logoText {
+    font-size: 1.25rem;
+  }
+
+  .headerRight {
+    gap: 0.5rem;
+  }
+
+  .statusBadge {
+    font-size: 0.75rem;
+  }
+
+  .settingsLink {
+    width: 36px;
+    height: 36px;
+  }
+
+  .main {
+    padding: 1rem;
+  }
+
+  .grid {
+    gap: 1.5rem;
+  }
+
+  .cardTitle {
+    font-size: 1.125rem;
+  }
+
+  .cardDescription {
+    font-size: 0.8125rem;
+  }
+
+  .dropZone {
+    padding: 2rem 1rem;
+    min-height: 160px;
+  }
+
+  .dropZoneContent svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .dropZoneText {
+    font-size: 0.875rem;
+  }
+
+  .dropZoneHint {
+    font-size: 0.8125rem;
+  }
+
+  .filesItems {
+    max-height: 240px;
+  }
+
+  .codeText {
+    font-size: 1.25rem;
+  }
+
+  .qrCodePlaceholder {
+    width: 160px;
+    height: 160px;
+  }
+
+  .connectedDevice {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .deviceAvatar {
+    width: 48px;
+    height: 48px;
+  }
+
+  .deviceInitial {
+    font-size: 1.25rem;
+  }
+
+  .securityIndicators {
+    gap: 0.5rem;
+  }
+
+  .securityItem {
+    padding: 0.625rem 0.875rem;
+  }
+
+  .securityText {
+    font-size: 0.8125rem;
+  }
+
+  .progressHeader {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .progressStats {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .progressDot {
+    display: none;
+  }
+}
+
+/* Large screens */
+@media (min-width: 1400px) {
+  .main {
+    padding: 3rem 2rem;
+  }
+
+  .grid {
+    gap: 3rem;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .dropZone {
+    border-width: 3px;
+  }
+
+  .codeDisplay {
+    border-width: 2px;
+  }
+
+  .fileItem,
+  .deviceButton {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .container,
+  .container * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  .header,
+  .settingsLink,
+  .removeButton,
+  .copyButton,
+  .qrCode {
+    display: none;
+  }
+
+  .container {
+    background: white;
+    color: black;
+  }
+}
