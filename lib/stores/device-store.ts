@@ -8,6 +8,7 @@
 import { create } from 'zustand';
 import { devtools, subscribeWithSelector, persist } from 'zustand/middleware';
 import { Device } from '../types';
+import { safeStorage } from './storage';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -377,6 +378,7 @@ export const useDeviceStore = create<DeviceStoreState>()(
         }),
         {
           name: 'tallow-device-store',
+          storage: safeStorage,
           partialize: (state) => ({
             favoriteDeviceIds: state.favoriteDeviceIds,
             recentDeviceIds: state.recentDeviceIds,

@@ -517,7 +517,7 @@ function getErrorColor(type: AppError['type']): string {
     case 'crypto':
       return '#ef4444'; // red
     case 'validation':
-      return '#3b82f6'; // blue
+      return '#8B9A7D'; // sage
     case 'transfer':
       return '#8b5cf6'; // purple
     case 'storage':

@@ -191,7 +191,7 @@ const container = {
 };
 
 const headerSection = {
-  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  background: 'linear-gradient(135deg, #8B9A7D 0%, #758267 100%)',
   padding: '40px 20px',
   textAlign: 'center' as const,
 };
@@ -284,7 +284,7 @@ const fileInfoValue = {
 
 const attachmentNotice = {
   backgroundColor: '#dbeafe',
-  border: '2px solid #3b82f6',
+  border: '2px solid #8B9A7D',
   borderRadius: '8px',
   padding: '24px',
   margin: '24px 0',
@@ -310,7 +310,7 @@ const ctaSection = {
 };
 
 const ctaButton = {
-  backgroundColor: '#667eea',
+  backgroundColor: '#8B9A7D',
   color: '#ffffff',
   fontSize: '16px',
   fontWeight: '600',
@@ -328,7 +328,7 @@ const linkText = {
 };
 
 const link = {
-  color: '#667eea',
+  color: '#8B9A7D',
   textDecoration: 'underline',
   wordBreak: 'break-all' as const,
 };
@@ -385,7 +385,7 @@ const footerText = {
 };
 
 const footerLink = {
-  color: '#667eea',
+  color: '#8B9A7D',
   textDecoration: 'none',
   fontWeight: '600',
 };

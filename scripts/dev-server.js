@@ -37,25 +37,55 @@ function isPortAvailable(port) {
   });
 }
 
-async function checkPort() {
-  // PERMANENTLY CONFIGURED: Tallow always uses port 3000
-  const port = 3000;
-  log(`\n🔌 Checking port ${port} (Tallow exclusive)...`, colors.blue);
+// Find next available port starting from a given port
+async function findAvailablePort(startPort, maxAttempts = 10) {
+  for (let i = 0; i < maxAttempts; i++) {
+    const port = startPort + i;
+    if (await isPortAvailable(port)) {
+      return port;
+    }
+  }
+  return null;
+}
 
-  const available = await isPortAvailable(port);
+let selectedPort = 3000;
+
+async function checkPort() {
+  // PERMANENTLY CONFIGURED: Tallow prefers port 3000
+  const preferredPort = 3000;
+  log(`\n🔌 Checking port ${preferredPort} (Tallow preferred)...`, colors.blue);
+
+  const available = await isPortAvailable(preferredPort);
 
   if (!available) {
-    log(`⚠️  Port ${port} is already in use`, colors.yellow);
-    log(`   Please stop the existing server or use a different port.`, colors.yellow);
-    log(`   To find the process: netstat -ano | findstr :${port}`, colors.yellow);
-    log(`   To kill it: taskkill /PID <pid> /F`, colors.yellow);
-    log('', colors.reset);
-    log(`   Tallow is permanently configured to use port 3000.`, colors.yellow);
-    log(`   Kill the conflicting process to continue.`, colors.yellow);
+    log(`⚠️  Port ${preferredPort} is already in use`, colors.yellow);
+
+    // Find an alternative port automatically
+    log(`   Looking for alternative port...`, colors.yellow);
+    const altPort = await findAvailablePort(3001);
+
+    if (altPort) {
+      log(`✅ Using alternative port ${altPort}`, colors.green);
+      log(`   App will be available at: http://localhost:${altPort}`, colors.blue);
+      selectedPort = altPort;
+      return;
+    }
+
+    // If no alternative found, provide manual instructions
+    log(`❌ Could not find an available port (tried 3000-3010)`, colors.red);
+    log(`   To manually free port ${preferredPort}:`, colors.yellow);
+    if (process.platform === 'win32') {
+      log(`   netstat -ano | findstr :${preferredPort}`, colors.yellow);
+      log(`   taskkill /PID <pid> /F`, colors.yellow);
+    } else {
+      log(`   lsof -i :${preferredPort}`, colors.yellow);
+      log(`   kill -9 <pid>`, colors.yellow);
+    }
     process.exit(1);
   }
 
-  log(`✅ Port ${port} is available`, colors.green);
+  selectedPort = preferredPort;
+  log(`✅ Port ${preferredPort} is available`, colors.green);
 }
 
 function checkEnvironment() {
@@ -140,10 +170,11 @@ function startDevServer() {
   // Use npx on Windows, direct path on Unix
   const isWindows = process.platform === 'win32';
   const nextCommand = isWindows ? 'npx' : './node_modules/.bin/next';
-  // PERMANENTLY CONFIGURED: Tallow always uses port 3000
+  // Use the port determined by checkPort (defaults to 3000, falls back to available)
+  const portStr = String(selectedPort);
   const nextArgs = isWindows
-    ? ['next', 'dev', '--webpack', '-H', '0.0.0.0', '-p', '3000']
-    : ['./node_modules/.bin/next', 'dev', '--webpack', '-H', '0.0.0.0', '-p', '3000'];
+    ? ['next', 'dev', '--webpack', '-H', '0.0.0.0', '-p', portStr]
+    : ['./node_modules/.bin/next', 'dev', '--webpack', '-H', '0.0.0.0', '-p', portStr];
 
   const devProcess = spawn(
     isWindows ? nextCommand : 'node',

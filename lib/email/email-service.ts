@@ -100,7 +100,7 @@ function generateEmailHtml(
 
   const branding = options.branding || {};
   const companyName = branding.companyName || 'Tallow';
-  const primaryColor = branding.primaryColor || '#3b82f6';
+  const primaryColor = branding.primaryColor || '#8B9A7D';
   const logoUrl = branding.logoUrl || '';
 
   return `
@@ -173,7 +173,7 @@ function generateEmailHtml(
                 <p style="margin: 0 0 8px; font-size: 12px; color: #9ca3af;">
                   If the button doesn't work, copy and paste this link:
                 </p>
-                <p style="margin: 0; font-size: 12px; color: #3b82f6; word-break: break-all;">
+                <p style="margin: 0; font-size: 12px; color: #8B9A7D; word-break: break-all;">
                   ${downloadUrl}
                 </p>
               </div>
@@ -183,7 +183,7 @@ function generateEmailHtml(
             <td style="padding: 24px 32px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
               <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">
                 Secure file transfer powered by ${companyName}
-                ${branding.supportEmail ? ` • <a href="mailto:${branding.supportEmail}" style="color: #3b82f6; text-decoration: none;">Support</a>` : ''}
+                ${branding.supportEmail ? ` • <a href="mailto:${branding.supportEmail}" style="color: #8B9A7D; text-decoration: none;">Support</a>` : ''}
               </p>
             </td>
           </tr>

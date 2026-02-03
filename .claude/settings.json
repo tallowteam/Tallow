@@ -31,6 +31,10 @@
     "superpowers-lab@superpowers-marketplace": true,
     "fullstack-dev-skills@fullstack-dev-skills": true,
     "pyright-lsp@claude-plugins-official": true,
-    "gopls-lsp@claude-plugins-official": true
+    "gopls-lsp@claude-plugins-official": true,
+    "ask-questions-if-underspecified@trailofbits": true,
+    "testing-handbook-skills@trailofbits": true,
+    "ui-ux-pro-max@ui-ux-pro-max-skill": true,
+    "playground@claude-plugins-official": true
   }
 }
