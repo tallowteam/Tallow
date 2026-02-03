@@ -3,35 +3,8 @@
  * Central export for all Zustand stores
  */
 
-// Scroll Animation Store
-export {
-  useScrollAnimationStore,
-  // Types
-  type SectionVisibility,
-  type AnimationState,
-  type EuvekaTheme,
-  type AnimationPreferences,
-  type SpringConfig,
-  type ScrollDirection,
-  type ScrollAnimationState,
-  // Selectors
-  selectScrollProgress,
-  selectScrollDirection,
-  selectActiveSection,
-  selectVisibleSections,
-  selectViewedSections,
-  createSectionSelector,
-  createAnimationSelector,
-  selectReducedMotion,
-  selectAnimationPreferences,
-  selectEuvekaTheme,
-  selectResolvedTheme,
-  selectSpringConfig,
-  selectHasRunningAnimations,
-  selectOverallAnimationProgress,
-  selectIsNearTop,
-  selectIsNearBottom,
-} from './scroll-animation-store';
+// Storage
+export { safeStorage, createSafeStorage } from './storage';
 
 // Device Store
 export {

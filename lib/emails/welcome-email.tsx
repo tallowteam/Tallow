@@ -230,7 +230,7 @@ const ctaSection = {
 };
 
 const ctaButton = {
-    backgroundColor: '#6366f1',
+    backgroundColor: '#8B9A7D',
     color: '#ffffff',
     fontSize: '16px',
     fontWeight: '600',
@@ -253,7 +253,7 @@ const footerText = {
 };
 
 const footerLinks = {
-    color: '#6366f1',
+    color: '#8B9A7D',
     fontSize: '13px',
     margin: '0',
 };

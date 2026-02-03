@@ -55,7 +55,7 @@ const nextConfig: NextConfig = {
               "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https:",
-              "font-src 'self' data:",
+              "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com",
               "connect-src 'self' wss: ws: https:",
               "media-src 'self' blob:",
               "object-src 'none'",
@@ -136,138 +136,24 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // Enable WebAssembly support for pqc-kyber
-  webpack: (config, { isServer, dev }) => {
-    // Optimize webpack for faster builds
+  // Simplified webpack config for stability
+  webpack: (config, { isServer }) => {
+    // Enable WASM support
     config.experiments = {
       ...config.experiments,
       asyncWebAssembly: true,
       layers: true,
-      // Enable top-level await for proper WASM initialization
-      topLevelAwait: true,
     };
 
-    // Set output target to support async/await
-    // This ensures the generated code is compatible with modern browsers
-    if (!isServer) {
-      config.target = 'web';
-      config.output.environment = {
-        ...config.output.environment,
-        asyncFunction: true,
-        const: true,
-        arrowFunction: true,
-        forOf: true,
-        destructuring: true,
-        module: true,
-        dynamicImport: true,
-      };
-    }
-
-    // Development-specific optimizations
-    if (dev) {
-      // Increase cache for better performance
-      config.cache = {
-        type: 'filesystem',
-        compression: 'gzip',
-        maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-        allowCollectingMemory: true,
-        buildDependencies: {
-          config: [__filename],
-        },
-      };
-
-      // Optimize dev server performance
-      config.optimization = {
-        ...config.optimization,
-        removeAvailableModules: false,
-        removeEmptyChunks: false,
-        splitChunks: false,
-        // Reduce overhead
-        usedExports: false,
-        sideEffects: false,
-      };
-
-      // Configure dev server
-      config.infrastructureLogging = {
-        level: 'error',
-        debug: false,
-      };
-
-      // Optimize module resolution for faster builds
-      config.resolve = {
-        ...config.resolve,
-        // Cache module resolution
-        unsafeCache: true,
-        // Reduce resolution attempts
-        symlinks: false,
-      };
-
-      // Increase parallelism for faster builds
-      if (!isServer) {
-        config.parallelism = 4;
-      }
-    } else {
-      // Production cache configuration
-      config.cache = {
-        type: 'filesystem',
-        compression: 'gzip',
-        maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-      };
-
-      // Optimize production builds with better chunk splitting
-      config.optimization = {
-        ...config.optimization,
-        minimize: true,
-        // Module concatenation (scope hoisting)
-        concatenateModules: true,
-        // Remove empty chunks
-        removeEmptyChunks: true,
-        // Merge duplicate chunks
-        mergeDuplicateChunks: true,
-        // Tree shaking
-        usedExports: true,
-        sideEffects: true,
-        splitChunks: {
-          chunks: 'all',
-          maxInitialRequests: 25,
-          minSize: 20000,
-          maxSize: 244000,
-          cacheGroups: {
-            // Large vendor libraries
-            vendor: {
-              test: /[\\/]node_modules[\\/]/,
-              priority: 10,
-              reuseExistingChunk: true,
-              minChunks: 1,
-            },
-            // Common components
-            common: {
-              minChunks: 2,
-              priority: 5,
-              reuseExistingChunk: true,
-            },
-          },
-        },
-      };
-    }
-
-    // Fix for WASM modules - use proper paths and async handling
+    // WASM file output path
     config.output.webassemblyModuleFilename =
       isServer ? './../static/wasm/[modulehash].wasm' : 'static/wasm/[modulehash].wasm';
 
-    // Ensure WASM files are handled with asyncWebAssembly
+    // Handle WASM files
     config.module.rules.push({
       test: /\.wasm$/,
       type: 'webassembly/async',
     });
-
-    // Bundle analyzer (optional - enable with ANALYZE=true)
-    if (process.env['ANALYZE'] === 'true') {
-      const { BundleAnalyzerPlugin } = require('@next/bundle-analyzer')({
-        enabled: true,
-      });
-      config.plugins.push(new BundleAnalyzerPlugin());
-    }
 
     return config;
   },
@@ -302,36 +188,10 @@ const nextConfig: NextConfig = {
   // Performance optimizations
   experimental: {
     optimizePackageImports: [
-      // Icons - ~45KB if not tree-shaken
-      'lucide-react',
-      // Animation library - ~45KB if not tree-shaken
-      'framer-motion',
-      // Date utilities - tree-shake to only used functions
+      // Date utilities
       'date-fns',
-      // Radix UI components
-      '@radix-ui/react-dialog',
-      '@radix-ui/react-dropdown-menu',
-      '@radix-ui/react-tabs',
-      '@radix-ui/react-tooltip',
-      '@radix-ui/react-switch',
-      '@radix-ui/react-slider',
-      '@radix-ui/react-progress',
-      '@radix-ui/react-scroll-area',
-      '@radix-ui/react-popover',
-      '@radix-ui/react-select',
-      '@radix-ui/react-checkbox',
-      '@radix-ui/react-label',
-      '@radix-ui/react-slot',
-      '@radix-ui/react-avatar',
-      '@radix-ui/react-separator',
       // React Email components
       '@react-email/components',
-      // Class utilities
-      'class-variance-authority',
-      'clsx',
-      'tailwind-merge',
-      // Gesture library
-      '@use-gesture/react',
       // Search library
       'fuse.js',
       // QR code
@@ -343,10 +203,6 @@ const nextConfig: NextConfig = {
       '@noble/ciphers',
       // Web vitals
       'web-vitals',
-      // Theme
-      'next-themes',
-      // Toast notifications
-      'sonner',
       // Feature flags
       'launchdarkly-react-client-sdk',
     ],
