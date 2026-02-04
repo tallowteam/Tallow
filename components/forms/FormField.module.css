@@ -1,0 +1,158 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  position: relative;
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+.wrapper.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.labelWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-foreground-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.required {
+  color: var(--color-error);
+  font-weight: var(--font-weight-bold);
+  margin-left: 2px;
+}
+
+.optional {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--color-foreground-tertiary);
+  margin-left: var(--spacing-1);
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure child inputs fill the wrapper */
+.inputWrapper > * {
+  width: 100%;
+}
+
+.errorMessage {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-error);
+  animation: slideInUp var(--transition-fast) var(--ease-out);
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.errorIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.helperText {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-foreground-tertiary);
+}
+
+.helperIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Error state styling */
+.wrapper.error .label {
+  color: var(--color-error);
+}
+
+/* Focus within effect */
+.wrapper:focus-within .label {
+  color: var(--color-accent-primary);
+}
+
+.wrapper.error:focus-within .label {
+  color: var(--color-error);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .label {
+    font-size: var(--font-size-sm);
+  }
+
+  .errorMessage,
+  .helperText {
+    font-size: var(--font-size-xs);
+  }
+}
+
+/* Utility classes for common field patterns */
+.wrapper.inline {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.wrapper.inline .labelWrapper {
+  flex: 0 0 auto;
+  min-width: 120px;
+}
+
+.wrapper.inline .inputWrapper {
+  flex: 1;
+}
+
+.wrapper.inline .errorMessage,
+.wrapper.inline .helperText {
+  margin-left: 124px; /* Align with input */
+}
+
+/* Compact variant */
+.wrapper.compact {
+  gap: var(--spacing-1);
+}
+
+.wrapper.compact .label {
+  font-size: var(--font-size-xs);
+}
+
+/* Large variant */
+.wrapper.large .label {
+  font-size: var(--font-size-base);
+}
+
+.wrapper.large {
+  gap: var(--spacing-3);
+}

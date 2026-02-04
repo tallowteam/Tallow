@@ -1,0 +1,207 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.toggleWrapper {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+}
+
+.toggle {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle:disabled + .label {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Label positioning */
+.wrapper.label-left .label {
+  flex-direction: row-reverse;
+}
+
+.wrapper.label-right .label {
+  flex-direction: row;
+}
+
+/* Track sizes */
+.track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  background: var(--color-background-secondary);
+  border: 2px solid var(--color-border-secondary);
+  border-radius: var(--radius-full);
+  transition: all var(--transition-fast);
+}
+
+.track.sm {
+  width: 36px;
+  height: 20px;
+}
+
+.track.md {
+  width: 44px;
+  height: 24px;
+}
+
+.track.lg {
+  width: 52px;
+  height: 28px;
+}
+
+.label:hover .track {
+  border-color: var(--color-border-tertiary);
+  background: var(--color-background-tertiary);
+}
+
+.toggle:focus-visible + .label .track {
+  border-color: var(--color-accent-primary);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+  outline: 2px solid var(--color-accent-primary);
+  outline-offset: 2px;
+}
+
+.toggle:checked + .label .track {
+  background: var(--gradient-accent);
+  border-color: transparent;
+  box-shadow: var(--glow-sm);
+}
+
+.toggle:checked:hover + .label .track {
+  box-shadow: var(--glow-base);
+}
+
+.toggle.error + .label .track {
+  border-color: var(--color-error);
+}
+
+.toggle.error:focus-visible + .label .track {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 3px var(--color-error-bg);
+  outline-color: var(--color-error);
+}
+
+/* Thumb sizes */
+.thumb {
+  position: absolute;
+  background: var(--color-foreground-primary);
+  border-radius: var(--radius-full);
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+
+.thumb.sm {
+  width: 14px;
+  height: 14px;
+  left: 2px;
+}
+
+.thumb.md {
+  width: 16px;
+  height: 16px;
+  left: 3px;
+}
+
+.thumb.lg {
+  width: 20px;
+  height: 20px;
+  left: 3px;
+}
+
+/* Checked state - move thumb to the right */
+.toggle:checked + .label .track.sm .thumb {
+  transform: translateX(16px);
+}
+
+.toggle:checked + .label .track.md .thumb {
+  transform: translateX(20px);
+}
+
+.toggle:checked + .label .track.lg .thumb {
+  transform: translateX(24px);
+}
+
+.toggle:checked + .label .track .thumb {
+  background: white;
+  box-shadow: var(--shadow-base);
+}
+
+.labelContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.labelText {
+  font-size: var(--font-size-base);
+  color: var(--color-foreground-primary);
+  line-height: var(--line-height-normal);
+  font-weight: var(--font-weight-medium);
+}
+
+.description {
+  font-size: var(--font-size-sm);
+  color: var(--color-foreground-tertiary);
+  line-height: var(--line-height-normal);
+}
+
+.errorText {
+  font-size: var(--font-size-sm);
+  color: var(--color-error);
+  margin: 0;
+}
+
+/* Animation for toggle */
+@keyframes toggleSlide {
+  0% {
+    transform: translateX(0) scale(1);
+  }
+  50% {
+    transform: translateX(0) scale(0.9);
+  }
+  100% {
+    transform: translateX(var(--toggle-distance)) scale(1);
+  }
+}
+
+.toggle:checked + .label .track.sm .thumb {
+  animation: toggleSlide var(--transition-base) var(--ease-spring);
+}
+
+.toggle:checked + .label .track.md .thumb {
+  animation: toggleSlide var(--transition-base) var(--ease-spring);
+}
+
+.toggle:checked + .label .track.lg .thumb {
+  animation: toggleSlide var(--transition-base) var(--ease-spring);
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  .track,
+  .thumb {
+    transition: none;
+  }
+
+  .toggle:checked + .label .track .thumb {
+    animation: none;
+  }
+}

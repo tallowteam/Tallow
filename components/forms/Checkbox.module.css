@@ -1,0 +1,130 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.checkboxWrapper {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+}
+
+.checkbox {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  cursor: pointer;
+  user-select: none;
+  min-height: 24px;
+}
+
+.checkbox:disabled + .label {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.checkboxBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  background: var(--color-background-secondary);
+  border: 2px solid var(--color-border-secondary);
+  border-radius: var(--radius-base);
+  transition: all var(--transition-fast);
+}
+
+.label:hover .checkboxBox {
+  border-color: var(--color-border-tertiary);
+  background: var(--color-background-tertiary);
+}
+
+.checkbox:focus-visible + .label .checkboxBox {
+  border-color: var(--color-accent-primary);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+  outline: 2px solid var(--color-accent-primary);
+  outline-offset: 2px;
+}
+
+.checkbox:checked + .label .checkboxBox,
+.checkbox.indeterminate + .label .checkboxBox {
+  background: var(--gradient-accent);
+  border-color: transparent;
+  box-shadow: var(--glow-sm);
+}
+
+.checkbox:checked:hover + .label .checkboxBox,
+.checkbox.indeterminate:hover + .label .checkboxBox {
+  box-shadow: var(--glow-base);
+}
+
+.checkbox.error + .label .checkboxBox {
+  border-color: var(--color-error);
+}
+
+.checkbox.error:focus-visible + .label .checkboxBox {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 3px var(--color-error-bg);
+  outline-color: var(--color-error);
+}
+
+.icon {
+  color: white;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all var(--transition-fast);
+}
+
+.checkbox:checked + .label .checkboxBox .icon,
+.checkbox.indeterminate + .label .checkboxBox .icon {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.labelText {
+  font-size: var(--font-size-base);
+  color: var(--color-foreground-primary);
+  line-height: var(--line-height-normal);
+}
+
+.errorText {
+  font-size: var(--font-size-sm);
+  color: var(--color-error);
+  margin: 0;
+  margin-left: calc(20px + var(--spacing-3));
+}
+
+.helperText {
+  font-size: var(--font-size-sm);
+  color: var(--color-foreground-tertiary);
+  margin: 0;
+  margin-left: calc(20px + var(--spacing-3));
+}
+
+/* Animation for check/indeterminate state */
+@keyframes checkboxCheck {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) rotate(-45deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.checkbox:checked + .label .checkboxBox .icon {
+  animation: checkboxCheck var(--transition-fast) var(--ease-spring);
+}
