@@ -1,4 +1,10 @@
 import type { NextConfig } from "next";
+import type { Configuration as WebpackConfig } from "webpack";
+
+// Bundle analyzer (only in analyze mode)
+const withBundleAnalyzer = process.env.ANALYZE === 'true'
+  ? require('@next/bundle-analyzer')({ enabled: true })
+  : (config: NextConfig) => config;
 
 const nextConfig: NextConfig = {
   // Use webpack for build (not Turbopack) due to better compatibility
@@ -8,9 +14,7 @@ const nextConfig: NextConfig = {
 
   // Development server configuration to prevent 408 timeouts
   ...(process.env.NODE_ENV === 'development' && {
-    // Increase timeout for dev server
     experimental: {
-      // Prevent dev server timeouts
       proxyTimeout: 300000, // 5 minutes
     },
   }),
@@ -85,11 +89,6 @@ const nextConfig: NextConfig = {
           {
             key: 'Cross-Origin-Resource-Policy',
             value: 'same-origin'
-          },
-          // Cache control for static assets
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
           }
         ]
       },
@@ -114,8 +113,8 @@ const nextConfig: NextConfig = {
         ]
       },
       {
-        // Cache CSS files
-        source: '/:path*.css',
+        // Cache fonts
+        source: '/fonts/:path*',
         headers: [
           {
             key: 'Cache-Control',
@@ -124,20 +123,30 @@ const nextConfig: NextConfig = {
         ]
       },
       {
-        // Cache JS files
-        source: '/:path*.js',
+        // Cache images
+        source: '/images/:path*',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
+            value: 'public, max-age=86400, stale-while-revalidate=604800',
+          }
+        ]
+      },
+      {
+        // Short cache for API responses
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'private, no-cache, no-store, must-revalidate',
           }
         ]
       }
     ];
   },
 
-  // Simplified webpack config for stability
-  webpack: (config, { isServer }) => {
+  // Webpack configuration for performance
+  webpack: (config: WebpackConfig, { isServer }: { isServer: boolean }) => {
     // Enable WASM support
     config.experiments = {
       ...config.experiments,
@@ -146,34 +155,103 @@ const nextConfig: NextConfig = {
     };
 
     // WASM file output path
-    config.output.webassemblyModuleFilename =
-      isServer ? './../static/wasm/[modulehash].wasm' : 'static/wasm/[modulehash].wasm';
+    if (config.output) {
+      config.output.webassemblyModuleFilename =
+        isServer ? './../static/wasm/[modulehash].wasm' : 'static/wasm/[modulehash].wasm';
+    }
 
     // Handle WASM files
+    config.module = config.module || { rules: [] };
+    config.module.rules = config.module.rules || [];
     config.module.rules.push({
       test: /\.wasm$/,
       type: 'webassembly/async',
     });
 
+    // Optimization for production
+    if (!isServer && process.env.NODE_ENV === 'production') {
+      config.optimization = {
+        ...config.optimization,
+        // Enable module concatenation
+        concatenateModules: true,
+        // Minimize
+        minimize: true,
+        // Split chunks for better caching
+        splitChunks: {
+          chunks: 'all',
+          minSize: 20000,
+          maxSize: 244000, // ~238KB max chunk size
+          cacheGroups: {
+            // Separate vendor chunks
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              chunks: 'all',
+              priority: 10,
+            },
+            // Crypto libraries (heavy, load separately)
+            crypto: {
+              test: /[\\/]node_modules[\\/](@noble|pqc-kyber|hash-wasm)[\\/]/,
+              name: 'crypto',
+              chunks: 'all',
+              priority: 20,
+            },
+            // UI components
+            ui: {
+              test: /[\\/]components[\\/](ui|layout)[\\/]/,
+              name: 'ui',
+              chunks: 'all',
+              priority: 15,
+            },
+            // Common shared code
+            common: {
+              minChunks: 2,
+              priority: 5,
+              reuseExistingChunk: true,
+            },
+          },
+        },
+      };
+    }
+
     return config;
   },
 
-  // Image optimization (even though we use mostly SVGs)
+  // Image optimization
   images: {
-    formats: ['image/webp', 'image/avif'],
-    minimumCacheTTL: 60,
+    // Modern formats for smaller sizes
+    formats: ['image/avif', 'image/webp'],
+    // Longer cache for optimized images
+    minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
+    // Device sizes for responsive images
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    // Icon sizes
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    // Remote patterns (add your CDN here)
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.tallow.app',
+      },
+    ],
+    // Disable blur placeholder for faster load
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
-  // Compiler optimizations
+  // Compiler optimizations (SWC)
   compiler: {
+    // Remove console.log in production (keep error and warn)
     removeConsole: process.env['NODE_ENV'] === 'production' ? {
       exclude: ['error', 'warn'],
     } : false,
+    // Enable React optimizations
+    reactRemoveProperties: process.env['NODE_ENV'] === 'production',
   },
 
-  // Suppress non-essential warnings in development
+  // Keep pages in memory longer for dev
   onDemandEntries: {
-    // Keep pages in memory longer to reduce HMR noise
     maxInactiveAge: 60 * 1000,
     pagesBufferLength: 5,
   },
@@ -185,8 +263,9 @@ const nextConfig: NextConfig = {
     },
   },
 
-  // Performance optimizations
+  // Experimental performance features
   experimental: {
+    // Optimize package imports (tree-shaking)
     optimizePackageImports: [
       // Date utilities
       'date-fns',
@@ -201,35 +280,50 @@ const nextConfig: NextConfig = {
       '@noble/hashes',
       '@noble/curves',
       '@noble/ciphers',
+      '@noble/post-quantum',
       // Web vitals
       'web-vitals',
       // Feature flags
       'launchdarkly-react-client-sdk',
+      // Icons (only import what's used)
+      '@heroicons/react',
+      // Zustand
+      'zustand',
     ],
-    // Optimize CSS loading
+    // CSS optimization
     optimizeCss: true,
+    // Server actions optimization
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
     // Increase timeouts for development
     ...(process.env.NODE_ENV === 'development' && {
-      proxyTimeout: 300000, // 5 minutes
+      proxyTimeout: 300000,
     }),
   },
 
-  // Production source maps for debugging (smaller size)
+  // Disable production source maps for smaller builds
   productionBrowserSourceMaps: false,
 
-  // Compression
+  // Enable compression
   compress: true,
 
-  // Generate ETags
+  // Generate ETags for caching
   generateEtags: true,
 
-  // Power-by header
+  // Remove X-Powered-By header
   poweredByHeader: false,
 
-  // HTTP Agent Options to prevent timeouts
+  // HTTP Agent for connection pooling
   httpAgentOptions: {
     keepAlive: true,
   },
+
+  // Strict mode for better React practices
+  reactStrictMode: true,
+
+  // Output configuration
+  output: 'standalone',
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

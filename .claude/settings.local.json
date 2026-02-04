@@ -242,7 +242,8 @@
       "Bash(git -C \"C:\\\\Users\\\\aamir\\\\Documents\\\\Apps\\\\Tallow\" show 79c79a9 --name-only)",
       "Bash(git -C \"C:\\\\Users\\\\aamir\\\\Documents\\\\Apps\\\\Tallow\" show 0aff85d --name-only)",
       "Bash(git -C \"C:\\\\Users\\\\aamir\\\\Documents\\\\Apps\\\\Tallow\" status)",
-      "Bash(egrep:*)"
+      "Bash(egrep:*)",
+      "Bash(chmod:*)"
     ]
   }
 }

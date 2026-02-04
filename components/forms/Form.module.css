@@ -1,0 +1,215 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  width: 100%;
+}
+
+.form {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+  width: 100%;
+  transition: opacity var(--transition-fast);
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+.form.loading {
+  pointer-events: none;
+}
+
+.loadingOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 10, 10, 0.8);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border-radius: var(--radius-lg);
+  z-index: var(--z-fixed);
+  animation: fadeIn var(--transition-fast) var(--ease-out);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinnerIcon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinnerTrack {
+  opacity: 0.2;
+}
+
+.spinnerCircle {
+  stroke-dasharray: 80;
+  stroke-dashoffset: 60;
+  transform-origin: center;
+  color: var(--color-accent-primary);
+}
+
+.errorMessage,
+.successMessage {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-md);
+  animation: slideInUp var(--transition-base) var(--ease-out);
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.errorMessage {
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
+  color: var(--color-error);
+}
+
+.successMessage {
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success-border);
+  color: var(--color-success);
+}
+
+.messageIcon {
+  flex-shrink: 0;
+}
+
+/* Form field spacing */
+.form > * + * {
+  margin-top: 0;
+}
+
+/* Form group utilities */
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.formRow {
+  display: flex;
+  gap: var(--spacing-4);
+}
+
+.formRow > * {
+  flex: 1;
+}
+
+/* Form section */
+.formSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  padding: var(--spacing-6);
+  background: var(--color-background-secondary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+}
+
+.formSectionTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-foreground-primary);
+  margin-bottom: var(--spacing-2);
+}
+
+.formSectionDescription {
+  font-size: var(--font-size-sm);
+  color: var(--color-foreground-tertiary);
+  margin-bottom: var(--spacing-2);
+}
+
+/* Form actions */
+.formActions {
+  display: flex;
+  gap: var(--spacing-3);
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--color-border-primary);
+}
+
+.formActions.right {
+  justify-content: flex-end;
+}
+
+.formActions.center {
+  justify-content: center;
+}
+
+.formActions.left {
+  justify-content: flex-start;
+}
+
+.formActions.spread {
+  justify-content: space-between;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .formRow {
+    flex-direction: column;
+  }
+
+  .formActions {
+    flex-direction: column;
+  }
+
+  .formActions > * {
+    width: 100%;
+  }
+
+  .formSection {
+    padding: var(--spacing-4);
+  }
+}
+
+/* Focus within form styling */
+.form:focus-within {
+  /* Optional: Add subtle glow effect when any field is focused */
+}
+
+/* Disabled form state */
+.form:has(*:disabled) {
+  /* Optional: Style when form has disabled fields */
+}
