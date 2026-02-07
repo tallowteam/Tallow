@@ -735,7 +735,11 @@
     transform: none;
   }
 
-  * {
+  .step,
+  .statsCard,
+  .cryptoCard,
+  .platformItem,
+  .ctaButton {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
