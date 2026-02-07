@@ -1,152 +1,207 @@
-/* Transfer Progress Component */
-
-.container {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
+.card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 24px;
 }
 
-.info {
+.header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  background: var(--accent);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 12px;
+}
+
+.empty {
+  padding: 48px 24px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-3);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.transferItem {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: background 0.2s ease;
+}
+
+.transferItem:hover {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .fileInfo {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
-.direction {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  color: var(--accent);
-  flex-shrink: 0;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .fileName {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--text-primary);
+  flex: 1;
+  font-size: 0.9rem;
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-weight: 500;
 }
 
 .fileSize {
-  font-size: var(--font-size-xs);
-  color: var(--text-tertiary);
-  font-family: var(--font-mono);
-  flex-shrink: 0;
+  font-size: 0.8rem;
+  color: var(--text-3);
+  white-space: nowrap;
 }
 
-.peerName {
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
-  flex-shrink: 0;
+.progressContainer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.connectionBadge {
-  padding: var(--space-1) var(--space-2);
-  background-color: var(--success-subtle);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  color: var(--success-500);
-  flex-shrink: 0;
-}
-
-.percentage {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  font-family: var(--font-mono);
-  color: var(--text-primary);
-  flex-shrink: 0;
-}
-
-.progressBar {
+.progressTrack {
+  flex: 1;
   height: 4px;
-  background-color: var(--bg-elevated);
-  border-radius: var(--radius-full);
+  background: var(--border);
+  border-radius: 2px;
   overflow: hidden;
 }
 
 .progressFill {
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    var(--accent) 0%,
-    var(--accent-light) 50%,
-    var(--accent) 100%
-  );
-  background-size: 200% 100%;
-  border-radius: var(--radius-full);
-  transition: width var(--transition-fast);
-  animation: progress-shimmer 2s linear infinite;
-  position: relative;
-  overflow: hidden;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.3s ease;
 }
 
-.progressFill::after {
-  content: '';
+.progressLabel {
+  font-size: 0.75rem;
+  color: var(--text-3);
+  font-weight: 600;
+  min-width: 36px;
+  text-align: right;
+}
+
+.details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.speedInfo {
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
+
+.encryption {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 4px;
+}
+
+.lockIcon {
+  width: 12px;
+  height: 12px;
+  color: var(--accent);
+}
+
+.actions {
   position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.3) 50%,
-    transparent 100%
-  );
-  animation: progress-shine 1.5s ease-in-out infinite;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  gap: 8px;
 }
 
-@keyframes progress-shimmer {
-  0% {
-    background-position: 0% 0%;
-  }
-  100% {
-    background-position: 200% 0%;
-  }
+.actionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-@keyframes progress-shine {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
+.actionBtn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--text-3);
+  color: var(--text-2);
 }
 
-/* Mobile Responsive */
+.actionBtn:active {
+  transform: scale(0.95);
+}
+
 @media (max-width: 640px) {
+  .card {
+    padding: 20px;
+  }
+
+  .transferItem {
+    padding: 14px;
+  }
+
+  .actions {
+    position: static;
+    margin-top: 8px;
+    justify-content: flex-end;
+  }
+
   .fileInfo {
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
 
-  .peerName,
-  .connectionBadge {
-    display: none;
-  }
-}
-
-/* Reduced Motion */
-@media (prefers-reduced-motion: reduce) {
-  .progressFill,
-  .progressFill::after {
-    animation: none;
+  .details {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 }
