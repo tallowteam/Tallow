@@ -1,170 +1,142 @@
-/* Footer — Cineglass Magazine Editorial Style */
-
-/* ============================================
-   Footer Container
-   ============================================ */
-
 .footer {
-  background-color: var(--bg);
   border-top: 1px solid var(--border);
-  padding: 64px 56px 32px;
-  margin-top: auto;
-  position: relative;
+  padding: 80px 0 40px;
 }
-
-@media (max-width: 768px) {
-  .footer {
-    padding: 48px 24px 24px;
-  }
-}
-
-/* ============================================
-   Container
-   ============================================ */
 
 .container {
-  display: flex;
-  flex-direction: column;
-  gap: 48px;
-  max-width: 1440px;
+  max-width: 1400px;
   margin: 0 auto;
+  padding: 0 24px;
 }
-
-/* ============================================
-   Main Grid — 4 Columns Editorial Layout
-   ============================================ */
 
 .grid {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr 1fr;
-  gap: 48px;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 60px;
+  margin-bottom: 60px;
 }
 
-@media (max-width: 768px) {
-  .grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 32px;
-  }
+.brand {
+  max-width: 320px;
 }
 
-@media (max-width: 480px) {
-  .grid {
-    grid-template-columns: 1fr;
-    gap: 32px;
-  }
-}
-
-/* ============================================
-   Brand Column
-   ============================================ */
-
-.brandColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.brandTitle {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
+.logo {
+  font-family: var(--font-playfair, 'Playfair Display', serif);
   font-weight: 300;
-  color: var(--text);
-  margin: 0;
-  line-height: 1.2;
+  font-size: 1.6rem;
+  margin: 0 0 16px 0;
+  color: var(--text-1);
 }
 
-.brandDescription {
-  font-size: 0.82rem;
-  line-height: 1.6;
+.description {
   color: var(--text-3);
-  margin: 0;
-  max-width: 240px;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  margin: 0 0 20px 0;
 }
 
-/* ============================================
-   Standard Columns
-   ============================================ */
+.githubLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-2);
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.githubLink:hover {
+  color: var(--accent-2);
+}
+
+.githubLink svg {
+  width: 20px;
+  height: 20px;
+}
 
 .column {
   display: flex;
   flex-direction: column;
-  gap: 20px;
 }
 
-.columnTitle {
-  font-size: 0.65rem;
-  font-weight: 600;
-  color: var(--text-3);
+.heading {
+  font-size: 0.7rem;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  margin: 0;
+  letter-spacing: 0.1em;
+  color: var(--text-3);
+  margin: 0 0 20px 0;
 }
 
-.linkList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.links {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.link {
-  font-size: 0.82rem;
+.links a {
   color: var(--text-2);
+  font-size: 0.9rem;
   text-decoration: none;
-  transition: color 0.2s ease;
-  display: inline-block;
-  width: fit-content;
+  transition: color 0.3s ease;
 }
 
-.link:hover {
-  color: var(--text);
+.links a:hover {
+  color: var(--accent-2);
 }
-
-/* ============================================
-   Bottom Bar
-   ============================================ */
 
 .bottom {
   display: flex;
-  flex-direction: row;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   padding-top: 32px;
   border-top: 1px solid var(--border);
-  gap: 16px;
-}
-
-@media (max-width: 640px) {
-  .bottom {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
 }
 
 .copyright {
-  font-size: 0.72rem;
+  font-size: 0.85rem;
   color: var(--text-3);
   margin: 0;
 }
 
 .tagline {
-  font-family: var(--font-display);
-  font-size: 0.85rem;
-  font-weight: 300;
+  font-family: var(--font-playfair, 'Playfair Display', serif);
   font-style: italic;
-  color: var(--text-3);
+  font-size: 0.9rem;
+  color: var(--text-2);
   margin: 0;
 }
 
-/* ============================================
-   Reduced Motion
-   ============================================ */
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+  }
 
-@media (prefers-reduced-motion: reduce) {
-  .link {
-    transition: none;
+  .brand {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .footer {
+    padding: 60px 0 32px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    margin-bottom: 40px;
+  }
+
+  .bottom {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+
+  .copyright,
+  .tagline {
+    font-size: 0.8rem;
   }
 }
