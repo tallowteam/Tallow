@@ -1,250 +1,258 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import styles from './page.module.css';
+
+export const metadata: Metadata = {
+  title: 'Features — Tallow',
+  description: 'Everything you need for secure, private, peer-to-peer file transfer. No limits, no compromises.',
+};
 
 export default function FeaturesPage() {
   return (
     <main className={styles.main}>
-      {/* Ambient gradient blobs */}
-      <div className={styles.ambient}>
-        <div className={styles.blob1} />
-        <div className={styles.blob2} />
-      </div>
-
-      {/* Hero */}
-      <section className={styles.hero}>
-        <div className={styles.heroLabel}>FEATURES</div>
-        <h1 className={styles.heroTitle}>Everything you need, nothing you don't.</h1>
-        <p className={styles.heroSubtitle}>
-          Simple, secure, built for people who care about their files.
+      {/* Header */}
+      <header className={styles.header}>
+        <span className={styles.label}>FEATURES</span>
+        <h1 className={styles.title}>Everything you need. Nothing you don&apos;t.</h1>
+        <p className={styles.subtitle}>
+          File transfer reimagined for privacy, security, and freedom.
         </p>
-      </section>
+      </header>
 
-      {/* Feature 01 - Direct P2P Transfer (text left, visual right) */}
-      <section className={styles.featureBlock}>
-        <div className={styles.featureText}>
-          <div className={styles.featureNumber}>01</div>
-          <h2 className={styles.featureTitle}>Direct P2P Transfer</h2>
+      {/* Feature 01 - P2P Transfer */}
+      <section className={styles.feature}>
+        <div className={styles.featureContent}>
+          <div className={styles.featureLabel}>01 — TRANSFER</div>
+          <h2 className={styles.featureTitle}>Lightning-fast peer-to-peer</h2>
           <p className={styles.featureDescription}>
-            Files travel directly between devices. No cloud relay, no middleman, no temporary storage. Your data never touches our servers.
+            Direct device-to-device transfer at full network speed. No cloud intermediaries, no throttling, no waiting.
+            Your files travel the shortest path possible.
           </p>
-          <Link href="/docs" className={styles.featureLink}>
-            Learn more →
-          </Link>
         </div>
         <div className={styles.featureVisual}>
-          <div className={styles.glassCard}>
-            <div className={styles.connectionDiagram}>
-              <div className={styles.device}>
-                <div className={styles.deviceIcon}>
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="2" y="3" width="20" height="14" rx="2" />
-                    <line x1="8" y1="21" x2="16" y2="21" />
-                    <line x1="12" y1="17" x2="12" y2="21" />
-                  </svg>
-                </div>
-              </div>
-              <div className={styles.connectionLine}>
-                <svg width="100%" height="2" viewBox="0 0 100 2" preserveAspectRatio="none">
-                  <line x1="0" y1="1" x2="100" y2="1" stroke="var(--accent-2)" strokeWidth="2" strokeDasharray="4 4" />
-                </svg>
-                <div className={styles.arrowRight}>→</div>
-              </div>
-              <div className={styles.device}>
-                <div className={styles.deviceIcon}>
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="5" y="2" width="14" height="20" rx="2" />
-                    <line x1="12" y1="18" x2="12.01" y2="18" />
-                  </svg>
-                </div>
-              </div>
+          <div className={styles.statsCard}>
+            <div className={styles.stat}>
+              <div className={styles.statValue}>12.4 MB/s</div>
+              <div className={styles.statLabel}>Transfer Speed</div>
             </div>
-            <div className={styles.cardLabel}>Direct Connection</div>
+            <div className={styles.stat}>
+              <div className={styles.statValue}>0ms</div>
+              <div className={styles.statLabel}>Server Latency</div>
+            </div>
+            <div className={styles.stat}>
+              <div className={styles.statValue}>Direct P2P</div>
+              <div className={styles.statLabel}>Connection Type</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Feature 02 - PQC Encryption */}
+      <section className={`${styles.feature} ${styles.featureReverse}`}>
+        <div className={styles.featureVisual}>
+          <div className={styles.cryptoCard}>
+            <div className={styles.cryptoSpec}>
+              <span className={styles.cryptoLabel}>Key Exchange</span>
+              <span className={styles.cryptoValue}>ML-KEM-768</span>
+            </div>
+            <div className={styles.cryptoSpec}>
+              <span className={styles.cryptoLabel}>Encryption</span>
+              <span className={styles.cryptoValue}>AES-256-GCM</span>
+            </div>
+            <div className={styles.cryptoSpec}>
+              <span className={styles.cryptoLabel}>ECDH Fallback</span>
+              <span className={styles.cryptoValue}>X25519</span>
+            </div>
+            <div className={styles.cryptoBadge}>Quantum-Safe</div>
+          </div>
+        </div>
+        <div className={styles.featureContent}>
+          <div className={styles.featureLabel}>02 — SECURITY</div>
+          <h2 className={styles.featureTitle}>Post-quantum cryptographic security</h2>
+          <p className={styles.featureDescription}>
+            Protected against both classical and quantum computer attacks. ML-KEM (Kyber) key exchange with AES-256-GCM encryption.
+            Future-proof security, today.
+          </p>
+        </div>
+      </section>
+
+      {/* Feature 03 - Cross-Platform */}
+      <section className={styles.feature}>
+        <div className={styles.featureContent}>
+          <div className={styles.featureLabel}>03 — PLATFORM</div>
+          <h2 className={styles.featureTitle}>Works everywhere</h2>
+          <p className={styles.featureDescription}>
+            Native desktop apps for macOS, Windows, and Linux. Progressive web app for iOS, Android, and browsers.
+            One protocol, every platform.
+          </p>
+        </div>
+        <div className={styles.featureVisual}>
+          <div className={styles.platformGrid}>
+            <div className={styles.platformItem}>macOS</div>
+            <div className={styles.platformItem}>Windows</div>
+            <div className={styles.platformItem}>Linux</div>
+            <div className={styles.platformItem}>iOS</div>
+            <div className={styles.platformItem}>Android</div>
+            <div className={styles.platformItem}>Web</div>
           </div>
         </div>
       </section>
 
-      {/* Feature 02 - Post-Quantum Encryption (visual left, text right) */}
-      <section className={`${styles.featureBlock} ${styles.featureBlockReverse}`}>
+      {/* Feature 04 - Zero Knowledge */}
+      <section className={`${styles.feature} ${styles.featureReverse}`}>
         <div className={styles.featureVisual}>
-          <div className={styles.glassCard}>
-            <h3 className={styles.cardTitle}>Encryption Stack</h3>
-            <div className={styles.encryptionList}>
-              <div className={styles.encryptionItem}>
-                <span className={styles.tag}>ML-KEM-768</span>
-              </div>
-              <div className={styles.encryptionItem}>
-                <span className={styles.tag}>AES-256-GCM</span>
-              </div>
-              <div className={styles.encryptionItem}>
-                <span className={styles.tag}>Forward Secrecy</span>
-              </div>
-              <div className={styles.encryptionItem}>
-                <span className={styles.tag}>Zero-Knowledge</span>
-              </div>
+          <div className={styles.privacyCard}>
+            <div className={styles.privacyStats}>
+              <span className={styles.privacyStat}>0</span>
+              <span className={styles.privacyLabel}>servers</span>
+            </div>
+            <div className={styles.privacyDivider}>•</div>
+            <div className={styles.privacyStats}>
+              <span className={styles.privacyStat}>0</span>
+              <span className={styles.privacyLabel}>logs</span>
+            </div>
+            <div className={styles.privacyDivider}>•</div>
+            <div className={styles.privacyStats}>
+              <span className={styles.privacyStat}>0</span>
+              <span className={styles.privacyLabel}>metadata</span>
             </div>
           </div>
         </div>
-        <div className={styles.featureText}>
-          <div className={styles.featureNumber}>02</div>
-          <h2 className={styles.featureTitle}>Post-Quantum Encryption</h2>
+        <div className={styles.featureContent}>
+          <div className={styles.featureLabel}>04 — PRIVACY</div>
+          <h2 className={styles.featureTitle}>We know nothing about your files</h2>
           <p className={styles.featureDescription}>
-            ML-KEM-768 key exchange with AES-256-GCM symmetric encryption. Resistant to both classical and quantum computing attacks.
+            True peer-to-peer architecture means your files never touch our servers. We can&apos;t see what you send,
+            to whom, or when. Privacy by design, not by promise.
           </p>
-          <Link href="/security" className={styles.featureLink}>
-            Learn more →
-          </Link>
         </div>
       </section>
 
-      {/* Feature 03 - Cross-Platform (text left, visual right) */}
-      <section className={styles.featureBlock}>
-        <div className={styles.featureText}>
-          <div className={styles.featureNumber}>03</div>
-          <h2 className={styles.featureTitle}>Cross-Platform</h2>
+      {/* Feature 05 - No File Limits */}
+      <section className={styles.feature}>
+        <div className={styles.featureContent}>
+          <div className={styles.featureLabel}>05 — FREEDOM</div>
+          <h2 className={styles.featureTitle}>Send anything, any size</h2>
           <p className={styles.featureDescription}>
-            Works on any device with a modern browser. No downloads, no installs, no app store. Just open and transfer.
+            No file size restrictions. No file type restrictions. No bandwidth throttling.
+            Transfer a 1KB text file or a 100GB video project at the same priority.
           </p>
-          <Link href="/docs" className={styles.featureLink}>
-            Learn more →
-          </Link>
         </div>
         <div className={styles.featureVisual}>
-          <div className={styles.glassCard}>
-            <div className={styles.deviceGrid}>
-              <div className={styles.deviceItem}>
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <rect x="2" y="3" width="20" height="14" rx="2" />
-                  <line x1="8" y1="21" x2="16" y2="21" />
-                  <line x1="12" y1="17" x2="12" y2="21" />
-                </svg>
-              </div>
-              <div className={styles.deviceItem}>
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <rect x="5" y="2" width="14" height="20" rx="2" />
-                  <line x1="12" y1="18" x2="12.01" y2="18" />
-                </svg>
-              </div>
-              <div className={styles.deviceItem}>
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <rect x="4" y="2" width="16" height="20" rx="2" />
-                  <line x1="12" y1="18" x2="12.01" y2="18" />
-                </svg>
-              </div>
-            </div>
-            <div className={styles.cardLabel}>Browser-Based</div>
-          </div>
-        </div>
-      </section>
-
-      {/* Feature 04 - Zero Knowledge (visual left, text right) */}
-      <section className={`${styles.featureBlock} ${styles.featureBlockReverse}`}>
-        <div className={styles.featureVisual}>
-          <div className={styles.glassCard}>
-            <h3 className={styles.cardTitle}>Zero Knowledge Architecture</h3>
-            <div className={styles.checkList}>
-              <div className={styles.checkItem}>
-                <span className={styles.checkmark}>✓</span>
-                <span>No File Access</span>
-              </div>
-              <div className={styles.checkItem}>
-                <span className={styles.checkmark}>✓</span>
-                <span>No Metadata Logs</span>
-              </div>
-              <div className={styles.checkItem}>
-                <span className={styles.checkmark}>✓</span>
-                <span>No User Tracking</span>
-              </div>
-              <div className={styles.checkItem}>
-                <span className={styles.checkmark}>✓</span>
-                <span>No Analytics</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className={styles.featureText}>
-          <div className={styles.featureNumber}>04</div>
-          <h2 className={styles.featureTitle}>Zero Knowledge</h2>
-          <p className={styles.featureDescription}>
-            We can't see your files. We can't see your metadata. We don't log transfers. We don't track users. Privacy by architecture.
-          </p>
-          <Link href="/privacy" className={styles.featureLink}>
-            Learn more →
-          </Link>
-        </div>
-      </section>
-
-      {/* Feature 05 - No Limits (text left, visual right) */}
-      <section className={styles.featureBlock}>
-        <div className={styles.featureText}>
-          <div className={styles.featureNumber}>05</div>
-          <h2 className={styles.featureTitle}>No Limits</h2>
-          <p className={styles.featureDescription}>
-            Any file type, any file size. No artificial restrictions, no premium tiers, no upgrade nags. Transfer freely.
-          </p>
-          <Link href="/pricing" className={styles.featureLink}>
-            Learn more →
-          </Link>
-        </div>
-        <div className={styles.featureVisual}>
-          <div className={styles.glassCard}>
-            <div className={styles.fileTypes}>
-              <div className={styles.fileType}>.pdf</div>
-              <div className={styles.fileType}>.zip</div>
-              <div className={styles.fileType}>.mov</div>
-              <div className={styles.fileType}>.psd</div>
-            </div>
+          <div className={styles.infinityCard}>
             <div className={styles.infinitySymbol}>∞</div>
+            <div className={styles.infinityLabel}>file size</div>
           </div>
         </div>
       </section>
 
-      {/* Feature 06 - Open Source (visual left, text right) */}
-      <section className={`${styles.featureBlock} ${styles.featureBlockReverse}`}>
+      {/* Feature 06 - Anonymous Discovery */}
+      <section className={`${styles.feature} ${styles.featureReverse}`}>
         <div className={styles.featureVisual}>
-          <div className={styles.glassCard}>
-            <div className={styles.codeSnippet}>
-              <div className={styles.codeLine}>
-                <span className={styles.codeKeyword}>const</span> <span className={styles.codeVariable}>transfer</span> = <span className={styles.codeBracket}>{'{'}</span>
+          <div className={styles.deviceCard}>
+            <div className={styles.deviceName}>Silent Falcon</div>
+            <div className={styles.deviceName}>Crystal Echo</div>
+            <div className={styles.deviceName}>Amber Wolf</div>
+            <div className={styles.deviceName}>Midnight Raven</div>
+            <div className={styles.deviceSubtext}>Device names rotate automatically</div>
+          </div>
+        </div>
+        <div className={styles.featureContent}>
+          <div className={styles.featureLabel}>06 — DISCOVERY</div>
+          <h2 className={styles.featureTitle}>Two-word device names that rotate</h2>
+          <p className={styles.featureDescription}>
+            No device names, no usernames, no identifying information broadcast on the network.
+            Randomly generated two-word names that change automatically. Privacy by design.
+          </p>
+        </div>
+      </section>
+
+      {/* Feature 07 - Internet P2P */}
+      <section className={styles.feature}>
+        <div className={styles.featureContent}>
+          <div className={styles.featureLabel}>07 — CONNECTIVITY</div>
+          <h2 className={styles.featureTitle}>Send to anyone, anywhere</h2>
+          <p className={styles.featureDescription}>
+            Room codes, QR codes, shareable links, and email invites. Transfer files across the globe
+            with direct P2P connections. No same-network requirement.
+          </p>
+        </div>
+        <div className={styles.featureVisual}>
+          <div className={styles.connectCard}>
+            <div className={styles.roomCode}>847-293</div>
+            <div className={styles.qrPlaceholder}>
+              <div className={styles.qrBox}></div>
+            </div>
+            <div className={styles.shareLink}>tallow.app/r/847293</div>
+          </div>
+        </div>
+      </section>
+
+      {/* Feature 08 - Friends System */}
+      <section className={`${styles.feature} ${styles.featureReverse}`}>
+        <div className={styles.featureVisual}>
+          <div className={styles.friendsCard}>
+            <div className={styles.friendItem}>
+              <div className={styles.friendStatus} data-status="online"></div>
+              <div className={styles.friendId}>tallow#a8f3</div>
+            </div>
+            <div className={styles.friendItem}>
+              <div className={styles.friendStatus} data-status="online"></div>
+              <div className={styles.friendId}>tallow#7k2m</div>
+            </div>
+            <div className={styles.friendItem}>
+              <div className={styles.friendStatus} data-status="offline"></div>
+              <div className={styles.friendId}>tallow#p4n9</div>
+            </div>
+            <div className={styles.friendItem}>
+              <div className={styles.friendStatus} data-status="online"></div>
+              <div className={styles.friendId}>tallow#x1v8</div>
+            </div>
+          </div>
+        </div>
+        <div className={styles.featureContent}>
+          <div className={styles.featureLabel}>08 — COMMUNITY</div>
+          <h2 className={styles.featureTitle}>Saved contacts, instant send</h2>
+          <p className={styles.featureDescription}>
+            Add friends with Tallow IDs or QR codes. See when they&apos;re online.
+            Send files with one tap—no codes, no setup, no friction.
+          </p>
+        </div>
+      </section>
+
+      {/* Feature 09 - Open Source */}
+      <section className={styles.feature}>
+        <div className={styles.featureContent}>
+          <div className={styles.featureLabel}>09 — TRANSPARENCY</div>
+          <h2 className={styles.featureTitle}>Every line of code is auditable</h2>
+          <p className={styles.featureDescription}>
+            MIT licensed and completely open source. Review the cryptography, verify the security claims,
+            contribute improvements. No black boxes, no proprietary protocols.
+          </p>
+        </div>
+        <div className={styles.featureVisual}>
+          <div className={styles.ossCard}>
+            <div className={styles.ossLabel}>License</div>
+            <div className={styles.ossValue}>MIT</div>
+            <div className={styles.ossStats}>
+              <div className={styles.ossStat}>
+                <span className={styles.ossStatValue}>50+</span>
+                <span className={styles.ossStatLabel}>Contributors</span>
               </div>
-              <div className={styles.codeLine}>
-                <span className={styles.codeProperty}>  encrypted:</span> <span className={styles.codeBoolean}>true</span>,
-              </div>
-              <div className={styles.codeLine}>
-                <span className={styles.codeProperty}>  p2p:</span> <span className={styles.codeBoolean}>true</span>,
-              </div>
-              <div className={styles.codeLine}>
-                <span className={styles.codeProperty}>  quantum:</span> <span className={styles.codeString}>'safe'</span>
-              </div>
-              <div className={styles.codeLine}>
-                <span className={styles.codeBracket}>{'}'}</span>
+              <div className={styles.ossStat}>
+                <span className={styles.ossStatValue}>2.5k</span>
+                <span className={styles.ossStatLabel}>Stars</span>
               </div>
             </div>
-            <div className={styles.licenseBadge}>MIT License</div>
           </div>
-        </div>
-        <div className={styles.featureText}>
-          <div className={styles.featureNumber}>06</div>
-          <h2 className={styles.featureTitle}>Open Source</h2>
-          <p className={styles.featureDescription}>
-            Every line of code is public and auditable. Trust through transparency, not promises.
-          </p>
-          <a
-            href="https://github.com/yourusername/tallow"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.featureLink}
-          >
-            Learn more →
-          </a>
         </div>
       </section>
 
-      {/* CTA */}
+      {/* Bottom CTA */}
       <section className={styles.cta}>
         <h2 className={styles.ctaTitle}>Ready to transfer?</h2>
-        <p className={styles.ctaSubtitle}>No signup. No download. Just open and send.</p>
         <Link href="/transfer" className={styles.ctaButton}>
-          Open Tallow →
+          Open Tallow
         </Link>
       </section>
     </main>
