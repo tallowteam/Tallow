@@ -31,9 +31,25 @@
   --error: #ef4444;
   --warning: #f59e0b;
 
-  /* Spacing */
+  /* Spacing - Fluid */
   --container-max: 1400px;
-  --container-padding: 40px;
+  --container-padding: clamp(1rem, 3vw, 2.5rem);
+  --section-spacing: clamp(3rem, 8vw, 7rem);
+  --content-spacing: clamp(1.5rem, 4vw, 3rem);
+  --gap-sm: clamp(0.5rem, 1.5vw, 1rem);
+  --gap-md: clamp(1rem, 2.5vw, 2rem);
+  --gap-lg: clamp(1.5rem, 4vw, 3rem);
+
+  /* Fluid Typography */
+  --font-size-xs: clamp(0.7rem, 0.8vw + 0.5rem, 0.875rem);
+  --font-size-sm: clamp(0.875rem, 1vw + 0.6rem, 1rem);
+  --font-size-base: clamp(1rem, 1.2vw + 0.7rem, 1.125rem);
+  --font-size-lg: clamp(1.125rem, 1.5vw + 0.8rem, 1.25rem);
+  --font-size-xl: clamp(1.25rem, 2vw + 0.9rem, 1.5rem);
+  --font-size-2xl: clamp(1.5rem, 2.5vw + 1rem, 2rem);
+  --font-size-3xl: clamp(2rem, 3.5vw + 1.2rem, 3rem);
+  --font-size-4xl: clamp(2.5rem, 5vw + 1.5rem, 4rem);
+  --font-size-5xl: clamp(3rem, 7vw + 2rem, 5.5rem);
 
   /* Radius */
   --radius-sm: 6px;
@@ -45,7 +61,10 @@
 
   /* Transitions */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --duration: 0.3s;
+  --duration-fast: 0.15s;
+  --duration-slow: 0.5s;
 
   /* Z-index layers */
   --z-base: 1;
@@ -77,12 +96,26 @@ html {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+@media (max-width: 1024px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
 }
 
 body {
   font-family: var(--font-body);
   background: var(--bg);
   color: var(--text);
+  font-size: var(--font-size-base);
   line-height: 1.6;
   overflow-x: hidden;
   position: relative;
