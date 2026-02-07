@@ -39,12 +39,12 @@
 
 /* Item text */
 .itemText {
-  font-size: 0.75rem;
+  font-size: clamp(0.65rem, 1.5vw, 0.75rem);
   text-transform: uppercase;
   letter-spacing: 0.15em;
   color: var(--text-3);
   font-weight: 500;
-  padding: 0 2rem;
+  padding: 0 clamp(1rem, 3vw, 2rem);
 }
 
 /* Divider with accent dot */
@@ -74,15 +74,23 @@
 }
 
 /* Responsive adjustments */
+@media (max-width: 1024px) {
+  .marqueeSection {
+    padding: 18px 0;
+  }
+
+  .marqueeContent {
+    animation-duration: 28s;
+  }
+}
+
 @media (max-width: 768px) {
   .marqueeSection {
     padding: 16px 0;
   }
 
   .itemText {
-    font-size: 0.7rem;
     letter-spacing: 0.12em;
-    padding: 0 1.5rem;
   }
 
   .divider {
@@ -99,11 +107,6 @@
     padding: 14px 0;
   }
 
-  .itemText {
-    font-size: 0.65rem;
-    padding: 0 1rem;
-  }
-
   .divider {
     padding: 0 0.5rem;
   }
@@ -115,5 +118,19 @@
 
   .marqueeContent {
     animation-duration: 20s;
+  }
+}
+
+@media (max-width: 320px) {
+  .marqueeSection {
+    padding: 12px 0;
+  }
+
+  .itemText {
+    letter-spacing: 0.1em;
+  }
+
+  .marqueeContent {
+    animation-duration: 18s;
   }
 }

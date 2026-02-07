@@ -178,13 +178,56 @@
   transform: scale(0.95);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .card {
     padding: 20px;
   }
 
+  .title {
+    font-size: 0.95rem;
+  }
+
   .transferItem {
     padding: 14px;
+    gap: 10px;
+  }
+
+  .fileName {
+    font-size: 0.85rem;
+  }
+
+  .fileSize {
+    font-size: 0.75rem;
+  }
+
+  .progressLabel {
+    font-size: 0.7rem;
+    min-width: 32px;
+  }
+
+  .speedInfo {
+    font-size: 0.7rem;
+  }
+
+  .encryption {
+    font-size: 0.65rem;
+  }
+
+  .actionBtn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+  }
+}
+
+@media (max-width: 640px) {
+  .card {
+    padding: 16px;
+  }
+
+  .transferItem {
+    padding: 12px;
   }
 
   .actions {
@@ -202,6 +245,68 @@
   .details {
     flex-direction: column;
     align-items: flex-start;
+    gap: 6px;
+  }
+
+  .speedInfo {
+    word-break: break-word;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 14px;
+  }
+
+  .header {
+    margin-bottom: 16px;
+  }
+
+  .title {
+    font-size: 0.9rem;
+  }
+
+  .list {
+    gap: 16px;
+  }
+
+  .transferItem {
+    padding: 10px;
     gap: 8px;
+  }
+
+  .fileName {
+    font-size: 0.8rem;
+  }
+
+  .fileSize,
+  .speedInfo {
+    font-size: 0.7rem;
+  }
+
+  .progressTrack {
+    height: 3px;
+  }
+
+  .actionBtn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+  }
+
+  .actionBtn svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+@media (max-width: 360px) {
+  .transferItem {
+    padding: 8px;
+  }
+
+  .speedInfo {
+    font-size: 0.65rem;
   }
 }

@@ -126,6 +126,10 @@
     padding: 20px;
   }
 
+  .title {
+    font-size: 0.95rem;
+  }
+
   .historyItem {
     gap: 12px;
     padding: 12px 10px;
@@ -141,12 +145,25 @@
     height: 14px;
   }
 
+  .fileName {
+    font-size: 0.8rem;
+  }
+
+  .fileSize {
+    font-size: 0.75rem;
+  }
+
   .details {
     font-size: 0.7rem;
   }
+
+  .status svg {
+    width: 14px;
+    height: 14px;
+  }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   .fileInfo {
     flex-direction: column;
     align-items: flex-start;
@@ -154,12 +171,76 @@
   }
 
   .details {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 16px;
+  }
+
+  .header {
+    margin-bottom: 16px;
+  }
+
+  .title {
+    font-size: 0.9rem;
+  }
+
+  .list {
+    gap: 1px;
+  }
+
+  .historyItem {
+    gap: 10px;
+    padding: 10px 8px;
+  }
+
+  .directionIcon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .directionIcon svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .fileName {
+    font-size: 0.75rem;
+  }
+
+  .fileSize {
+    font-size: 0.7rem;
+  }
+
+  .details {
     flex-direction: column;
     align-items: flex-start;
     gap: 2px;
+    font-size: 0.65rem;
   }
 
   .separator {
     display: none;
+  }
+
+  .status svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+@media (max-width: 360px) {
+  .historyItem {
+    padding: 8px 6px;
+    gap: 8px;
+  }
+
+  .directionIcon {
+    width: 20px;
+    height: 20px;
   }
 }

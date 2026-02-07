@@ -178,25 +178,137 @@
   transform: scale(0.98);
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   .overlay {
-    padding: 16px;
+    padding: 20px;
   }
 
   .modal {
-    padding: 24px;
+    max-width: 100%;
+    padding: 28px;
+  }
+
+  .iconContainer {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+  }
+
+  .icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .title {
+    font-size: 1.05rem;
+    margin-bottom: 20px;
+  }
+
+  .fileCard {
+    margin-bottom: 14px;
+  }
+
+  .security {
+    margin-bottom: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .overlay {
+    padding: 16px;
+    align-items: flex-end; /* Modal slides up from bottom on small screens */
+  }
+
+  .modal {
+    padding: 24px 20px;
+    border-radius: 16px 16px 0 0; /* Only round top corners */
+  }
+
+  .iconContainer {
+    width: 56px;
+    height: 56px;
+  }
+
+  .icon {
+    width: 28px;
+    height: 28px;
   }
 
   .title {
     font-size: 1rem;
+    margin-bottom: 16px;
+  }
+
+  .fileCard {
+    padding: 10px;
+  }
+
+  .fileIcon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .fileIcon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .fileName {
+    font-size: 0.85rem;
+  }
+
+  .fileSize {
+    font-size: 0.75rem;
+  }
+
+  .security {
+    font-size: 0.7rem;
+    padding: 5px 10px;
+    margin-bottom: 16px;
   }
 
   .actions {
     flex-direction: column;
+    gap: 10px;
   }
 
   .declineBtn,
   .acceptBtn {
     width: 100%;
+    min-height: 44px; /* Touch-friendly */
+    padding: 12px 24px;
+  }
+}
+
+@media (max-width: 360px) {
+  .modal {
+    padding: 20px 16px;
+  }
+
+  .title {
+    font-size: 0.95rem;
+  }
+
+  .fileCard {
+    gap: 10px;
+  }
+
+  .fileIcon {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* Animation adjustments for mobile */
+@media (max-width: 480px) {
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }

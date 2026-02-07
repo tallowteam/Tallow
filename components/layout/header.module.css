@@ -314,12 +314,39 @@
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+
+/* Tablet and below */
+@media (max-width: 1023px) {
+  .nav {
+    gap: 1.25rem;
+  }
+
+  .navList {
+    gap: 1rem;
+  }
+
+  .navLink {
+    font-size: 0.7rem;
+  }
+
+  .cta {
+    padding: 8px 16px;
+    font-size: 0.7rem;
+  }
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+  .header {
+    height: 56px;
+  }
+
   .container {
-    padding: 0 20px;
+    padding: 0 1rem;
   }
 
   .tagline,
+  .divider,
   .nav {
     display: none;
   }
@@ -328,26 +355,79 @@
     display: flex;
   }
 
-  .divider {
-    display: none;
+  .left {
+    gap: 0.5rem;
+  }
+
+  /* Prevent body scroll when menu is open */
+  body:has(.mobileMenu) {
+    overflow: hidden;
   }
 }
 
+/* Small mobile */
 @media (max-width: 480px) {
   .logo {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
   }
 
   .mobileMenuContent {
-    padding: 24px 20px;
+    padding: 1.5rem 1rem;
+  }
+
+  .mobileNavLink {
+    font-size: 1.1rem;
+    padding: 0.6rem 0;
+  }
+
+  .mobileCta {
+    font-size: 0.95rem;
+    padding: 12px 24px;
+    margin-top: 1.25rem;
+  }
+}
+
+/* Extra small mobile */
+@media (max-width: 360px) {
+  .logo {
+    font-size: 1rem;
   }
 
   .mobileNavLink {
     font-size: 1rem;
   }
+}
 
+/* Large desktop */
+@media (min-width: 1400px) {
+  .nav {
+    gap: 2.5rem;
+  }
+
+  .navList {
+    gap: 2.25rem;
+  }
+}
+
+/* Ultra-wide */
+@media (min-width: 1920px) {
+  .container {
+    padding: 0 3rem;
+  }
+}
+
+/* Prevent layout shift */
+@media (prefers-reduced-motion: reduce) {
+  .mobileMenu,
+  .mobileNavList li {
+    animation: none !important;
+  }
+
+  .hamburgerLine,
+  .navLink,
+  .cta,
+  .mobileNavLink,
   .mobileCta {
-    font-size: 0.9rem;
-    padding: 12px 24px;
+    transition: none !important;
   }
 }

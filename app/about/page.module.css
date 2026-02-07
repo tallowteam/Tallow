@@ -12,7 +12,7 @@
    ============================================ */
 
 .hero {
-  padding: 200px 24px 160px;
+  padding: clamp(120px, 18vw, 200px) clamp(16px, 4vw, 24px) clamp(100px, 15vw, 160px);
   text-align: center;
   border-bottom: 1px solid var(--border);
   animation: revealUp 1s var(--ease) both;
@@ -27,18 +27,18 @@
 
 .label {
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: clamp(0.65rem, 1vw + 0.4rem, 0.8rem);
   font-weight: 600;
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--accent-2);
-  margin-bottom: 48px;
+  margin-bottom: clamp(32px, 5vw, 48px);
   display: block;
 }
 
 .heroTitle {
   font-family: var(--font-display);
-  font-size: 6rem;
+  font-size: clamp(2.5rem, 7vw + 1rem, 6rem);
   font-weight: 400;
   font-style: italic;
   line-height: 1.1;
@@ -52,7 +52,7 @@
    ============================================ */
 
 .manifesto {
-  padding: 160px 24px;
+  padding: clamp(100px, 15vw, 160px) clamp(16px, 4vw, 24px);
   border-bottom: 1px solid var(--border);
 }
 
@@ -61,12 +61,12 @@
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: clamp(28px, 4vw, 40px);
 }
 
 .manifestoParagraph {
   font-family: var(--font-body);
-  font-size: 1.2rem;
+  font-size: clamp(1rem, 1.5vw + 0.7rem, 1.25rem);
   line-height: 1.8;
   color: var(--text);
   margin: 0;
@@ -77,7 +77,7 @@
 }
 
 .manifestoParagraph:first-child {
-  font-size: 1.375rem;
+  font-size: clamp(1.125rem, 2vw + 0.75rem, 1.5rem);
   color: var(--text);
 }
 
@@ -86,7 +86,7 @@
    ============================================ */
 
 .values {
-  padding: 140px 24px;
+  padding: clamp(80px, 13vw, 140px) clamp(16px, 4vw, 24px);
   border-bottom: 1px solid var(--border);
 }
 
@@ -94,8 +94,20 @@
   max-width: 1200px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
+  grid-template-columns: 1fr;
+  gap: clamp(20px, 3vw, 32px);
+}
+
+@media (min-width: 768px) {
+  .valuesGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .valuesGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .valueCard {
@@ -103,7 +115,7 @@
   backdrop-filter: blur(20px);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
-  padding: 48px 40px;
+  padding: clamp(32px, 5vw, 48px) clamp(28px, 4vw, 40px);
   text-align: center;
   transition: border-color 0.3s var(--ease);
   animation: revealScale 0.8s var(--ease) both;
@@ -129,17 +141,17 @@
 
 .valueTitle {
   font-family: var(--font-display);
-  font-size: 1.75rem;
+  font-size: clamp(1.375rem, 2.5vw + 0.5rem, 1.75rem);
   font-weight: 400;
   line-height: 1.3;
   letter-spacing: -0.01em;
   color: var(--text);
-  margin: 0 0 16px;
+  margin: 0 0 clamp(12px, 2vw, 16px);
 }
 
 .valueDescription {
   font-family: var(--font-body);
-  font-size: 1.0625rem;
+  font-size: clamp(0.95rem, 1.3vw + 0.7rem, 1.125rem);
   line-height: 1.6;
   color: var(--text-2);
   margin: 0;
