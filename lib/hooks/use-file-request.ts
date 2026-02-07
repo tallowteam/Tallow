@@ -142,11 +142,11 @@ export function useFileRequest({
           id: message.id,
           from: message.from,
           fromName: message.fromName,
-          fileName: message.fileName,
-          fileType: message.fileType,
-          message: message.message,
+          ...(message.fileName != null && { fileName: message.fileName }),
+          ...(message.fileType != null && { fileType: message.fileType }),
+          ...(message.message != null && { message: message.message }),
           timestamp: message.timestamp,
-          status: 'pending',
+          status: 'pending' as const,
         };
 
         setPendingRequests(prev => [...prev, request]);
