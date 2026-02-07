@@ -76,7 +76,9 @@
     "tallow-relay",
     "tallow-wasm",
     "tallow-mobile",
-    "extension"
+    "extension",
+    "lib/i18n",
+    "tests"
   ],
   "ts-node": {
     "compilerOptions": {
