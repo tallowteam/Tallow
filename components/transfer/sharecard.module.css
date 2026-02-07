@@ -1,0 +1,242 @@
+.container {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.label {
+  font-size: 1rem;
+  color: var(--text);
+  font-weight: 600;
+  margin: 0 0 24px 0;
+}
+
+.codeSection {
+  margin-bottom: 32px;
+  width: 100%;
+}
+
+.codeDisplay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.code {
+  font-size: 2.5rem;
+  font-family: var(--font-mono);
+  letter-spacing: 0.2em;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.copyButton {
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  color: var(--text-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+  border-radius: 6px;
+}
+
+.copyButton:hover {
+  color: var(--accent);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.copyButton svg {
+  width: 18px;
+  height: 18px;
+}
+
+.codeHint {
+  font-size: 0.8rem;
+  color: var(--text-3);
+  margin: 0;
+}
+
+.qrSection {
+  margin-bottom: 24px;
+}
+
+.qrPlaceholder {
+  width: 160px;
+  height: 160px;
+  background: white;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.qrPattern {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.qrCorner {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border: 3px solid #000;
+  border-radius: 4px;
+}
+
+.qrCorner::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  background: #000;
+  border-radius: 2px;
+}
+
+.qrDots {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  gap: 2px;
+}
+
+.qrDot {
+  width: 100%;
+  height: 100%;
+  background: #000;
+  border-radius: 1px;
+  opacity: 0.9;
+}
+
+.qrDot:nth-child(3n) {
+  opacity: 0;
+}
+
+.qrDot:nth-child(5n) {
+  opacity: 0;
+}
+
+.qrLabel {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  font-size: 0.65rem;
+  color: rgba(0, 0, 0, 0.3);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.shareOptions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.shareButton {
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: var(--text-2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.shareButton:hover {
+  border-color: var(--accent);
+  background: rgba(99, 102, 241, 0.08);
+  color: var(--text);
+}
+
+.shareButton svg {
+  width: 16px;
+  height: 16px;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.2);
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.6);
+  }
+}
+
+.statusText {
+  font-size: 0.8rem;
+  color: var(--text-3);
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 24px;
+  }
+
+  .code {
+    font-size: 2rem;
+  }
+
+  .qrPlaceholder {
+    width: 140px;
+    height: 140px;
+  }
+
+  .shareOptions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .shareButton {
+    width: 100%;
+    justify-content: center;
+  }
+}
