@@ -1,6 +1,9 @@
 .section {
   padding: 120px 0;
   width: 100%;
+  animation: revealUp 1s var(--ease) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 35%;
 }
 
 .container {

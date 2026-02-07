@@ -198,3 +198,105 @@ code, pre, kbd {
     --container-padding: 16px;
   }
 }
+
+/* ============================================
+   Scroll Reveal Animations
+   ============================================ */
+
+@keyframes revealUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes revealScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes revealLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes revealRight {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Scroll-driven animation base */
+.reveal {
+  animation: revealUp 1s var(--ease) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
+}
+
+.reveal-scale {
+  animation: revealScale 1s var(--ease) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
+}
+
+.reveal-left {
+  animation: revealLeft 1s var(--ease) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
+}
+
+.reveal-right {
+  animation: revealRight 1s var(--ease) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
+}
+
+/* Stagger delays for children */
+.reveal-delay-1 { animation-delay: 0.1s; }
+.reveal-delay-2 { animation-delay: 0.2s; }
+.reveal-delay-3 { animation-delay: 0.3s; }
+.reveal-delay-4 { animation-delay: 0.4s; }
+
+/* Fallback for browsers without animation-timeline */
+@supports not (animation-timeline: view()) {
+  .reveal,
+  .reveal-scale,
+  .reveal-left,
+  .reveal-right {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal-scale,
+  .reveal-left,
+  .reveal-right {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
