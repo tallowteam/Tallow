@@ -24,7 +24,7 @@ export function SecurityVisual() {
 
   return (
     <div className={styles.securityContainer}>
-      {specs.map((spec, index) => (
+      {specs.map((spec) => (
         <div key={spec.tech} className={styles.specRow}>
           <div className={styles.specTech}>{spec.tech}</div>
           <div className={styles.specArrow}>→</div>
