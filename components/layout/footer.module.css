@@ -7,7 +7,9 @@
 .container {
   max-width: var(--container-max, 1400px);
   margin: 0 auto;
-  padding: 0 var(--container-padding);
+  padding: 0 max(var(--safe-area-left), var(--container-padding));
+  padding-right: max(var(--safe-area-right), var(--container-padding));
+  padding-bottom: max(var(--safe-area-bottom), 0);
 }
 
 .grid {
