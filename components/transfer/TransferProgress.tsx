@@ -1,175 +1,140 @@
 'use client';
 
-import { useMemo, useState, useEffect, useRef } from 'react';
-import { useTransferStore } from '@/lib/stores/transfer-store';
-import { useDeviceStore } from '@/lib/stores/device-store';
-import { TransferRateGraph } from './TransferRateGraph';
-import { TransferCelebration } from './TransferCelebration';
-import styles from './TransferProgress.module.css';
+import React, { useState } from 'react';
+import styles from './transferprogress.module.css';
+
+interface Transfer {
+  id: string;
+  fileName: string;
+  fileSize: string;
+  progress: number;
+  speed: string;
+  deviceName: string;
+  timeRemaining: string;
+}
+
+const mockTransfers: Transfer[] = [
+  {
+    id: '1',
+    fileName: 'presentation.pdf',
+    fileSize: '24.8 MB',
+    progress: 67,
+    speed: '12.4 MB/s',
+    deviceName: 'Silent Falcon',
+    timeRemaining: '~1 min remaining'
+  },
+  {
+    id: '2',
+    fileName: 'vacation-photos.zip',
+    fileSize: '156.2 MB',
+    progress: 23,
+    speed: '8.7 MB/s',
+    deviceName: 'Amber Wolf',
+    timeRemaining: '~12 min remaining'
+  }
+];
 
 export function TransferProgress() {
-  const { currentTransfer, progress, transfers } = useTransferStore();
-  const { connection } = useDeviceStore();
+  const [transfers, setTransfers] = useState<Transfer[]>(mockTransfers);
 
-  // Track speed history (last 30 samples, one per second)
-  const [speedHistory, setSpeedHistory] = useState<number[]>([]);
-  const lastUpdateRef = useRef<number>(Date.now());
-  const [currentSpeed, setCurrentSpeed] = useState<number>(0);
-
-  // Celebration state
-  const [showCelebration, setShowCelebration] = useState(false);
-  const [celebrationFileName, setCelebrationFileName] = useState('');
-  const hasShownCelebrationRef = useRef(false);
-
-  const progressValue = useMemo(() => {
-    return currentTransfer.isTransferring
-      ? progress.uploadProgress
-      : progress.downloadProgress;
-  }, [currentTransfer.isTransferring, progress.uploadProgress, progress.downloadProgress]);
-
-  const transferredBytes = useMemo(() => {
-    return (currentTransfer.fileSize * progressValue) / 100;
-  }, [currentTransfer.fileSize, progressValue]);
-
-  // Detect when transfer completes
-  useEffect(() => {
-    if (progressValue >= 100 && (currentTransfer.isTransferring || currentTransfer.isReceiving)) {
-      if (!hasShownCelebrationRef.current) {
-        setCelebrationFileName(currentTransfer.fileName || 'File');
-        setShowCelebration(true);
-        hasShownCelebrationRef.current = true;
-      }
-    } else if (progressValue < 100) {
-      // Reset the flag when a new transfer starts
-      hasShownCelebrationRef.current = false;
-    }
-  }, [progressValue, currentTransfer.isTransferring, currentTransfer.isReceiving, currentTransfer.fileName]);
-
-  // Update speed history every second
-  useEffect(() => {
-    if (!currentTransfer.isTransferring && !currentTransfer.isReceiving) {
-      // Reset speed history when not transferring
-      setSpeedHistory([]);
-      setCurrentSpeed(0);
-      return;
-    }
-
-    // Get current transfer speed from active transfers
-    const activeTransfer = transfers.find(
-      (t) => t.status === 'transferring' || t.status === 'connecting'
-    );
-    const speed = activeTransfer?.speed || 0;
-    setCurrentSpeed(speed);
-
-    // Update speed history at 1-second intervals
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const elapsed = now - lastUpdateRef.current;
-
-      if (elapsed >= 1000) {
-        setSpeedHistory((prev) => {
-          const updated = [...prev, speed];
-          // Keep only last 30 samples (30 seconds)
-          return updated.slice(-30);
-        });
-        lastUpdateRef.current = now;
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [currentTransfer.isTransferring, currentTransfer.isReceiving, transfers]);
-
-  if (!currentTransfer.isTransferring && !currentTransfer.isReceiving) {
-    return null;
-  }
-
-  const formatSize = (bytes: number): string => {
-    if (bytes === 0) {return '0 B';}
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
+  const handlePause = (id: string) => {
+    console.log('Pause transfer:', id);
   };
 
-  const connectionTypeLabel = connection.connectionType === 'p2p' ? 'Direct' : 'Relay';
-
-  const handleCelebrationDismiss = () => {
-    setShowCelebration(false);
+  const handleCancel = (id: string) => {
+    setTransfers(prev => prev.filter(t => t.id !== id));
   };
 
   return (
-    <>
-      <div className={styles.container}>
-        <div className={styles.info}>
-          <div className={styles.fileInfo}>
-            <span className={styles.direction}>
-              {currentTransfer.isTransferring ? (
-                <UploadIcon />
-              ) : (
-                <DownloadIcon />
-              )}
-            </span>
-            <span className={styles.fileName}>
-              {currentTransfer.fileName || 'Unknown file'}
-            </span>
-            <span className={styles.fileSize}>
-              {formatSize(transferredBytes)} / {formatSize(currentTransfer.fileSize)}
-            </span>
-            {connection.peerName && (
-              <span className={styles.peerName}>
-                to {connection.peerName}
-              </span>
-            )}
-            <span className={styles.connectionBadge}>
-              {connectionTypeLabel}
-            </span>
-          </div>
-          <span className={styles.percentage}>{Math.round(progressValue)}%</span>
-        </div>
-        <div className={styles.progressBar}>
-          <div
-            className={styles.progressFill}
-            style={{ width: `${progressValue}%` }}
-            role="progressbar"
-            aria-valuenow={Math.round(progressValue)}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label={`Transfer progress: ${Math.round(progressValue)}%`}
-          />
-        </div>
-
-        {/* Transfer Rate Graph */}
-        {speedHistory.length > 0 && (
-          <TransferRateGraph speeds={speedHistory} currentSpeed={currentSpeed} />
+    <div className={styles.card}>
+      <div className={styles.header}>
+        <h2 className={styles.title}>Active Transfers</h2>
+        {transfers.length > 0 && (
+          <span className={styles.count}>{transfers.length}</span>
         )}
       </div>
 
-      <TransferCelebration
-        show={showCelebration}
-        fileName={celebrationFileName}
-        onDismiss={handleCelebrationDismiss}
-      />
-    </>
-  );
-}
+      {transfers.length === 0 ? (
+        <div className={styles.empty}>No active transfers</div>
+      ) : (
+        <div className={styles.list}>
+          {transfers.map((transfer) => (
+            <div key={transfer.id} className={styles.transferItem}>
+              <div className={styles.fileInfo}>
+                <div className={styles.fileName}>{transfer.fileName}</div>
+                <div className={styles.fileSize}>{transfer.fileSize}</div>
+              </div>
 
-// Icons
-function UploadIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="17 8 12 3 7 8" />
-      <line x1="12" y1="3" x2="12" y2="15" />
-    </svg>
-  );
-}
+              <div className={styles.progressContainer}>
+                <div className={styles.progressTrack}>
+                  <div
+                    className={styles.progressFill}
+                    style={{ width: `${transfer.progress}%` }}
+                  />
+                </div>
+                <div className={styles.progressLabel}>{transfer.progress}%</div>
+              </div>
 
-function DownloadIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="7 10 12 15 17 10" />
-      <line x1="12" y1="15" x2="12" y2="3" />
-    </svg>
+              <div className={styles.details}>
+                <div className={styles.speedInfo}>
+                  {transfer.speed} · to {transfer.deviceName} · {transfer.timeRemaining}
+                </div>
+                <div className={styles.encryption}>
+                  <svg
+                    className={styles.lockIcon}
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M12 7V5a4 4 0 10-8 0v2H3a1 1 0 00-1 1v5a2 2 0 002 2h8a2 2 0 002-2V8a1 1 0 00-1-1h-1zm-6-2a2 2 0 114 0v2H6V5z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  <span>Encrypted</span>
+                </div>
+              </div>
+
+              <div className={styles.actions}>
+                <button
+                  className={styles.actionBtn}
+                  onClick={() => handlePause(transfer.id)}
+                  aria-label="Pause transfer"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <rect x="4" y="3" width="3" height="10" rx="1" fill="currentColor" />
+                    <rect x="9" y="3" width="3" height="10" rx="1" fill="currentColor" />
+                  </svg>
+                </button>
+                <button
+                  className={styles.actionBtn}
+                  onClick={() => handleCancel(transfer.id)}
+                  aria-label="Cancel transfer"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M12 4.7L11.3 4 8 7.3 4.7 4 4 4.7 7.3 8 4 11.3l.7.7L8 8.7l3.3 3.3.7-.7L8.7 8 12 4.7z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
