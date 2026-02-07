@@ -203,11 +203,11 @@ export function useFileRequest({
         id: requestId,
         from: currentUserId,
         fromName: currentUserName,
-        fileName,
-        fileType,
-        message,
+        ...(fileName != null && { fileName }),
+        ...(fileType != null && { fileType }),
+        ...(message != null && { message }),
         timestamp: Date.now(),
-        status: 'pending',
+        status: 'pending' as const,
       };
 
       setOutgoingRequests(prev => [...prev, outgoingRequest]);
