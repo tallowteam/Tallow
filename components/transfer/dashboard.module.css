@@ -1,0 +1,29 @@
+.dashboard {
+  margin-left: 240px;
+  padding: 24px;
+  min-height: calc(100vh - 64px);
+  background: var(--bg);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Responsive - Mobile */
+@media (max-width: 768px) {
+  .dashboard {
+    margin-left: 0;
+    padding: 16px;
+    padding-bottom: 80px; /* Space for bottom tab bar */
+    min-height: calc(100vh - 64px - 80px);
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
