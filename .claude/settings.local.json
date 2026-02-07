@@ -257,7 +257,8 @@
       "Bash(npx @anthropic-ai/mcp-playwright:*)",
       "Bash(npx -y serve:*)",
       "Bash(winget install:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(MSYS_NO_PATHCONV=1 schtasks //create //tn \"TallowAutoSync\" //tr \"powershell.exe -ExecutionPolicy Bypass -NoProfile -File C:\\\\Users\\\\aamir\\\\Documents\\\\Apps\\\\Tallow\\\\scripts\\\\git-auto-sync.ps1\" //sc minute //mo 1 //f)"
     ]
   }
 }

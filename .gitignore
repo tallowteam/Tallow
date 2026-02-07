@@ -201,3 +201,4 @@ terraform.tfstate.backup
 # .planning/
 # *.md
 nul
+scripts/auto-sync.log
