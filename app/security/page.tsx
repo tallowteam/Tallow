@@ -17,8 +17,59 @@ export const metadata: Metadata = {
 };
 
 export default function SecurityPage() {
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: 'Is Tallow really post-quantum safe?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Yes. Tallow uses ML-KEM-768 (formerly known as Kyber), which is a NIST-standardized post-quantum key encapsulation mechanism. It\'s designed to resist attacks from both classical and quantum computers. The algorithm is based on lattice cryptography, which has no known efficient quantum algorithm to break it.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'Where are files stored?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Nowhere. Tallow doesn\'t store files on any server. Files are transferred directly from sender to recipient using peer-to-peer WebRTC connections. This zero-knowledge architecture means we physically cannot access your data, even if compelled to do so.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'Can Tallow see my files?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'No. Files are encrypted on your device before any network activity begins. They travel encrypted through the peer-to-peer connection and are only decrypted on the recipient\'s device. We never have access to encryption keys or plaintext data. This is mathematically guaranteed by the architecture.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'What happens if the connection drops?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Transfers can be resumed from where they left off. Tallow maintains a secure session state that allows reconnection without restarting the entire transfer. The encryption context is preserved, so the same keys continue to protect resumed chunks.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'Is Tallow open source?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Yes. Every line of code is available on GitHub under the MIT license. The cryptographic implementation can be audited by security researchers. We believe trust must be verifiable, and closed-source security is an oxymoron. You can review the source, run your own instance, or contribute improvements.',
+        },
+      },
+    ],
+  };
+
   return (
     <main className={styles.main}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
       {/* Hero */}
       <section className={styles.hero}>
         <div className={styles.heroContainer}>
