@@ -1,12 +1,17 @@
 {
   "$schema": "https://typedoc.org/schema.json",
   "entryPoints": [
-    "./app",
-    "./components",
-    "./lib"
+    "lib/crypto/index.ts",
+    "lib/stores/index.ts",
+    "lib/hooks/index.ts",
+    "lib/transfer/index.ts",
+    "lib/network/index.ts",
+    "lib/security/index.ts",
+    "components/ui/index.ts",
+    "components/transfer/index.ts"
   ],
-  "entryPointStrategy": "expand",
-  "out": "docs/api",
+  "entryPointStrategy": "resolve",
+  "out": "docs-generated",
   "exclude": [
     "**/node_modules/**",
     "**/*.test.ts",

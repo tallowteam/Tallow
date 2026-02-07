@@ -100,6 +100,47 @@ export {
 } from './onion-routing';
 
 // ============================================================================
+// WebTransport API (HTTP/3 QUIC)
+// ============================================================================
+
+export {
+  WebTransportConnection,
+  connect,
+  isWebTransportSupported,
+  getWebTransportSupport,
+  readStream,
+  writeStream,
+  pipeStreams,
+  type WebTransportState,
+  type StreamType,
+  type WebTransportConfig,
+  type WebTransportStats,
+  type WebTransportStreamOptions,
+  type DatagramOptions,
+} from './webtransport';
+
+// ============================================================================
+// Transport Protocol Selection
+// ============================================================================
+
+export {
+  selectBestTransport,
+  detectBrowserSupport,
+  isTransportSupported,
+  getTransportCapabilities,
+  selectForFileTransfer,
+  selectForRealtime,
+  selectForChat,
+  selectForSignaling,
+  selectForPrivacy,
+  type TransportProtocol,
+  type TransportOptions,
+  type BrowserSupport,
+  type TransportCapabilities,
+  type TransportSelectionResult,
+} from './transport-selector';
+
+// ============================================================================
 // Quick Start Presets
 // ============================================================================
 

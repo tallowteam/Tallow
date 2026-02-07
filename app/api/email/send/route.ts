@@ -1,124 +1,332 @@
 /**
- * Email Transfer API - Send
+ * Email Send API Route
  * POST /api/email/send
+ *
+ * Sends share-by-email notifications with file transfer links
+ *
+ * Rate Limits:
+ * - POST: 10 requests per hour per IP (prevent spam)
+ *
+ * Security:
+ * - Input validation and sanitization
+ * - Rate limiting per IP
+ * - CSRF protection
+ * - Email format validation
+ * - Disposable email detection (warning only)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { sendEmailTransfer } from '@/lib/email/email-service';
-import { validateCSRFToken } from '@/lib/security/csrf';
+import { Resend } from 'resend';
 import { secureLog } from '@/lib/utils/secure-logger';
-import { strictRateLimiter } from '@/lib/middleware/rate-limit';
+import { createRateLimiter } from '@/lib/middleware/rate-limit';
 import { withAPIMetrics } from '@/lib/middleware/api-metrics';
-import type { EmailTransferOptions } from '@/lib/email/types';
+import { requireCSRFToken } from '@/lib/security/csrf';
+import {
+  ApiErrors,
+  successResponse,
+  handlePreflight,
+  withCORS,
+} from '@/lib/api/response';
+import {
+  validateEmailDetailed,
+  sanitizeEmailInput,
+  isDisposableEmail,
+} from '@/lib/email/email-validation';
+import { shareEmailTemplate } from '@/lib/email/email-templates';
 
-export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
+/**
+ * Rate limiter: 10 emails per hour per IP to prevent spam
+ */
+const emailRateLimiter = createRateLimiter({
+  maxRequests: 10,
+  windowMs: 60 * 60 * 1000, // 1 hour
+  message: 'Too many email requests. Please try again later.',
+});
+
+/**
+ * Initialize Resend client
+ */
+const resend = new Resend(process.env['RESEND_API_KEY'] || 'placeholder_key');
+
+/**
+ * Request body interface
+ */
+interface SendEmailRequest {
+  to: string;
+  subject?: string;
+  shareLink: string;
+  senderName: string;
+  message?: string;
+  fileName?: string;
+  fileCount?: number;
+  fileSize?: string;
+  expiresAt?: string;
+}
+
+/**
+ * Response interface
+ */
+interface SendEmailResponse {
+  success: boolean;
+  messageId?: string;
+  error?: string;
+  warning?: string;
+}
+
+/**
+ * Sanitize text input to prevent XSS
+ */
+function sanitizeText(input: string): string {
+  if (!input || typeof input !== 'string') {
+    return '';
+  }
+
+  // Remove HTML tags
+  let sanitized = input.replace(/<[^>]*>/g, '');
+
+  // Remove control characters
+  sanitized = sanitized.replace(/[\x00-\x1F\x7F]/g, '');
+
+  // Limit length
+  if (sanitized.length > 500) {
+    sanitized = sanitized.substring(0, 500);
+  }
+
+  return sanitized.trim();
+}
+
+/**
+ * OPTIONS - Handle CORS preflight
+ */
+export const OPTIONS = withAPIMetrics(async (request: NextRequest): Promise<NextResponse> => {
+  return handlePreflight(request);
+});
+
+/**
+ * POST /api/email/send - Send share email
+ */
 export const POST = withAPIMetrics(async (request: NextRequest): Promise<NextResponse> => {
   try {
-    // Rate limiting (3 requests/minute)
-    const rateLimitResponse = strictRateLimiter.check(request);
-    if (rateLimitResponse) {
-      return rateLimitResponse;
+    // CSRF Protection
+    const csrfError = requireCSRFToken(request);
+    if (csrfError) {
+      return withCORS(csrfError, request.headers.get('origin'));
     }
 
-    // CSRF protection
-    const csrfValid = validateCSRFToken(request);
-    if (!csrfValid) {
-      return NextResponse.json(
-        { error: 'Invalid CSRF token' },
-        { status: 403 }
+    // Rate limiting - 10 emails per hour per IP
+    const rateLimitError = emailRateLimiter.check(request);
+    if (rateLimitError) {
+      return withCORS(rateLimitError, request.headers.get('origin'));
+    }
+
+    // Validate content type
+    const contentType = request.headers.get('content-type');
+    if (!contentType?.includes('application/json')) {
+      return withCORS(
+        ApiErrors.badRequest('Content-Type must be application/json'),
+        request.headers.get('origin')
       );
     }
 
     // Parse request body
-    const body = await request.json();
+    let body: SendEmailRequest;
+    try {
+      body = await request.json();
+    } catch {
+      return withCORS(
+        ApiErrors.badRequest('Invalid JSON body'),
+        request.headers.get('origin')
+      );
+    }
 
     // Validate required fields
-    if (!body.recipientEmail || typeof body.recipientEmail !== 'string') {
-      return NextResponse.json(
-        { error: 'recipientEmail is required' },
-        { status: 400 }
+    if (!body.to || typeof body.to !== 'string') {
+      return withCORS(
+        ApiErrors.badRequest('Recipient email is required'),
+        request.headers.get('origin')
+      );
+    }
+
+    if (!body.shareLink || typeof body.shareLink !== 'string') {
+      return withCORS(
+        ApiErrors.badRequest('Share link is required'),
+        request.headers.get('origin')
       );
     }
 
     if (!body.senderName || typeof body.senderName !== 'string') {
-      return NextResponse.json(
-        { error: 'senderName is required' },
-        { status: 400 }
+      return withCORS(
+        ApiErrors.badRequest('Sender name is required'),
+        request.headers.get('origin')
       );
     }
 
-    if (!Array.isArray(body.files) || body.files.length === 0) {
-      return NextResponse.json(
-        { error: 'At least one file is required' },
-        { status: 400 }
+    // Sanitize and validate email
+    const sanitizedEmail = sanitizeEmailInput(body.to);
+    const emailValidation = validateEmailDetailed(sanitizedEmail);
+
+    if (!emailValidation.valid) {
+      return withCORS(
+        ApiErrors.badRequest(emailValidation.error || 'Invalid email address', {
+          suggestion: emailValidation.suggestion,
+        }),
+        request.headers.get('origin')
       );
     }
 
-    // Validate email format (RFC 5322 compliant)
-    const emailRegex = /^(?:[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}|localhost)$/;
-    if (!emailRegex.test(body.recipientEmail)) {
-      return NextResponse.json(
-        { error: 'Invalid email format' },
-        { status: 400 }
+    // Sanitize inputs
+    const senderName = sanitizeText(body.senderName);
+    const message = body.message ? sanitizeText(body.message) : undefined;
+    const fileName = body.fileName ? sanitizeText(body.fileName) : undefined;
+
+    // Validate share link format (must be HTTPS in production)
+    const shareLink = body.shareLink.trim();
+    try {
+      const url = new URL(shareLink);
+      if (process.env.NODE_ENV === 'production' && url.protocol !== 'https:') {
+        return withCORS(
+          ApiErrors.badRequest('Share link must use HTTPS in production'),
+          request.headers.get('origin')
+        );
+      }
+    } catch {
+      return withCORS(
+        ApiErrors.badRequest('Invalid share link URL'),
+        request.headers.get('origin')
       );
     }
 
-    // Prepare transfer options
-    const options: EmailTransferOptions = {
-      recipientEmail: body.recipientEmail,
-      senderName: body.senderName,
-      senderEmail: body.senderEmail,
-      files: body.files.map((file: any) => ({
-        filename: file.filename,
-        content: file.content, // Base64 or Buffer
-        size: file.size,
-        contentType: file.contentType,
-        checksum: file.checksum,
-      })),
-      compress: body.compress !== false, // Default true
-      password: body.password,
-      virusScan: body.virusScan || false,
-      expiresAt: body.expiresAt,
-      expiresIn: body.expiresIn,
-      maxDownloads: body.maxDownloads,
-      notifyOnDownload: body.notifyOnDownload || false,
-      notifyOnExpire: body.notifyOnExpire || false,
-      webhookUrl: body.webhookUrl,
-      priority: body.priority || 'normal',
-      retryOnFailure: body.retryOnFailure !== false, // Default true
-      maxRetries: body.maxRetries || 3,
-      template: body.template,
-      templateData: body.templateData,
-      branding: body.branding,
-      metadata: body.metadata,
-      trackOpens: body.trackOpens !== false, // Default true
-      trackClicks: body.trackClicks !== false, // Default true
-    };
+    // Validate file count
+    const fileCount = body.fileCount && Number(body.fileCount) > 0
+      ? Number(body.fileCount)
+      : undefined;
 
-    // Send email transfer
-    const deliveryStatus = await sendEmailTransfer(options);
+    // Parse expiration date if provided
+    let expiresAt: Date | undefined;
+    if (body.expiresAt) {
+      try {
+        expiresAt = new Date(body.expiresAt);
+        if (isNaN(expiresAt.getTime())) {
+          return withCORS(
+            ApiErrors.badRequest('Invalid expiration date format'),
+            request.headers.get('origin')
+          );
+        }
+      } catch {
+        return withCORS(
+          ApiErrors.badRequest('Invalid expiration date'),
+          request.headers.get('origin')
+        );
+      }
+    }
 
-    secureLog.log(
-      `[API] Email transfer sent: ${deliveryStatus.id} to ${options.recipientEmail}`
-    );
+    // Check if Resend API key is configured
+    const apiKey = process.env['RESEND_API_KEY'];
+    const isDevelopment = process.env.NODE_ENV === 'development';
 
-    return NextResponse.json({
-      success: true,
-      transfer: deliveryStatus,
+    if (!apiKey || apiKey === 'placeholder_key') {
+      if (isDevelopment) {
+        // Development mode: Log to console instead of sending
+        secureLog.log('[Email API] Development mode - Email not sent:');
+        secureLog.log({
+          to: sanitizedEmail,
+          from: process.env['RESEND_FROM_EMAIL'] || 'noreply@tallow.app',
+          subject: body.subject || `${senderName} shared files with you via Tallow`,
+          senderName,
+          shareLink,
+          message,
+          fileName,
+          fileCount,
+          fileSize: body.fileSize,
+          expiresAt: expiresAt?.toISOString(),
+        });
+
+        const response: SendEmailResponse = {
+          success: true,
+          messageId: `dev_${Date.now()}`,
+          warning: 'Development mode: Email logged to console (RESEND_API_KEY not configured)',
+        };
+
+        return withCORS(
+          successResponse(response as unknown as Record<string, unknown>),
+          request.headers.get('origin')
+        );
+      } else {
+        return withCORS(
+          ApiErrors.serviceUnavailable('Email service not configured'),
+          request.headers.get('origin')
+        );
+      }
+    }
+
+    // Generate email template
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const template = shareEmailTemplate({
+      senderName,
+      shareLink,
+      message: message ?? '',
+      fileName: fileName ?? '',
+      fileCount: fileCount ?? 0,
+      fileSize: body.fileSize ?? '',
+      expiresAt: expiresAt ?? new Date(),
     });
+
+    // Send email via Resend
+    try {
+      const { data, error } = await resend.emails.send({
+        from: process.env['RESEND_FROM_EMAIL'] || 'Tallow <noreply@tallow.app>',
+        to: sanitizedEmail,
+        subject: body.subject || template.subject,
+        html: template.html,
+        text: template.text,
+        tags: [
+          { name: 'type', value: 'share_notification' },
+          { name: 'sender', value: senderName },
+        ],
+      });
+
+      if (error) {
+        secureLog.error('[Email API] Resend error:', error);
+        return withCORS(
+          ApiErrors.badGateway(`Failed to send email: ${error.message}`),
+          request.headers.get('origin')
+        );
+      }
+
+      secureLog.log(`[Email API] Sent email to ${sanitizedEmail} (ID: ${data?.id})`);
+
+      // Check for disposable email (warning only)
+      let warning: string | undefined;
+      if (isDisposableEmail(sanitizedEmail)) {
+        warning = 'Recipient email appears to be a disposable address';
+        secureLog.warn(`[Email API] Disposable email detected: ${sanitizedEmail}`);
+      }
+
+      const response = {
+        success: true as const,
+        messageId: data?.id ?? '',
+        ...(warning ? { warning } : {}),
+      };
+
+      return withCORS(
+        successResponse(response as unknown as Record<string, unknown>),
+        request.headers.get('origin')
+      );
+    } catch (error) {
+      secureLog.error('[Email API] Failed to send email:', error);
+      return withCORS(
+        ApiErrors.internalError(),
+        request.headers.get('origin')
+      );
+    }
   } catch (error) {
-    secureLog.error('[API] Failed to send email transfer:', error);
-
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: errorMessage,
-      },
-      { status: 500 }
+    secureLog.error('[Email API] POST error:', error);
+    return withCORS(
+      ApiErrors.internalError(),
+      request.headers.get('origin')
     );
   }
 });

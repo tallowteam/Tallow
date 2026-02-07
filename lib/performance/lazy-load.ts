@@ -138,7 +138,7 @@ export function preloadModule(
   identifier?: string
 ): void {
   const id = identifier || importFn.toString();
-  if (preloadedModules.has(id)) return;
+  if (preloadedModules.has(id)) {return;}
 
   preloadedModules.add(id);
 
@@ -372,7 +372,7 @@ export function preloadRoute(path: string): void {
  * preloadRoutes(['/dashboard', '/settings', '/profile']);
  */
 export function preloadRoutes(paths: string[]): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {return;}
 
   // Spread out preloading to avoid blocking
   paths.forEach((path, index) => {

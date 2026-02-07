@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tallow Extension - Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="options-container">
+    <header class="options-header">
+      <div class="logo-container">
+        <svg class="logo-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" opacity="0.3"/>
+          <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h1>Tallow Extension Settings</h1>
+      </div>
+      <p class="header-description">Configure how the Tallow browser extension works</p>
+    </header>
+
+    <main class="options-main">
+      <!-- Connection Settings -->
+      <section class="settings-section">
+        <h2 class="section-title">Connection</h2>
+        <div class="setting-item">
+          <label for="tallowUrl" class="setting-label">
+            <span class="label-text">Tallow App URL</span>
+            <span class="label-description">The URL where your Tallow app is running</span>
+          </label>
+          <input
+            type="text"
+            id="tallowUrl"
+            class="setting-input"
+            placeholder="http://localhost:3000"
+          />
+        </div>
+
+        <div class="setting-item">
+          <div class="connection-status" id="connectionStatus">
+            <span class="status-indicator" id="statusIndicator"></span>
+            <span class="status-text" id="statusText">Not checked</span>
+          </div>
+          <button class="test-connection-button" id="testConnectionBtn">
+            Test Connection
+          </button>
+        </div>
+      </section>
+
+      <!-- Behavior Settings -->
+      <section class="settings-section">
+        <h2 class="section-title">Behavior</h2>
+
+        <div class="setting-item">
+          <label class="toggle-label">
+            <input type="checkbox" id="autoOpenApp" class="toggle-input" />
+            <span class="toggle-slider"></span>
+            <span class="toggle-text">
+              <span class="label-text">Auto-open Tallow app after sharing</span>
+              <span class="label-description">Automatically open the Tallow app in a new tab when content is shared</span>
+            </span>
+          </label>
+        </div>
+
+        <div class="setting-item">
+          <label class="toggle-label">
+            <input type="checkbox" id="notificationsEnabled" class="toggle-input" />
+            <span class="toggle-slider"></span>
+            <span class="toggle-text">
+              <span class="label-text">Enable notifications</span>
+              <span class="label-description">Show browser notifications when content is shared</span>
+            </span>
+          </label>
+        </div>
+
+        <div class="setting-item">
+          <label class="toggle-label">
+            <input type="checkbox" id="contentScriptEnabled" class="toggle-input" />
+            <span class="toggle-slider"></span>
+            <span class="toggle-text">
+              <span class="label-text">Show share buttons on download links</span>
+              <span class="label-description">Display Tallow share buttons when hovering over downloadable files</span>
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <!-- Keyboard Shortcuts -->
+      <section class="settings-section">
+        <h2 class="section-title">Keyboard Shortcuts</h2>
+        <div class="shortcuts-info">
+          <div class="shortcut-item">
+            <span class="shortcut-action">Share selected text</span>
+            <kbd class="shortcut-keys">Ctrl+Shift+S</kbd>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-action">Share current page</span>
+            <kbd class="shortcut-keys">Ctrl+Shift+U</kbd>
+          </div>
+          <p class="shortcut-note">
+            To customize keyboard shortcuts, go to <code>chrome://extensions/shortcuts</code>
+          </p>
+        </div>
+      </section>
+
+      <!-- About -->
+      <section class="settings-section">
+        <h2 class="section-title">About</h2>
+        <div class="about-info">
+          <p class="about-text">
+            <strong>Tallow Quick Share</strong> extension allows you to quickly share content from your browser to your Tallow app for secure, peer-to-peer file transfers.
+          </p>
+          <div class="about-links">
+            <a href="https://tallow.app" target="_blank" class="about-link">Website</a>
+            <a href="https://github.com/tallow/tallow" target="_blank" class="about-link">GitHub</a>
+            <a href="https://docs.tallow.app" target="_blank" class="about-link">Documentation</a>
+          </div>
+          <p class="version-info">Version 1.0.0</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="options-footer">
+      <button class="save-button" id="saveBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+          <polyline points="7 3 7 8 15 8"></polyline>
+        </svg>
+        Save Settings
+      </button>
+      <button class="reset-button" id="resetBtn">Reset to Defaults</button>
+      <div class="save-status" id="saveStatus" style="display: none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <span>Settings saved!</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="options.js" type="module"></script>
+</body>
+</html>

@@ -71,6 +71,29 @@ interface FileEndMessage {
 }
 
 /**
+ * File Request Message
+ */
+interface FileRequestMessage {
+  type: 'file-request';
+  id: string;
+  from: string;
+  fromName: string;
+  fileName?: string;
+  fileType?: string;
+  message?: string;
+  timestamp: number;
+}
+
+/**
+ * File Request Response Message
+ */
+interface FileRequestResponseMessage {
+  type: 'file-request-response';
+  requestId: string;
+  accepted: boolean;
+}
+
+/**
  * P2P Control Message Types
  */
 type P2PControlMessage =
@@ -78,7 +101,9 @@ type P2PControlMessage =
   | FileStartMessage
   | FileChunkMessage
   | FileCompleteMessage
-  | FileEndMessage;
+  | FileEndMessage
+  | FileRequestMessage
+  | FileRequestResponseMessage;
 
 /**
  * Type guard for DHPublicKeyMessage
@@ -141,6 +166,32 @@ function isFileEndMessage(value: unknown): value is FileEndMessage {
 }
 
 /**
+ * Type guard for FileRequestMessage
+ */
+function isFileRequestMessage(value: unknown): value is FileRequestMessage {
+  return (
+    isObject(value) &&
+    hasProperty(value, 'type') && value['type'] === 'file-request' &&
+    hasProperty(value, 'id') && isString(value['id']) &&
+    hasProperty(value, 'from') && isString(value['from']) &&
+    hasProperty(value, 'fromName') && isString(value['fromName']) &&
+    hasProperty(value, 'timestamp') && isNumber(value['timestamp'])
+  );
+}
+
+/**
+ * Type guard for FileRequestResponseMessage
+ */
+function isFileRequestResponseMessage(value: unknown): value is FileRequestResponseMessage {
+  return (
+    isObject(value) &&
+    hasProperty(value, 'type') && value['type'] === 'file-request-response' &&
+    hasProperty(value, 'requestId') && isString(value['requestId']) &&
+    hasProperty(value, 'accepted') && typeof value['accepted'] === 'boolean'
+  );
+}
+
+/**
  * Type guard for P2PControlMessage
  */
 function isP2PControlMessage(value: unknown): value is P2PControlMessage {
@@ -149,7 +200,9 @@ function isP2PControlMessage(value: unknown): value is P2PControlMessage {
     isFileStartMessage(value) ||
     isFileChunkMessage(value) ||
     isFileCompleteMessage(value) ||
-    isFileEndMessage(value)
+    isFileEndMessage(value) ||
+    isFileRequestMessage(value) ||
+    isFileRequestResponseMessage(value)
   );
 }
 
@@ -157,7 +210,7 @@ function isP2PControlMessage(value: unknown): value is P2PControlMessage {
  * File transfer progress information
  * @interface TransferProgress
  */
-interface TransferProgress {
+export interface TransferProgress {
     /** Unique file identifier */
     fileId: string;
     /** Name of the file being transferred */
@@ -176,7 +229,7 @@ interface TransferProgress {
  * Received file information
  * @interface ReceivedFile
  */
-interface ReceivedFile {
+export interface ReceivedFile {
     /** File name */
     name: string;
     /** MIME type */
@@ -287,6 +340,7 @@ export function useP2PConnection() {
     const [currentTransfer, setCurrentTransfer] = useState<TransferProgress | null>(null);
     const [receivedFiles, setReceivedFiles] = useState<ReceivedFile[]>([]);
     const onFileReceivedCallback = useRef<((file: ReceivedFile) => void) | null>(null);
+    const onMessageCallback = useRef<((data: string | ArrayBuffer) => void) | null>(null);
 
     // Ephemeral key management
     const sessionKey = useRef<SessionKeyPair | null>(null);
@@ -475,6 +529,8 @@ export function useP2PConnection() {
         };
 
         channel.onmessage = (event) => {
+            // Allow external handlers to process messages first (for file requests)
+            onMessageCallback.current?.(event.data);
             handleMessage(event.data);
         };
     }, []);
@@ -610,6 +666,12 @@ export function useP2PConnection() {
                     receivingFile.current = null;
                     setCurrentTransfer(null);
                 }
+                break;
+
+            case 'file-request':
+            case 'file-request-response':
+                // File request messages are handled by the external onMessage callback
+                // No default handling needed here
                 break;
         }
     }, [triggerVerification]);
@@ -828,6 +890,11 @@ export function useP2PConnection() {
         onFileReceivedCallback.current = callback;
     }, []);
 
+    // Set callback for custom message handling (e.g., file requests)
+    const onMessage = useCallback((callback: (data: string | ArrayBuffer) => void) => {
+        onMessageCallback.current = callback;
+    }, []);
+
     // Close connection
     const disconnect = useCallback(() => {
         dataChannel.current?.close();
@@ -936,6 +1003,7 @@ export function useP2PConnection() {
         state,
         currentTransfer,
         receivedFiles,
+        dataChannel: dataChannel.current,
         initializeAsInitiator,
         acceptConnection,
         completeConnection,
@@ -943,6 +1011,7 @@ export function useP2PConnection() {
         sendFiles,
         downloadReceivedFile,
         onFileReceived,
+        onMessage,
         disconnect,
         // Verification handlers
         triggerVerification,

@@ -1,0 +1,266 @@
+/* ScreenShareControls Component - Dark Premium with Purple Accent */
+
+/* ============================================
+   Container
+   ============================================ */
+
+.container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ============================================
+   Toolbar
+   ============================================ */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  background: rgba(18, 18, 18, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-xl);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 8px 32px rgba(0, 0, 0, 0.6),
+    0 0 60px rgba(94, 92, 230, 0.15);
+}
+
+/* ============================================
+   Control Buttons
+   ============================================ */
+
+.controlButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.controlButton:hover {
+  background: rgba(94, 92, 230, 0.2);
+  border-color: rgba(94, 92, 230, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(94, 92, 230, 0.3);
+}
+
+.controlButton:focus-visible {
+  outline: 2px solid #5E5CE6;
+  outline-offset: 2px;
+}
+
+.controlButton:active {
+  transform: translateY(0) scale(0.95);
+}
+
+.controlButton.active {
+  background: rgba(94, 92, 230, 0.3);
+  border-color: rgba(94, 92, 230, 0.5);
+  color: #5E5CE6;
+}
+
+/* Stop Button - Prominent Red */
+.stopButton {
+  width: auto;
+  padding: 0 var(--space-4);
+  background: rgba(238, 0, 0, 0.15);
+  border-color: rgba(238, 0, 0, 0.3);
+  color: #ee0000;
+}
+
+.stopButton:hover {
+  background: rgba(238, 0, 0, 0.25);
+  border-color: rgba(238, 0, 0, 0.5);
+  box-shadow: 0 4px 12px rgba(238, 0, 0, 0.3);
+}
+
+/* Divider */
+.divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 var(--space-1);
+}
+
+/* ============================================
+   Settings Dropdown
+   ============================================ */
+
+.settingsWrapper {
+  position: relative;
+}
+
+.settingsDropdown {
+  position: absolute;
+  bottom: calc(100% + var(--space-2));
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 240px;
+  background: rgba(18, 18, 18, 0.98);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-xl);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 12px 32px rgba(0, 0, 0, 0.6),
+    0 0 80px rgba(94, 92, 230, 0.2);
+  overflow: hidden;
+  animation: slideUp 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.settingsHeader {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.settingsTitle {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* Quality Options */
+.qualityOptions {
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.qualityOption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--space-3);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  outline: none;
+}
+
+.qualityOption:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.qualityOption:focus-visible {
+  outline: 2px solid #5E5CE6;
+  outline-offset: -2px;
+}
+
+.qualityOption.selected {
+  background: rgba(94, 92, 230, 0.15);
+  border-color: rgba(94, 92, 230, 0.3);
+}
+
+.qualityOptionContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.qualityLabel {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: white;
+}
+
+.qualityDescription {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.qualityCheckmark {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #5E5CE6;
+}
+
+/* Settings Footer */
+.settingsFooter {
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.settingsHint {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  margin: 0;
+  text-align: center;
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+
+@media (max-width: 640px) {
+  .toolbar {
+    padding: var(--space-1);
+    gap: var(--space-1);
+  }
+
+  .controlButton {
+    width: 36px;
+    height: 36px;
+  }
+
+  .stopButton {
+    padding: 0 var(--space-3);
+  }
+
+  .settingsDropdown {
+    min-width: 220px;
+  }
+}
+
+/* ============================================
+   Reduced Motion
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .settingsDropdown {
+    animation: none;
+  }
+
+  .controlButton:hover,
+  .controlButton:active {
+    transform: none;
+  }
+}

@@ -1,481 +1,246 @@
-# TALLOW E2E Test Suite
+# E2E Test Suite
 
-Comprehensive End-to-End testing suite for TALLOW using Playwright.
-
-## Overview
-
-This test suite provides complete coverage of TALLOW's features including:
-
-- **Core Transfer Tests** - File transfer functionality
-- **P2P Connection Tests** - Connection establishment and management
-- **Chat Integration Tests** - P2P messaging system
-- **Privacy Mode Tests** - Security and privacy features
-- **Accessibility Tests** - WCAG 2.1 AA compliance
-- **Visual Regression Tests** - UI consistency across browsers
+Comprehensive end-to-end tests for the Tallow application using Playwright.
 
 ## Test Files
 
-### Core Functionality
+### 1. `fixtures.ts`
+Shared test utilities and helpers:
+- **MockDevice**: Mock device for discovery testing
+- **FileHelpers**: File generation utilities for transfer tests
+- **Helper functions**: Navigation, element waiting, storage clearing, WebRTC mocking
 
-- `transfer-core.spec.ts` - Complete file transfer testing
-  - Single/multiple file transfers
-  - Large file transfers (100MB+)
-  - Folder transfers
-  - Transfer cancellation and resume
-  - Progress tracking
+### 2. `navigation.spec.ts`
+Tests for application navigation:
+- ✅ Main page navigation (/, /features, /security, /pricing, /about, /docs, /transfer, /settings)
+- ✅ Header navigation links and active states
+- ✅ Footer links
+- ✅ 404 page handling
+- ✅ Mobile navigation menu
+- ✅ Keyboard navigation
+- ✅ Theme toggle functionality
+- ✅ URL parameter handling
 
-- `p2p-connection.spec.ts` - Connection management
-  - Direct P2P connections
-  - TURN fallback scenarios
-  - Connection timeouts
-  - Reconnection handling
-  - NAT traversal
+### 3. `transfer-page.spec.ts`
+Tests for the transfer page:
+- ✅ Page load and initial state
+- ✅ Tab switching (Nearby, Internet, Friends)
+- ✅ File drop zone interaction
+- ✅ File selection and queue management
+- ✅ Room code connection UI
+- ✅ Manual IP entry dialog
+- ✅ Transfer history sidebar
+- ✅ Privacy indicators
+- ✅ Guest mode banner
 
-- `chat-integration.spec.ts` - Chat messaging
-  - Send/receive messages
-  - Encryption verification
-  - Emoji and special characters
-  - Bidirectional messaging
-  - Concurrent messages
+### 4. `settings-page.spec.ts`
+Tests for the settings page:
+- ✅ Theme toggling (dark, light, high-contrast, colorblind)
+- ✅ Device name editing
+- ✅ Privacy toggle switches
+- ✅ Settings persistence after reload
+- ✅ Transfer settings
+- ✅ Notification settings
+- ✅ Silent hours configuration
+- ✅ Reset to defaults functionality
 
-### Privacy & Security
+### 5. `responsive.spec.ts`
+Tests for responsive design:
+- ✅ Mobile viewport (375px) layout
+- ✅ Tablet viewport (768px) layout
+- ✅ Desktop viewport (1280px) layout
+- ✅ Header collapse behavior
+- ✅ Layout adaptation on resize
+- ✅ Touch target sizes
+- ✅ Orientation changes
 
-- `privacy-mode.spec.ts` - Privacy features
-  - Privacy mode toggle
-  - Onion routing
-  - IP leak prevention
-  - Metadata stripping
-  - VPN detection
-
-### Quality Assurance
-
-- `accessibility.spec.ts` - Accessibility compliance
-  - Keyboard navigation
-  - Screen reader compatibility
-  - ARIA labels
-  - Focus management
-  - Color contrast
-
-- `visual/visual-regression.spec.ts` - Visual testing
-  - Page screenshots
-  - Component states
-  - Responsive layouts
-  - Theme variations
-
-### Existing Tests
-
-- `app.spec.ts` - Basic app functionality
-- `landing.spec.ts` - Landing page tests
-- `settings.spec.ts` - Settings functionality
-- `history.spec.ts` - Transfer history
-- `mobile-features.spec.ts` - Mobile-specific features
-- `group-transfer.spec.ts` - Group transfer functionality
-- `password-protection.spec.ts` - Password-protected transfers
-- `metadata-stripping.spec.ts` - Metadata removal
-- `screen-sharing.spec.ts` - Screen sharing features
-- `camera-capture.spec.ts` - Camera/media capture
-- `email-integration.spec.ts` - Email fallback
-- `offline.spec.ts` - Offline functionality
+### 6. `accessibility.spec.ts`
+Tests for accessibility compliance:
+- ✅ Keyboard navigation through all pages
+- ✅ Skip link functionality
+- ✅ Image alt text verification
+- ✅ Accessible names for buttons/links
+- ✅ Focus management in modals
+- ✅ ARIA attributes (aria-current, aria-pressed, aria-expanded, etc.)
+- ✅ Form accessibility
+- ✅ Focus indicators
+- ✅ Semantic HTML structure
+- ✅ Heading hierarchy
 
 ## Running Tests
 
-### All Tests
-
+### Run all E2E tests
 ```bash
-npm test
+npm run test:e2e
 ```
 
-### Specific Test File
-
+### Run tests in headed mode (with browser visible)
 ```bash
-npx playwright test tests/e2e/transfer-core.spec.ts
+npm run test:headed
 ```
 
-### Specific Test Suite
-
+### Run tests in UI mode (interactive debugging)
 ```bash
-npx playwright test --grep "Core Transfer"
+npm run test:ui
 ```
 
-### Specific Browser
+### Run specific test file
+```bash
+npx playwright test tests/e2e/navigation.spec.ts
+```
 
+### Run tests on specific browser
 ```bash
 npx playwright test --project=chromium
 npx playwright test --project=firefox
 npx playwright test --project=webkit
 ```
 
-### Headed Mode (Watch Tests Run)
-
+### Run tests on mobile device
 ```bash
-npm run test:headed
-```
-
-### UI Mode (Interactive)
-
-```bash
-npm run test:ui
-```
-
-### Debug Mode
-
-```bash
-npx playwright test --debug
+npx playwright test --project=mobile
 ```
 
 ## Test Configuration
 
-The test suite is configured in `playwright.config.ts`:
-
-### Browsers
-
-- **Chromium** - Desktop Chrome
-- **Firefox** - Desktop Firefox
-- **Webkit** - Desktop Safari
-- **Edge** - Desktop Edge
-- **Mobile Chrome** - Pixel 5
-- **Mobile Safari** - iPhone 13
-- **Tablet** - iPad Pro
-
-### Viewports
-
-- Desktop Large: 1920x1080
-- Desktop Standard: 1280x720
-- Desktop Small: 1024x768
-- Tablet: iPad dimensions
-- Mobile: iPhone/Pixel dimensions
-
-### Timeouts
-
-- Test timeout: 90 seconds
-- Navigation timeout: 60 seconds
-- Action timeout: 20 seconds
-- Assertion timeout: 15 seconds
-
-## Test Fixtures
-
-Located in `fixtures.ts`:
-
-### File Management
-
-```typescript
-import { TestFileManager } from './fixtures';
-
-const fileManager = new TestFileManager();
-const filePath = await fileManager.createFile('test.txt', 10); // 10MB
-fileManager.cleanup(); // Clean up after test
-```
-
-### P2P Connection
-
-```typescript
-import { establishP2PConnection } from './fixtures';
-
-const code = await establishP2PConnection(senderPage, receiverPage);
-```
-
-### Chat Operations
-
-```typescript
-import { openChatPanel, sendChatMessage } from './fixtures';
-
-await openChatPanel(page);
-await sendChatMessage(page, 'Hello!');
-```
-
-### Visual Testing
-
-```typescript
-import { prepareForScreenshot } from './fixtures';
-
-await prepareForScreenshot(page);
-await expect(page).toHaveScreenshot('screenshot.png');
-```
-
-### Monitoring
-
-```typescript
-import { ConsoleMonitor, NetworkMonitor } from './fixtures';
-
-const consoleMonitor = new ConsoleMonitor(page);
-const networkMonitor = new NetworkMonitor(page);
-
-// Later...
-const errors = consoleMonitor.getErrors();
-const failedRequests = networkMonitor.getFailedRequests();
-```
+Configuration is in `playwright.config.ts`:
+- **Base URL**: http://localhost:3000
+- **Timeout**: 90 seconds per test
+- **Retries**: 1 (2 in CI)
+- **Workers**: 2 local, 1 in CI
+- **Projects**: chromium, firefox, webkit, mobile, tablet, various desktop sizes
 
 ## Writing New Tests
 
 ### Basic Test Structure
-
-```typescript
-import { test, expect } from '@playwright/test';
-
-test.describe('Feature Name', () => {
-  test('should do something', async ({ page }) => {
-    await page.goto('/app');
-    await page.waitForLoadState('networkidle');
-
-    // Test logic
-    const element = page.locator('selector');
-    await expect(element).toBeVisible();
-  });
-});
-```
-
-### Using Fixtures
-
 ```typescript
 import { test, expect } from './fixtures';
 
 test.describe('Feature Name', () => {
-  test('should connect two peers', async ({ dualBrowser }) => {
-    const { senderPage, receiverPage } = dualBrowser;
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/your-page');
+  });
 
-    // Test logic
+  test('should do something', async ({ page }) => {
+    // Test implementation
+    await expect(page.locator('h1')).toBeVisible();
   });
 });
 ```
 
-### File Transfer Test
-
+### Using File Helpers
 ```typescript
-import { test, expect, TestFileManager, establishP2PConnection } from './fixtures';
+test('should upload file', async ({ page, fileHelpers }) => {
+  const testFile = fileHelpers.createTextFile('test.txt');
 
-test('should transfer file', async ({ browser }) => {
-  const fileManager = new TestFileManager();
-  const testFile = await fileManager.createFile('test.txt', 1); // 1MB
+  const fileInput = page.locator('input[type="file"]');
+  await fileInput.setInputFiles(testFile);
 
-  try {
-    const senderContext = await browser.newContext();
-    const receiverContext = await browser.newContext();
-    const senderPage = await senderContext.newPage();
-    const receiverPage = await receiverContext.newPage();
+  await expect(page.locator('text=test.txt')).toBeVisible();
+});
+```
 
-    await Promise.all([
-      senderPage.goto('/app'),
-      receiverPage.goto('/app'),
-    ]);
+### Using Mock Device
+```typescript
+test('should discover mock device', async ({ page, mockDevice }) => {
+  await mockDevice.inject(page);
+  await page.goto('/transfer');
 
-    const code = await establishP2PConnection(senderPage, receiverPage);
-    expect(code).not.toBeNull();
-
-    // Select and send file
-    const fileInput = senderPage.locator('input[type="file"]');
-    await fileInput.setInputFiles(testFile);
-
-    const sendBtn = senderPage.getByRole('button', { name: /send/i });
-    await sendBtn.click();
-
-    // Wait for completion
-    await expect(
-      senderPage.getByText(/complete|success/i)
-    ).toBeVisible({ timeout: 60000 });
-
-    await senderContext.close();
-    await receiverContext.close();
-  } finally {
-    fileManager.cleanup();
-  }
+  // Mock device should appear in discovery
+  await expect(page.locator(`text=${mockDevice.name}`)).toBeVisible();
 });
 ```
 
 ## Best Practices
 
-### 1. Use Test IDs
+1. **Use semantic locators**: Prefer text content and accessibility attributes
+   ```typescript
+   // Good
+   page.locator('button:has-text("Save")')
+   page.locator('button[aria-label="Close"]')
 
-Add `data-testid` attributes to elements for stable selectors:
+   // Avoid
+   page.locator('.btn-primary-123')
+   ```
 
-```typescript
-const element = page.locator('[data-testid="connection-code"]');
-```
+2. **Wait for elements**: Use auto-waiting with expect
+   ```typescript
+   await expect(page.locator('text=Loading...')).toBeVisible();
+   ```
 
-### 2. Wait for Stability
+3. **Test user flows**: Focus on realistic user interactions
+   ```typescript
+   // Navigate like a user would
+   await page.locator('a:has-text("Features")').click();
+   await expect(page).toHaveURL(/\/features/);
+   ```
 
-Always wait for network idle before interacting:
+4. **Clean up**: Use beforeEach/afterEach for setup/teardown
+   ```typescript
+   test.beforeEach(async ({ page }) => {
+     await clearStorage(page);
+     await page.goto('/');
+   });
+   ```
 
-```typescript
-await page.waitForLoadState('networkidle');
-```
-
-### 3. Use Flexible Selectors
-
-Combine multiple selector strategies:
-
-```typescript
-const button = page
-  .locator('[data-testid="send-button"]')
-  .or(page.getByRole('button', { name: /send/i }))
-  .first();
-```
-
-### 4. Handle Timeouts
-
-Use try-catch for optional elements:
-
-```typescript
-const hasElement = await element.isVisible({ timeout: 5000 }).catch(() => false);
-```
-
-### 5. Clean Up Resources
-
-Always clean up files and contexts:
-
-```typescript
-try {
-  // Test logic
-} finally {
-  fileManager.cleanup();
-  await context.close();
-}
-```
-
-### 6. Make Tests Resilient
-
-Check if elements exist before interacting:
-
-```typescript
-if (await button.isVisible({ timeout: 5000 }).catch(() => false)) {
-  await button.click();
-}
-```
-
-### 7. Use Descriptive Names
-
-Test names should clearly describe what is being tested:
-
-```typescript
-test('should display error message when connection code is invalid', async ({ page }) => {
-  // Test logic
-});
-```
-
-## CI/CD Integration
-
-Tests run automatically in GitHub Actions:
-
-- On pull requests
-- On push to main
-- Nightly builds
-
-### Environment Variables
-
-- `CI` - Set to `true` in CI environment
-- `APP_URL` - Base URL for testing (default: http://localhost:3000)
+5. **Accessibility first**: Always test keyboard navigation and ARIA
+   ```typescript
+   await page.keyboard.press('Tab');
+   const ariaLabel = await button.getAttribute('aria-label');
+   expect(ariaLabel).toBeTruthy();
+   ```
 
 ## Debugging Tests
 
-### View Test Report
+### Run tests in debug mode
+```bash
+npx playwright test --debug
+```
 
+### View test report
 ```bash
 npx playwright show-report
 ```
 
-### Trace Viewer
-
-```bash
-npx playwright show-trace trace.zip
-```
-
-### Screenshots
-
-Screenshots are captured on failure and saved to `test-results/`
-
-### Videos
-
-Videos are recorded on failure and saved to `test-results/`
-
-## Visual Regression
-
-### Update Baselines
-
-```bash
-npx playwright test --update-snapshots
-```
-
-### Compare Differences
-
-Failed visual tests show differences in the HTML report.
-
-## Performance Testing
-
-Tests include performance monitoring:
-
+### Take screenshots
 ```typescript
-import { measurePageLoad, getMemoryUsage } from './fixtures';
-
-const metrics = await measurePageLoad(page);
-expect(metrics.loadTime).toBeLessThan(3000); // 3 seconds
-
-const memory = await getMemoryUsage(page);
-expect(memory).toBeLessThan(100 * 1024 * 1024); // 100MB
+await page.screenshot({ path: 'screenshot.png', fullPage: true });
 ```
 
-## Troubleshooting
-
-### Tests Timing Out
-
-Increase timeout in test:
-
-```typescript
-test.setTimeout(180000); // 3 minutes
-```
-
-### Browser Not Found
-
-Install browsers:
-
+### View trace on failure
+Traces are automatically captured on first retry. View them with:
 ```bash
-npx playwright install
+npx playwright show-trace test-results/.../trace.zip
 ```
 
-### Dev Server Not Starting
+## CI/CD Integration
 
-Check if port 3000 is available:
+Tests run automatically in CI with:
+- Single worker to reduce server load
+- 2 retries for flaky test resilience
+- JUnit reporter for integration with CI tools
+- Screenshots and videos on failure
 
-```bash
-lsof -ti:3000
-```
+## Coverage
 
-### Tests Flaky
+Current test coverage:
+- ✅ Navigation: 100% of main routes
+- ✅ Transfer page: All major interactions
+- ✅ Settings page: All configuration options
+- ✅ Responsive: Mobile, tablet, desktop
+- ✅ Accessibility: WCAG 2.1 Level AA compliance checks
 
-Add more wait conditions:
+## Known Issues
 
-```typescript
-await page.waitForLoadState('networkidle');
-await page.waitForTimeout(1000);
-```
+- WebRTC testing requires mocking (implemented in fixtures)
+- File transfer requires mock server (can be added)
+- Some tests may be flaky on slow networks (retries configured)
 
-## Test Coverage
+## Future Enhancements
 
-Current coverage:
-
-- ✅ Core file transfers
-- ✅ P2P connections
-- ✅ Chat messaging
-- ✅ Privacy features
-- ✅ Accessibility
-- ✅ Visual regression
-- ✅ Mobile responsiveness
-- ✅ Cross-browser compatibility
-
-## Contributing
-
-When adding new features:
-
-1. Add corresponding E2E tests
-2. Update this README
-3. Ensure tests pass on all browsers
-4. Add visual regression tests if UI changes
-5. Update test fixtures if needed
-
-## Resources
-
-- [Playwright Documentation](https://playwright.dev)
-- [WCAG 2.1 Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)
-- [Best Practices](https://playwright.dev/docs/best-practices)
-
-## License
-
-See LICENSE file in project root.
+- [ ] Add visual regression testing
+- [ ] Add performance testing
+- [ ] Add security testing
+- [ ] Add API testing
+- [ ] Add multi-user transfer scenarios
+- [ ] Add network condition testing

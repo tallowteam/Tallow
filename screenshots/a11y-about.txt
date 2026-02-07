@@ -1,0 +1,142 @@
+- link "Skip to main content":
+  - /url: "#main-content"
+- banner:
+  - link "Tallow - Home":
+    - /url: /
+    - text: Tallow
+  - navigation "Main navigation":
+    - link "Features":
+      - /url: /features
+    - link "Security":
+      - /url: /security
+    - link "Pricing":
+      - /url: /pricing
+    - link "Docs":
+      - /url: /docs
+  - button "Switch to dark mode"
+  - link "Open App":
+    - /url: /transfer
+    - button "Open App"
+- main:
+  - heading "Built for Privacy, Designed for Speed" [level=1]
+  - paragraph: Tallow is an open-source file sharing platform that puts privacy first. No servers, no tracking, no compromises.
+  - heading "We believe file sharing should be fast, secure, and private. No compromises." [level=2]
+  - paragraph: In an era of surveillance capitalism, your files deserve better. Tallow uses peer-to-peer technology with military-grade encryption to ensure your data travels directly from sender to recipient—without ever touching our servers.
+  - text: Our Values
+  - heading "What drives us" [level=2]
+  - img
+  - heading "Privacy First" [level=3]
+  - paragraph: Your files, your business. Zero-knowledge architecture by design. We never see your data.
+  - img
+  - heading "Open Source" [level=3]
+  - paragraph: Transparent code you can verify. Security through openness, not obscurity.
+  - img
+  - heading "User-Centric" [level=3]
+  - paragraph: No accounts, no limits, no tracking. Just pure file sharing as it should be.
+  - text: Technology
+  - heading "Built with modern tools" [level=2]
+  - img
+  - text: Next.js React Framework
+  - img
+  - text: TypeScript Type Safety
+  - img
+  - text: WebRTC P2P Transfer
+  - img
+  - text: ML-KEM-768 Post-Quantum
+  - img
+  - text: WebCrypto Encryption
+  - img
+  - text: IndexedDB Local Storage Journey
+  - heading "Project milestones" [level=2]
+  - text: 2024 Q1
+  - heading "Initial Concept" [level=3]
+  - paragraph: Born from the need for truly private, peer-to-peer file sharing without compromises.
+  - text: 2024 Q2
+  - heading "First Prototype" [level=3]
+  - paragraph: WebRTC-based transfer system with end-to-end encryption and drag-and-drop interface.
+  - text: 2024 Q3
+  - heading "Post-Quantum Upgrade" [level=3]
+  - paragraph: Integrated ML-KEM-768 for quantum-resistant encryption, future-proofing security.
+  - text: 2024 Q4
+  - heading "Public Beta" [level=3]
+  - paragraph: Released to early adopters with group transfers, resumable uploads, and mobile support.
+  - text: "2025"
+  - heading "Current" [level=3]
+  - paragraph: "Production-ready with advanced features: onion routing, metadata stripping, and email fallback."
+  - img
+  - heading "Contribute to the future of secure sharing" [level=2]
+  - paragraph: Tallow is fully open source. Review our code, report issues, suggest features, or contribute directly on GitHub.
+  - img
+  - text: Star on GitHub
+  - link "View on GitHub":
+    - /url: https://github.com/yourusername/tallow
+    - button "View on GitHub"
+  - link "Read Documentation":
+    - /url: /docs
+    - button "Read Documentation"
+  - img
+  - heading "Questions? Reach out" [level=2]
+  - paragraph: Have questions about Tallow or want to contribute? We'd love to hear from you.
+  - link "hello@tallow.app":
+    - /url: mailto:hello@tallow.app
+- contentinfo:
+  - heading "Product" [level=3]
+  - list:
+    - listitem:
+      - link "Features":
+        - /url: /features
+    - listitem:
+      - link "Security":
+        - /url: /security
+    - listitem:
+      - link "Pricing":
+        - /url: /pricing
+    - listitem:
+      - link "Download":
+        - /url: /transfer
+  - heading "Resources" [level=3]
+  - list:
+    - listitem:
+      - link "Docs":
+        - /url: /docs
+    - listitem:
+      - link "Guides":
+        - /url: /about
+    - listitem:
+      - link "API":
+        - /url: https://github.com/tallow
+    - listitem:
+      - link "Changelog":
+        - /url: /docs
+  - heading "Legal" [level=3]
+  - list:
+    - listitem:
+      - link "Privacy":
+        - /url: /privacy
+    - listitem:
+      - link "Terms":
+        - /url: /terms
+    - listitem:
+      - link "Cookies":
+        - /url: /privacy
+  - heading "Connect" [level=3]
+  - list:
+    - listitem:
+      - link "GitHub":
+        - /url: https://github.com/tallow
+        - img
+        - text: GitHub
+    - listitem:
+      - link "Twitter":
+        - /url: https://twitter.com/tallow
+        - img
+        - text: Twitter
+    - listitem:
+      - link "Discord":
+        - /url: https://discord.gg/tallow
+        - img
+        - text: Discord
+  - paragraph: © 2026 Tallow. All rights reserved.
+  - paragraph: Built with privacy in mind
+- region "Notifications"
+- alert

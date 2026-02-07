@@ -1,0 +1,80 @@
+version: 2
+updates:
+  # ============================================================================
+  # npm Dependencies - Weekly Updates
+  # ============================================================================
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "aamir"
+    assignees:
+      - "aamir"
+    labels:
+      - "dependencies"
+      - "automated"
+    commit-message:
+      prefix: "chore(deps):"
+      prefix-development: "chore(deps-dev):"
+      include: "scope"
+    allow:
+      - dependency-type: "production"
+      - dependency-type: "development"
+    ignore:
+      # Ignore major version updates that may break things
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+    rebase-strategy: "auto"
+    versioning-strategy: "auto"
+
+  # ============================================================================
+  # GitHub Actions - Monthly Updates
+  # ============================================================================
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "03:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "aamir"
+    assignees:
+      - "aamir"
+    labels:
+      - "github-actions"
+      - "automation"
+      - "automated"
+    commit-message:
+      prefix: "ci:"
+      include: "scope"
+    rebase-strategy: "auto"
+
+  # ============================================================================
+  # Docker - Weekly Updates
+  # ============================================================================
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "friday"
+      time: "03:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "aamir"
+    labels:
+      - "docker"
+      - "dependencies"
+      - "automated"
+    commit-message:
+      prefix: "chore(docker):"
+      include: "scope"
+    rebase-strategy: "auto"

@@ -3,6 +3,8 @@
  * WCAG AA compliance helpers and focus management
  */
 
+import { prefersReducedMotion } from './device-detection';
+
 /**
  * Trap focus within a container element
  * Useful for modals, dialogs, and popups
@@ -196,13 +198,6 @@ export function getPreviousFocusable(current: HTMLElement): HTMLElement | null {
 let idCounter = 0;
 export function generateAriaId(prefix = 'aria'): string {
   return `${prefix}-${++idCounter}-${Date.now()}`;
-}
-
-/**
- * Check if user prefers reduced motion
- */
-export function prefersReducedMotion(): boolean {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 /**

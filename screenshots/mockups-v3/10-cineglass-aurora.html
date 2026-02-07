@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tallow — Cineglass Aurora</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;1,300&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #030308; --bg-2: #08080f; --bg-3: #0f0f1a;
+    --text: #f2f2fa; --text-2: #9292aa; --text-3: #5656706;
+    --border: #161630; --border-2: #222244;
+    --accent: #6366f1; --accent-2: #818cf8; --accent-3: #a78bfa;
+    --glass: rgba(8,8,15,0.55); --glass-border: rgba(99,102,241,0.06);
+  }
+  body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; overflow-x: hidden; }
+
+  /* AMBIENT — Aurora bands: multiple gradient streaks */
+  .aurora { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .aurora .streak-1 { position: absolute; top: 0; left: 10%; width: 60%; height: 40%; background: linear-gradient(160deg, rgba(99,102,241,0.08) 0%, rgba(167,139,250,0.04) 40%, transparent 70%); filter: blur(100px); transform: rotate(-5deg); }
+  .aurora .streak-2 { position: absolute; top: 50%; right: 0; width: 50%; height: 30%; background: linear-gradient(200deg, rgba(139,92,246,0.06) 0%, rgba(59,130,246,0.03) 50%, transparent 80%); filter: blur(80px); transform: rotate(3deg); }
+  .aurora .streak-3 { position: absolute; bottom: 0; left: 20%; width: 40%; height: 25%; background: linear-gradient(140deg, rgba(99,102,241,0.05) 0%, transparent 60%); filter: blur(70px); }
+  .content { position: relative; z-index: 1; }
+
+  /* NAV — Transparent with bottom glass border, wide spacing */
+  .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; height: 64px; display: flex; align-items: center; padding: 0 56px; background: linear-gradient(180deg, rgba(3,3,8,0.8) 0%, rgba(3,3,8,0) 100%); }
+  .nav-logo { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 1.35rem; letter-spacing: -0.01em; margin-right: auto; }
+  .nav-center { display: flex; gap: 6px; background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 12px; padding: 4px; }
+  .nav-center a { color: var(--text-3); text-decoration: none; font-size: 0.78rem; font-weight: 500; padding: 6px 16px; border-radius: 8px; transition: all 0.15s; }
+  .nav-center a:hover { color: var(--text-2); }
+  .nav-center a.active { color: var(--text); background: rgba(99,102,241,0.1); }
+  .nav-end { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+  .btn-aurora { background: linear-gradient(135deg, var(--accent) 0%, var(--accent-3) 100%); color: #fff; border: none; padding: 8px 22px; border-radius: 10px; font-size: 0.78rem; font-weight: 600; cursor: pointer; box-shadow: 0 2px 16px rgba(99,102,241,0.3); }
+
+  /* HERO — Top-heavy: text at 30% vertical, sub-elements below */
+  .hero { min-height: 100vh; padding: 180px 56px 60px; display: flex; flex-direction: column; }
+  .hero-content { max-width: 720px; margin: 0 auto; text-align: center; }
+  .hero-badge { display: inline-flex; align-items: center; gap: 8px; font-size: 0.68rem; color: var(--accent-2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 28px; }
+  .hero-badge .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent), 0 0 24px rgba(99,102,241,0.3); animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .hero h1 { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 5rem; line-height: 1; letter-spacing: -0.04em; margin-bottom: 24px; }
+  .hero h1 .aurora-text { background: linear-gradient(135deg, var(--text) 30%, var(--accent-2) 60%, var(--accent-3) 90%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero > .content-area > p { color: var(--text-2); font-size: 1.05rem; max-width: 480px; margin: 0 auto 40px; line-height: 1.7; }
+  .hero-actions { display: flex; gap: 14px; justify-content: center; margin-bottom: 80px; }
+  .btn-hero-main { background: #fff; color: #000; border: none; padding: 14px 32px; border-radius: 60px; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+  .btn-hero-glass { background: var(--glass); backdrop-filter: blur(12px); border: 1px solid var(--glass-border); color: var(--text); padding: 14px 32px; border-radius: 60px; font-size: 0.9rem; font-weight: 500; cursor: pointer; }
+
+  /* HERO BOTTOM — 3 glass stat cards */
+  .hero-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 700px; margin: 0 auto; }
+  .hero-stat { background: var(--glass); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 16px; padding: 24px 20px; text-align: center; }
+  .hero-stat .val { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 1.8rem; margin-bottom: 4px; }
+  .hero-stat .desc { font-size: 0.7rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* FEATURES — 2x3 glass card grid with aurora edge glow */
+  .features { padding: 120px 56px; }
+  .features-head { text-align: center; margin-bottom: 56px; }
+  .features-head h2 { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 3rem; margin-bottom: 10px; }
+  .features-head p { color: var(--text-2); font-size: 0.9rem; }
+  .f-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 1100px; margin: 0 auto; }
+  .f-card { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 36px 28px; position: relative; overflow: hidden; transition: all 0.25s; }
+  .f-card::after { content: ''; position: absolute; top: -1px; left: 20%; right: 20%; height: 1px; background: linear-gradient(90deg, transparent, rgba(99,102,241,0.2), transparent); transition: all 0.3s; }
+  .f-card:hover { border-color: rgba(99,102,241,0.12); transform: translateY(-4px); }
+  .f-card:hover::after { left: 10%; right: 10%; background: linear-gradient(90deg, transparent, rgba(99,102,241,0.35), transparent); }
+  .f-icon { width: 44px; height: 44px; border-radius: 12px; background: rgba(99,102,241,0.08); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; margin-bottom: 20px; }
+  .f-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
+  .f-card p { color: var(--text-3); font-size: 0.82rem; line-height: 1.6; }
+
+  /* CINEMATIC SECTION — Full-width split */
+  .cinema-split { display: grid; grid-template-columns: 1fr 1fr; min-height: 480px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .cinema-text { padding: 80px 56px; display: flex; flex-direction: column; justify-content: center; }
+  .cinema-text h2 { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 2.8rem; line-height: 1.1; margin-bottom: 16px; }
+  .cinema-text p { color: var(--text-2); font-size: 0.9rem; line-height: 1.7; max-width: 400px; margin-bottom: 24px; }
+  .cinema-text a { color: var(--accent-2); text-decoration: none; font-size: 0.85rem; font-weight: 500; }
+  .cinema-visual { background: var(--bg-2); display: flex; align-items: center; justify-content: center; position: relative; }
+  .cinema-visual .glass-box { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 16px; padding: 24px; width: 300px; }
+  .cinema-visual .glass-box .title { font-size: 0.65rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px; }
+  .cinema-visual .glass-box .item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(99,102,241,0.04); font-size: 0.82rem; }
+  .cinema-visual .glass-box .item:last-child { border-bottom: none; }
+  .cinema-visual .glass-box .item .tag { font-size: 0.65rem; color: var(--accent-2); font-weight: 600; }
+
+  /* CTA — Centered with aurora glow */
+  .cta { padding: 140px 56px; text-align: center; position: relative; }
+  .cta::before { content: ''; position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 500px; height: 300px; background: radial-gradient(ellipse, rgba(99,102,241,0.06) 0%, rgba(167,139,250,0.03) 40%, transparent 70%); pointer-events: none; }
+  .cta h2 { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 3.5rem; line-height: 1.08; margin-bottom: 16px; position: relative; }
+  .cta p { color: var(--text-2); font-size: 0.95rem; margin-bottom: 36px; position: relative; }
+
+  /* FOOTER — Minimal centered */
+  .footer { border-top: 1px solid var(--border); padding: 40px 56px; text-align: center; }
+  .footer-nav { display: flex; justify-content: center; gap: 32px; margin-bottom: 20px; }
+  .footer-nav a { color: var(--text-3); text-decoration: none; font-size: 0.78rem; }
+  .footer-nav a:hover { color: var(--text); }
+  .footer p { color: var(--text-3); font-size: 0.72rem; }
+  .footer .tagline { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 300; font-size: 0.85rem; color: var(--text-3); margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<div class="aurora">
+  <div class="streak-1"></div>
+  <div class="streak-2"></div>
+  <div class="streak-3"></div>
+</div>
+
+<nav class="nav">
+  <div class="nav-logo">Tallow</div>
+  <div class="nav-center">
+    <a href="#" class="active">Home</a>
+    <a href="#">Features</a>
+    <a href="#">Security</a>
+    <a href="#">Pricing</a>
+    <a href="#">Docs</a>
+  </div>
+  <div class="nav-end">
+    <button class="btn-aurora">Open App</button>
+  </div>
+</nav>
+
+<div class="content">
+
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge"><div class="pulse"></div> Quantum-Safe File Transfer</div>
+    <h1>Send files with <span class="aurora-text">zero compromise.</span></h1>
+    <p style="color: var(--text-2); font-size: 1.05rem; max-width: 480px; margin: 0 auto 40px; line-height: 1.7;">Post-quantum encrypted. Peer-to-peer. No servers touch your files. No accounts track your activity. Just open and send.</p>
+    <div class="hero-actions">
+      <button class="btn-hero-main">Start Transferring</button>
+      <button class="btn-hero-glass">How It Works &rarr;</button>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="val">256-bit</div><div class="desc">Encryption</div></div>
+      <div class="hero-stat"><div class="val">P2P</div><div class="desc">Direct Transfer</div></div>
+      <div class="hero-stat"><div class="val">&infin;</div><div class="desc">No File Limits</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="features">
+  <div class="features-head">
+    <h2>Everything you need</h2>
+    <p>Simple, secure, built for people who care about their files.</p>
+  </div>
+  <div class="f-grid">
+    <div class="f-card"><div class="f-icon">&#x26A1;</div><h3>Direct P2P</h3><p>Files go straight between devices. No cloud relay, no middleman.</p></div>
+    <div class="f-card"><div class="f-icon">&#x1f512;</div><h3>Post-Quantum</h3><p>ML-KEM + AES-256-GCM. Future-proof encryption on every transfer.</p></div>
+    <div class="f-card"><div class="f-icon">&#x1f310;</div><h3>Cross-Platform</h3><p>Any device, any browser. No install needed.</p></div>
+    <div class="f-card"><div class="f-icon">&#x1f441;</div><h3>Zero Knowledge</h3><p>No logs, no metadata, no analytics. We can't see your files.</p></div>
+    <div class="f-card"><div class="f-icon">&#x267e;</div><h3>No Limits</h3><p>Any file type, any size. No restrictions, no tiers.</p></div>
+    <div class="f-card"><div class="f-icon">&#x1f513;</div><h3>Open Source</h3><p>Every line auditable. Trust through transparency.</p></div>
+  </div>
+</section>
+
+<div class="cinema-split">
+  <div class="cinema-text">
+    <h2>Security you don't configure</h2>
+    <p>Post-quantum encryption runs silently on every transfer. No toggles, no upgrades, no premium tier. It's baked into every byte.</p>
+    <a href="#">Read the security docs &rarr;</a>
+  </div>
+  <div class="cinema-visual">
+    <div class="glass-box">
+      <div class="title">Encryption Stack</div>
+      <div class="item"><span>Key Exchange</span><span class="tag">ML-KEM-768</span></div>
+      <div class="item"><span>Cipher</span><span class="tag">AES-256-GCM</span></div>
+      <div class="item"><span>Transport</span><span class="tag">WebRTC P2P</span></div>
+      <div class="item"><span>Architecture</span><span class="tag">Zero-Knowledge</span></div>
+    </div>
+  </div>
+</div>
+
+<section class="cta">
+  <h2>Your files. Your devices.<br>Your rules.</h2>
+  <p>No signup. No download. No credit card. Just open and transfer.</p>
+  <button class="btn-hero-main">Open Tallow &rarr;</button>
+</section>
+
+<footer class="footer">
+  <div class="footer-nav">
+    <a href="#">Features</a><a href="#">Security</a><a href="#">Pricing</a><a href="#">Docs</a><a href="#">Privacy</a><a href="#">Terms</a>
+  </div>
+  <p>&copy; 2026 Tallow. All rights reserved.</p>
+  <p class="tagline">Your files. Your rules.</p>
+</footer>
+
+</div>
+</body>
+</html>

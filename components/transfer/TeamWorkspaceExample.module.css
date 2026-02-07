@@ -1,0 +1,231 @@
+/**
+ * TeamWorkspaceExample Styles
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-8);
+  max-width: 1600px;
+  margin: 0 auto;
+  background: #0a0a0a;
+  min-height: 100vh;
+}
+
+/* Header */
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  background: rgba(24, 24, 27, 0.8);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(63, 63, 70, 0.4);
+  border-radius: var(--radius-xl);
+}
+
+.title {
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  color: #fafafa;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: var(--font-size-base);
+  color: #a1a1aa;
+  margin: 0;
+}
+
+/* View Toggle */
+.viewToggle {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-1);
+  background: rgba(39, 39, 42, 0.6);
+  border-radius: var(--radius-lg);
+  width: fit-content;
+}
+
+.viewToggle button {
+  padding: var(--space-2) var(--space-4);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: #a1a1aa;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.viewToggle button:hover {
+  color: #fafafa;
+  background: rgba(63, 63, 70, 0.4);
+}
+
+.viewToggle button.active {
+  background: #5e5ce6;
+  color: white;
+}
+
+/* Content */
+.content {
+  flex: 1;
+}
+
+.splitView {
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  gap: var(--space-6);
+  min-height: 800px;
+}
+
+@media (max-width: 1200px) {
+  .splitView {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panelSide,
+.folderSide {
+  background: rgba(24, 24, 27, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(63, 63, 70, 0.3);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.singleView {
+  background: rgba(24, 24, 27, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(63, 63, 70, 0.3);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  min-height: 600px;
+}
+
+.noTeam {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  height: 100%;
+  min-height: 400px;
+  color: #a1a1aa;
+  text-align: center;
+  padding: var(--space-8);
+}
+
+.noTeam p {
+  font-size: var(--font-size-base);
+  margin: 0;
+}
+
+/* Instructions */
+.instructions {
+  padding: var(--space-6);
+  background: rgba(24, 24, 27, 0.8);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(63, 63, 70, 0.4);
+  border-radius: var(--radius-xl);
+}
+
+.instructionsTitle {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: #fafafa;
+  margin: 0 0 var(--space-4) 0;
+}
+
+.instructionsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding-left: var(--space-6);
+  color: #d4d4d8;
+  line-height: 1.7;
+}
+
+.instructionsList li {
+  font-size: var(--font-size-sm);
+}
+
+.instructionsList strong {
+  color: #5e5ce6;
+  font-weight: 600;
+}
+
+/* Code Example */
+.codeExample {
+  padding: var(--space-6);
+  background: rgba(24, 24, 27, 0.8);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(63, 63, 70, 0.4);
+  border-radius: var(--radius-xl);
+}
+
+.codeTitle {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: #fafafa;
+  margin: 0 0 var(--space-4) 0;
+}
+
+.code {
+  margin: 0;
+  padding: var(--space-4);
+  background: rgba(10, 10, 10, 0.8);
+  border: 1px solid rgba(63, 63, 70, 0.3);
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  color: #d4d4d8;
+}
+
+.code::-webkit-scrollbar {
+  height: 8px;
+}
+
+.code::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.code::-webkit-scrollbar-thumb {
+  background: rgba(63, 63, 70, 0.5);
+  border-radius: 4px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: var(--space-4);
+    gap: var(--space-6);
+  }
+
+  .header {
+    padding: var(--space-4);
+  }
+
+  .title {
+    font-size: var(--font-size-2xl);
+  }
+
+  .viewToggle {
+    width: 100%;
+  }
+
+  .viewToggle button {
+    flex: 1;
+  }
+
+  .instructions,
+  .codeExample {
+    padding: var(--space-4);
+  }
+}

@@ -1,67 +1,48 @@
 /**
- * Skip to Content Link Component
- * Allows keyboard users to skip repetitive navigation
- * WCAG 2.1: 2.4.1 Bypass Blocks (Level A)
+ * Skip Link Component
+ * Allows keyboard users to skip to main content
+ * WCAG 2.1 Level AA - 2.4.1 Bypass Blocks
  */
 
 'use client';
 
-import { ButtonHTMLAttributes } from 'react';
+import { useState } from 'react';
 import styles from './SkipLink.module.css';
 
-export interface SkipLinkProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface SkipLinkProps {
   targetId?: string;
   label?: string;
 }
 
-export function SkipLink({
-  targetId = 'main-content',
-  label = 'Skip to main content',
-  onClick,
-  ...props
-}: SkipLinkProps) {
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
+export function SkipLink({ targetId = 'main-content', label = 'Skip to main content' }: SkipLinkProps) {
+  const [isFocused, setIsFocused] = useState(false);
 
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     const target = document.getElementById(targetId);
     if (target) {
+      e.preventDefault();
       target.focus();
       target.scrollIntoView({ behavior: 'smooth' });
     }
+  };
 
-    onClick?.(e);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLAnchorElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      handleClick(e as any);
+      setIsFocused(false);
+    }
   };
 
   return (
-    <button
-      className={styles.skipLink}
+    <a
+      href={`#${targetId}`}
+      className={`${styles.skipLink} ${isFocused ? styles.focused : ''}`}
       onClick={handleClick}
-      aria-label={label}
-      {...props}
+      onKeyDown={handleKeyDown}
+      onFocus={() => setIsFocused(true)}
+      onBlur={() => setIsFocused(false)}
     >
       {label}
-    </button>
-  );
-}
-
-/**
- * Multiple skip links component
- */
-export interface SkipLinksProps {
-  links?: Array<{ id: string; label: string }>;
-}
-
-export function SkipLinks({
-  links = [
-    { id: 'main-content', label: 'Skip to main content' },
-    { id: 'footer', label: 'Skip to footer' },
-  ],
-}: SkipLinksProps) {
-  return (
-    <nav className={styles.skipLinks} aria-label="Skip links">
-      {links.map((link) => (
-        <SkipLink key={link.id} targetId={link.id} label={link.label} />
-      ))}
-    </nav>
+    </a>
   );
 }

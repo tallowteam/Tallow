@@ -1,115 +1,24 @@
+/* Modal Component - Tallow 3.0 Cineglass Magazine Design */
+
+/* ============================================
+   Backdrop
+   ============================================ */
+
 .backdrop {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(4px);
-  animation: fadeIn var(--transition-fast, 200ms) ease-out;
-}
-
-.modal {
-  position: relative;
-  background: var(--neutral-900, #171717);
-  border: 1px solid var(--neutral-800, #262626);
-  border-radius: 12px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5),
-    0 10px 10px -5px rgba(0, 0, 0, 0.4);
-  max-height: calc(100vh - 2rem);
-  display: flex;
-  flex-direction: column;
-  animation: slideUp var(--transition-base, 300ms) ease-out;
-  outline: none;
-}
-
-.modal:focus-visible {
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.3),
-    0 20px 25px -5px rgba(0, 0, 0, 0.5),
-    0 10px 10px -5px rgba(0, 0, 0, 0.4);
-}
-
-/* Sizes */
-.sm {
-  width: 100%;
-  max-width: 400px;
-}
-
-.md {
-  width: 100%;
-  max-width: 500px;
-}
-
-.lg {
-  width: 100%;
-  max-width: 700px;
-}
-
-.xl {
-  width: 100%;
-  max-width: 900px;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--neutral-800, #262626);
-}
-
-.title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--neutral-100, #f5f5f5);
-  margin: 0;
-}
-
-.closeButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  color: var(--neutral-400, #a3a3a3);
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all var(--transition-fast, 200ms cubic-bezier(0.4, 0, 0.2, 1));
-  outline: none;
-}
-
-.closeButton:hover {
-  color: var(--neutral-100, #f5f5f5);
-  background: var(--neutral-800, #262626);
-}
-
-.closeButton:focus-visible {
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.3);
-}
-
-.content {
-  flex: 1;
-  padding: 1.5rem;
+  padding: 24px;
+  animation: fadeIn 0.2s ease;
   overflow-y: auto;
-  color: var(--neutral-200, #e5e5e5);
+  z-index: 500;
 }
 
-.footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid var(--neutral-800, #262626);
-  background: var(--neutral-950, #0a0a0a);
-}
-
-/* Animations */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -119,13 +28,276 @@
   }
 }
 
-@keyframes slideUp {
+/* ============================================
+   Modal Container
+   ============================================ */
+
+.modal {
+  position: relative;
+  background: var(--bg-2, #08080e);
+  border: 1px solid var(--border, #18182a);
+  border-radius: 20px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+  max-width: 100%;
+  width: 100%;
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  animation: modalEnter 0.2s ease;
+  overflow: hidden;
+}
+
+@keyframes modalEnter {
   from {
     opacity: 0;
-    transform: translateY(20px) scale(0.95);
+    transform: scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: scale(1);
+  }
+}
+
+/* ============================================
+   Size Variants
+   ============================================ */
+
+.sm {
+  max-width: 400px;
+}
+
+.md {
+  max-width: 480px;
+}
+
+.lg {
+  max-width: 640px;
+}
+
+.xl {
+  max-width: 800px;
+}
+
+.full {
+  max-width: 90vw;
+  max-height: 90vh;
+}
+
+/* ============================================
+   Close Button
+   ============================================ */
+
+.closeButton {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-2, #9494a8);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.closeButton:hover {
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--text, #f2f2f8);
+}
+
+.closeButton:focus-visible {
+  outline: 2px solid var(--accent, #6366f1);
+  outline-offset: 2px;
+}
+
+.closeButton:active {
+  transform: scale(0.95);
+}
+
+.closeButton svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ============================================
+   Title
+   ============================================ */
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text, #f2f2f8);
+  margin: 0;
+  padding: 32px;
+  padding-right: 64px;
+  border-bottom: 1px solid var(--border, #18182a);
+  line-height: 1.3;
+}
+
+/* ============================================
+   Content
+   ============================================ */
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
+  color: var(--text, #f2f2f8);
+}
+
+/* Custom scrollbar */
+.content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.content::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.2);
+  border-radius: 4px;
+}
+
+.content::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.3);
+}
+
+/* ============================================
+   Subcomponents
+   ============================================ */
+
+.header {
+  padding: 32px;
+  padding-right: 64px;
+  border-bottom: 1px solid var(--border, #18182a);
+}
+
+.body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
+}
+
+.footer {
+  padding: 24px 32px;
+  border-top: 1px solid var(--border, #18182a);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+
+@media (max-width: 640px) {
+  .backdrop {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .modal {
+    max-height: 90vh;
+    border-radius: 20px 20px 0 0;
+    animation: slideUp 0.2s ease;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .title {
+    font-size: 1.25rem;
+    padding: 24px;
+    padding-right: 56px;
+  }
+
+  .content,
+  .header,
+  .body,
+  .footer {
+    padding: 24px;
+  }
+
+  .closeButton {
+    top: 16px;
+    right: 16px;
+  }
+}
+
+/* ============================================
+   Light Mode
+   ============================================ */
+
+[data-theme="light"] .backdrop {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+[data-theme="light"] .modal {
+  background: #fefefe;
+  border-color: rgba(24, 24, 42, 0.1);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .title {
+  color: #0a0a10;
+  border-bottom-color: rgba(24, 24, 42, 0.1);
+}
+
+[data-theme="light"] .content {
+  color: #0a0a10;
+}
+
+[data-theme="light"] .header {
+  border-bottom-color: rgba(24, 24, 42, 0.1);
+}
+
+[data-theme="light"] .footer {
+  border-top-color: rgba(24, 24, 42, 0.1);
+}
+
+[data-theme="light"] .closeButton {
+  color: #5a5a70;
+}
+
+[data-theme="light"] .closeButton:hover {
+  background: rgba(99, 102, 241, 0.08);
+  color: #0a0a10;
+}
+
+[data-theme="light"] .content::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.15);
+}
+
+[data-theme="light"] .content::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.25);
+}
+
+/* ============================================
+   Reduced Motion
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .modal {
+    animation: none;
+  }
+
+  .closeButton:active {
+    transform: none;
   }
 }

@@ -62,7 +62,7 @@ const imageObserver = createImageObserver();
  * Create intersection observer for lazy loading images
  */
 function createImageObserver(): IntersectionObserver | null {
-  if (typeof IntersectionObserver === 'undefined') return null;
+  if (typeof IntersectionObserver === 'undefined') {return null;}
 
   return new IntersectionObserver(
     (entries) => {
@@ -354,8 +354,8 @@ export function supportsAVIF(): Promise<boolean> {
  * Get best supported image format
  */
 export async function getBestImageFormat(): Promise<'avif' | 'webp' | 'jpg'> {
-  if (await supportsAVIF()) return 'avif';
-  if (await supportsWebP()) return 'webp';
+  if (await supportsAVIF()) {return 'avif';}
+  if (await supportsWebP()) {return 'webp';}
   return 'jpg';
 }
 

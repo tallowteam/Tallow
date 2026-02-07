@@ -1,398 +1,337 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import {
-  CheckIcon,
-  XMarkIcon,
-  ArrowRightIcon,
-  SparklesIcon,
-  BuildingOfficeIcon,
-  UserIcon,
-} from '@heroicons/react/24/outline';
+'use client';
 
-export const metadata: Metadata = {
-  title: 'Pricing',
-  description: 'Choose the perfect plan for your secure file transfer needs. Free forever for personal use, Pro for power users, and Enterprise for teams.',
-  keywords: 'tallow pricing, secure file transfer plans, free file transfer, enterprise file sharing',
-  openGraph: {
-    title: 'Pricing | Tallow',
-    description: 'Choose the perfect plan for your secure file transfer needs.',
-    type: 'website',
-  },
-};
+import { useState } from 'react';
+import Link from 'next/link';
+import { Button, Badge } from '@/components/ui';
+import { AnimatedSection } from '@/components/ui/AnimatedSection';
+import { Check, Minus, ArrowRight, ChevronDown } from '@/components/icons';
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
+import styles from './page.module.css';
 
 const plans = [
   {
     name: 'Free',
-    icon: UserIcon,
+    description: 'Perfect for personal use',
     price: '$0',
     period: 'forever',
-    description: 'Perfect for personal use and occasional transfers',
     features: [
-      { text: 'Up to 5GB file size', included: true },
-      { text: 'End-to-end encryption', included: true },
-      { text: 'Post-quantum cryptography', included: true },
-      { text: 'Unlimited transfers', included: true },
-      { text: 'P2P direct connections', included: true },
-      { text: 'Basic security features', included: true },
-      { text: 'Community support', included: true },
-      { text: 'Resume interrupted transfers', included: false },
-      { text: 'Transfer history', included: false },
-      { text: 'Priority support', included: false },
-      { text: 'Custom branding', included: false },
+      'Local network transfers',
+      'Up to 5 devices',
+      'Basic encryption',
+      'Community support',
     ],
-    cta: 'Start Free',
-    ctaHref: '/app',
-    highlighted: false,
+    cta: 'Get Started',
+    ctaVariant: 'secondary' as const,
+    href: '/transfer',
   },
   {
     name: 'Pro',
-    icon: SparklesIcon,
+    description: 'For power users and teams',
     price: '$9.99',
-    period: 'per month',
-    description: 'For power users who need advanced features',
+    period: '/month',
+    badge: 'POPULAR',
     features: [
-      { text: 'Unlimited file size', included: true },
-      { text: 'End-to-end encryption', included: true },
-      { text: 'Post-quantum cryptography', included: true },
-      { text: 'Unlimited transfers', included: true },
-      { text: 'P2P direct connections', included: true },
-      { text: 'Advanced security features', included: true },
-      { text: 'Resume interrupted transfers', included: true },
-      { text: 'Transfer history (90 days)', included: true },
-      { text: 'Priority email support', included: true },
-      { text: 'Folder transfers', included: true },
-      { text: 'Custom branding', included: false },
+      'Everything in Free, plus:',
+      'Internet P2P transfers',
+      'Unlimited devices',
+      'Priority relay servers',
+      'Scheduled transfers',
+      'Chat integration',
+      'Custom themes',
     ],
-    cta: 'Get Pro',
-    ctaHref: '/app',
+    cta: 'Upgrade to Pro',
+    ctaVariant: 'primary' as const,
+    href: '/transfer',
     highlighted: true,
   },
   {
-    name: 'Enterprise',
-    icon: BuildingOfficeIcon,
-    price: 'Custom',
-    period: 'contact us',
-    description: 'For teams and organizations with advanced needs',
+    name: 'Business',
+    description: 'For organizations at scale',
+    price: '$24.99',
+    period: '/month',
     features: [
-      { text: 'Everything in Pro', included: true },
-      { text: 'Custom file size limits', included: true },
-      { text: 'Dedicated infrastructure', included: true },
-      { text: 'Team management', included: true },
-      { text: 'Custom branding', included: true },
-      { text: 'SSO & SAML integration', included: true },
-      { text: 'Audit logs', included: true },
-      { text: 'Compliance reports', included: true },
-      { text: 'SLA guarantee', included: true },
-      { text: 'Dedicated support', included: true },
-      { text: 'On-premise deployment', included: true },
+      'Everything in Pro, plus:',
+      'Team workspaces',
+      'Admin dashboard',
+      'Usage analytics',
+      'Priority support',
+      'API access',
+      'SSO integration',
     ],
     cta: 'Contact Sales',
-    ctaHref: '/about#contact',
-    highlighted: false,
+    ctaVariant: 'secondary' as const,
+    href: 'mailto:business@tallow.io',
   },
+];
+
+const comparisonFeatures = [
+  { name: 'Local network transfers', free: true, pro: true, business: true },
+  { name: 'End-to-end encryption', free: true, pro: true, business: true },
+  { name: 'Maximum devices', free: '5', pro: 'Unlimited', business: 'Unlimited' },
+  { name: 'Internet P2P transfers', free: false, pro: true, business: true },
+  { name: 'Priority relay servers', free: false, pro: true, business: true },
+  { name: 'Scheduled transfers', free: false, pro: true, business: true },
+  { name: 'Chat integration', free: false, pro: true, business: true },
+  { name: 'Custom themes', free: false, pro: true, business: true },
+  { name: 'Team workspaces', free: false, pro: false, business: true },
+  { name: 'Admin dashboard', free: false, pro: false, business: true },
+  { name: 'Usage analytics', free: false, pro: false, business: true },
+  { name: 'API access', free: false, pro: false, business: true },
+  { name: 'SSO integration', free: false, pro: false, business: true },
+  { name: 'Support level', free: 'Community', pro: 'Priority', business: 'Dedicated' },
 ];
 
 const faqs = [
   {
-    question: 'Is the Free plan really free forever?',
-    answer: 'Yes! The Free plan is completely free forever with no hidden fees. It includes all core features including post-quantum encryption and unlimited transfers.',
-  },
-  {
-    question: 'Can I upgrade or downgrade my plan anytime?',
-    answer: 'Absolutely. You can upgrade to Pro or Enterprise at any time. If you downgrade, you\'ll retain Pro features until the end of your billing period.',
+    question: 'Can I use Tallow for free?',
+    answer: 'Yes! Local network transfers are always free. You can transfer files between devices on the same network without any limitations. Upgrade to Pro or Business for internet transfers and advanced features.',
   },
   {
     question: 'What payment methods do you accept?',
-    answer: 'We accept all major credit cards (Visa, MasterCard, American Express, Discover), PayPal, and for Enterprise customers, we can arrange invoicing and wire transfers.',
+    answer: 'We use Stripe to process all payments securely. We accept all major credit cards (Visa, Mastercard, American Express, Discover), debit cards, and other payment methods supported by Stripe.',
   },
   {
-    question: 'Do you offer refunds?',
-    answer: 'Yes, we offer a 30-day money-back guarantee on all paid plans. If you\'re not satisfied, contact us for a full refund within 30 days of purchase.',
+    question: 'Can I cancel anytime?',
+    answer: 'Absolutely! There are no long-term contracts or commitments. You can cancel your subscription at any time from your account settings. No questions asked, no hidden fees.',
   },
   {
-    question: 'What happens if I exceed the file size limit?',
-    answer: 'On the Free plan, files larger than 5GB will be rejected. Pro users have no file size limits. Enterprise customers can set custom limits based on their needs.',
+    question: 'What happens to my data if I cancel?',
+    answer: 'You keep everything! Tallow is peer-to-peer, meaning your data never lives on our servers. All transfers are direct between your devices. Your data is yours, always.',
   },
   {
-    question: 'Can I use Tallow for commercial purposes on the Free plan?',
-    answer: 'The Free plan is intended for personal use. For commercial use, we recommend the Pro or Enterprise plans which include additional features and support.',
+    question: 'Do you offer discounts for annual plans?',
+    answer: 'Yes! Annual subscribers get 2 months free (16% discount). Contact our sales team for custom pricing for large teams or enterprise deployments.',
   },
   {
-    question: 'How does Enterprise pricing work?',
-    answer: 'Enterprise pricing is customized based on your needs, including number of users, data volume, support requirements, and deployment options. Contact our sales team for a quote.',
-  },
-  {
-    question: 'Do you offer discounts for non-profits or education?',
-    answer: 'Yes! We offer special pricing for educational institutions and registered non-profit organizations. Contact us at hello@tallow.app for details.',
+    question: 'Is my payment information secure?',
+    answer: 'Yes. We never store your payment information. All transactions are processed securely through Stripe, which is PCI DSS Level 1 certified—the highest level of security in the payment industry.',
   },
 ];
 
+function FAQItem({ question, answer }: { question: string; answer: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className={styles.faqItem}>
+      <button
+        className={styles.faqButton}
+        onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+      >
+        <h3 className={styles.faqQuestion}>{question}</h3>
+        <ChevronDown className={`${styles.faqIcon} ${isOpen ? styles.faqIconOpen : ''}`} />
+      </button>
+      <div className={`${styles.faqAnswer} ${isOpen ? styles.faqAnswerOpen : ''}`}>
+        <p>{answer}</p>
+      </div>
+    </div>
+  );
+}
+
 export default function PricingPage() {
   return (
-    <div className="landing-page">
-      {/* Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-lg bg-[rgba(10,10,10,0.8)] border-b border-[rgba(255,255,255,0.05)]">
-        <div className="section-container">
-          <div className="flex items-center justify-between py-4">
-            <Link href="/" className="text-2xl font-bold gradient-text">
-              Tallow
-            </Link>
-            <nav className="flex items-center gap-6">
-              <Link href="/" className="text-sm text-secondary hover:text-primary transition-colors">
-                Home
-              </Link>
-              <Link href="/app" className="btn btn-primary" style={{ padding: '0.5rem 1.5rem' }}>
-                Launch App
-              </Link>
-            </nav>
+    <>
+      <Header />
+      <main className={styles.main}>
+        {/* Hero */}
+        <section className={styles.hero}>
+          <div className={styles.heroBackground}>
+            <div className={styles.heroGradient} />
+            <div className={styles.heroGrid} />
           </div>
-        </div>
-      </header>
-
-      {/* Hero Section */}
-      <section className="hero-section" style={{ minHeight: '60vh' }}>
-        <div className="hero-container">
-          <div className="hero-content">
-            <h1 className="hero-title">
-              Simple, Transparent
-              <span className="gradient-text"> Pricing</span>
-            </h1>
-
-            <p className="hero-subtitle" style={{ maxWidth: '600px' }}>
-              Choose the plan that fits your needs. All plans include post-quantum encryption
-              and end-to-end security. Start free, upgrade anytime.
-            </p>
+          <div className={`container ${styles.heroContainer}`}>
+            <AnimatedSection animation="fadeInDown">
+              <Badge variant="secondary">Pricing</Badge>
+            </AnimatedSection>
+            <AnimatedSection animation="fadeInUp" delay={100}>
+              <h1 className={styles.heroTitle}>
+                Simple, Transparent
+                <br />
+                <span className={styles.heroTitleGradient}>Pricing</span>
+              </h1>
+            </AnimatedSection>
+            <AnimatedSection animation="fadeInUp" delay={200}>
+              <p className={styles.heroDescription}>
+                Start free, upgrade when you need more.
+                <br />
+                No hidden fees. No surprises.
+              </p>
+            </AnimatedSection>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Pricing Cards */}
-      <section style={{ padding: 'var(--spacing-24) var(--spacing-4)', background: 'var(--color-background-secondary)' }}>
-        <div className="section-container">
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-            gap: 'var(--spacing-8)',
-            maxWidth: '1400px',
-            margin: '0 auto',
-          }}>
-            {plans.map((plan) => {
-              const Icon = plan.icon;
-              return (
-                <div
-                  key={plan.name}
-                  style={{
-                    background: plan.highlighted
-                      ? 'linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%)'
-                      : 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
-                    border: plan.highlighted
-                      ? '2px solid rgba(124, 58, 237, 0.4)'
-                      : '1px solid rgba(255, 255, 255, 0.05)',
-                    borderRadius: 'var(--radius-xl)',
-                    padding: 'var(--spacing-12)',
-                    position: 'relative',
-                    transition: 'all var(--transition-base)',
-                  }}
-                  className="feature-card"
+        {/* Pricing Cards */}
+        <section className={styles.pricing}>
+          <div className="container">
+            <div className={styles.pricingGrid}>
+              {plans.map((plan, index) => (
+                <AnimatedSection
+                  key={index}
+                  animation="fadeInUp"
+                  delay={index * 100}
+                  className={`${styles.pricingCard} ${plan.highlighted ? styles.highlighted : ''}`}
                 >
-                  {plan.highlighted && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '-12px',
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      background: 'var(--gradient-accent)',
-                      color: 'white',
-                      padding: '0.25rem 1rem',
-                      borderRadius: 'var(--radius-full)',
-                      fontSize: 'var(--font-size-xs)',
-                      fontWeight: 'var(--font-weight-semibold)',
-                    }}>
-                      Most Popular
+                  {plan.badge && (
+                    <div className={styles.popularBadge}>
+                      <span className={styles.popularBadgeText}>{plan.badge}</span>
                     </div>
                   )}
-
-                  <div style={{ marginBottom: 'var(--spacing-8)' }}>
-                    <div style={{
-                      width: '3rem',
-                      height: '3rem',
-                      background: plan.highlighted ? 'var(--gradient-accent)' : 'rgba(255, 255, 255, 0.05)',
-                      borderRadius: 'var(--radius-lg)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginBottom: 'var(--spacing-4)',
-                    }}>
-                      <Icon style={{ width: '1.5rem', height: '1.5rem', color: 'white' }} />
-                    </div>
-                    <h3 style={{
-                      fontSize: 'var(--font-size-2xl)',
-                      fontWeight: 'var(--font-weight-bold)',
-                      marginBottom: 'var(--spacing-2)',
-                    }}>
-                      {plan.name}
-                    </h3>
-                    <p style={{
-                      color: 'var(--color-foreground-secondary)',
-                      fontSize: 'var(--font-size-sm)',
-                      marginBottom: 'var(--spacing-6)',
-                    }}>
-                      {plan.description}
-                    </p>
-                    <div style={{ marginBottom: 'var(--spacing-6)' }}>
-                      <span style={{
-                        fontSize: 'var(--font-size-5xl)',
-                        fontWeight: 'var(--font-weight-bold)',
-                        background: 'var(--gradient-accent)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        backgroundClip: 'text',
-                      }}>
-                        {plan.price}
-                      </span>
-                      <span style={{
-                        color: 'var(--color-foreground-secondary)',
-                        fontSize: 'var(--font-size-sm)',
-                        marginLeft: 'var(--spacing-2)',
-                      }}>
-                        {plan.period}
-                      </span>
-                    </div>
+                  <div className={styles.pricingHeader}>
+                    <h3 className={styles.pricingName}>{plan.name}</h3>
+                    <p className={styles.pricingDescription}>{plan.description}</p>
                   </div>
-
-                  <Link
-                    href={plan.ctaHref}
-                    className={plan.highlighted ? 'btn btn-primary' : 'btn btn-secondary'}
-                    style={{
-                      width: '100%',
-                      justifyContent: 'center',
-                      marginBottom: 'var(--spacing-8)',
-                    }}
-                  >
-                    {plan.cta}
-                    <ArrowRightIcon style={{ width: '1.25rem', height: '1.25rem' }} />
-                  </Link>
-
-                  <ul style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-3)' }}>
-                    {plan.features.map((feature, index) => (
-                      <li key={index} style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--spacing-3)' }}>
-                        {feature.included ? (
-                          <CheckIcon style={{
-                            width: '1.25rem',
-                            height: '1.25rem',
-                            color: 'var(--color-success)',
-                            flexShrink: 0,
-                            marginTop: '0.125rem',
-                          }} />
-                        ) : (
-                          <XMarkIcon style={{
-                            width: '1.25rem',
-                            height: '1.25rem',
-                            color: 'var(--color-foreground-muted)',
-                            flexShrink: 0,
-                            marginTop: '0.125rem',
-                          }} />
-                        )}
-                        <span style={{
-                          fontSize: 'var(--font-size-sm)',
-                          color: feature.included ? 'var(--color-foreground-primary)' : 'var(--color-foreground-tertiary)',
-                        }}>
-                          {feature.text}
-                        </span>
+                  <div className={styles.pricingPrice}>
+                    <span className={styles.priceValue}>{plan.price}</span>
+                    <span className={styles.pricePeriod}>{plan.period}</span>
+                  </div>
+                  <ul className={styles.pricingFeatures}>
+                    {plan.features.map((feature, i) => (
+                      <li key={i} className={styles.pricingFeature}>
+                        <Check className={styles.checkIcon} />
+                        <span>{feature}</span>
                       </li>
                     ))}
                   </ul>
-                </div>
-              );
-            })}
+                  <div className={styles.pricingAction}>
+                    <Link href={plan.href} className={styles.pricingLink}>
+                      <Button
+                        variant={plan.ctaVariant}
+                        fullWidth
+                        icon={<ArrowRight />}
+                        iconPosition="right"
+                      >
+                        {plan.cta}
+                      </Button>
+                    </Link>
+                  </div>
+                </AnimatedSection>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* FAQ Section */}
-      <section style={{ padding: 'var(--spacing-24) var(--spacing-4)' }}>
-        <div className="section-container" style={{ maxWidth: '900px' }}>
-          <h2 className="section-title">Frequently Asked Questions</h2>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)', marginTop: 'var(--spacing-12)' }}>
-            {faqs.map((faq, index) => (
-              <div
-                key={index}
-                style={{
-                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
-                  border: '1px solid rgba(255, 255, 255, 0.05)',
-                  borderRadius: 'var(--radius-lg)',
-                  padding: 'var(--spacing-8)',
-                }}
-              >
-                <h3 style={{
-                  fontSize: 'var(--font-size-lg)',
-                  fontWeight: 'var(--font-weight-semibold)',
-                  marginBottom: 'var(--spacing-3)',
-                  color: 'var(--color-foreground-primary)',
-                }}>
-                  {faq.question}
-                </h3>
-                <p style={{
-                  color: 'var(--color-foreground-secondary)',
-                  lineHeight: '1.7',
-                }}>
-                  {faq.answer}
+        {/* Feature Comparison Table */}
+        <section className={styles.comparison}>
+          <div className="container">
+            <AnimatedSection animation="fadeInUp">
+              <div className={styles.sectionHeader}>
+                <Badge variant="outline">Compare Plans</Badge>
+                <h2 className={styles.sectionTitle}>Feature Comparison</h2>
+                <p className={styles.sectionDescription}>
+                  Choose the plan that fits your needs
                 </p>
               </div>
-            ))}
+            </AnimatedSection>
+
+            <AnimatedSection animation="fadeInUp" delay={100}>
+              <div className={styles.tableWrapper}>
+                <table className={styles.comparisonTable}>
+                  <thead className={styles.tableHead}>
+                    <tr>
+                      <th className={styles.tableHeader}>Feature</th>
+                      <th className={styles.tableHeader}>Free</th>
+                      <th className={styles.tableHeader}>Pro</th>
+                      <th className={styles.tableHeader}>Business</th>
+                    </tr>
+                  </thead>
+                  <tbody className={styles.tableBody}>
+                    {comparisonFeatures.map((feature, index) => (
+                      <tr key={index} className={styles.tableRow}>
+                        <td className={styles.tableCell}>{feature.name}</td>
+                        <td className={styles.tableCell}>
+                          {typeof feature.free === 'boolean' ? (
+                            feature.free ? (
+                              <Check className={styles.tableCheckIcon} />
+                            ) : (
+                              <Minus className={styles.tableMinusIcon} />
+                            )
+                          ) : (
+                            <span className={styles.tableCellText}>{feature.free}</span>
+                          )}
+                        </td>
+                        <td className={styles.tableCell}>
+                          {typeof feature.pro === 'boolean' ? (
+                            feature.pro ? (
+                              <Check className={styles.tableCheckIcon} />
+                            ) : (
+                              <Minus className={styles.tableMinusIcon} />
+                            )
+                          ) : (
+                            <span className={styles.tableCellText}>{feature.pro}</span>
+                          )}
+                        </td>
+                        <td className={styles.tableCell}>
+                          {typeof feature.business === 'boolean' ? (
+                            feature.business ? (
+                              <Check className={styles.tableCheckIcon} />
+                            ) : (
+                              <Minus className={styles.tableMinusIcon} />
+                            )
+                          ) : (
+                            <span className={styles.tableCellText}>{feature.business}</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </AnimatedSection>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* CTA Section */}
-      <section className="cta-section">
-        <div className="cta-container">
-          <h2 className="cta-title">Ready to Get Started?</h2>
-          <p className="cta-description">
-            Start transferring files securely today. No credit card required for Free plan.
-          </p>
-          <Link href="/app" className="btn btn-primary btn-large">
-            Start Free
-            <ArrowRightIcon className="btn-icon" />
-          </Link>
-        </div>
-      </section>
+        {/* FAQ Accordion */}
+        <section className={styles.faq}>
+          <div className="container">
+            <AnimatedSection animation="fadeInUp">
+              <div className={styles.sectionHeader}>
+                <Badge variant="outline">FAQ</Badge>
+                <h2 className={styles.sectionTitle}>Frequently Asked Questions</h2>
+                <p className={styles.sectionDescription}>
+                  Everything you need to know about our pricing
+                </p>
+              </div>
+            </AnimatedSection>
 
-      {/* Footer */}
-      <footer className="footer">
-        <div className="footer-container">
-          <div className="footer-content">
-            <div className="footer-brand">
-              <h3>Tallow</h3>
-              <p>Secure file transfers, quantum-safe.</p>
-            </div>
-
-            <div className="footer-column">
-              <h4>Product</h4>
-              <Link href="/features">Features</Link>
-              <Link href="/pricing">Pricing</Link>
-              <Link href="/security">Security</Link>
-            </div>
-
-            <div className="footer-column">
-              <h4>Company</h4>
-              <Link href="/about">About</Link>
-              <Link href="/privacy">Privacy</Link>
-              <Link href="/terms">Terms</Link>
-            </div>
-
-            <div className="footer-column">
-              <h4>Support</h4>
-              <Link href="/about#contact">Contact</Link>
+            <div className={styles.faqGrid}>
+              {faqs.map((faq, index) => (
+                <AnimatedSection key={index} animation="fadeInUp" delay={index * 50}>
+                  <FAQItem question={faq.question} answer={faq.answer} />
+                </AnimatedSection>
+              ))}
             </div>
           </div>
+        </section>
 
-          <div className="footer-bottom">
-            <p>&copy; {new Date().getFullYear()} Tallow. All rights reserved.</p>
+        {/* CTA */}
+        <section className={styles.cta}>
+          <div className="container">
+            <AnimatedSection animation="fadeInScale">
+              <div className={styles.ctaCard}>
+                <div className={styles.ctaGlow} />
+                <h2 className={styles.ctaTitle}>Ready to get started?</h2>
+                <p className={styles.ctaDescription}>
+                  No credit card required. Start sharing today.
+                </p>
+                <div className={styles.ctaActions}>
+                  <Link href="/transfer">
+                    <Button size="lg" icon={<ArrowRight />} iconPosition="right">
+                      Start Free
+                    </Button>
+                  </Link>
+                  <Link href="/features">
+                    <Button size="lg" variant="secondary">
+                      View Features
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </AnimatedSection>
           </div>
-        </div>
-      </footer>
-    </div>
+        </section>
+      </main>
+      <Footer />
+    </>
   );
 }

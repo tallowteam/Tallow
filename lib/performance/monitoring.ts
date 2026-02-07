@@ -142,10 +142,10 @@ export function getMetricRating(
       metricName as keyof typeof CORE_WEB_VITALS_THRESHOLDS
     ];
 
-  if (!threshold) return 'needs-improvement';
+  if (!threshold) {return 'needs-improvement';}
 
-  if (value <= threshold.good) return 'good';
-  if (value > threshold.poor) return 'poor';
+  if (value <= threshold.good) {return 'good';}
+  if (value > threshold.poor) {return 'poor';}
   return 'needs-improvement';
 }
 
@@ -162,7 +162,7 @@ export function onMetric(handler: MetricHandler): () => void {
   metricHandlers.push(handler);
   return () => {
     const index = metricHandlers.indexOf(handler);
-    if (index > -1) metricHandlers.splice(index, 1);
+    if (index > -1) {metricHandlers.splice(index, 1);}
   };
 }
 
@@ -190,7 +190,7 @@ function emitMetric(metric: PerformanceMetric): void {
 export async function initCoreWebVitals(
   handler?: MetricHandler
 ): Promise<void> {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {return;}
 
   if (handler) {
     onMetric(handler);
@@ -239,7 +239,7 @@ const marks = new Map<string, number>();
  * const duration = markEnd('heavy-computation');
  */
 export function markStart(name: string, detail?: unknown): void {
-  if (typeof performance === 'undefined') return;
+  if (typeof performance === 'undefined') {return;}
 
   marks.set(name, performance.now());
 
@@ -255,7 +255,7 @@ export function markStart(name: string, detail?: unknown): void {
  * Mark the end and measure duration
  */
 export function markEnd(name: string, detail?: unknown): number {
-  if (typeof performance === 'undefined') return 0;
+  if (typeof performance === 'undefined') {return 0;}
 
   const startTime = marks.get(name);
   const endTime = performance.now();
@@ -344,7 +344,7 @@ export function timed(name: string) {
  * Get resource timing entries
  */
 export function getResourceTimings(): ResourceTiming[] {
-  if (typeof performance === 'undefined') return [];
+  if (typeof performance === 'undefined') {return [];}
 
   const entries = performance.getEntriesByType(
     'resource'
@@ -399,14 +399,14 @@ export function getLargestResources(limit = 10): ResourceTiming[] {
  * Get navigation timing data
  */
 export function getNavigationTiming(): NavigationTiming | null {
-  if (typeof performance === 'undefined') return null;
+  if (typeof performance === 'undefined') {return null;}
 
   const entries = performance.getEntriesByType(
     'navigation'
   ) as PerformanceNavigationTiming[];
   const nav = entries[0];
 
-  if (!nav) return null;
+  if (!nav) {return null;}
 
   return {
     domContentLoaded: nav.domContentLoadedEventEnd - nav.startTime,
@@ -447,15 +447,15 @@ export function checkBudget(
     }
   };
 
-  if (metrics.lcp !== undefined) check('LCP', metrics.lcp, fullBudget.lcp);
-  if (metrics.fid !== undefined) check('FID', metrics.fid, fullBudget.fid);
-  if (metrics.inp !== undefined) check('INP', metrics.inp, fullBudget.inp);
-  if (metrics.cls !== undefined) check('CLS', metrics.cls, fullBudget.cls);
-  if (metrics.fcp !== undefined) check('FCP', metrics.fcp, fullBudget.fcp);
-  if (metrics.ttfb !== undefined) check('TTFB', metrics.ttfb, fullBudget.ttfb);
-  if (metrics.bundleSize !== undefined) check('bundleSize', metrics.bundleSize, fullBudget.bundleSize);
-  if (metrics.jsSize !== undefined) check('jsSize', metrics.jsSize, fullBudget.jsSize);
-  if (metrics.cssSize !== undefined) check('cssSize', metrics.cssSize, fullBudget.cssSize);
+  if (metrics.lcp !== undefined) {check('LCP', metrics.lcp, fullBudget.lcp);}
+  if (metrics.fid !== undefined) {check('FID', metrics.fid, fullBudget.fid);}
+  if (metrics.inp !== undefined) {check('INP', metrics.inp, fullBudget.inp);}
+  if (metrics.cls !== undefined) {check('CLS', metrics.cls, fullBudget.cls);}
+  if (metrics.fcp !== undefined) {check('FCP', metrics.fcp, fullBudget.fcp);}
+  if (metrics.ttfb !== undefined) {check('TTFB', metrics.ttfb, fullBudget.ttfb);}
+  if (metrics.bundleSize !== undefined) {check('bundleSize', metrics.bundleSize, fullBudget.bundleSize);}
+  if (metrics.jsSize !== undefined) {check('jsSize', metrics.jsSize, fullBudget.jsSize);}
+  if (metrics.cssSize !== undefined) {check('cssSize', metrics.cssSize, fullBudget.cssSize);}
 
   return violations;
 }
@@ -517,7 +517,7 @@ export function sendReport(
   report: PerformanceReport,
   endpoint: string
 ): Promise<void> {
-  if (typeof navigator === 'undefined') return Promise.resolve();
+  if (typeof navigator === 'undefined') {return Promise.resolve();}
 
   // Use sendBeacon for reliability
   if (navigator.sendBeacon) {
@@ -549,7 +549,7 @@ export function sendReport(
 export function observeLongTasks(
   callback: (entry: PerformanceEntry) => void
 ): () => void {
-  if (typeof PerformanceObserver === 'undefined') return () => {};
+  if (typeof PerformanceObserver === 'undefined') {return () => {};}
 
   try {
     const observer = new PerformanceObserver((list) => {
@@ -572,7 +572,7 @@ export function observeLongTasks(
 export function observeLayoutShifts(
   callback: (entry: PerformanceEntry & { value?: number }) => void
 ): () => void {
-  if (typeof PerformanceObserver === 'undefined') return () => {};
+  if (typeof PerformanceObserver === 'undefined') {return () => {};}
 
   try {
     const observer = new PerformanceObserver((list) => {
@@ -596,7 +596,7 @@ export function observeLayoutShifts(
  * Log performance summary to console
  */
 export function logPerformanceSummary(): void {
-  if (typeof console === 'undefined') return;
+  if (typeof console === 'undefined') {return;}
 
   const nav = getNavigationTiming();
   const sizes = getResourceSizeByType();

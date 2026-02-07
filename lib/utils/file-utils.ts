@@ -2,6 +2,8 @@ import { generateUUID } from './uuid';
 
 // Utility functions for file operations
 
+export type FileCategory = 'image' | 'video' | 'audio' | 'document' | 'archive' | 'code' | 'folder' | 'other';
+
 export function formatFileSize(bytes: number): string {
     if (bytes === 0) {return '0 B';}
 
@@ -9,7 +11,10 @@ export function formatFileSize(bytes: number): string {
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+    // Show more precision for smaller files
+    const decimals = i <= 1 ? 0 : 1;
+
+    return `${(bytes / Math.pow(k, i)).toFixed(decimals)} ${sizes[i]}`;
 }
 
 export function formatSpeed(bytesPerSecond: number): string {
@@ -76,6 +81,97 @@ export function getFileIcon(filename: string): string {
     };
 
     return iconMap[ext || ''] || '📎';
+}
+
+/**
+ * Get file category from MIME type
+ */
+export function getFileCategory(mimeType: string): FileCategory {
+    if (!mimeType) {return 'other';}
+
+    // Image files
+    if (mimeType.startsWith('image/')) {
+        return 'image';
+    }
+
+    // Video files
+    if (mimeType.startsWith('video/')) {
+        return 'video';
+    }
+
+    // Audio files
+    if (mimeType.startsWith('audio/')) {
+        return 'audio';
+    }
+
+    // Document files
+    if (
+        mimeType.includes('pdf') ||
+        mimeType.includes('document') ||
+        mimeType.includes('word') ||
+        mimeType.includes('text') ||
+        mimeType.includes('msword') ||
+        mimeType.includes('officedocument') ||
+        mimeType.includes('spreadsheet') ||
+        mimeType.includes('presentation')
+    ) {
+        return 'document';
+    }
+
+    // Archive files
+    if (
+        mimeType.includes('zip') ||
+        mimeType.includes('rar') ||
+        mimeType.includes('7z') ||
+        mimeType.includes('tar') ||
+        mimeType.includes('gzip') ||
+        mimeType.includes('compress')
+    ) {
+        return 'archive';
+    }
+
+    // Code files
+    if (
+        mimeType.includes('javascript') ||
+        mimeType.includes('typescript') ||
+        mimeType.includes('json') ||
+        mimeType.includes('xml') ||
+        mimeType.includes('html') ||
+        mimeType.includes('css') ||
+        mimeType.includes('python') ||
+        mimeType.includes('java') ||
+        mimeType.includes('c++') ||
+        mimeType.startsWith('text/x-')
+    ) {
+        return 'code';
+    }
+
+    return 'other';
+}
+
+/**
+ * Check if file is an image that can be previewed
+ */
+export function isPreviewableImage(mimeType: string): boolean {
+    return (
+        mimeType === 'image/jpeg' ||
+        mimeType === 'image/jpg' ||
+        mimeType === 'image/png' ||
+        mimeType === 'image/gif' ||
+        mimeType === 'image/webp' ||
+        mimeType === 'image/svg+xml'
+    );
+}
+
+/**
+ * Get file extension from filename
+ */
+export function getFileExtension(filename: string): string {
+    const parts = filename.split('.');
+    if (parts.length > 1) {
+        return parts[parts.length - 1]?.toLowerCase() ?? '';
+    }
+    return '';
 }
 
 export async function fileToArrayBuffer(file: File): Promise<ArrayBuffer> {

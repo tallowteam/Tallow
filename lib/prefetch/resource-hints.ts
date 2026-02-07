@@ -40,7 +40,7 @@ export function preloadResource(hint: ResourceHint) {
 
   document.head.appendChild(link);
 
-  console.debug(`[Preload] ${href} (${type}, ${priority})`);
+  console.info(`[Preload] ${href} (${type}, ${priority})`);
 }
 
 /**
@@ -59,7 +59,7 @@ export function prefetchResource(href: string) {
 
   document.head.appendChild(link);
 
-  console.debug(`[Prefetch Resource] ${href}`);
+  console.info(`[Prefetch Resource] ${href}`);
 }
 
 /**
@@ -77,7 +77,7 @@ export function dnsPrefetch(domain: string) {
 
   document.head.appendChild(link);
 
-  console.debug(`[DNS Prefetch] ${domain}`);
+  console.info(`[DNS Prefetch] ${domain}`);
 }
 
 /**
@@ -96,7 +96,7 @@ export function preconnect(domain: string, crossOrigin?: 'anonymous' | 'use-cred
 
   document.head.appendChild(link);
 
-  console.debug(`[Preconnect] ${domain}`);
+  console.info(`[Preconnect] ${domain}`);
 }
 
 /**

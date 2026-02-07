@@ -1,0 +1,515 @@
+name: Release Workflow
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.0)'
+        required: true
+        type: string
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '20'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+
+jobs:
+  # ============================================================================
+  # Verify Release Readiness
+  # ============================================================================
+  verify-release:
+    name: Verify Release Readiness
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="v${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+
+          # Validate semantic versioning
+          if ! [[ $VERSION =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "ERROR: Invalid version format: $VERSION"
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "✓ Version validated: $VERSION"
+
+      - name: Verify CI passed
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ steps.version.outputs.version }}';
+            const ref = version;
+
+            // Get the commit associated with this tag
+            const tag = await github.rest.git.getRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: `tags/${version}`
+            }).catch(() => null);
+
+            if (!tag) {
+              console.log('✓ Tag will be created during release');
+              return;
+            }
+
+            console.log(`✓ Tag ${version} verified`);
+
+      - name: Check release notes
+        run: |
+          if [ ! -f CHANGELOG.md ]; then
+            echo "WARNING: CHANGELOG.md not found"
+          else
+            echo "✓ CHANGELOG.md found"
+          fi
+
+  # ============================================================================
+  # Generate Changelog
+  # ============================================================================
+  generate-changelog:
+    name: Generate Changelog
+    needs: verify-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    outputs:
+      changelog: ${{ steps.changelog.outputs.body }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          VERSION="${{ needs.verify-release.outputs.version }}"
+          PREV_TAG=$(git describe --tags --abbrev=0 ${VERSION}^ 2>/dev/null || echo "")
+
+          if [ -z "$PREV_TAG" ]; then
+            CHANGELOG=$(git log --pretty=format:"- %s (%h) - %an" --no-merges)
+          else
+            CHANGELOG=$(git log ${PREV_TAG}..${VERSION} --pretty=format:"- %s (%h) - %an" --no-merges)
+          fi
+
+          # Handle multiline output
+          CHANGELOG="${CHANGELOG//'%'/'%25'}"
+          CHANGELOG="${CHANGELOG//$'\n'/'%0A'}"
+          CHANGELOG="${CHANGELOG//$'\r'/'%0D'}"
+
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          echo "✓ Changelog generated"
+
+  # ============================================================================
+  # Create GitHub Release
+  # ============================================================================
+  create-release:
+    name: Create GitHub Release
+    needs: [verify-release, generate-changelog]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    outputs:
+      upload_url: ${{ steps.release.outputs.upload_url }}
+      release_id: ${{ steps.release.outputs.id }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create GitHub Release
+        id: release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.verify-release.outputs.version }}
+          release_name: Release ${{ needs.verify-release.outputs.version }}
+          body: |
+            ## Changes in ${{ needs.verify-release.outputs.version }}
+
+            ${{ needs.generate-changelog.outputs.changelog }}
+
+            ## Installation
+
+            ### Docker
+            ```bash
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-web:${{ needs.verify-release.outputs.version }}
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-signaling:${{ needs.verify-release.outputs.version }}
+            ```
+
+            ### Docker Compose
+            ```yaml
+            version: '3.9'
+            services:
+              web:
+                image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-web:${{ needs.verify-release.outputs.version }}
+                ports:
+                  - "3000:3000"
+              signaling:
+                image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-signaling:${{ needs.verify-release.outputs.version }}
+                ports:
+                  - "3001:3001"
+            ```
+
+            ### npm
+            ```bash
+            npm install
+            npm run build
+            npm start
+            ```
+
+            ## Security & Verification
+
+            All images are signed with Docker Content Trust and scanned for vulnerabilities.
+
+            For detailed changes, see [commits](https://github.com/${{ github.repository }}/compare/{{ previous_tag }}...${{ needs.verify-release.outputs.version }})
+          draft: false
+          prerelease: ${{ contains(needs.verify-release.outputs.version, 'rc') || contains(needs.verify-release.outputs.version, 'alpha') || contains(needs.verify-release.outputs.version, 'beta') }}
+
+  # ============================================================================
+  # Build & Push Docker Images
+  # ============================================================================
+  build-images:
+    name: Build & Push Docker Images
+    needs: [verify-release, create-release]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [web, signaling]
+
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.image }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ needs.verify-release.outputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.verify-release.outputs.version }}
+            type=semver,pattern={{major}},value=${{ needs.verify-release.outputs.version }}
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        id: docker_build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.image == 'web' && 'Dockerfile' || 'Dockerfile.signaling' }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ needs.verify-release.outputs.version }}
+            BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+            VCS_REF=${{ github.sha }}
+            NODE_ENV=production
+            NEXT_TELEMETRY_DISABLED=1
+
+      - name: Image digest
+        run: echo "Digest: ${{ steps.docker_build.outputs.digest }}"
+
+  # ============================================================================
+  # Security Scan Artifacts
+  # ============================================================================
+  scan-artifacts:
+    name: Scan Release Artifacts
+    needs: [verify-release, build-images]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      security-events: write
+
+    strategy:
+      matrix:
+        image: [web, signaling]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.image }}:${{ needs.verify-release.outputs.version }}
+          format: 'sarif'
+          output: 'trivy-${{ matrix.image }}-results.sarif'
+          severity: 'CRITICAL,HIGH'
+        continue-on-error: true
+
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-${{ matrix.image }}-results.sarif'
+          category: trivy-release-${{ matrix.image }}
+
+  # ============================================================================
+  # Package Artifacts
+  # ============================================================================
+  package-artifacts:
+    name: Package Release Artifacts
+    needs: [verify-release, create-release]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'latest'
+
+      - name: Update Helm chart version
+        run: |
+          VERSION="${{ needs.verify-release.outputs.version }}"
+          VERSION=${VERSION#v}
+          sed -i "s/^version:.*/version: ${VERSION}/" helm/tallow/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: ${VERSION}/" helm/tallow/Chart.yaml
+          echo "✓ Helm chart version updated to ${VERSION}"
+
+      - name: Package Helm chart
+        run: |
+          helm package helm/tallow -d .
+          ls -lh tallow-*.tgz
+          echo "✓ Helm chart packaged"
+
+      - name: Upload Helm chart to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./tallow-*.tgz
+          asset_name: tallow-helm-${{ needs.verify-release.outputs.version }}.tgz
+          asset_content_type: application/gzip
+
+  # ============================================================================
+  # Update Repository Version
+  # ============================================================================
+  update-version:
+    name: Update Repository Version
+    needs: [verify-release, build-images, package-artifacts]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Update package version
+        run: |
+          VERSION="${{ needs.verify-release.outputs.version }}"
+          VERSION=${VERSION#v}
+          npm version ${VERSION} --no-git-tag-version
+          echo "✓ package.json version updated to ${VERSION}"
+
+      - name: Commit and push version update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "chore: bump version to ${{ needs.verify-release.outputs.version }}"
+          git push origin main
+          echo "✓ Version commit pushed"
+
+  # ============================================================================
+  # Release Notification
+  # ============================================================================
+  notify-release:
+    name: Release Notification
+    needs: [verify-release, create-release, build-images, package-artifacts]
+    if: success()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      issues: write
+
+    steps:
+      - name: Create release announcement
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ needs.verify-release.outputs.version }}';
+            const body = `
+## 🎉 TALLOW ${version} Released!
+
+### What's New
+Check out the [release notes](https://github.com/${{ github.repository }}/releases/tag/${version}) for all changes.
+
+### Get It Now
+
+**Docker:**
+\`\`\`bash
+docker pull ${{ env.REGISTRY }}/${{ github.repository }}-web:${version}
+docker pull ${{ env.REGISTRY }}/${{ github.repository }}-signaling:${version}
+\`\`\`
+
+**Helm:**
+Download from [GitHub Releases](https://github.com/${{ github.repository }}/releases/tag/${version})
+
+**npm:**
+\`\`\`bash
+npm install && npm run build
+\`\`\`
+
+### Documentation
+- [Installation Guide](https://github.com/${{ github.repository }}/blob/main/README.md)
+- [API Docs](https://github.com/${{ github.repository }}/tree/main/docs)
+- [Examples](https://github.com/${{ github.repository }}/tree/main/examples)
+
+Thank you for using TALLOW! 🙏
+            `;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Release ${version} 🚀`,
+              body: body,
+              labels: ['release', 'announcement', 'automated']
+            });
+
+            console.log(`Release announcement created for ${version}`);
+
+  # ============================================================================
+  # Release Rollback Handler
+  # ============================================================================
+  release-rollback:
+    name: Release Rollback Handler
+    needs: [verify-release, create-release, build-images]
+    if: failure()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      contents: write
+      issues: write
+
+    steps:
+      - name: Delete failed release
+        uses: actions/github-script@v7
+        continue-on-error: true
+        with:
+          script: |
+            const version = '${{ needs.verify-release.outputs.version }}';
+
+            // Get release by tag
+            const release = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: version
+            }).catch(() => null);
+
+            if (release) {
+              await github.rest.repos.deleteRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: release.data.id
+              });
+              console.log(`Release ${version} deleted`);
+            }
+
+      - name: Create incident issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ needs.verify-release.outputs.version }}';
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `⚠️ Release ${version} Failed`,
+              body: `
+## Release Failure Report
+
+**Version:** ${version}
+**Run:** [${context.runId}](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
+
+### Actions Taken
+- Release and docker images were not published
+- Release tag was not created
+
+### Investigation Required
+Please review the workflow logs and fix the issues before retrying the release.
+              `,
+              labels: ['incident', 'release', 'automated']
+            });

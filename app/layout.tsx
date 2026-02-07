@@ -1,65 +1,24 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { ThemeProvider, ThemeScript } from '@/components/theme';
+import { SkipLink } from '@/components/a11y';
+import { AccessibilityProvider } from '@/components/a11y/AccessibilityProvider';
+import { ToastProvider } from '@/components/ui/ToastProvider';
+import { PerformanceInit } from '@/lib/performance/PerformanceInit';
+import { geistSans, fontClassNames } from '@/lib/fonts/geist';
 import './globals.css';
-import { ThemeProvider, themeScript } from '@/lib/theme';
 
-const inter = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-inter',
-});
+// Using Geist Sans (Vercel's official font) as primary
+// Inter remains as fallback for gradual migration
+// Fonts are automatically optimized and self-hosted by Next.js
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://tallow.app'),
-  title: {
-    default: 'Tallow - Secure File Transfers. Quantum-Safe.',
-    template: '%s | Tallow',
-  },
-  description: 'Transfer files directly between devices with post-quantum encryption. No cloud storage, no compromises.',
-  keywords: ['secure file transfer', 'quantum-safe', 'post-quantum encryption', 'peer-to-peer', 'p2p', 'zero knowledge', 'encrypted file sharing'],
-  authors: [{ name: 'Tallow' }],
-  creator: 'Tallow',
-  publisher: 'Tallow',
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
-  openGraph: {
-    type: 'website',
-    locale: 'en_US',
-    url: 'https://tallow.app',
-    siteName: 'Tallow',
-    title: 'Tallow - Secure File Transfers. Quantum-Safe.',
-    description: 'Transfer files directly between devices with post-quantum encryption. No cloud storage, no compromises.',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Tallow - Secure File Transfers. Quantum-Safe.',
-    description: 'Transfer files directly between devices with post-quantum encryption.',
-    creator: '@tallow',
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  },
+  title: 'Tallow',
+  description: 'Secure peer-to-peer file transfers with post-quantum encryption.',
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 5,
-  themeColor: [
-    { media: '(prefers-color-scheme: dark)', color: '#000000' },
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-  ],
 };
 
 export default function RootLayout({
@@ -68,17 +27,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable} suppressHydrationWarning>
+    <html lang="en" className={fontClassNames} suppressHydrationWarning>
       <head>
-        <script
-          dangerouslySetInnerHTML={{ __html: themeScript }}
-          suppressHydrationWarning
-        />
+        <ThemeScript />
       </head>
-      <body>
-        <ThemeProvider defaultTheme="dark">
-          {children}
+      <body className={geistSans.className}>
+        <SkipLink targetId="main-content" label="Skip to main content" />
+        <ThemeProvider>
+          <AccessibilityProvider>
+            <ToastProvider position="bottom-right" maxToasts={5}>
+              {children}
+            </ToastProvider>
+          </AccessibilityProvider>
         </ThemeProvider>
+        <PerformanceInit />
       </body>
     </html>
   );

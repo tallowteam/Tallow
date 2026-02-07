@@ -1,25 +1,26 @@
-/* Button Component Styles - Using Design System Variables from globals.css */
+/* Button Component - Tallow 3.0 Cineglass Magazine Design */
 
 .button {
-  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  font-weight: var(--font-weight-medium);
+  gap: 8px;
   font-family: inherit;
-  line-height: 1;
+  font-weight: 600;
+  border-radius: 60px;
   border: none;
-  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all 0.2s ease;
   white-space: nowrap;
-  outline: none;
   user-select: none;
+  text-decoration: none;
+  outline: none;
+  position: relative;
+  overflow: visible;
 }
 
 .button:focus-visible {
-  outline: 2px solid var(--color-accent-primary);
+  outline: 2px solid var(--accent, #6366f1);
   outline-offset: 2px;
 }
 
@@ -29,133 +30,250 @@
   pointer-events: none;
 }
 
-/* Variants */
+/* ============================================
+   Size Variants
+   ============================================ */
+
+.sm {
+  padding: 8px 18px;
+  font-size: 0.78rem;
+}
+
+.md {
+  padding: 12px 28px;
+  font-size: 0.85rem;
+}
+
+.lg {
+  padding: 16px 36px;
+  font-size: 0.95rem;
+}
+
+.icon {
+  padding: 12px;
+  aspect-ratio: 1;
+}
+
+.sm.icon {
+  padding: 8px;
+}
+
+.lg.icon {
+  padding: 16px;
+}
+
+/* ============================================
+   Style Variants
+   ============================================ */
+
+/* Primary - High contrast pill button */
 .primary {
-  background: var(--gradient-accent);
-  color: #ffffff;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  background: #fff;
+  color: #000;
 }
 
 .primary:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px 0 rgba(124, 58, 237, 0.4);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .primary:active:not(:disabled) {
   transform: translateY(0);
 }
 
-.secondary {
-  background: var(--color-background-secondary);
-  color: var(--color-foreground-primary);
-  border: 1px solid var(--color-border-primary);
-}
-
-.secondary:hover:not(:disabled) {
-  background: var(--color-background-tertiary);
-  border-color: var(--color-border-secondary);
-}
-
-.secondary:active:not(:disabled) {
-  background: var(--color-background-secondary);
-}
-
+/* Ghost - Glass effect with border */
 .ghost {
-  background: transparent;
-  color: var(--color-foreground-secondary);
+  background: var(--glass, rgba(12, 12, 22, 0.55));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border, rgba(99, 102, 241, 0.08));
+  color: var(--text, #f2f2f8);
 }
 
 .ghost:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--color-foreground-primary);
+  border-color: rgba(99, 102, 241, 0.15);
 }
 
-.ghost:active:not(:disabled) {
-  background: rgba(255, 255, 255, 0.03);
+/* Secondary (same as ghost for compatibility) */
+.secondary {
+  background: var(--glass, rgba(12, 12, 22, 0.55));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border, rgba(99, 102, 241, 0.08));
+  color: var(--text, #f2f2f8);
 }
 
+.secondary:hover:not(:disabled) {
+  border-color: rgba(99, 102, 241, 0.15);
+}
+
+/* Outline (same as ghost for compatibility) */
+.outline {
+  background: var(--glass, rgba(12, 12, 22, 0.55));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border, rgba(99, 102, 241, 0.08));
+  color: var(--text, #f2f2f8);
+}
+
+.outline:hover:not(:disabled) {
+  border-color: rgba(99, 102, 241, 0.15);
+}
+
+/* Accent - Indigo glow button */
+.accent {
+  background: var(--accent, #6366f1);
+  color: #fff;
+  box-shadow: 0 4px 24px rgba(99, 102, 241, 0.3);
+}
+
+.accent:hover:not(:disabled) {
+  background: var(--accent-2, #818cf8);
+  transform: translateY(-1px);
+}
+
+.accent:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Danger - Red button */
 .danger {
-  background: var(--color-error);
-  color: #ffffff;
+  background: #ef4444;
+  color: #fff;
 }
 
 .danger:hover:not(:disabled) {
   background: #dc2626;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px 0 rgba(239, 68, 68, 0.4);
 }
 
 .danger:active:not(:disabled) {
-  transform: translateY(0);
-  background: var(--color-error);
+  transform: scale(0.98);
 }
 
-.icon {
-  background: transparent;
-  color: var(--color-foreground-secondary);
-  padding: 0.5rem;
-  border-radius: var(--radius-base);
+/* Link - Text only */
+.link {
+  background: none;
+  color: var(--accent-2, #818cf8);
+  padding: 0;
+  border-radius: 0;
 }
 
-.icon:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--color-foreground-primary);
+.link:hover:not(:disabled) {
+  text-decoration: underline;
 }
 
-/* Sizes */
-.sm {
-  padding: 0.5rem 0.875rem;
-  font-size: var(--font-size-sm);
-  height: 32px;
-}
-
-.sm.icon {
-  padding: 0.375rem;
-  width: 32px;
-  height: 32px;
-}
-
-.md {
-  padding: 0.625rem 1.125rem;
-  font-size: var(--font-size-base);
-  height: 40px;
-}
-
-.md.icon {
-  padding: 0.5rem;
-  width: 40px;
-  height: 40px;
-}
-
-.lg {
-  padding: 0.875rem 1.5rem;
-  font-size: var(--font-size-lg);
-  height: 48px;
-}
-
-.lg.icon {
-  padding: 0.75rem;
-  width: 48px;
-  height: 48px;
-}
+/* ============================================
+   States
+   ============================================ */
 
 .fullWidth {
   width: 100%;
 }
 
-/* Loading state */
 .loading {
+  pointer-events: none;
   position: relative;
 }
 
-.spinnerWrapper {
+.loading .label,
+.loading .icon {
+  visibility: hidden;
+}
+
+/* ============================================
+   Inner Elements
+   ============================================ */
+
+.label {
+  display: inline-flex;
+  align-items: center;
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.sm .icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.lg .icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Spinner */
+.spinner {
   position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  inset: 0;
+  color: inherit;
 }
 
-.contentHidden {
-  opacity: 0;
+.spinner svg {
+  width: 18px;
+  height: 18px;
+  animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================
+   Light Mode
+   ============================================ */
+
+[data-theme="light"] .primary {
+  background: #0a0a10;
+  color: #fff;
+}
+
+[data-theme="light"] .primary:hover:not(:disabled) {
+  box-shadow: 0 4px 16px rgba(10, 10, 16, 0.3);
+}
+
+/* ============================================
+   Reduced Motion Support
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none;
+  }
+
+  .button:hover:not(:disabled),
+  .primary:hover:not(:disabled),
+  .accent:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .button:active:not(:disabled),
+  .primary:active:not(:disabled),
+  .accent:active:not(:disabled),
+  .danger:active:not(:disabled) {
+    transform: none;
+  }
+
+  .spinner svg {
+    animation: spin 1.5s linear infinite;
+  }
 }

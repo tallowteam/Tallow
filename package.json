@@ -27,6 +27,8 @@
     "perf:full": "node scripts/performance-test.js full",
     "perf:lighthouse": "lighthouse http://localhost:3000 --output=html --output-path=./lighthouse-report.html --view",
     "perf:ci": "lhci autorun",
+    "analyze:bundle": "node scripts/analyze-bundle.js",
+    "analyze": "npm run build && npm run analyze:bundle",
     "bench:lighthouse": "node scripts/benchmark/lighthouse-ci.js",
     "bench:bundle": "node scripts/benchmark/bundle-size-tracker.js",
     "bench:transfer": "node scripts/benchmark/transfer-speed-benchmark.js",

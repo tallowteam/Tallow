@@ -42,7 +42,7 @@ const ctx: Worker = self as unknown as Worker;
 /**
  * Generate random bytes
  */
-function randomBytes(length: number): Uint8Array {
+function _randomBytes(length: number): Uint8Array {
     return crypto.getRandomValues(new Uint8Array(length));
 }
 

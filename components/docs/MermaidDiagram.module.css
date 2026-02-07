@@ -1,0 +1,355 @@
+/* Mermaid Diagram Component Styles */
+
+/* ============================================
+   Wrapper & Container
+   ============================================ */
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.container {
+  position: relative;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-default);
+  background-color: var(--bg-surface);
+  transition: all var(--transition-base);
+}
+
+.container:hover {
+  border-color: var(--border-strong);
+}
+
+/* ============================================
+   Title & Description
+   ============================================ */
+
+.title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 0;
+  padding: 0;
+  line-height: var(--line-height-snug);
+}
+
+.description {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: var(--line-height-relaxed);
+}
+
+/* ============================================
+   Diagram Content
+   ============================================ */
+
+.diagram {
+  width: 100%;
+  padding: var(--space-6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  max-height: 600px;
+  overflow: auto;
+}
+
+.mermaidContent {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100%;
+}
+
+.mermaidContent svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Mermaid SVG styling for dark theme */
+.diagram :global(.mermaid) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.diagram :global(.mermaid svg) {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Mermaid text styling */
+.diagram :global(.mermaid text) {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  fill: var(--text-primary);
+}
+
+.diagram :global(.mermaid tspan) {
+  fill: var(--text-primary);
+}
+
+/* Mermaid node styling */
+.diagram :global(.mermaid .node) {
+  stroke: var(--border-default);
+  fill: var(--bg-elevated);
+}
+
+.diagram :global(.mermaid .nodeGroup .node) {
+  stroke: var(--border-default);
+  fill: var(--bg-elevated);
+}
+
+.diagram :global(.mermaid .node text) {
+  fill: var(--text-primary);
+}
+
+/* Mermaid edge styling */
+.diagram :global(.mermaid .edgePath .path) {
+  stroke: var(--text-secondary);
+  stroke-width: 1.5px;
+}
+
+.diagram :global(.mermaid .edgeLabel background) {
+  fill: var(--bg-surface);
+  stroke: var(--border-subtle);
+}
+
+.diagram :global(.mermaid .edgeLabel text) {
+  fill: var(--text-secondary);
+}
+
+/* Mermaid cluster styling */
+.diagram :global(.mermaid .cluster) {
+  stroke: var(--border-strong);
+  fill: var(--bg-hover);
+}
+
+.diagram :global(.mermaid .cluster text) {
+  fill: var(--text-primary);
+}
+
+/* Mermaid sequence diagram styling */
+.diagram :global(.mermaid .sequencediagram) {
+  background-color: transparent;
+}
+
+.diagram :global(.mermaid .actor) {
+  stroke: var(--border-default);
+  fill: var(--bg-elevated);
+}
+
+.diagram :global(.mermaid .actorTalk) {
+  fill: var(--bg-surface);
+}
+
+.diagram :global(.mermaid rect) {
+  stroke: var(--border-default);
+  fill: var(--bg-elevated);
+}
+
+.diagram :global(.mermaid line) {
+  stroke: var(--text-secondary);
+}
+
+.diagram :global(.mermaid polygon) {
+  fill: var(--text-secondary);
+  stroke: var(--text-secondary);
+}
+
+/* ============================================
+   Loading State
+   ============================================ */
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-8);
+  min-height: 300px;
+  color: var(--text-secondary);
+}
+
+.loading p {
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--border-subtle);
+  border-top-color: var(--primary-500);
+  border-radius: var(--radius-full);
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================
+   Error State
+   ============================================ */
+
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-8);
+  min-height: 300px;
+  background-color: var(--error-subtle);
+  border: 1px solid var(--error-muted);
+  border-radius: var(--radius-xl);
+}
+
+.errorIcon {
+  font-size: var(--font-size-4xl);
+  line-height: 1;
+}
+
+.errorTitle {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--error-500);
+  margin: 0;
+}
+
+.errorMessage {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin: 0;
+  text-align: center;
+  max-width: 400px;
+  word-break: break-word;
+}
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+
+@media (max-width: 768px) {
+  .diagram {
+    min-height: 250px;
+    max-height: 500px;
+    padding: var(--space-4);
+  }
+
+  .diagram :global(.mermaid text) {
+    font-size: 12px;
+  }
+
+  .title {
+    font-size: var(--font-size-base);
+  }
+}
+
+/* ============================================
+   Light Theme Overrides
+   ============================================ */
+
+[data-theme='light'] .diagram :global(.mermaid text),
+[data-theme='light'] .diagram :global(.mermaid tspan) {
+  fill: var(--text-primary);
+}
+
+[data-theme='light'] .diagram :global(.mermaid .node) {
+  stroke: var(--border-default);
+  fill: var(--bg-surface);
+}
+
+[data-theme='light'] .diagram :global(.mermaid .nodeGroup .node) {
+  stroke: var(--border-default);
+  fill: var(--bg-elevated);
+}
+
+[data-theme='light'] .diagram :global(.mermaid .edgePath .path) {
+  stroke: var(--text-secondary);
+}
+
+[data-theme='light'] .diagram :global(.mermaid .edgeLabel background) {
+  fill: var(--bg-base);
+  stroke: var(--border-default);
+}
+
+[data-theme='light'] .diagram :global(.mermaid .cluster) {
+  stroke: var(--border-default);
+  fill: var(--bg-subtle);
+}
+
+[data-theme='light'] .diagram :global(.mermaid rect) {
+  stroke: var(--border-default);
+  fill: var(--bg-elevated);
+}
+
+/* ============================================
+   High Contrast Theme
+   ============================================ */
+
+[data-theme='high-contrast'] .diagram :global(.mermaid text),
+[data-theme='high-contrast'] .diagram :global(.mermaid tspan) {
+  fill: #ffffff;
+  font-weight: 600;
+}
+
+[data-theme='high-contrast'] .diagram :global(.mermaid .node) {
+  stroke: rgba(255, 255, 255, 0.5);
+  fill: #0a0a0a;
+  stroke-width: 2px;
+}
+
+[data-theme='high-contrast'] .diagram :global(.mermaid .edgePath .path) {
+  stroke: rgba(255, 255, 255, 0.8);
+  stroke-width: 2px;
+}
+
+[data-theme='high-contrast'] .diagram :global(.mermaid polygon) {
+  fill: rgba(255, 255, 255, 0.8);
+  stroke: rgba(255, 255, 255, 0.8);
+}
+
+/* ============================================
+   Print Styles
+   ============================================ */
+
+@media print {
+  .spinner {
+    display: none;
+  }
+
+  .diagram {
+    overflow: visible;
+    max-height: none;
+    page-break-inside: avoid;
+  }
+}
+
+/* ============================================
+   Reduced Motion
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+    border-top-color: var(--text-secondary);
+  }
+
+  .container {
+    transition: none;
+  }
+}

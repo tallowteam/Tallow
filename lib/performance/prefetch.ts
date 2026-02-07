@@ -46,7 +46,7 @@ export interface NetworkInfo {
  * Get network information if available
  */
 export function getNetworkInfo(): NetworkInfo | null {
-  if (typeof navigator === 'undefined') return null;
+  if (typeof navigator === 'undefined') {return null;}
 
   // Navigator connection API
   type NavigatorWithConnection = Navigator & {
@@ -58,7 +58,7 @@ export function getNetworkInfo(): NetworkInfo | null {
   const nav = navigator as NavigatorWithConnection;
   const connection = nav.connection || nav.mozConnection || nav.webkitConnection;
 
-  if (!connection) return null;
+  if (!connection) {return null;}
 
   return {
     saveData: connection.saveData || false,
@@ -72,7 +72,7 @@ export function getNetworkInfo(): NetworkInfo | null {
  * Check if connection is fast enough for prefetching
  */
 export function canPrefetch(options: PrefetchOptions = {}): boolean {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === 'undefined') {return false;}
 
   const networkInfo = getNetworkInfo();
 
@@ -208,7 +208,7 @@ export async function prefetchUrls(
 export function createLinkPrefetcher(
   options: PrefetchLinkOptions = {}
 ): IntersectionObserver | null {
-  if (typeof IntersectionObserver === 'undefined') return null;
+  if (typeof IntersectionObserver === 'undefined') {return null;}
 
   const { rootMargin = '200px', delay = 0, ...prefetchOptions } = options;
 
@@ -250,7 +250,7 @@ export function autoPrefetchLinks(
   options: PrefetchLinkOptions = {}
 ): () => void {
   const observer = createLinkPrefetcher(options);
-  if (!observer) return () => {};
+  if (!observer) {return () => {};}
 
   const links = container.querySelectorAll('a[href^="/"]');
   links.forEach((link) => observer.observe(link));
@@ -372,7 +372,7 @@ export function prefetchOnIntent(
  * dnsPrefetch('https://api.example.com');
  */
 export function dnsPrefetch(url: string): void {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {return;}
 
   try {
     const { hostname } = new URL(url);
@@ -392,7 +392,7 @@ export function dnsPrefetch(url: string): void {
  * preconnect('https://fonts.googleapis.com');
  */
 export function preconnect(url: string, crossOrigin = true): void {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {return;}
 
   try {
     const { origin } = new URL(url);
@@ -441,7 +441,7 @@ export function prefetchOnIdle(
   urls: string[],
   options: { timeout?: number } = {}
 ): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {return;}
 
   const { timeout = 2000 } = options;
 

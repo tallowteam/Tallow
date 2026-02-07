@@ -88,7 +88,7 @@ export function usePerformance(
 
   // Track Web Vitals
   useEffect(() => {
-    if (!trackWebVitals) return;
+    if (!trackWebVitals) {return;}
 
     const handleMetric = (metric: PerformanceMetric) => {
       setMetrics((prev) => [...prev, metric]);
@@ -103,7 +103,7 @@ export function usePerformance(
 
   // Track long tasks
   useEffect(() => {
-    if (!trackLongTasks) return;
+    if (!trackLongTasks) {return;}
 
     return observeLongTasks((entry) => {
       setLongTasks((prev) => [...prev, entry]);

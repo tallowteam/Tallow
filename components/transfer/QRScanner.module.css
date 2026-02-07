@@ -1,0 +1,655 @@
+/* QR Scanner Component */
+
+/* ============================================
+   Overlay & Modal
+   ============================================ */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--space-4);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.overlayMobile {
+  padding: 0;
+}
+
+.modal {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  background: rgba(23, 23, 23, 0.95);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(94, 92, 230, 0.3);
+  border-radius: var(--radius-2xl);
+  box-shadow:
+    0 0 0 1px rgba(94, 92, 230, 0.2),
+    0 24px 48px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modalMobile {
+  max-width: 100%;
+  height: 100vh;
+  border-radius: 0;
+  border: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ============================================
+   Header
+   ============================================ */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.title {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: #ededed;
+  margin: 0;
+}
+
+.closeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  color: #a1a1a1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #ededed;
+  transform: scale(1.05);
+}
+
+.closeButton:active {
+  transform: scale(0.95);
+}
+
+/* ============================================
+   Permission Request
+   ============================================ */
+
+.permissionRequest {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-12) var(--space-6);
+  text-align: center;
+}
+
+.permissionRequest svg {
+  color: #5E5CE6;
+  opacity: 0.8;
+}
+
+.permissionTitle {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: #ededed;
+  margin: 0;
+}
+
+.permissionText {
+  font-size: var(--font-size-base);
+  color: #a1a1a1;
+  margin: 0;
+  max-width: 400px;
+  line-height: 1.6;
+}
+
+/* ============================================
+   Scanner View
+   ============================================ */
+
+.scannerView {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-6);
+}
+
+.videoContainer {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #000000;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ============================================
+   Scan Overlay
+   ============================================ */
+
+.scanOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.scanFrame {
+  position: relative;
+  width: min(320px, 70%);
+  aspect-ratio: 1;
+  border-radius: var(--radius-lg);
+}
+
+/* Corner markers */
+.cornerTopLeft,
+.cornerTopRight,
+.cornerBottomLeft,
+.cornerBottomRight {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border: 3px solid #5E5CE6;
+  border-radius: var(--radius-sm);
+}
+
+.cornerTopLeft {
+  top: 0;
+  left: 0;
+  border-right: none;
+  border-bottom: none;
+  box-shadow: -2px -2px 12px rgba(94, 92, 230, 0.6);
+}
+
+.cornerTopRight {
+  top: 0;
+  right: 0;
+  border-left: none;
+  border-bottom: none;
+  box-shadow: 2px -2px 12px rgba(94, 92, 230, 0.6);
+}
+
+.cornerBottomLeft {
+  bottom: 0;
+  left: 0;
+  border-right: none;
+  border-top: none;
+  box-shadow: -2px 2px 12px rgba(94, 92, 230, 0.6);
+}
+
+.cornerBottomRight {
+  bottom: 0;
+  right: 0;
+  border-left: none;
+  border-top: none;
+  box-shadow: 2px 2px 12px rgba(94, 92, 230, 0.6);
+}
+
+/* Animated scan line */
+.scanLine {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #5E5CE6 50%,
+    transparent
+  );
+  box-shadow: 0 0 8px rgba(94, 92, 230, 0.8);
+  animation: scan 2s linear infinite;
+}
+
+@keyframes scan {
+  0% {
+    top: 0;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+/* ============================================
+   Instructions
+   ============================================ */
+
+.instructions {
+  position: absolute;
+  bottom: var(--space-6);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(94, 92, 230, 0.4);
+  border-radius: var(--radius-full);
+  color: #ededed;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.instructions svg {
+  color: #5E5CE6;
+  flex-shrink: 0;
+}
+
+/* ============================================
+   Controls
+   ============================================ */
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.controlButton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(10, 10, 10, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+  color: #a1a1a1;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.controlButton:hover {
+  background: rgba(10, 10, 10, 1);
+  border-color: rgba(94, 92, 230, 0.4);
+  color: #ededed;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(94, 92, 230, 0.2);
+}
+
+.controlButton:active {
+  transform: translateY(0);
+}
+
+.controlButtonActive {
+  background: rgba(94, 92, 230, 0.2);
+  border-color: rgba(94, 92, 230, 0.5);
+  color: #5E5CE6;
+}
+
+/* ============================================
+   Error State
+   ============================================ */
+
+.errorState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-12) var(--space-6);
+  text-align: center;
+  min-height: 400px;
+}
+
+.errorState svg {
+  color: #ee0000;
+  opacity: 0.8;
+}
+
+.errorTitle {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: #ededed;
+  margin: 0;
+}
+
+.errorText {
+  font-size: var(--font-size-base);
+  color: #a1a1a1;
+  margin: 0;
+  max-width: 400px;
+  line-height: 1.6;
+}
+
+.errorActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ============================================
+   Success State
+   ============================================ */
+
+.successState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-12) var(--space-6);
+  text-align: center;
+  min-height: 400px;
+}
+
+.successIcon {
+  width: 96px;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(12, 206, 107, 0.1);
+  border: 3px solid rgba(12, 206, 107, 0.3);
+  border-radius: var(--radius-full);
+  color: #0cce6b;
+  animation: successPulse 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes successPulse {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.successTitle {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: #0cce6b;
+  margin: 0;
+}
+
+.successText {
+  font-size: var(--font-size-base);
+  color: #a1a1a1;
+  margin: 0;
+}
+
+/* ============================================
+   Manual Entry
+   ============================================ */
+
+.manualEntry {
+  padding: var(--space-6);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.manualForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.manualLabel {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: #a1a1a1;
+}
+
+.manualInput {
+  padding: var(--space-4);
+  background: rgba(10, 10, 10, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+  color: #ededed;
+  font-size: var(--font-size-xl);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-align: center;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.manualInput::placeholder {
+  color: #666666;
+  letter-spacing: 0.2em;
+}
+
+.manualInput:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.manualInput:focus {
+  border-color: rgba(94, 92, 230, 0.5);
+  box-shadow: 0 0 0 3px rgba(94, 92, 230, 0.1);
+}
+
+.manualActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+
+.primaryButton,
+.secondaryButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  border: none;
+}
+
+.primaryButton {
+  background: linear-gradient(135deg, #5E5CE6, #7B79FF);
+  color: white;
+  box-shadow: 0 4px 12px rgba(94, 92, 230, 0.3);
+}
+
+.primaryButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(94, 92, 230, 0.4);
+}
+
+.primaryButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.primaryButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.secondaryButton {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #a1a1a1;
+}
+
+.secondaryButton:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #ededed;
+  transform: translateY(-1px);
+}
+
+.secondaryButton:active {
+  transform: translateY(0);
+}
+
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible,
+.controlButton:focus-visible {
+  outline: 2px solid #5E5CE6;
+  outline-offset: 2px;
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+
+@media (max-width: 768px) {
+  .header {
+    padding: var(--space-4);
+  }
+
+  .title {
+    font-size: var(--font-size-lg);
+  }
+
+  .scannerView {
+    padding: var(--space-4);
+  }
+
+  .videoContainer {
+    aspect-ratio: 3 / 4;
+    border-radius: 0;
+  }
+
+  .instructions {
+    font-size: var(--font-size-xs);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .controls {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .controlButton {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .permissionRequest,
+  .errorState,
+  .successState {
+    padding: var(--space-8) var(--space-4);
+    min-height: 300px;
+  }
+
+  .manualActions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .primaryButton,
+  .secondaryButton {
+    width: 100%;
+  }
+}
+
+/* ============================================
+   Reduced Motion
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .modal,
+  .manualEntry,
+  .successIcon {
+    animation: none;
+  }
+
+  .scanLine {
+    animation: none;
+    display: none;
+  }
+
+  .closeButton:hover,
+  .controlButton:hover,
+  .primaryButton:hover,
+  .secondaryButton:hover {
+    transform: none;
+  }
+}

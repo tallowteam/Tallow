@@ -51,7 +51,7 @@ export async function updateSettingsAction(formData: FormData) {
     const validated = SettingsSchema.parse(cleanData);
 
     // In a real app, this would save to database
-    console.log('[Server Action] Update settings:', validated);
+    console.info('[Server Action] Update settings:', validated);
 
     // Save to cookies for immediate access
     const cookieStore = await cookies();
@@ -99,7 +99,7 @@ export async function resetSettingsAction() {
     };
 
     // In a real app, this would update database
-    console.log('[Server Action] Reset settings to defaults');
+    console.info('[Server Action] Reset settings to defaults');
 
     // Clear cookies
     const cookieStore = await cookies();
@@ -158,7 +158,7 @@ export async function importSettingsAction(settingsJson: string) {
     const validated = SettingsSchema.parse(settings);
 
     // In a real app, this would save to database
-    console.log('[Server Action] Import settings:', validated);
+    console.info('[Server Action] Import settings:', validated);
 
     // Revalidate
     revalidatePath('/app/settings');
@@ -183,7 +183,7 @@ export async function importSettingsAction(settingsJson: string) {
 export async function clearCacheAction() {
   try {
     // In a real app, this would clear various caches
-    console.log('[Server Action] Clear cache');
+    console.info('[Server Action] Clear cache');
 
     // Revalidate all paths
     revalidatePath('/');

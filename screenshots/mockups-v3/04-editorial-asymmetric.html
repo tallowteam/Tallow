@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tallow v3 — Editorial Asymmetric</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;1,300&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #060608; --bg-2: #0c0c10; --bg-3: #131318;
+    --text: #ededf0; --text-2: #8e8e99; --text-3: #555560;
+    --border: #1c1c24; --border-2: #28283a;
+    --accent: #6366f1; --accent-2: #818cf8;
+  }
+  body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+
+  /* NAV — Left logo, right links, ultra minimal */
+  .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 0 60px; height: 64px; display: flex; align-items: center; justify-content: space-between; background: rgba(6,6,8,0.85); backdrop-filter: blur(16px); }
+  .nav-logo { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 1.6rem; letter-spacing: -0.02em; }
+  .nav-right { display: flex; align-items: center; gap: 32px; }
+  .nav-right a { color: var(--text-3); text-decoration: none; font-size: 0.8rem; font-weight: 500; }
+  .nav-right a:hover { color: var(--text); }
+  .btn-pill { background: var(--accent); color: #fff; border: none; padding: 8px 22px; border-radius: 60px; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+
+  /* HERO — Big left-aligned editorial */
+  .hero { min-height: 100vh; padding: 160px 60px 80px; display: flex; flex-direction: column; justify-content: center; position: relative; }
+  .hero::after { content: ''; position: absolute; top: 20%; right: 10%; width: 500px; height: 500px; background: radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 60%); pointer-events: none; }
+  .hero-eyebrow { font-size: 0.7rem; color: var(--accent-2); text-transform: uppercase; letter-spacing: 0.15em; font-weight: 600; margin-bottom: 28px; }
+  .hero h1 { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 7rem; line-height: 0.95; letter-spacing: -0.04em; max-width: 900px; margin-bottom: 32px; }
+  .hero h1 .thin { color: var(--text-3); }
+  .hero-row { display: flex; align-items: flex-end; justify-content: space-between; max-width: 1100px; }
+  .hero p { color: var(--text-2); font-size: 1rem; max-width: 380px; line-height: 1.7; }
+  .hero-cta { display: flex; gap: 12px; }
+  .btn-big { background: #fff; color: #000; border: none; padding: 16px 36px; border-radius: 60px; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
+  .btn-big-ghost { background: transparent; color: var(--text); border: 1px solid var(--border-2); padding: 16px 36px; border-radius: 60px; font-size: 0.95rem; font-weight: 500; cursor: pointer; }
+
+  /* EDITORIAL DIVIDER */
+  .divider { height: 1px; background: var(--border); margin: 0 60px; }
+  .divider-text { display: flex; justify-content: space-between; padding: 20px 60px; }
+  .divider-text span { font-size: 0.7rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.1em; }
+
+  /* FEATURES — Magazine 2-column */
+  .magazine { padding: 100px 60px; }
+  .mag-row { display: grid; grid-template-columns: 0.4fr 0.6fr; gap: 60px; max-width: 1100px; margin: 0 auto; padding: 60px 0; border-bottom: 1px solid var(--border); }
+  .mag-row:last-child { border-bottom: none; }
+  .mag-row.flip { direction: rtl; }
+  .mag-row.flip > * { direction: ltr; }
+  .mag-label { font-size: 0.7rem; color: var(--accent-2); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; margin-bottom: 16px; }
+  .mag-row h3 { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 2.4rem; line-height: 1.12; margin-bottom: 16px; }
+  .mag-row p { color: var(--text-2); font-size: 0.9rem; line-height: 1.7; }
+  .mag-visual { background: var(--bg-2); border: 1px solid var(--border); border-radius: 16px; min-height: 240px; display: flex; align-items: center; justify-content: center; }
+  .mag-visual .big-icon { font-size: 3.5rem; opacity: 0.12; }
+
+  /* PULL QUOTE */
+  .pullquote { padding: 100px 60px; text-align: center; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .pullquote blockquote { font-family: 'Playfair Display', serif; font-weight: 300; font-style: italic; font-size: 2.5rem; line-height: 1.2; max-width: 700px; margin: 0 auto 16px; letter-spacing: -0.02em; }
+  .pullquote cite { font-style: normal; font-size: 0.8rem; color: var(--text-3); }
+
+  /* STATS */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); padding: 80px 60px; gap: 32px; max-width: 1100px; margin: 0 auto; }
+  .stat { text-align: left; }
+  .stat .n { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 4rem; line-height: 1; margin-bottom: 4px; }
+  .stat .l { font-size: 0.7rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.1em; }
+
+  /* CTA */
+  .cta { padding: 120px 60px; border-top: 1px solid var(--border); }
+  .cta-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; max-width: 1100px; margin: 0 auto; }
+  .cta h2 { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 3.5rem; line-height: 1.08; letter-spacing: -0.03em; }
+  .cta-right p { color: var(--text-2); font-size: 0.95rem; margin-bottom: 28px; line-height: 1.7; }
+
+  /* FOOTER */
+  .footer { border-top: 1px solid var(--border); padding: 48px 60px 32px; }
+  .footer-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  .footer-col .title { font-size: 0.7rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; margin-bottom: 16px; }
+  .footer-col a { display: block; color: var(--text-3); text-decoration: none; font-size: 0.8rem; margin-bottom: 10px; }
+  .footer-col a:hover { color: var(--text); }
+  .footer-bottom { border-top: 1px solid var(--border); padding-top: 20px; display: flex; justify-content: space-between; }
+  .footer-bottom p { color: var(--text-3); font-size: 0.75rem; }
+  .footer-bottom .tagline { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 300; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">Tallow</div>
+  <div class="nav-right">
+    <a href="#">Features</a><a href="#">Security</a><a href="#">Pricing</a><a href="#">Docs</a>
+    <button class="btn-pill">Open App</button>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-eyebrow">Post-Quantum File Transfer</div>
+  <h1>Your files.<br><span class="thin">Your rules.</span></h1>
+  <div class="hero-row">
+    <p>Peer-to-peer file transfer with post-quantum encryption. No servers, no accounts, no tracking. Just secure, instant file sharing.</p>
+    <div class="hero-cta">
+      <button class="btn-big">Start Transferring</button>
+      <button class="btn-big-ghost">Learn More</button>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+<div class="divider-text"><span>Features</span><span>6 Core Capabilities</span></div>
+
+<section class="magazine">
+  <div class="mag-row">
+    <div>
+      <div class="mag-label">01 &mdash; Transfer</div>
+      <h3>Direct to the device. Nothing in between.</h3>
+      <p>WebRTC data channels create a direct tunnel between sender and receiver. Your files never touch our infrastructure.</p>
+    </div>
+    <div class="mag-visual"><div class="big-icon">&#x26A1;</div></div>
+  </div>
+  <div class="mag-row flip">
+    <div>
+      <div class="mag-label">02 &mdash; Security</div>
+      <h3>Quantum-safe by default, not by upgrade</h3>
+      <p>ML-KEM key exchange with AES-256-GCM runs on every transfer. No toggle, no premium tier. It's just how Tallow works.</p>
+    </div>
+    <div class="mag-visual"><div class="big-icon">&#x1f512;</div></div>
+  </div>
+  <div class="mag-row">
+    <div>
+      <div class="mag-label">03 &mdash; Platform</div>
+      <h3>Open it in a browser. That's the install.</h3>
+      <p>Works on every device with a modern browser. Chrome, Safari, Firefox. Phone, tablet, laptop. Zero download required.</p>
+    </div>
+    <div class="mag-visual"><div class="big-icon">&#x1f310;</div></div>
+  </div>
+</section>
+
+<section class="pullquote">
+  <blockquote>&ldquo;The best encryption is the kind you never have to think about.&rdquo;</blockquote>
+  <cite>&mdash; Tallow Design Principle</cite>
+</section>
+
+<div class="stats">
+  <div class="stat"><div class="n">256</div><div class="l">Bit Encryption</div></div>
+  <div class="stat"><div class="n">0</div><div class="l">Servers Touched</div></div>
+  <div class="stat"><div class="n">P2P</div><div class="l">Direct Transfer</div></div>
+  <div class="stat"><div class="n">&infin;</div><div class="l">File Size Limit</div></div>
+</div>
+
+<section class="cta">
+  <div class="cta-inner">
+    <h2>Ready to take control of your files?</h2>
+    <div class="cta-right">
+      <p>No signup required. No download needed. No credit card asked. Just open Tallow in your browser and start transferring securely.</p>
+      <button class="btn-big">Open Tallow &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-grid">
+    <div class="footer-col"><div class="title">Product</div><a href="#">Features</a><a href="#">Security</a><a href="#">Pricing</a><a href="#">Download</a></div>
+    <div class="footer-col"><div class="title">Resources</div><a href="#">Documentation</a><a href="#">API Reference</a><a href="#">Changelog</a><a href="#">Status</a></div>
+    <div class="footer-col"><div class="title">Company</div><a href="#">About</a><a href="#">Blog</a><a href="#">Careers</a><a href="#">Contact</a></div>
+    <div class="footer-col"><div class="title">Legal</div><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Security</a><a href="#">GDPR</a></div>
+  </div>
+  <div class="footer-bottom"><p>&copy; 2026 Tallow. All rights reserved.</p><p class="tagline">Your files. Your rules.</p></div>
+</footer>
+</body>
+</html>

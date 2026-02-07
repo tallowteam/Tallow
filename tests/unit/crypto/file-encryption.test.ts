@@ -1,170 +1,476 @@
 /**
- * File Encryption Tests
- * FILE-01 through FILE-04: PQC file encryption operations
+ * Unit Tests for Post-Quantum File Encryption Module
+ * Tests file encryption/decryption, password protection, chunking,
+ * and error handling with various file sizes.
  */
-import { describe, it, expect } from 'vitest';
-import { randomBytes as nodeRandomBytes } from 'crypto';
-import { PQCryptoService } from '@/lib/crypto/pqc-crypto';
 
-// We need to mock the File API since we're in node environment
-function createMockFile(content: Uint8Array, name: string, type: string = 'application/octet-stream'): File {
-  const buffer = new ArrayBuffer(content.byteLength);
-  new Uint8Array(buffer).set(content);
-  const blob = new Blob([buffer], { type });
-  return new File([blob], name, { type });
-}
+import { describe, it, expect, beforeEach } from 'vitest';
+import {
+  encryptFile,
+  decryptFile,
+  encryptFileWithPassword,
+  decryptFileWithPassword,
+  decryptFileName,
+  EncryptedFile
+} from '@/lib/crypto/file-encryption-pqc';
+import { pqCrypto } from '@/lib/crypto/pqc-crypto';
 
-// Dynamic import to handle 'use client' directive
-async function getFileEncryption() {
-  const mod = await import('@/lib/crypto/file-encryption-pqc');
-  return mod;
-}
+describe('File Encryption (PQC)', () => {
+  let encryptionKey: Uint8Array;
 
-const crypto = PQCryptoService.getInstance();
-
-describe('PQC File Encryption', () => {
-  // FILE-01: Encrypt/decrypt roundtrip preserves file content
-  describe('FILE-01: Encrypt/Decrypt Roundtrip', () => {
-    it('preserves file content through encryption/decryption', async () => {
-      const { encryptFile, decryptFile } = await getFileEncryption();
-      const content = new TextEncoder().encode('Hello, encrypted world!');
-      const file = createMockFile(content, 'test.txt', 'text/plain');
-      const key = crypto.randomBytes(32);
-
-      const encrypted = await encryptFile(file, key);
-      const decryptedBlob = await decryptFile(encrypted, key);
-      const decryptedData = new Uint8Array(await decryptedBlob.arrayBuffer());
-
-      expect(decryptedData).toEqual(content);
-    });
-
-    it('preserves large file content (multi-chunk)', async () => {
-      const { encryptFile, decryptFile } = await getFileEncryption();
-      // Create a file larger than CHUNK_SIZE (64KB)
-      // Use Node's randomBytes since Web Crypto limits to 65536 per call
-      const content = new Uint8Array(nodeRandomBytes(200_000));
-      const file = createMockFile(content, 'large-file.bin');
-      const key = crypto.randomBytes(32);
-
-      const encrypted = await encryptFile(file, key);
-
-      expect(encrypted.chunks.length).toBeGreaterThan(1);
-
-      const decryptedBlob = await decryptFile(encrypted, key);
-      const decryptedData = new Uint8Array(await decryptedBlob.arrayBuffer());
-
-      expect(decryptedData).toEqual(content);
-    });
+  beforeEach(() => {
+    // Generate fresh encryption key for each test
+    encryptionKey = pqCrypto.randomBytes(32);
   });
 
-  // FILE-02: Chunk integrity verification
-  describe('FILE-02: Chunk Integrity', () => {
-    it('detects tampered chunk data', async () => {
-      const { encryptFile, decryptFile } = await getFileEncryption();
-      const content = new TextEncoder().encode('integrity test data');
-      const file = createMockFile(content, 'test.txt');
-      const key = crypto.randomBytes(32);
+  describe('Basic Encryption/Decryption', () => {
+    it('should encrypt and decrypt a simple text file', async () => {
+      const originalText = 'Hello, secure world!';
+      const file = new File([originalText], 'test.txt', { type: 'text/plain' });
 
-      const encrypted = await encryptFile(file, key);
+      // Encrypt
+      const encrypted = await encryptFile(file, encryptionKey);
 
-      // Tamper with the first chunk's hash
-      encrypted.chunks[0]!.hash = crypto.randomBytes(32);
+      expect(encrypted).toBeDefined();
+      expect(encrypted.metadata).toBeDefined();
+      expect(encrypted.chunks).toBeDefined();
+      expect(encrypted.chunks.length).toBeGreaterThan(0);
 
-      await expect(decryptFile(encrypted, key)).rejects.toThrow('hash mismatch');
+      // Decrypt
+      const decryptedBlob = await decryptFile(encrypted, encryptionKey);
+      const decryptedText = await decryptedBlob.text();
+
+      expect(decryptedText).toBe(originalText);
     });
 
-    it('detects tampered file hash', async () => {
-      const { encryptFile, decryptFile } = await getFileEncryption();
-      const content = new TextEncoder().encode('file hash test');
-      const file = createMockFile(content, 'test.txt');
-      const key = crypto.randomBytes(32);
+    it('should preserve file size information', async () => {
+      const data = new Uint8Array(1000).fill(42);
+      const file = new File([data], 'data.bin', { type: 'application/octet-stream' });
 
-      const encrypted = await encryptFile(file, key);
+      const encrypted = await encryptFile(file, encryptionKey);
 
-      // Tamper with file-level hash
-      encrypted.metadata.fileHash = crypto.randomBytes(32);
+      expect(encrypted.metadata.originalSize).toBe(1000);
 
-      // Should fail during decryption (AAD mismatch or file hash check)
-      await expect(decryptFile(encrypted, key)).rejects.toThrow();
+      const decrypted = await decryptFile(encrypted, encryptionKey);
+      expect(decrypted.size).toBe(1000);
     });
-  });
 
-  // FILE-03: Filename encryption/decryption
-  describe('FILE-03: Filename Privacy', () => {
-    it('encrypts and decrypts filename', async () => {
-      const { encryptFile, decryptFileName } = await getFileEncryption();
-      const content = new TextEncoder().encode('test');
-      const file = createMockFile(content, 'secret-document.pdf', 'application/pdf');
-      const key = crypto.randomBytes(32);
+    it('should categorize MIME types for privacy', async () => {
+      const testCases = [
+        { type: 'image/png', expected: 'image' },
+        { type: 'image/jpeg', expected: 'image' },
+        { type: 'video/mp4', expected: 'video' },
+        { type: 'audio/mpeg', expected: 'audio' },
+        { type: 'text/plain', expected: 'text' },
+        { type: 'application/pdf', expected: 'document' },
+        { type: 'application/json', expected: 'document' },
+        { type: 'unknown/type', expected: 'unknown' },
+      ];
 
-      const encrypted = await encryptFile(file, key);
+      for (const { type, expected } of testCases) {
+        const file = new File(['test'], 'file', { type });
+        const encrypted = await encryptFile(file, encryptionKey);
+        expect(encrypted.metadata.mimeCategory).toBe(expected);
+      }
+    });
 
-      // Original name should be empty (not leaked)
+    it('should encrypt filename for privacy', async () => {
+      const sensitiveFilename = 'my-secret-document.pdf';
+      const file = new File(['content'], sensitiveFilename, { type: 'application/pdf' });
+
+      const encrypted = await encryptFile(file, encryptionKey);
+
+      // Filename should be encrypted (base64 encoded)
+      expect(encrypted.metadata.encryptedName).toBeDefined();
+      expect(encrypted.metadata.encryptedName.length).toBeGreaterThan(0);
+      expect(encrypted.metadata.encryptedName).not.toContain(sensitiveFilename);
+
+      // originalName should be empty for transmission
       expect(encrypted.metadata.originalName).toBe('');
-
-      // Encrypted name should be present
-      expect(encrypted.metadata.encryptedName).toBeTruthy();
-
-      // Decrypt the name
-      const decryptedName = await decryptFileName(encrypted, key);
-      expect(decryptedName).toBe('secret-document.pdf');
     });
 
-    it('returns generic name on decryption failure', async () => {
-      const { encryptFile, decryptFileName } = await getFileEncryption();
-      const content = new TextEncoder().encode('test');
-      const file = createMockFile(content, 'test.txt', 'text/plain');
-      const key = crypto.randomBytes(32);
-      const wrongKey = crypto.randomBytes(32);
+    it('should decrypt filename correctly', async () => {
+      const originalFilename = 'my-document.pdf';
+      const file = new File(['content'], originalFilename, { type: 'application/pdf' });
 
-      const encrypted = await encryptFile(file, key);
-      const name = await decryptFileName(encrypted, wrongKey);
+      const encrypted = await encryptFile(file, encryptionKey);
+      const decryptedFilename = await decryptFileName(encrypted, encryptionKey);
 
-      // Should return generic name based on mime category
-      expect(name).toMatch(/^file\./);
+      expect(decryptedFilename).toBe(originalFilename);
+    });
+
+    it('should return generic filename when decryption fails', async () => {
+      const file = new File(['content'], 'test.pdf', { type: 'application/pdf' });
+      const encrypted = await encryptFile(file, encryptionKey);
+
+      // Try to decrypt with wrong key
+      const wrongKey = pqCrypto.randomBytes(32);
+      const decryptedFilename = await decryptFileName(encrypted, wrongKey);
+
+      // Should return generic filename based on mime category
+      expect(decryptedFilename).toMatch(/file\.\w+/);
     });
   });
 
-  // FILE-04: MIME type categorization
-  describe('FILE-04: MIME Categorization', () => {
-    it('categorizes image types', async () => {
-      const { encryptFile } = await getFileEncryption();
-      const content = new TextEncoder().encode('fake image');
-      const file = createMockFile(content, 'photo.jpg', 'image/jpeg');
-      const key = crypto.randomBytes(32);
+  describe('File Size Handling', () => {
+    it('should handle empty file rejection', async () => {
+      const emptyFile = new File([], 'empty.txt', { type: 'text/plain' });
 
-      const encrypted = await encryptFile(file, key);
-      expect(encrypted.metadata.mimeCategory).toBe('image');
+      await expect(encryptFile(emptyFile, encryptionKey))
+        .rejects.toThrow('Cannot encrypt empty file');
     });
 
-    it('categorizes video types', async () => {
-      const { encryptFile } = await getFileEncryption();
-      const content = new TextEncoder().encode('fake video');
-      const file = createMockFile(content, 'video.mp4', 'video/mp4');
-      const key = crypto.randomBytes(32);
+    it('should handle small files (< chunk size)', async () => {
+      const smallData = new Uint8Array(100).fill(1);
+      const file = new File([smallData], 'small.bin');
 
-      const encrypted = await encryptFile(file, key);
-      expect(encrypted.metadata.mimeCategory).toBe('video');
+      const encrypted = await encryptFile(file, encryptionKey);
+
+      expect(encrypted.metadata.totalChunks).toBe(1);
+      expect(encrypted.chunks.length).toBe(1);
+
+      const decrypted = await decryptFile(encrypted, encryptionKey);
+      const decryptedData = new Uint8Array(await decrypted.arrayBuffer());
+
+      expect(decryptedData).toEqual(smallData);
     });
 
-    it('categorizes application as document', async () => {
-      const { encryptFile } = await getFileEncryption();
-      const content = new TextEncoder().encode('fake pdf');
-      const file = createMockFile(content, 'doc.pdf', 'application/pdf');
-      const key = crypto.randomBytes(32);
+    it('should handle medium files (1 chunk)', async () => {
+      const mediumSize = 32 * 1024; // 32KB
+      const mediumData = new Uint8Array(mediumSize);
+      for (let i = 0; i < mediumSize; i++) {
+        mediumData[i] = i % 256;
+      }
+      const file = new File([mediumData], 'medium.bin');
 
-      const encrypted = await encryptFile(file, key);
-      expect(encrypted.metadata.mimeCategory).toBe('document');
+      const encrypted = await encryptFile(file, encryptionKey);
+
+      expect(encrypted.metadata.totalChunks).toBe(1);
+      expect(encrypted.chunks.length).toBe(1);
+
+      const decrypted = await decryptFile(encrypted, encryptionKey);
+      const decryptedData = new Uint8Array(await decrypted.arrayBuffer());
+
+      expect(decryptedData).toEqual(mediumData);
     });
 
-    it('handles unknown MIME types', async () => {
-      const { encryptFile } = await getFileEncryption();
-      const content = new TextEncoder().encode('unknown');
-      const file = createMockFile(content, 'file.xyz', '');
-      const key = crypto.randomBytes(32);
+    it('should handle large files (multiple chunks)', async () => {
+      const largeSize = 200 * 1024; // 200KB (multiple chunks)
+      const largeData = new Uint8Array(largeSize);
+      for (let i = 0; i < largeSize; i++) {
+        largeData[i] = (i * 7) % 256;
+      }
+      const file = new File([largeData], 'large.bin');
 
-      const encrypted = await encryptFile(file, key);
-      expect(encrypted.metadata.mimeCategory).toBe('unknown');
+      const encrypted = await encryptFile(file, encryptionKey);
+
+      // Should be split into multiple chunks (64KB chunks)
+      const expectedChunks = Math.ceil(largeSize / (64 * 1024));
+      expect(encrypted.metadata.totalChunks).toBe(expectedChunks);
+      expect(encrypted.chunks.length).toBe(expectedChunks);
+
+      // Each chunk should have proper metadata
+      encrypted.chunks.forEach((chunk, index) => {
+        expect(chunk.index).toBe(index);
+        expect(chunk.data).toBeDefined();
+        expect(chunk.nonce).toBeDefined();
+        expect(chunk.hash).toBeDefined();
+      });
+
+      const decrypted = await decryptFile(encrypted, encryptionKey);
+      const decryptedData = new Uint8Array(await decrypted.arrayBuffer());
+
+      expect(decryptedData).toEqual(largeData);
+    });
+
+    it('should handle exact chunk boundary', async () => {
+      const chunkSize = 64 * 1024;
+      const exactData = new Uint8Array(chunkSize * 2); // Exactly 2 chunks
+      for (let i = 0; i < exactData.length; i++) {
+        exactData[i] = i % 256;
+      }
+      const file = new File([exactData], 'exact.bin');
+
+      const encrypted = await encryptFile(file, encryptionKey);
+
+      expect(encrypted.metadata.totalChunks).toBe(2);
+      expect(encrypted.chunks.length).toBe(2);
+
+      const decrypted = await decryptFile(encrypted, encryptionKey);
+      const decryptedData = new Uint8Array(await decrypted.arrayBuffer());
+
+      expect(decryptedData).toEqual(exactData);
+    });
+  });
+
+  describe('Password-Based Encryption', () => {
+    it('should encrypt and decrypt with password', async () => {
+      const password = 'my-secure-password-123';
+      const fileData = 'Sensitive information';
+      const file = new File([fileData], 'secret.txt', { type: 'text/plain' });
+
+      // Encrypt with password
+      const encrypted = await encryptFileWithPassword(file, password);
+
+      expect(encrypted.metadata.salt).toBeDefined();
+      expect(encrypted.metadata.salt?.length).toBe(32);
+
+      // Decrypt with same password
+      const decrypted = await decryptFileWithPassword(encrypted, password);
+      const decryptedText = await decrypted.text();
+
+      expect(decryptedText).toBe(fileData);
+    });
+
+    it('should reject empty password', async () => {
+      const file = new File(['data'], 'file.txt');
+
+      await expect(encryptFileWithPassword(file, ''))
+        .rejects.toThrow('Password must not be empty');
+
+      const encrypted = await encryptFileWithPassword(file, 'valid-password');
+
+      await expect(decryptFileWithPassword(encrypted, ''))
+        .rejects.toThrow('Password must not be empty');
+    });
+
+    it('should fail decryption with wrong password', async () => {
+      const correctPassword = 'correct-password';
+      const wrongPassword = 'wrong-password';
+      const file = new File(['secret data'], 'file.txt');
+
+      const encrypted = await encryptFileWithPassword(file, correctPassword);
+
+      await expect(decryptFileWithPassword(encrypted, wrongPassword))
+        .rejects.toThrow(/incorrect password|hash mismatch/i);
+    });
+
+    it('should use different salts for each encryption', async () => {
+      const password = 'same-password';
+      const file = new File(['data'], 'file.txt');
+
+      const encrypted1 = await encryptFileWithPassword(file, password);
+      const encrypted2 = await encryptFileWithPassword(file, password);
+
+      // Salts should be different
+      expect(encrypted1.metadata.salt).not.toEqual(encrypted2.metadata.salt);
+
+      // Both should decrypt correctly
+      const decrypted1 = await decryptFileWithPassword(encrypted1, password);
+      const decrypted2 = await decryptFileWithPassword(encrypted2, password);
+
+      const text1 = await decrypted1.text();
+      const text2 = await decrypted2.text();
+
+      expect(text1).toBe('data');
+      expect(text2).toBe('data');
+    });
+
+    it('should fail when salt is missing', async () => {
+      const file = new File(['data'], 'file.txt');
+      const encrypted = await encryptFileWithPassword(file, 'password');
+
+      // Remove salt
+      encrypted.metadata.salt = undefined;
+
+      await expect(decryptFileWithPassword(encrypted, 'password'))
+        .rejects.toThrow('Invalid or missing salt');
+    });
+
+    it('should fail when salt is invalid', async () => {
+      const file = new File(['data'], 'file.txt');
+      const encrypted = await encryptFileWithPassword(file, 'password');
+
+      // Invalid salt (wrong length)
+      encrypted.metadata.salt = new Uint8Array(16);
+
+      await expect(decryptFileWithPassword(encrypted, 'password'))
+        .rejects.toThrow('Invalid or missing salt');
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should fail decryption with wrong key', async () => {
+      const file = new File(['data'], 'file.txt');
+      const encrypted = await encryptFile(file, encryptionKey);
+
+      const wrongKey = pqCrypto.randomBytes(32);
+
+      await expect(decryptFile(encrypted, wrongKey))
+        .rejects.toThrow();
+    });
+
+    it('should detect chunk corruption', async () => {
+      const file = new File(['important data'], 'file.txt');
+      const encrypted = await encryptFile(file, encryptionKey);
+
+      // Corrupt first chunk data
+      encrypted.chunks[0]!.data[0] = encrypted.chunks[0]!.data[0]! ^ 0xFF;
+
+      await expect(decryptFile(encrypted, encryptionKey))
+        .rejects.toThrow(/hash mismatch|corrupted/i);
+    });
+
+    it('should detect missing metadata', async () => {
+      const file = new File(['data'], 'file.txt');
+      const encrypted = await encryptFile(file, encryptionKey);
+
+      // Remove metadata
+      (encrypted as any).metadata = null;
+
+      await expect(decryptFile(encrypted, encryptionKey))
+        .rejects.toThrow('Invalid encrypted file');
+    });
+
+    it('should detect chunk count mismatch', async () => {
+      const file = new File(['data'], 'file.txt');
+      const encrypted = await encryptFile(file, encryptionKey);
+
+      // Remove a chunk
+      encrypted.chunks.pop();
+
+      await expect(decryptFile(encrypted, encryptionKey))
+        .rejects.toThrow(/chunk count mismatch/i);
+    });
+
+    it('should detect file hash mismatch', async () => {
+      const file = new File(['data'], 'file.txt');
+      const encrypted = await encryptFile(file, encryptionKey);
+
+      // Tamper with file hash
+      encrypted.metadata.fileHash[0] = encrypted.metadata.fileHash[0]! ^ 0xFF;
+
+      await expect(decryptFile(encrypted, encryptionKey))
+        .rejects.toThrow(/hash mismatch|corrupted/i);
+    });
+
+    it('should detect size mismatch', async () => {
+      const file = new File(['data'], 'file.txt');
+      const encrypted = await encryptFile(file, encryptionKey);
+
+      // Tamper with size
+      encrypted.metadata.originalSize = 9999;
+
+      await expect(decryptFile(encrypted, encryptionKey))
+        .rejects.toThrow(/size mismatch/i);
+    });
+
+    it('should validate encryption key length', async () => {
+      const file = new File(['data'], 'file.txt');
+      const shortKey = new Uint8Array(16); // Wrong length
+
+      await expect(encryptFile(file, shortKey))
+        .rejects.toThrow('Encryption key must be 32 bytes');
+    });
+
+    it('should validate decryption key length', async () => {
+      const file = new File(['data'], 'file.txt');
+      const encrypted = await encryptFile(file, encryptionKey);
+
+      const shortKey = new Uint8Array(16); // Wrong length
+
+      await expect(decryptFile(encrypted, shortKey))
+        .rejects.toThrow('Decryption key must be 32 bytes');
+    });
+  });
+
+  describe('Chunk Integrity', () => {
+    it('should include chunk hash for integrity', async () => {
+      const file = new File(['test data'], 'file.txt');
+      const encrypted = await encryptFile(file, encryptionKey);
+
+      for (const chunk of encrypted.chunks) {
+        expect(chunk.hash).toBeDefined();
+        expect(chunk.hash.length).toBe(32); // SHA-256 hash
+      }
+    });
+
+    it('should include nonce for each chunk', async () => {
+      const file = new File(['test data'], 'file.txt');
+      const encrypted = await encryptFile(file, encryptionKey);
+
+      for (const chunk of encrypted.chunks) {
+        expect(chunk.nonce).toBeDefined();
+        expect(chunk.nonce.length).toBeGreaterThan(0);
+      }
+
+      // Nonces should be unique
+      if (encrypted.chunks.length > 1) {
+        expect(encrypted.chunks[0]!.nonce).not.toEqual(encrypted.chunks[1]!.nonce);
+      }
+    });
+
+    it('should include chunk index', async () => {
+      const largeData = new Uint8Array(200 * 1024).fill(1);
+      const file = new File([largeData], 'large.bin');
+      const encrypted = await encryptFile(file, encryptionKey);
+
+      encrypted.chunks.forEach((chunk, index) => {
+        expect(chunk.index).toBe(index);
+      });
+    });
+  });
+
+  describe('Metadata Security', () => {
+    it('should include file hash in metadata', async () => {
+      const file = new File(['data'], 'file.txt');
+      const encrypted = await encryptFile(file, encryptionKey);
+
+      expect(encrypted.metadata.fileHash).toBeDefined();
+      expect(encrypted.metadata.fileHash.length).toBe(32); // SHA-256
+    });
+
+    it('should include timestamp', async () => {
+      const file = new File(['data'], 'file.txt');
+      const before = Date.now();
+      const encrypted = await encryptFile(file, encryptionKey);
+      const after = Date.now();
+
+      expect(encrypted.metadata.encryptedAt).toBeGreaterThanOrEqual(before);
+      expect(encrypted.metadata.encryptedAt).toBeLessThanOrEqual(after);
+    });
+
+    it('should clear original filename for transmission', async () => {
+      const file = new File(['data'], 'sensitive-filename.txt');
+      const encrypted = await encryptFile(file, encryptionKey);
+
+      // originalName should be empty string (not leaked)
+      expect(encrypted.metadata.originalName).toBe('');
+    });
+  });
+
+  describe('Binary Data Handling', () => {
+    it('should handle various byte patterns', async () => {
+      const testPatterns = [
+        new Uint8Array([0, 0, 0, 0]), // All zeros
+        new Uint8Array([255, 255, 255, 255]), // All ones
+        new Uint8Array([0, 255, 0, 255]), // Alternating
+        new Uint8Array([1, 2, 3, 4, 5]), // Sequential
+      ];
+
+      for (const pattern of testPatterns) {
+        const file = new File([pattern], 'pattern.bin');
+        const encrypted = await encryptFile(file, encryptionKey);
+        const decrypted = await decryptFile(encrypted, encryptionKey);
+        const decryptedData = new Uint8Array(await decrypted.arrayBuffer());
+
+        expect(decryptedData).toEqual(pattern);
+      }
+    });
+
+    it('should preserve exact binary content', async () => {
+      // Create binary data with all possible byte values
+      const binaryData = new Uint8Array(256);
+      for (let i = 0; i < 256; i++) {
+        binaryData[i] = i;
+      }
+
+      const file = new File([binaryData], 'binary.bin');
+      const encrypted = await encryptFile(file, encryptionKey);
+      const decrypted = await decryptFile(encrypted, encryptionKey);
+      const decryptedData = new Uint8Array(await decrypted.arrayBuffer());
+
+      expect(decryptedData).toEqual(binaryData);
     });
   });
 });

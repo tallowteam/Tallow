@@ -1,0 +1,109 @@
+/* Privacy Page - Cineglass Magazine Glass Card Design */
+
+.page {
+  position: relative;
+  min-height: 100vh;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 160px 56px 80px;
+  background: var(--bg);
+}
+
+.ambient {
+  position: absolute;
+  top: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(
+    circle at center,
+    rgba(99, 102, 241, 0.08) 0%,
+    transparent 70%
+  );
+  filter: blur(60px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.card {
+  position: relative;
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  padding: 48px;
+  z-index: 1;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 3rem;
+  font-weight: 300;
+  line-height: 1.2;
+  color: var(--text);
+  margin: 0 0 8px;
+}
+
+.updated {
+  font-size: 0.78rem;
+  color: var(--text-3);
+  margin: 0 0 48px;
+}
+
+.heading {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 40px 0 16px;
+}
+
+.paragraph {
+  font-size: 0.92rem;
+  line-height: 1.85;
+  color: var(--text-2);
+  margin: 0 0 16px;
+}
+
+.list {
+  margin: 0 0 16px;
+  padding-left: 20px;
+  list-style: disc;
+}
+
+.list li {
+  font-size: 0.92rem;
+  line-height: 1.85;
+  color: var(--text-2);
+  margin-bottom: 8px;
+}
+
+.link {
+  color: var(--accent-2);
+  text-decoration: underline;
+  transition: opacity 0.2s ease;
+}
+
+.link:hover {
+  opacity: 0.8;
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .page {
+    padding: 120px 16px 48px;
+  }
+
+  .card {
+    padding: 28px 20px;
+  }
+
+  .title {
+    font-size: 2.2rem;
+  }
+
+  .ambient {
+    width: 400px;
+    height: 400px;
+  }
+}

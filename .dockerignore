@@ -1,58 +1,56 @@
+# ============================================================================
+# Docker Build Context Ignore File
+# Reduces build context size for faster Docker builds
+# ============================================================================
+
 # Git
 .git
 .gitignore
 .github
+.gitattributes
 
 # Dependencies
 node_modules
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
-# Testing
-coverage
-test-results
-playwright-report
-.playwright
-
-# Next.js
+# Build artifacts
 .next
 out
-
-# Production
 build
 dist
+coverage
+.turbo
 
-# Misc
-.DS_Store
-*.pem
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Testing
+tests/
+test-results/
+playwright-report/
+.playwright/
+.vitest/
 
-# Debug
-*.log
-*.pid
-*.seed
-*.pid.lock
-
-# IDE
-.vscode
-.idea
+# Development
+.vscode/
+.idea/
 *.swp
 *.swo
 *~
+*.iml
+.DS_Store
 
 # Documentation
+docs/
 *.md
 !README.md
-docs/
+.lighthouserc.js
+lighthouse-report.html
 
 # CI/CD
-.github
+.github/
 .gitlab-ci.yml
+.circleci/
 
 # Docker
 Dockerfile*
@@ -62,23 +60,60 @@ docker-compose*.yml
 # Kubernetes
 k8s/
 helm/
+kustomization.yaml
 
-# Scripts
+# Scripts (except build scripts)
 scripts/
 deploy*.sh
 backup*.sh
 
-# Backups
+# Backups and temporary files
 backups/
-
-# Reports
-reports/
-lighthouse-report.html
-
-# Temporary files
 tmp/
 temp/
 *.tmp
+*.log
+*.pid
+*.seed
+*.pid.lock
 
-# Planning
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.dev.env
+
+# IDE/Editor specific
+.prettierignore
+.eslintignore
+.editorconfig
+.husky/
+.lint-staged
+.watchmanconfig
+
+# Planning and development
 .planning/
+.claude/
+
+# Reports
+reports/
+lighthouse-reports/
+
+# Misc
+*.pem
+*.key
+*.cert
+.DS_Store
+Thumbs.db
+
+# Playwright artifacts
+.playwright-mcp/
+
+# Performance benchmarks
+perf-results/
+benchmarks/
+
+# Analytics
+sentry-release-auth-token

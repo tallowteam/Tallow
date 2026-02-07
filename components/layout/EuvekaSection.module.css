@@ -1,0 +1,246 @@
+/* ============================================
+   Euveka Section - Full Viewport Section Component
+   ============================================ */
+
+.section {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* ============================================
+   Padding Sizes
+   ============================================ */
+
+.padding-sm {
+  padding-top: var(--space-20);    /* 80px */
+  padding-bottom: var(--space-20);
+}
+
+.padding-md {
+  padding-top: var(--space-20);    /* 80px */
+  padding-bottom: var(--space-20);
+}
+
+@media (min-width: 768px) {
+  .padding-md {
+    padding-top: var(--space-28);  /* 112px */
+    padding-bottom: var(--space-28);
+  }
+}
+
+@media (min-width: 1024px) {
+  .padding-md {
+    padding-top: var(--space-30);  /* 120px */
+    padding-bottom: var(--space-30);
+  }
+}
+
+.padding-lg {
+  padding-top: var(--space-24);    /* 96px */
+  padding-bottom: var(--space-24);
+}
+
+@media (min-width: 768px) {
+  .padding-lg {
+    padding-top: var(--space-32);  /* 128px */
+    padding-bottom: var(--space-32);
+  }
+}
+
+@media (min-width: 1024px) {
+  .padding-lg {
+    padding-top: var(--space-40);  /* 160px */
+    padding-bottom: var(--space-40);
+  }
+}
+
+/* ============================================
+   Full Height Option
+   ============================================ */
+
+.fullHeight {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* ============================================
+   Background Variants
+   ============================================ */
+
+/* Default - Pure dark background */
+.bg-default {
+  background-color: var(--bg-base);
+}
+
+/* Gradient - Radial purple glow from center */
+.bg-gradient {
+  background:
+    radial-gradient(
+      circle at 50% 30%,
+      rgba(94, 92, 230, 0.08) 0%,
+      transparent 60%
+    ),
+    var(--bg-base);
+}
+
+/* Alternative gradient position for variety */
+.bg-gradient.fullHeight {
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(94, 92, 230, 0.12) 0%,
+      transparent 50%
+    ),
+    var(--bg-base);
+}
+
+/* Dots Pattern - Subtle dot grid overlay */
+.bg-dots {
+  background-color: var(--bg-base);
+  background-image:
+    radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.04) 1px,
+      transparent 1px
+    );
+  background-size: 24px 24px;
+  background-position: 0 0;
+}
+
+/* Grid Pattern - Line grid overlay */
+.bg-grid {
+  background-color: var(--bg-base);
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-position: -1px -1px;
+}
+
+@media (min-width: 768px) {
+  .bg-grid {
+    background-size: 64px 64px;
+  }
+}
+
+/* Noise Texture - Subtle noise overlay */
+.bg-noise {
+  background-color: var(--bg-base);
+  position: relative;
+}
+
+.bg-noise::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.025;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Ensure content is above noise texture */
+.bg-noise > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================
+   Theme Variations
+   ============================================ */
+
+/* Light Theme Adjustments */
+[data-theme="light"] .bg-gradient {
+  background:
+    radial-gradient(
+      circle at 50% 30%,
+      rgba(94, 92, 230, 0.04) 0%,
+      transparent 60%
+    ),
+    var(--bg-base);
+}
+
+[data-theme="light"] .bg-dots {
+  background-image:
+    radial-gradient(
+      circle,
+      rgba(0, 0, 0, 0.03) 1px,
+      transparent 1px
+    );
+}
+
+[data-theme="light"] .bg-grid {
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.025) 1px, transparent 1px);
+}
+
+[data-theme="light"] .bg-noise::before {
+  opacity: 0.015;
+}
+
+/* High Contrast Theme */
+[data-theme="high-contrast"] .bg-gradient {
+  background:
+    radial-gradient(
+      circle at 50% 30%,
+      rgba(123, 123, 255, 0.15) 0%,
+      transparent 60%
+    ),
+    var(--bg-base);
+}
+
+[data-theme="high-contrast"] .bg-dots {
+  background-image:
+    radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.08) 1px,
+      transparent 1px
+    );
+}
+
+[data-theme="high-contrast"] .bg-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+}
+
+[data-theme="high-contrast"] .bg-noise::before {
+  opacity: 0.04;
+}
+
+/* Colorblind Theme - Blue gradients */
+[data-theme="colorblind"] .bg-gradient {
+  background:
+    radial-gradient(
+      circle at 50% 30%,
+      rgba(37, 99, 235, 0.08) 0%,
+      transparent 60%
+    ),
+    var(--bg-base);
+}
+
+/* ============================================
+   Accessibility
+   ============================================ */
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .section {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .bg-dots,
+  .bg-grid {
+    background-image: none;
+    border-top: 1px solid var(--border-strong);
+    border-bottom: 1px solid var(--border-strong);
+  }
+}

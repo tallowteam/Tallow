@@ -1,0 +1,60 @@
+/* ============================================
+   Euveka Container - Max-width Centered Container
+   ============================================ */
+
+.container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--space-4);   /* 16px */
+  padding-right: var(--space-4);
+}
+
+/* Responsive padding */
+@media (min-width: 640px) {
+  .container {
+    padding-left: var(--space-6);  /* 24px */
+    padding-right: var(--space-6);
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding-left: var(--space-8);  /* 32px */
+    padding-right: var(--space-8);
+  }
+}
+
+/* ============================================
+   Size Variants
+   ============================================ */
+
+/* Small - 800px */
+.size-sm {
+  max-width: 800px;
+}
+
+/* Medium - 1000px */
+.size-md {
+  max-width: 1000px;
+}
+
+/* Large - 1200px (default) */
+.size-lg {
+  max-width: 1200px;
+}
+
+/* Extra Large - 1400px */
+.size-xl {
+  max-width: 1400px;
+}
+
+/* ============================================
+   High Contrast Mode
+   ============================================ */
+
+@media (prefers-contrast: high) {
+  .container {
+    outline: 1px solid transparent;
+  }
+}

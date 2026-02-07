@@ -101,13 +101,16 @@ export function useChatIntegration({
 
     initializeChat();
 
-    // Cleanup on unmount
+    // Cleanup on unmount - use manager ref to avoid stale closure
     return () => {
-      if (chatManager) {
-        chatManager.destroy();
-      }
+      setChatManager((currentManager) => {
+        if (currentManager) {
+          currentManager.destroy();
+        }
+        return null;
+      });
     };
-  }, [enabled, dataChannel, sessionKeys, sessionId, currentUserId, currentUserName]);
+  }, [enabled, dataChannel, sessionKeys, sessionId, currentUserId, currentUserName, _peerUserId, _peerUserName]);
 
   // Reset unread count when chat is opened (handled by parent component)
   const resetUnreadCount = () => {

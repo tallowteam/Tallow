@@ -182,7 +182,7 @@ export class TallowWebSocketServer extends EventEmitter {
         });
 
         this.wss.on('listening', () => {
-          console.log(`[WebSocket] Server listening on port ${this.port}`);
+          console.info(`[WebSocket] Server listening on port ${this.port}`);
           this.isRunning = true;
           this.setupMDNSEvents();
           this.startPingInterval();
@@ -232,7 +232,7 @@ export class TallowWebSocketServer extends EventEmitter {
       // Close server
       if (this.wss) {
         this.wss.close(() => {
-          console.log('[WebSocket] Server stopped');
+          console.info('[WebSocket] Server stopped');
           this.isRunning = false;
           resolve();
         });
@@ -271,7 +271,7 @@ export class TallowWebSocketServer extends EventEmitter {
 
     // Store client
     this.clients.set(ws.clientId, ws);
-    console.log(`[WebSocket] Client connected: ${ws.clientId}`);
+    console.info(`[WebSocket] Client connected: ${ws.clientId}`);
 
     // Handle pong (keepalive response)
     ws.on('pong', () => {
@@ -285,7 +285,7 @@ export class TallowWebSocketServer extends EventEmitter {
 
     // Handle close
     ws.on('close', () => {
-      console.log(`[WebSocket] Client disconnected: ${ws.clientId}`);
+      console.info(`[WebSocket] Client disconnected: ${ws.clientId}`);
       this.clients.delete(ws.clientId);
     });
 
@@ -561,7 +561,7 @@ export class TallowWebSocketServer extends EventEmitter {
     this.pingInterval = setInterval(() => {
       this.clients.forEach((client, clientId) => {
         if (!client.isAlive) {
-          console.log(`[WebSocket] Client timed out: ${clientId}`);
+          console.info(`[WebSocket] Client timed out: ${clientId}`);
           client.terminate();
           this.clients.delete(clientId);
           return;

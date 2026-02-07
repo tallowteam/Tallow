@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tallow — Euveka Style</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;1,300&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #fefefc; --bg-2: #f5f0ea; --bg-3: #ebe4d9;
+    --dark: #191610; --dark-2: #0d0c08;
+    --text: #191610; --text-2: #6b6156; --text-3: #a89f91;
+    --border: #d6cec2; --border-2: #e5dac7;
+    --blue: #0066cc;
+  }
+  body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  .serif { font-family: 'Playfair Display', Georgia, serif; }
+
+  /* HEADER */
+  .header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(254,254,252,0.9); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border-2); padding: 0 60px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
+  .logo { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 1.6rem; color: var(--text); letter-spacing: -0.02em; }
+  .nav { display: flex; align-items: center; gap: 36px; }
+  .nav a { color: var(--text-2); text-decoration: none; font-size: 0.85rem; font-weight: 500; }
+  .nav a:hover { color: var(--text); }
+  .btn-blue { background: var(--blue); color: #fff; border: none; padding: 8px 22px; border-radius: 60px; font-size: 0.825rem; font-weight: 500; cursor: pointer; }
+
+  /* HERO - Editorial full-screen */
+  .hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 140px 60px 100px; position: relative; }
+  .hero-tag { font-size: 0.7rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 40px; font-weight: 500; }
+  .hero h1 { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 5.5rem; line-height: 1.05; letter-spacing: -0.03em; max-width: 800px; margin-bottom: 28px; color: var(--dark); }
+  .hero p { font-size: 1.1rem; color: var(--text-2); max-width: 440px; margin-bottom: 48px; line-height: 1.7; }
+  .hero-cta { display: flex; gap: 16px; }
+  .btn-dark { background: var(--dark); color: var(--bg); border: none; padding: 14px 36px; border-radius: 60px; font-size: 0.9rem; font-weight: 500; cursor: pointer; letter-spacing: 0.02em; }
+  .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); padding: 14px 36px; border-radius: 60px; font-size: 0.9rem; font-weight: 500; cursor: pointer; }
+
+  /* DIVIDER */
+  .divider { height: 1px; background: var(--border); margin: 0 60px; }
+
+  /* FEATURES - Monochrome */
+  .features { padding: 140px 60px; max-width: 1200px; margin: 0 auto; }
+  .features-head { text-align: center; margin-bottom: 80px; }
+  .features-head h2 { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 3.2rem; letter-spacing: -0.02em; margin-bottom: 12px; }
+  .features-head p { color: var(--text-2); font-size: 1rem; }
+
+  .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; border: 1px solid var(--border); background: var(--border); }
+  .f-cell { background: var(--bg); padding: 48px 36px; }
+  .f-cell:hover { background: var(--bg-2); }
+  .f-num { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 3rem; color: var(--border); line-height: 1; margin-bottom: 16px; }
+  .f-cell h3 { font-family: 'Playfair Display', serif; font-weight: 400; font-size: 1.3rem; margin-bottom: 10px; }
+  .f-cell p { color: var(--text-2); font-size: 0.9rem; line-height: 1.7; }
+
+  /* DARK SECTION */
+  .dark-section { background: var(--dark-2); color: var(--bg); padding: 140px 60px; }
+  .dark-inner { max-width: 1000px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+  .dark-section h2 { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 3rem; line-height: 1.12; margin-bottom: 20px; }
+  .dark-section p { color: #a89f91; font-size: 1rem; line-height: 1.7; margin-bottom: 28px; }
+  .dark-section a { color: var(--blue); text-decoration: none; font-size: 0.9rem; font-weight: 500; }
+  .protocol-box { border: 1px dashed rgba(254,254,252,0.12); border-radius: 24px; padding: 36px; }
+  .proto-item { padding: 16px 0; border-bottom: 1px solid rgba(254,254,252,0.06); display: flex; justify-content: space-between; font-size: 0.9rem; color: #d6cec2; }
+  .proto-item:last-child { border-bottom: none; }
+  .proto-badge { color: var(--blue); font-size: 0.75rem; font-weight: 500; }
+
+  /* STATS */
+  .stats-section { padding: 100px 60px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; max-width: 900px; margin: 0 auto; text-align: center; }
+  .stat-n { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 4rem; line-height: 1; margin-bottom: 8px; }
+  .stat-l { color: var(--text-3); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 500; }
+
+  /* CTA */
+  .cta { padding: 140px 60px; text-align: center; }
+  .cta h2 { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 3.5rem; margin-bottom: 16px; letter-spacing: -0.02em; }
+  .cta p { color: var(--text-2); font-size: 1rem; margin-bottom: 40px; }
+
+  /* FOOTER */
+  .footer { padding: 48px 60px 32px; border-top: 1px solid var(--border); }
+  .footer-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 24px; }
+  .footer .logo { font-size: 1.3rem; }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { color: var(--text-3); text-decoration: none; font-size: 0.8rem; }
+  .footer-bottom { border-top: 1px solid var(--border-2); padding-top: 20px; display: flex; justify-content: space-between; }
+  .footer-bottom p { color: var(--text-3); font-size: 0.75rem; }
+  .footer-bottom .tagline { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 300; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">Tallow</div>
+  <nav class="nav"><a href="#">Features</a><a href="#">Security</a><a href="#">Pricing</a><a href="#">Docs</a><button class="btn-blue">Open App</button></nav>
+</header>
+
+<section class="hero">
+  <div class="hero-tag">Secure File Transfer</div>
+  <h1>Your files.<br>Your devices.<br>Your rules.</h1>
+  <p>Peer-to-peer transfer with post-quantum encryption. No servers, no accounts, no compromise.</p>
+  <div class="hero-cta">
+    <button class="btn-dark">Start Transferring</button>
+    <button class="btn-outline">Learn More</button>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section class="features">
+  <div class="features-head">
+    <h2>Everything you need</h2>
+    <p>Simple, secure, and built for people who care about their files.</p>
+  </div>
+  <div class="features-grid">
+    <div class="f-cell"><div class="f-num">01</div><h3>Instant P2P</h3><p>Files travel directly between devices. No upload, no cloud, no waiting.</p></div>
+    <div class="f-cell"><div class="f-num">02</div><h3>Post-Quantum</h3><p>ML-KEM encryption protects your files against tomorrow's quantum threats.</p></div>
+    <div class="f-cell"><div class="f-num">03</div><h3>Cross-Platform</h3><p>Works on any device with a browser. Phone, tablet, laptop, desktop.</p></div>
+    <div class="f-cell"><div class="f-num">04</div><h3>Zero Knowledge</h3><p>We can't see your files. No logs, no metadata, no analytics.</p></div>
+    <div class="f-cell"><div class="f-num">05</div><h3>No Limits</h3><p>Transfer any file type, any size. No restrictions, no premium tiers for basics.</p></div>
+    <div class="f-cell"><div class="f-num">06</div><h3>Open Source</h3><p>Every line auditable. Trust through transparency, not promises.</p></div>
+  </div>
+</section>
+
+<section class="dark-section">
+  <div class="dark-inner">
+    <div>
+      <h2>Security that doesn't get in your way</h2>
+      <p>We built Tallow for people who care about privacy but hate complicated tools. Post-quantum encryption runs silently in the background.</p>
+      <a href="#">Learn about our security &rarr;</a>
+    </div>
+    <div class="protocol-box">
+      <div class="proto-item">ML-KEM Key Exchange <span class="proto-badge">Post-Quantum</span></div>
+      <div class="proto-item">AES-256-GCM <span class="proto-badge">Military Grade</span></div>
+      <div class="proto-item">WebRTC P2P <span class="proto-badge">Direct</span></div>
+      <div class="proto-item">Zero-Knowledge <span class="proto-badge">Private</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="stats-section">
+  <div class="stats-grid">
+    <div><div class="stat-n">256</div><div class="stat-l">Bit Encryption</div></div>
+    <div><div class="stat-n">0</div><div class="stat-l">Servers Touched</div></div>
+    <div><div class="stat-n">P2P</div><div class="stat-l">Direct Transfer</div></div>
+    <div><div class="stat-n">&infin;</div><div class="stat-l">File Size Limit</div></div>
+  </div>
+</section>
+
+<section class="cta">
+  <h2>Ready to take control?</h2>
+  <p>No signup. No credit card. Just open Tallow and start transferring.</p>
+  <button class="btn-dark">Open Tallow</button>
+</section>
+
+<footer class="footer">
+  <div class="footer-row"><div class="logo">Tallow</div><div class="footer-links"><a href="#">Features</a><a href="#">Security</a><a href="#">Pricing</a><a href="#">Docs</a><a href="#">Privacy</a></div></div>
+  <div class="footer-bottom"><p>&copy; 2026 Tallow. All rights reserved.</p><p class="tagline">Your files. Your rules.</p></div>
+</footer>
+</body>
+</html>

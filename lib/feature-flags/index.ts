@@ -3,14 +3,58 @@
  * Central export for all feature flag utilities
  */
 
-// LaunchDarkly client
+// Standalone feature flags system (recommended)
 export {
-  FeatureFlags,
-  DEFAULT_FLAGS,
+  default as FeatureFlags,
+  isEnabled,
+  setFlag,
+  getAllFlags,
+  resetFlag,
+  resetAllFlags,
+  subscribe,
+  getDefaultValue,
+  refresh,
+} from './feature-flags';
+
+export type { FeatureFlagKey, FeatureFlagValues } from './feature-flags';
+
+// React hooks
+export {
+  useFeatureFlag,
+  useFeatureFlags,
+  useFeatureFlagToggle,
+  useFeatureFlagReset,
+  useFeatureFlagDefault,
+  useFeatureFlagsReady,
+  // Convenience hooks
+  useChatEnabled,
+  useVoiceMemosEnabled,
+  useLocationSharingEnabled,
+  useScreenSharingEnabled,
+  useBroadcastModeEnabled,
+  useScheduledTransfersEnabled,
+  useTeamWorkspacesEnabled,
+  useBrowserExtensionAPIEnabled,
+  useAdvancedCompressionEnabled,
+  useDeltaSyncEnabled,
+  useWebAuthnEnabled,
+  useWebTransportEnabled,
+  usePlausibleAnalyticsEnabled,
+  useSentryTrackingEnabled,
+  useI18nEnabled,
+  useGuestModeEnabled,
+  useExperimentalPQCEnabled,
+  useDebugModeEnabled,
+} from './use-feature-flag';
+
+// LaunchDarkly client (legacy - kept for backward compatibility)
+export {
+  FeatureFlags as LaunchDarklyFlags,
+  DEFAULT_FLAGS as LaunchDarklyDefaults,
   initLaunchDarkly,
   getLaunchDarklyClient,
-  getFeatureFlag,
-  getAllFeatureFlags,
+  getFeatureFlag as getLaunchDarklyFlag,
+  getAllFeatureFlags as getAllLaunchDarklyFlags,
   trackFeatureFlagEvent,
   identifyUser,
   closeLaunchDarkly,
@@ -18,9 +62,9 @@ export {
   flushEvents,
 } from './launchdarkly';
 
-export type { FeatureFlagKey } from './launchdarkly';
+export type { FeatureFlagKey as LaunchDarklyFlagKey } from './launchdarkly';
 
-// React context
+// React context (legacy - kept for backward compatibility)
 export {
   FeatureFlagsProvider,
   useFeatureFlagsContext,

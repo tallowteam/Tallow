@@ -12,6 +12,8 @@ export * from './accessibility';
 export * from './focus-management';
 export * from './secure-logger';
 export * from './performance-metrics';
+export * from './barcode-detector-polyfill';
+export * from './qr-code-generator';
 
 /**
  * Utility function for conditional class names (similar to clsx/classnames)

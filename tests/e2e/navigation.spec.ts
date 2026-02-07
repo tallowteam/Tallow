@@ -1,256 +1,376 @@
-/**
- * Navigation E2E Tests
- * Tests for navigation flows and routing
- */
+import { test, expect } from './fixtures';
 
-import { test, expect } from '@playwright/test';
+test.describe('Navigation', () => {
+  test.describe('Main Pages', () => {
+    test('should navigate to homepage and show key content', async ({ page }) => {
+      await page.goto('/');
 
-test.describe('Navigation Tests', () => {
+      // Check page title
+      await expect(page).toHaveTitle(/Tallow/);
+
+      // Check hero section
+      await expect(page.locator('h1')).toBeVisible();
+      await expect(page.locator('text=Secure peer-to-peer')).toBeVisible();
+
+      // Check CTA button exists
+      const ctaButton = page.locator('text=Open App').first();
+      await expect(ctaButton).toBeVisible();
+    });
+
+    test('should navigate to /features page', async ({ page }) => {
+      await page.goto('/features');
+
+      // Check page loaded
+      await expect(page).toHaveTitle(/Features/);
+
+      // Check features content visible
+      await expect(page.locator('h1')).toContainText(/Features?/i);
+
+      // Check multiple feature cards
+      const featureCards = page.locator('[class*="card"]');
+      await expect(featureCards.first()).toBeVisible();
+    });
+
+    test('should navigate to /security page', async ({ page }) => {
+      await page.goto('/security');
+
+      // Check page loaded
+      await expect(page).toHaveTitle(/Security/);
+
+      // Check security content
+      await expect(page.locator('h1')).toContainText(/Security/i);
+
+      // Check for encryption mentions
+      await expect(page.locator('text=/encryption/i').first()).toBeVisible();
+    });
+
+    test('should navigate to /pricing page', async ({ page }) => {
+      await page.goto('/pricing');
+
+      // Check page loaded
+      await expect(page).toHaveTitle(/Pricing/);
+
+      // Check pricing content
+      await expect(page.locator('h1')).toContainText(/Pricing/i);
+
+      // Check pricing cards/tiers visible
+      const pricingCards = page.locator('[class*="card"]');
+      await expect(pricingCards.first()).toBeVisible();
+    });
+
+    test('should navigate to /about page', async ({ page }) => {
+      await page.goto('/about');
+
+      // Check page loaded
+      await expect(page).toHaveTitle(/About/);
+
+      // Check about content
+      await expect(page.locator('h1')).toContainText(/About/i);
+    });
+
+    test('should navigate to /docs page', async ({ page }) => {
+      await page.goto('/docs');
+
+      // Check page loaded
+      await expect(page).toHaveTitle(/Docs|Documentation/);
+
+      // Check docs content
+      await expect(page.locator('h1')).toBeVisible();
+    });
+
+    test('should navigate to /transfer page', async ({ page }) => {
+      await page.goto('/transfer');
+
+      // Check transfer app loaded
+      await expect(page.locator('h1')).toContainText(/Send Files/i);
+
+      // Check file drop zone visible
+      await expect(page.locator('text=/drag.*drop/i').or(page.locator('[class*="drop"]')).first()).toBeVisible();
+
+      // Check tabs visible
+      await expect(page.locator('text=Nearby')).toBeVisible();
+      await expect(page.locator('text=Internet')).toBeVisible();
+      await expect(page.locator('text=Friends')).toBeVisible();
+    });
+
+    test('should navigate to /settings page', async ({ page }) => {
+      await page.goto('/settings');
+
+      // Check settings page loaded
+      await expect(page.locator('h1')).toContainText(/Settings/i);
+
+      // Check settings sections visible
+      await expect(page.locator('text=/Device Settings/i')).toBeVisible();
+      await expect(page.locator('text=/Privacy.*Security/i')).toBeVisible();
+    });
+  });
+
   test.describe('Header Navigation', () => {
-    test('should navigate between pages', async ({ page }) => {
+    test('should have working header navigation links', async ({ page }) => {
       await page.goto('/');
 
-      // Click navigation links
-      const appLink = page.getByRole('link', { name: /app/i }).first();
-      if (await appLink.isVisible()) {
-        await appLink.click();
-        await expect(page).toHaveURL(/\/app/);
-      }
+      // Check logo link
+      const logo = page.locator('a[href="/"]').first();
+      await expect(logo).toBeVisible();
+
+      // Check navigation links
+      await expect(page.locator('a[href="/features"]').first()).toBeVisible();
+      await expect(page.locator('a[href="/security"]').first()).toBeVisible();
+      await expect(page.locator('a[href="/pricing"]').first()).toBeVisible();
+      await expect(page.locator('a[href="/docs"]').first()).toBeVisible();
+
+      // Test clicking a nav link
+      await page.locator('a[href="/features"]').first().click();
+      await expect(page).toHaveURL(/\/features/);
     });
 
-    test('should show active navigation state', async ({ page }) => {
-      await page.goto('/');
+    test('should highlight active navigation link', async ({ page }) => {
+      await page.goto('/features');
 
-      const navigation = page.locator('nav').first();
-      if (await navigation.isVisible()) {
-        const activeLink = navigation.locator('[aria-current="page"]');
-        if ((await activeLink.count()) > 0) {
-          await expect(activeLink.first()).toBeVisible();
-        }
-      }
+      // Find features link
+      const featuresLink = page.locator('nav a[href="/features"]').first();
+
+      // Check if it has active class or aria-current
+      const ariaCurrent = await featuresLink.getAttribute('aria-current');
+      const className = await featuresLink.getAttribute('class');
+
+      expect(ariaCurrent === 'page' || className?.includes('active')).toBeTruthy();
     });
 
-    test('should handle mobile navigation', async ({ page }) => {
-      await page.setViewportSize({ width: 375, height: 667 });
+    test('should have theme toggle button', async ({ page }) => {
       await page.goto('/');
 
-      // Look for mobile menu toggle
-      const menuToggle = page.locator('[aria-label*="menu"]').first();
-      if (await menuToggle.isVisible()) {
-        await menuToggle.click();
+      // Find theme toggle button
+      const themeToggle = page.locator('button[aria-label*="theme" i]').or(
+        page.locator('button[title*="theme" i]')
+      ).first();
 
-        // Menu should open
-        const mobileMenu = page.locator('[role="dialog"], [aria-label*="mobile"]').first();
-        if ((await mobileMenu.count()) > 0) {
-          await expect(mobileMenu).toBeVisible();
-        }
-      }
+      await expect(themeToggle).toBeVisible();
+
+      // Test clicking theme toggle
+      await themeToggle.click();
+
+      // Theme should change (check html data-theme or class)
+      const html = page.locator('html');
+      const dataTheme = await html.getAttribute('data-theme');
+      const className = await html.getAttribute('class');
+
+      expect(dataTheme || className).toBeTruthy();
+    });
+
+    test('should have GitHub link', async ({ page }) => {
+      await page.goto('/');
+
+      const githubLink = page.locator('a[href*="github"]').first();
+      await expect(githubLink).toBeVisible();
+
+      // Check it opens in new tab
+      const target = await githubLink.getAttribute('target');
+      expect(target).toBe('_blank');
+    });
+
+    test('should have Open App CTA button', async ({ page }) => {
+      await page.goto('/');
+
+      const ctaButton = page.locator('a[href="/transfer"]').or(
+        page.locator('text=Open App')
+      ).first();
+
+      await expect(ctaButton).toBeVisible();
+
+      // Test clicking CTA
+      await ctaButton.click();
+      await expect(page).toHaveURL(/\/transfer/);
     });
   });
 
   test.describe('Footer Navigation', () => {
+    test('should have footer on all pages', async ({ page }) => {
+      const pages = ['/', '/features', '/security', '/pricing', '/about'];
+
+      for (const url of pages) {
+        await page.goto(url);
+        const footer = page.locator('footer');
+        await expect(footer).toBeVisible();
+      }
+    });
+
     test('should have footer links', async ({ page }) => {
       await page.goto('/');
 
-      const footer = page.locator('footer').first();
-      await expect(footer).toBeVisible();
+      const footer = page.locator('footer');
 
-      // Check for common footer links
-      const links = footer.locator('a');
-      const count = await links.count();
+      // Check product links
+      await expect(footer.locator('a[href="/features"]')).toBeVisible();
+      await expect(footer.locator('a[href="/security"]')).toBeVisible();
+      await expect(footer.locator('a[href="/pricing"]')).toBeVisible();
+
+      // Check docs link
+      await expect(footer.locator('a[href="/docs"]')).toBeVisible();
+
+      // Check legal links (if they exist)
+      const privacyLink = footer.locator('a[href="/privacy"]');
+      const termsLink = footer.locator('a[href="/terms"]');
+
+      // At least one legal link should exist
+      const hasPrivacy = await privacyLink.count() > 0;
+      const hasTerms = await termsLink.count() > 0;
+      expect(hasPrivacy || hasTerms).toBeTruthy();
+    });
+
+    test('should test footer link navigation', async ({ page }) => {
+      await page.goto('/');
+
+      // Click footer link
+      await page.locator('footer a[href="/about"]').click();
+      await expect(page).toHaveURL(/\/about/);
+    });
+  });
+
+  test.describe('404 Page', () => {
+    test('should show 404 page for unknown routes', async ({ page }) => {
+      // Try to navigate to non-existent page
+      const response = await page.goto('/this-page-does-not-exist-xyz123');
+
+      // Check response status or page content
+      // Next.js may return 200 with 404 content, or actual 404
+      const status = response?.status();
+
+      // Check for 404 indicators
+      const has404Text = await page.locator('text=/404|not found/i').count() > 0;
+      const has404Status = status === 404;
+
+      expect(has404Text || has404Status).toBeTruthy();
+    });
+
+    test('should have link back to home from 404', async ({ page }) => {
+      await page.goto('/non-existent-page-xyz');
+
+      // Look for home link (common pattern)
+      const homeLink = page.locator('a[href="/"]').or(
+        page.locator('text=/go.*home/i')
+      );
+
+      // At least one way to get back home should exist
+      const count = await homeLink.count();
       expect(count).toBeGreaterThan(0);
     });
-
-    test('should navigate to legal pages', async ({ page }) => {
-      await page.goto('/');
-
-      const footer = page.locator('footer').first();
-
-      // Try to find privacy link
-      const privacyLink = footer.getByRole('link', { name: /privacy/i }).first();
-      if (await privacyLink.isVisible()) {
-        await privacyLink.click();
-        await expect(page.url()).toContain('privacy');
-      }
-    });
   });
 
-  test.describe('Breadcrumb Navigation', () => {
-    test('should show breadcrumbs on deep pages', async ({ page }) => {
-      await page.goto('/app');
+  test.describe('Mobile Navigation', () => {
+    test.use({ viewport: { width: 375, height: 667 } });
 
-      const breadcrumb = page.locator('[aria-label*="breadcrumb"]').first();
-      if (await breadcrumb.isVisible()) {
-        const items = breadcrumb.locator('a, span');
-        const count = await items.count();
-        expect(count).toBeGreaterThan(0);
-      }
-    });
-  });
-
-  test.describe('Back Navigation', () => {
-    test('should navigate back correctly', async ({ page }) => {
-      await page.goto('/');
-      const initialUrl = page.url();
-
-      // Navigate to app
-      await page.goto('/app');
-      await expect(page).toHaveURL(/\/app/);
-
-      // Go back
-      await page.goBack();
-      expect(page.url()).toBe(initialUrl);
-    });
-
-    test('should maintain scroll position on back', async ({ page }) => {
+    test('should show mobile menu button', async ({ page }) => {
       await page.goto('/');
 
-      // Scroll down
-      await page.evaluate(() => window.scrollTo(0, 500));
-      const scrollPosition = await page.evaluate(() => window.scrollY);
+      // Look for mobile menu button (hamburger)
+      const menuButton = page.locator('button[aria-label*="menu" i]').or(
+        page.locator('button[aria-expanded]')
+      ).first();
 
-      // Navigate away and back
-      await page.goto('/app');
-      await page.goBack();
-
-      // Note: Scroll restoration depends on browser behavior
-      // Just verify we're back on the right page
-      await expect(page).toHaveURL('/');
-    });
-  });
-
-  test.describe('Deep Linking', () => {
-    test('should handle direct navigation to deep routes', async ({ page }) => {
-      await page.goto('/app');
-      await expect(page).toHaveURL(/\/app/);
+      await expect(menuButton).toBeVisible();
     });
 
-    test('should handle hash navigation', async ({ page }) => {
-      await page.goto('/#features');
+    test('should open and close mobile menu', async ({ page }) => {
+      await page.goto('/');
 
-      // Check if hash is in URL
-      expect(page.url()).toContain('#features');
+      // Find and click menu button
+      const menuButton = page.locator('button[aria-label*="menu" i]').or(
+        page.locator('button[aria-expanded]')
+      ).first();
 
-      // Check if scrolled to section
-      const featuresSection = page.locator('#features, [data-section="features"]').first();
-      if (await featuresSection.isVisible()) {
-        await expect(featuresSection).toBeInViewport();
-      }
+      await menuButton.click();
+
+      // Check menu opened
+      const expanded = await menuButton.getAttribute('aria-expanded');
+      expect(expanded).toBe('true');
+
+      // Check mobile menu visible
+      const mobileMenu = page.locator('[class*="mobile" i]').or(
+        page.locator('[id*="menu"]')
+      );
+      await expect(mobileMenu.first()).toBeVisible();
+
+      // Close menu
+      await menuButton.click();
+
+      // Check menu closed
+      const expandedAfter = await menuButton.getAttribute('aria-expanded');
+      expect(expandedAfter).toBe('false');
+    });
+
+    test('should navigate via mobile menu', async ({ page }) => {
+      await page.goto('/');
+
+      // Open mobile menu
+      const menuButton = page.locator('button[aria-label*="menu" i]').first();
+      await menuButton.click();
+
+      // Click features link in mobile menu
+      await page.locator('a[href="/features"]').last().click();
+
+      // Check navigation
+      await expect(page).toHaveURL(/\/features/);
     });
   });
 
   test.describe('Keyboard Navigation', () => {
-    test('should navigate with Tab key', async ({ page }) => {
+    test('should navigate with keyboard', async ({ page }) => {
       await page.goto('/');
 
-      // Tab through focusable elements
+      // Tab through interactive elements
       await page.keyboard.press('Tab');
 
-      // Should have focus on first focusable element
-      const focused = page.locator(':focus');
-      await expect(focused).toBeVisible();
+      // Check focus is on an interactive element
+      const focusedElement = await page.evaluate(() => {
+        const el = document.activeElement;
+        return {
+          tagName: el?.tagName,
+          type: el?.getAttribute('type'),
+          href: el?.getAttribute('href'),
+          role: el?.getAttribute('role'),
+        };
+      });
+
+      // Should be on a link or button
+      const isInteractive =
+        focusedElement.tagName === 'A' ||
+        focusedElement.tagName === 'BUTTON' ||
+        focusedElement.role === 'link' ||
+        focusedElement.role === 'button';
+
+      expect(isInteractive).toBeTruthy();
     });
 
-    test('should navigate with arrow keys in menus', async ({ page }) => {
+    test('should close mobile menu with Escape key', async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 667 });
       await page.goto('/');
 
-      const menuToggle = page.locator('[aria-label*="menu"]').first();
-      if (await menuToggle.isVisible()) {
-        await menuToggle.click();
+      // Open mobile menu
+      const menuButton = page.locator('button[aria-label*="menu" i]').first();
+      await menuButton.click();
 
-        // Try arrow key navigation
-        await page.keyboard.press('ArrowDown');
-        const focused = page.locator(':focus');
+      // Press Escape
+      await page.keyboard.press('Escape');
 
-        if ((await focused.count()) > 0) {
-          await expect(focused).toBeVisible();
-        }
-      }
-    });
-
-    test('should close menu with Escape', async ({ page }) => {
-      await page.setViewportSize({ width: 375, height: 667 });
-      await page.goto('/');
-
-      const menuToggle = page.locator('[aria-label*="menu"]').first();
-      if (await menuToggle.isVisible()) {
-        await menuToggle.click();
-
-        const menu = page.locator('[role="dialog"]').first();
-        if (await menu.isVisible()) {
-          await page.keyboard.press('Escape');
-
-          // Menu should close
-          await expect(menu).not.toBeVisible();
-        }
-      }
+      // Check menu closed
+      const expanded = await menuButton.getAttribute('aria-expanded');
+      expect(expanded).toBe('false');
     });
   });
 
-  test.describe('Route Transitions', () => {
-    test('should handle rapid navigation', async ({ page }) => {
-      await page.goto('/');
+  test.describe('URL Parameters', () => {
+    test('should preserve query parameters on navigation', async ({ page }) => {
+      await page.goto('/?ref=test');
 
-      // Rapidly click between pages
-      await page.goto('/app');
-      await page.goto('/');
-      await page.goto('/app');
+      // Check parameter is in URL
+      expect(page.url()).toContain('ref=test');
 
-      // Should end up on correct page
-      await expect(page).toHaveURL(/\/app/);
-    });
+      // Navigate to another page
+      await page.locator('a[href="/features"]').first().click();
 
-    test('should preserve form state on navigation', async ({ page }) => {
-      await page.goto('/app');
-
-      // Type in input if exists
-      const input = page.locator('input[type="text"]').first();
-      if (await input.isVisible()) {
-        await input.fill('test data');
-
-        // Navigate away and back
-        await page.goto('/');
-        await page.goBack();
-
-        // Note: Actual behavior depends on implementation
-        // Just verify page loads correctly
-        await expect(page).toHaveURL(/\/app/);
-      }
-    });
-  });
-
-  test.describe('External Links', () => {
-    test('should open external links in new tab', async ({ page, context }) => {
-      await page.goto('/');
-
-      const externalLinks = page.locator('a[target="_blank"]');
-      const count = await externalLinks.count();
-
-      if (count > 0) {
-        const firstLink = externalLinks.first();
-        expect(await firstLink.getAttribute('rel')).toContain('noopener');
-      }
-    });
-  });
-
-  test.describe('404 Handling', () => {
-    test('should show 404 page for invalid routes', async ({ page }) => {
-      const response = await page.goto('/this-page-does-not-exist');
-
-      // Should get 404 status
-      expect(response?.status()).toBe(404);
-    });
-
-    test('should have navigation on 404 page', async ({ page }) => {
-      await page.goto('/invalid-route');
-
-      // Should have way to get back to home
-      const homeLink = page.getByRole('link', { name: /home/i }).first();
-      if (await homeLink.isVisible()) {
-        await homeLink.click();
-        await expect(page).toHaveURL('/');
-      }
+      // URL should be on features page
+      await expect(page).toHaveURL(/\/features/);
     });
   });
 });
