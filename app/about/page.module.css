@@ -106,6 +106,21 @@
   padding: 48px 40px;
   text-align: center;
   transition: border-color 0.3s var(--ease);
+  animation: revealScale 0.8s var(--ease) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
+}
+
+.valueCard:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.valueCard:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.valueCard:nth-child(3) {
+  animation-delay: 0.3s;
 }
 
 .valueCard:hover {
@@ -146,6 +161,9 @@
   flex-direction: column;
   align-items: center;
   gap: 48px;
+  animation: revealUp 1s var(--ease) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
 }
 
 .githubText {
@@ -246,12 +264,27 @@
   }
 }
 
+@supports not (animation-timeline: view()) {
+  .hero,
+  .manifestoParagraph,
+  .valueCard,
+  .githubContainer {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero,
+  .manifestoParagraph,
   .valueCard,
+  .githubContainer,
   .teamCard,
   .ctaButton {
     animation: none !important;
     transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 }

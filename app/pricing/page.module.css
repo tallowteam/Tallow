@@ -15,6 +15,9 @@
 .hero {
   text-align: center;
   margin-bottom: 80px;
+  animation: revealUp 1s var(--ease) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
 }
 
 .label {
@@ -49,6 +52,9 @@
   padding: 64px;
   max-width: 720px;
   margin: 0 auto;
+  animation: revealScale 1s var(--ease) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
 }
 
 .priceWrapper {
@@ -135,6 +141,9 @@
   max-width: 840px;
   margin-left: auto;
   margin-right: auto;
+  animation: revealUp 0.9s var(--ease) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
 }
 
 .philosophyHeading {
@@ -206,6 +215,21 @@
   text-decoration: none;
   transition: all 0.3s var(--ease);
   cursor: pointer;
+  animation: revealScale 0.8s var(--ease) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
+}
+
+.supportCard:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.supportCard:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.supportCard:nth-child(3) {
+  animation-delay: 0.3s;
 }
 
 .supportCard:hover {
@@ -320,5 +344,28 @@
 @media (min-width: 769px) {
   .heading {
     font-size: 5rem;
+  }
+}
+
+@supports not (animation-timeline: view()) {
+  .hero,
+  .pricingCard,
+  .philosophy,
+  .supportCard {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero,
+  .pricingCard,
+  .philosophy,
+  .supportCard,
+  .ctaButton {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
