@@ -3,7 +3,7 @@ import Link from 'next/link';
 import styles from './page.module.css';
 
 export const metadata: Metadata = {
-  title: 'How It Works — Tallow',
+  title: 'How It Works',
   description: 'Learn how to transfer files with Tallow across local networks, the internet, and with friends.',
   openGraph: {
     title: 'How It Works | Tallow',

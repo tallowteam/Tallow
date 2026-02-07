@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import styles from './page.module.css';
 
 export const metadata: Metadata = {
-  title: 'Security | Tallow',
+  title: 'Security',
   description: 'Post-quantum cryptographic security. End-to-end encrypted file transfers that outlast the quantum age.',
   openGraph: {
     title: 'Security | Tallow',

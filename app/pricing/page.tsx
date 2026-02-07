@@ -3,7 +3,7 @@ import Link from 'next/link';
 import styles from './page.module.css';
 
 export const metadata: Metadata = {
-  title: 'Pricing - Tallow',
+  title: 'Pricing',
   description: 'Free. Forever. No catch. Unlimited file transfers with post-quantum encryption.',
   openGraph: {
     title: 'Pricing | Tallow',

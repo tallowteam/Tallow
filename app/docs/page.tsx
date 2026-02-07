@@ -3,7 +3,7 @@ import Link from 'next/link';
 import styles from './page.module.css';
 
 export const metadata: Metadata = {
-  title: 'Documentation - Tallow',
+  title: 'Documentation',
   description: 'Everything you need to know about Tallow - guides, API reference, and architecture documentation.',
   openGraph: {
     title: 'Documentation | Tallow',
