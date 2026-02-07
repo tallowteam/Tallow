@@ -1,6 +1,6 @@
 # Development Dockerfile with hot reload support
 
-FROM node:20-alpine AS development
+FROM node:25-alpine AS development
 
 WORKDIR /app
 
