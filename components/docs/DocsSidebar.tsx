@@ -1,104 +1,155 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { ChevronDown, ChevronRight } from '@/components/icons';
 import styles from './DocsSidebar.module.css';
 
-interface NavItem {
+interface SidebarLink {
   title: string;
   href: string;
-  icon?: string;
 }
 
-interface NavSection {
+interface SidebarSection {
   title: string;
-  items: NavItem[];
+  links: SidebarLink[];
 }
 
-const navSections: NavSection[] = [
+const sections: SidebarSection[] = [
   {
     title: 'Getting Started',
-    items: [
-      { title: 'Documentation', href: '/docs', icon: '📚' },
-      { title: 'Getting Started', href: '/docs/getting-started', icon: '🚀' },
+    links: [
+      { title: 'Introduction', href: '/docs' },
+      { title: 'Quick Start', href: '/docs/guides/getting-started' },
+      { title: 'Installation', href: '/docs/guides' },
     ],
   },
   {
-    title: 'Components',
-    items: [
-      { title: 'Components', href: '/docs/components', icon: '🧩' },
-      { title: 'UI', href: '/docs/components?category=ui', icon: '✨' },
-      { title: 'Layout', href: '/docs/components?category=layout', icon: '📐' },
-      { title: 'Forms', href: '/docs/components?category=forms', icon: '📝' },
-      { title: 'Feedback', href: '/docs/components?category=feedback', icon: '💬' },
-      { title: 'Navigation', href: '/docs/components?category=navigation', icon: '🧭' },
-      { title: 'Effects', href: '/docs/components?category=effects', icon: '✨' },
+    title: 'API',
+    links: [
+      { title: 'REST API', href: '/docs/api' },
+      { title: 'WebSocket Events', href: '/docs/api' },
+      { title: 'Authentication', href: '/docs/api' },
     ],
   },
   {
-    title: 'Design',
-    items: [
-      { title: 'Design System', href: '/docs/design-system', icon: '🎨' },
-      { title: 'Colors', href: '/docs/design-system#colors', icon: '🌈' },
-      { title: 'Typography', href: '/docs/design-system#typography', icon: '🔤' },
-      { title: 'Spacing', href: '/docs/design-system#spacing', icon: '📏' },
-      { title: 'Tokens', href: '/docs/design-system#tokens', icon: '🎯' },
+    title: 'Architecture',
+    links: [
+      { title: 'System Overview', href: '/docs/architecture' },
+      { title: 'Crypto Design', href: '/docs/architecture' },
+      { title: 'Transfer Flow', href: '/docs/architecture' },
+    ],
+  },
+  {
+    title: 'Guides',
+    links: [
+      { title: 'File Transfer', href: '/docs/guides' },
+      { title: 'Security Best Practices', href: '/docs/guides' },
+      { title: 'Deployment', href: '/docs/guides' },
+    ],
+  },
+  {
+    title: 'Hooks & Components',
+    links: [
+      { title: 'React Hooks', href: '/docs/hooks' },
+      { title: 'UI Components', href: '/docs/hooks' },
+      { title: 'Utilities', href: '/docs/hooks' },
     ],
   },
 ];
 
-export default function DocsSidebar() {
-  const pathname = usePathname();
+interface DocsSidebarProps {
+  activeSection?: string;
+  onLinkClick?: (href: string) => void;
+}
+
+export function DocsSidebar({ activeSection, onLinkClick }: DocsSidebarProps) {
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(
+    new Set(['Getting Started'])
+  );
+
+  useEffect(() => {
+    if (activeSection) {
+      sections.forEach((section) => {
+        const hasActiveLink = section.links.some(
+          (link) => link.href === activeSection
+        );
+        if (hasActiveLink) {
+          setExpandedSections((prev) => new Set(prev).add(section.title));
+        }
+      });
+    }
+  }, [activeSection]);
+
+  const toggleSection = (sectionTitle: string) => {
+    setExpandedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(sectionTitle)) {
+        next.delete(sectionTitle);
+      } else {
+        next.add(sectionTitle);
+      }
+      return next;
+    });
+  };
+
+  const handleLinkClick = (href: string) => {
+    onLinkClick?.(href);
+  };
 
   return (
-    <aside className={styles.sidebar}>
-      <div className={styles.sidebarContent}>
-        {/* Logo */}
-        <Link href="/docs" className={styles.logo}>
-          <div className={styles.logoIcon}>T</div>
-          <div className={styles.logoText}>
-            <div className={styles.logoTitle}>Tallow</div>
-            <div className={styles.logoSubtitle}>Docs</div>
-          </div>
-        </Link>
-
-        {/* Navigation Sections */}
-        <nav className={styles.nav}>
-          {navSections.map((section) => (
-            <div key={section.title} className={styles.navSection}>
-              <h4 className={styles.navSectionTitle}>{section.title}</h4>
-              <ul className={styles.navList}>
-                {section.items.map((item) => (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className={`${styles.navLink} ${
-                        pathname === item.href ? styles.navLinkActive : ''
-                      }`}
-                    >
-                      {item.icon && <span className={styles.navIcon}>{item.icon}</span>}
-                      <span className={styles.navLabel}>{item.title}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </nav>
-
-        {/* Footer Links */}
-        <div className={styles.sidebarFooter}>
-          <a href="#" className={styles.footerLink}>
-            GitHub
-          </a>
-          <a href="#" className={styles.footerLink}>
-            Issues
-          </a>
-          <a href="#" className={styles.footerLink}>
-            Support
-          </a>
-        </div>
+    <aside className={styles.sidebar} aria-label="Documentation navigation">
+      <div className={styles.sidebarHeader}>
+        <h2 className={styles.sidebarTitle}>Documentation</h2>
       </div>
+
+      <nav className={styles.nav}>
+        {sections.map((section) => {
+          const isExpanded = expandedSections.has(section.title);
+
+          return (
+            <div key={section.title} className={styles.section}>
+              <button
+                onClick={() => toggleSection(section.title)}
+                className={styles.sectionButton}
+                aria-expanded={isExpanded}
+                type="button"
+              >
+                <span className={styles.sectionTitle}>{section.title}</span>
+                <span className={styles.chevronWrapper}>
+                  {isExpanded ? (
+                    <ChevronDown className={styles.chevron} />
+                  ) : (
+                    <ChevronRight className={styles.chevron} />
+                  )}
+                </span>
+              </button>
+
+              {isExpanded && (
+                <ul className={styles.linkList}>
+                  {section.links.map((link) => {
+                    const isActive = activeSection === link.href;
+                    return (
+                      <li key={link.href}>
+                        <Link
+                          href={link.href}
+                          onClick={() => handleLinkClick(link.href)}
+                          className={`${styles.link} ${
+                            isActive ? styles.active : ''
+                          }`}
+                          aria-current={isActive ? 'page' : undefined}
+                        >
+                          {link.title}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          );
+        })}
+      </nav>
     </aside>
   );
 }

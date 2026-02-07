@@ -1,0 +1,1 @@
+var h=require("http");var u="http://localhost:3000/transfer";h.get(u,function(r){var d="";r.on("data",function(c){d+=c});r.on("end",function(){console.log(r.statusCode);console.log(d.length)})}).on("error",function(e){console.log(e.message)})

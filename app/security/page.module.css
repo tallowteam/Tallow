@@ -1,0 +1,608 @@
+/* Security Page — Cineglass Magazine Design */
+
+.main {
+  position: relative;
+  background: var(--bg, #030306);
+  color: var(--text, #f2f2f8);
+  overflow: hidden;
+}
+
+/* ============================================
+   AMBIENT GRADIENT BLOBS
+   ============================================ */
+
+.ambient {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.blob1 {
+  position: absolute;
+  top: 10%;
+  right: -10%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, var(--accent, #6366f1) 0%, transparent 70%);
+  opacity: 0.08;
+  border-radius: 50%;
+  filter: blur(80px);
+  animation: float1 20s ease-in-out infinite;
+}
+
+.blob2 {
+  position: absolute;
+  bottom: 20%;
+  left: -5%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, var(--accent-3, #a78bfa) 0%, transparent 70%);
+  opacity: 0.06;
+  border-radius: 50%;
+  filter: blur(80px);
+  animation: float2 25s ease-in-out infinite;
+}
+
+@keyframes float1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-50px, 50px) scale(1.1); }
+}
+
+@keyframes float2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(50px, -50px) scale(1.05); }
+}
+
+/* ============================================
+   HERO SECTION
+   ============================================ */
+
+.hero {
+  position: relative;
+  z-index: 1;
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 160px 56px 80px;
+  border-bottom: 1px solid var(--border, #18182a);
+}
+
+.heroLabel {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent-2, #818cf8);
+  margin-bottom: 24px;
+}
+
+.heroHeading {
+  font-family: var(--font-display, 'Playfair Display', Georgia, serif);
+  font-size: 4rem;
+  font-weight: 300;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--text, #f2f2f8);
+  margin: 0 0 16px;
+  max-width: 800px;
+}
+
+.heroSubtitle {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--text-2, #9494a8);
+  max-width: 560px;
+  margin: 0;
+}
+
+/* ============================================
+   ENCRYPTION STACK — CENTERED GLASS CARD
+   ============================================ */
+
+.stackSection {
+  position: relative;
+  z-index: 1;
+  padding: 0 56px 80px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.stackCard {
+  background: var(--glass, rgba(12, 12, 22, 0.55));
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border, rgba(99, 102, 241, 0.08));
+  border-radius: var(--radius-xl, 20px);
+  padding: 36px;
+}
+
+.stackTitle {
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3, #5a5a70);
+  margin: 0 0 24px;
+}
+
+.stackRows {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.stackRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--glass-border, rgba(99, 102, 241, 0.08));
+}
+
+.stackRow:last-child {
+  border-bottom: none;
+}
+
+.stackLabel {
+  font-size: 0.85rem;
+  color: var(--text-2, #9494a8);
+}
+
+.stackTag {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--accent-2, #818cf8);
+  background: rgba(99, 102, 241, 0.1);
+  padding: 4px 10px;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
+}
+
+/* ============================================
+   DEEP-DIVE SECTIONS — 50/50 ALTERNATING
+   ============================================ */
+
+.deepDive {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 480px;
+  border-bottom: 1px solid var(--border, #18182a);
+  align-items: center;
+  gap: 80px;
+}
+
+.deepDiveText {
+  padding: 80px 56px;
+}
+
+.deepDiveVisual {
+  padding: 80px 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.deepDiveReverse .deepDiveText {
+  order: 2;
+}
+
+.deepDiveReverse .deepDiveVisual {
+  order: 1;
+}
+
+.deepDiveHeading {
+  font-family: var(--font-display, 'Playfair Display', Georgia, serif);
+  font-size: 2.8rem;
+  font-weight: 300;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--text, #f2f2f8);
+  margin: 0 0 20px;
+}
+
+.deepDiveBody {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--text-2, #9494a8);
+  margin: 0;
+}
+
+/* Visual Cards */
+
+.visualCard {
+  width: 100%;
+  max-width: 440px;
+  background: var(--glass, rgba(12, 12, 22, 0.55));
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border, rgba(99, 102, 241, 0.08));
+  border-radius: var(--radius-xl, 20px);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Flow Diagram (Alice → Bob, Plaintext → Ciphertext) */
+
+.flowDiagram {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.flowStep {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.flowIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent, #6366f1);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.flowLabel {
+  font-size: 0.75rem;
+  color: var(--text-2, #9494a8);
+}
+
+.flowArrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.flowArrow svg {
+  width: 60px;
+  height: 20px;
+}
+
+.flowTag {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--accent-2, #818cf8);
+  letter-spacing: 0.02em;
+}
+
+.visualCaption {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-3, #5a5a70);
+  margin-top: 8px;
+}
+
+/* P2P Diagram (Device 1 ↔ Device 2, No Server) */
+
+.p2pDiagram {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.p2pDevice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.p2pDeviceIcon {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  background: var(--bg-2, #08080e);
+  border: 1px solid var(--glass-border, rgba(99, 102, 241, 0.08));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--accent-2, #818cf8);
+}
+
+.p2pDeviceLabel {
+  font-size: 0.7rem;
+  color: var(--text-2, #9494a8);
+}
+
+.p2pConnection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.p2pLine {
+  width: 100%;
+  height: 2px;
+  background: var(--accent-2, #818cf8);
+  position: relative;
+}
+
+.p2pLine::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid var(--accent-2, #818cf8);
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+}
+
+.p2pConnectionLabel {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--accent-2, #818cf8);
+  letter-spacing: 0.02em;
+}
+
+.noServer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(99, 102, 241, 0.05);
+  border-radius: 8px;
+  color: var(--text-3, #5a5a70);
+  font-size: 0.75rem;
+}
+
+.noServer svg {
+  width: 20px;
+  height: 20px;
+  opacity: 0.6;
+}
+
+/* Zero-Knowledge Diagram (Client ↔ Signaling ↔ Client) */
+
+.zkDiagram {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.zkRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.zkBox {
+  flex: 1;
+  padding: 14px;
+  background: var(--bg-2, #08080e);
+  border: 1px solid var(--glass-border, rgba(99, 102, 241, 0.08));
+  border-radius: 8px;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-2, #9494a8);
+}
+
+.zkArrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.zkArrow svg {
+  width: 40px;
+  height: 20px;
+}
+
+.zkLabel {
+  font-size: 0.6rem;
+  color: var(--text-3, #5a5a70);
+  letter-spacing: 0.02em;
+}
+
+/* ============================================
+   OPEN SOURCE SECTION
+   ============================================ */
+
+.openSource {
+  position: relative;
+  z-index: 1;
+  padding: 100px 56px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  border-bottom: 1px solid var(--border, #18182a);
+}
+
+.openSourceHeading {
+  font-family: var(--font-display, 'Playfair Display', Georgia, serif);
+  font-size: 3rem;
+  font-weight: 300;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--text, #f2f2f8);
+  margin: 0;
+}
+
+.openSourceBody {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text-2, #9494a8);
+  max-width: 500px;
+  margin: 0 0 32px;
+}
+
+.githubButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 32px;
+  background: var(--glass, rgba(12, 12, 22, 0.55));
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border, rgba(99, 102, 241, 0.08));
+  border-radius: var(--radius-pill, 60px);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text, #f2f2f8);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.githubButton:hover {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: var(--accent-2, #818cf8);
+  transform: translateY(-2px);
+}
+
+/* ============================================
+   CTA SECTION
+   ============================================ */
+
+.cta {
+  position: relative;
+  z-index: 1;
+  padding: 100px 56px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  border-top: 1px solid var(--border, #18182a);
+}
+
+.ctaHeading {
+  font-family: var(--font-display, 'Playfair Display', Georgia, serif);
+  font-size: 2.5rem;
+  font-weight: 300;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--text, #f2f2f8);
+  margin: 0;
+}
+
+.ctaButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 40px;
+  background: #fff;
+  color: #000;
+  border-radius: var(--radius-pill, 60px);
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.ctaButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.2);
+}
+
+/* ============================================
+   RESPONSIVE — MOBILE (< 768px)
+   ============================================ */
+
+@media (max-width: 768px) {
+  .hero {
+    padding: 120px 24px 48px;
+    min-height: auto;
+  }
+
+  .heroHeading {
+    font-size: 2.8rem;
+  }
+
+  .stackSection {
+    padding: 0 24px 48px;
+  }
+
+  .stackCard {
+    padding: 24px;
+  }
+
+  .deepDive {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    gap: 0;
+  }
+
+  .deepDiveText {
+    padding: 48px 24px;
+    order: 1;
+  }
+
+  .deepDiveVisual {
+    padding: 48px 24px;
+    order: 2;
+  }
+
+  .deepDiveReverse .deepDiveText {
+    order: 1;
+  }
+
+  .deepDiveReverse .deepDiveVisual {
+    order: 2;
+  }
+
+  .deepDiveHeading {
+    font-size: 2rem;
+  }
+
+  .visualCard {
+    padding: 24px;
+  }
+
+  .openSource {
+    padding: 80px 24px;
+  }
+
+  .openSourceHeading {
+    font-size: 2rem;
+  }
+
+  .cta {
+    padding: 80px 24px;
+  }
+
+  .ctaHeading {
+    font-size: 2rem;
+  }
+}
+
+/* ============================================
+   REDUCED MOTION
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .blob1,
+  .blob2,
+  .githubButton,
+  .ctaButton {
+    animation: none;
+    transition: none;
+  }
+}

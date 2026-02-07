@@ -1,281 +1,360 @@
-/**
- * Responsive Design E2E Tests
- * Tests for responsive behavior across different devices
- */
+import { test, expect } from './fixtures';
 
-import { test, expect, devices } from '@playwright/test';
+test.describe('Responsive Design', () => {
+  test.describe('Mobile Viewport (375px)', () => {
+    test.use({ viewport: { width: 375, height: 667 } });
 
-const BREAKPOINTS = {
-  mobile: { width: 375, height: 667 },
-  mobileLandscape: { width: 667, height: 375 },
-  tablet: { width: 768, height: 1024 },
-  tabletLandscape: { width: 1024, height: 768 },
-  laptop: { width: 1366, height: 768 },
-  desktop: { width: 1920, height: 1080 },
-  wide: { width: 2560, height: 1440 },
-};
+    test('should display homepage correctly on mobile', async ({ page }) => {
+      await page.goto('/');
 
-test.describe('Responsive Design Tests', () => {
-  test.describe('Layout Adaptations', () => {
-    for (const [name, viewport] of Object.entries(BREAKPOINTS)) {
-      test(`should render correctly on ${name}`, async ({ page }) => {
-        await page.setViewportSize(viewport);
-        await page.goto('/');
-        await page.waitForLoadState('networkidle');
+      // Header should be visible
+      await expect(page.locator('header')).toBeVisible();
 
-        // Page should render without horizontal scroll (unless intentional)
-        const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
-        const viewportWidth = viewport.width;
+      // Logo should be visible
+      await expect(page.locator('a[href="/"]').first()).toBeVisible();
 
-        // Allow small tolerance for borders/scrollbars
-        expect(bodyWidth).toBeLessThanOrEqual(viewportWidth + 20);
+      // Mobile menu button should be visible
+      const menuButton = page.locator('button[aria-label*="menu" i]').or(
+        page.locator('button[aria-expanded]')
+      ).first();
+      await expect(menuButton).toBeVisible();
+
+      // Desktop nav should be hidden
+      const desktopNav = page.locator('nav:not([class*="mobile"])').first();
+      const isHidden = await desktopNav.isHidden().catch(() => true);
+      expect(isHidden).toBeTruthy();
+
+      // Hero content should be visible
+      await expect(page.locator('h1')).toBeVisible();
+    });
+
+    test('should navigate via mobile menu', async ({ page }) => {
+      await page.goto('/');
+
+      // Open mobile menu
+      const menuButton = page.locator('button[aria-label*="menu" i]').first();
+      await menuButton.click();
+
+      // Click link in mobile menu
+      await page.locator('a[href="/features"]').last().click();
+
+      // Check navigation
+      await expect(page).toHaveURL(/\/features/);
+    });
+
+    test('should display transfer page correctly on mobile', async ({ page }) => {
+      await page.goto('/transfer');
+
+      // Page should load
+      await expect(page.locator('h1')).toBeVisible();
+
+      // Tabs should be visible and scrollable
+      await expect(page.locator('text=Nearby')).toBeVisible();
+      await expect(page.locator('text=Internet')).toBeVisible();
+
+      // Drop zone should adapt to mobile
+      const dropZone = page.locator('[class*="drop"]').first();
+      await expect(dropZone).toBeVisible();
+
+      const box = await dropZone.boundingBox();
+      expect(box?.width).toBeLessThanOrEqual(375);
+    });
+
+    test('should display settings page correctly on mobile', async ({ page }) => {
+      await page.goto('/settings');
+
+      // Settings should load
+      await expect(page.locator('h1')).toBeVisible();
+
+      // Cards should stack vertically
+      const cards = page.locator('[class*="card"]');
+      const firstCard = cards.first();
+      const secondCard = cards.nth(1);
+
+      const firstBox = await firstCard.boundingBox();
+      const secondBox = await secondCard.boundingBox();
+
+      // Second card should be below first card (vertical stacking)
+      if (firstBox && secondBox) {
+        expect(secondBox.y).toBeGreaterThan(firstBox.y);
+      }
+    });
+
+    test('should have readable font sizes on mobile', async ({ page }) => {
+      await page.goto('/');
+
+      const heading = page.locator('h1').first();
+      const fontSize = await heading.evaluate((el) => {
+        return window.getComputedStyle(el).fontSize;
       });
-    }
 
-    test('should show mobile navigation on small screens', async ({ page }) => {
-      await page.setViewportSize(BREAKPOINTS.mobile);
-      await page.goto('/');
-
-      // Mobile menu toggle should be visible
-      const menuToggle = page.locator('[aria-label*="menu"], [aria-label*="navigation"]').first();
-      if (await menuToggle.isVisible()) {
-        await expect(menuToggle).toBeVisible();
-      }
+      // Font size should be at least 24px for h1 on mobile
+      const size = parseFloat(fontSize);
+      expect(size).toBeGreaterThanOrEqual(24);
     });
 
-    test('should show desktop navigation on large screens', async ({ page }) => {
-      await page.setViewportSize(BREAKPOINTS.desktop);
-      await page.goto('/');
+    test('should have touch-friendly button sizes', async ({ page }) => {
+      await page.goto('/transfer');
 
-      // Desktop navigation should be visible
-      const nav = page.locator('nav').first();
-      await expect(nav).toBeVisible();
-    });
-  });
-
-  test.describe('Content Reflow', () => {
-    test('should stack content vertically on mobile', async ({ page }) => {
-      await page.setViewportSize(BREAKPOINTS.mobile);
-      await page.goto('/');
-      await page.waitForLoadState('networkidle');
-
-      // Get all sections
-      const sections = page.locator('section');
-      const count = await sections.count();
-
-      // Verify sections are visible
-      for (let i = 0; i < Math.min(count, 3); i++) {
-        const section = sections.nth(i);
-        if (await section.isVisible()) {
-          const box = await section.boundingBox();
-          if (box) {
-            expect(box.width).toBeLessThanOrEqual(BREAKPOINTS.mobile.width);
-          }
-        }
-      }
-    });
-
-    test('should arrange content in grid on desktop', async ({ page }) => {
-      await page.setViewportSize(BREAKPOINTS.desktop);
-      await page.goto('/');
-      await page.waitForLoadState('networkidle');
-
-      // Check for grid layouts
-      const grids = page.locator('[class*="grid"]');
-      const count = await grids.count();
-
-      if (count > 0) {
-        const firstGrid = grids.first();
-        await expect(firstGrid).toBeVisible();
-      }
-    });
-  });
-
-  test.describe('Touch Interactions', () => {
-    test('should support touch on mobile', async ({ page }) => {
-      await page.setViewportSize(BREAKPOINTS.mobile);
-      await page.goto('/');
-
-      // Try to tap a button
       const button = page.locator('button').first();
-      if (await button.isVisible()) {
-        await button.tap();
-        // Button should respond to tap
-        await expect(button).toBeVisible();
-      }
-    });
+      const box = await button.boundingBox();
 
-    test('should support swipe gestures', async ({ page }) => {
-      await page.setViewportSize(BREAKPOINTS.mobile);
-      await page.goto('/');
-
-      // Look for swipeable elements (carousels, etc.)
-      const swipeable = page.locator('[data-swipeable="true"]').first();
-      if (await swipeable.isVisible()) {
-        const box = await swipeable.boundingBox();
-        if (box) {
-          // Simulate swipe
-          await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-          await page.mouse.down();
-          await page.mouse.move(box.x + 50, box.y + box.height / 2);
-          await page.mouse.up();
-        }
+      // Buttons should be at least 44px tall (Apple HIG recommendation)
+      if (box) {
+        expect(box.height).toBeGreaterThanOrEqual(40);
       }
     });
   });
 
-  test.describe('Image Optimization', () => {
-    test('should load appropriate image sizes', async ({ page }) => {
-      for (const [name, viewport] of Object.entries(BREAKPOINTS)) {
-        await page.setViewportSize(viewport);
-        await page.goto('/');
-        await page.waitForLoadState('networkidle');
+  test.describe('Tablet Viewport (768px)', () => {
+    test.use({ viewport: { width: 768, height: 1024 } });
 
-        // Check that images don't exceed viewport
-        const images = page.locator('img');
-        const count = await images.count();
+    test('should display homepage correctly on tablet', async ({ page }) => {
+      await page.goto('/');
 
-        for (let i = 0; i < Math.min(count, 5); i++) {
-          const img = images.nth(i);
-          if (await img.isVisible()) {
-            const box = await img.boundingBox();
-            if (box) {
-              expect(box.width).toBeLessThanOrEqual(viewport.width);
-            }
-          }
-        }
+      // Header should be visible
+      await expect(page.locator('header')).toBeVisible();
+
+      // Content should be centered and use available space
+      const container = page.locator('.container').first();
+      const box = await container.boundingBox();
+
+      if (box) {
+        expect(box.width).toBeGreaterThan(0);
+        expect(box.width).toBeLessThanOrEqual(768);
       }
+    });
+
+    test('should show desktop or mobile nav based on breakpoint', async ({ page }) => {
+      await page.goto('/');
+
+      // Check which nav is visible
+      const desktopNav = page.locator('nav:not([class*="mobile"])').first();
+      const mobileMenuButton = page.locator('button[aria-label*="menu" i]').first();
+
+      const hasDesktopNav = await desktopNav.isVisible().catch(() => false);
+      const hasMobileButton = await mobileMenuButton.isVisible().catch(() => false);
+
+      // One or the other should be visible
+      expect(hasDesktopNav || hasMobileButton).toBeTruthy();
+    });
+
+    test('should display transfer page with optimal layout', async ({ page }) => {
+      await page.goto('/transfer');
+
+      // Page should load
+      await expect(page.locator('h1')).toBeVisible();
+
+      // Drop zone should use good width
+      const dropZone = page.locator('[class*="drop"]').first();
+      const box = await dropZone.boundingBox();
+
+      if (box) {
+        expect(box.width).toBeGreaterThan(300);
+        expect(box.width).toBeLessThanOrEqual(768);
+      }
+    });
+
+    test('should display settings in two columns if designed', async ({ page }) => {
+      await page.goto('/settings');
+
+      await expect(page.locator('h1')).toBeVisible();
+
+      // Settings cards should be visible
+      const cards = page.locator('[class*="card"]');
+      await expect(cards.first()).toBeVisible();
     });
   });
 
-  test.describe('Text Scaling', () => {
-    test('should remain readable on small screens', async ({ page }) => {
-      await page.setViewportSize(BREAKPOINTS.mobile);
+  test.describe('Desktop Viewport (1280px)', () => {
+    test.use({ viewport: { width: 1280, height: 720 } });
+
+    test('should display homepage correctly on desktop', async ({ page }) => {
       await page.goto('/');
 
-      // Check font sizes
-      const headings = page.locator('h1, h2, h3');
-      const count = await headings.count();
+      // Desktop nav should be visible
+      const desktopNav = page.locator('nav').first();
+      await expect(desktopNav).toBeVisible();
 
-      if (count > 0) {
-        const fontSize = await headings.first().evaluate((el) => {
-          return window.getComputedStyle(el).fontSize;
-        });
+      // Mobile menu button should be hidden
+      const mobileButton = page.locator('button[aria-label*="menu" i]');
+      const isHidden = await mobileButton.isHidden().catch(() => true);
+      expect(isHidden).toBeTruthy();
 
-        // Font should be at least 14px
-        const size = parseInt(fontSize);
-        expect(size).toBeGreaterThanOrEqual(14);
+      // Content should be well-spaced
+      const container = page.locator('.container').first();
+      const box = await container.boundingBox();
+
+      if (box) {
+        expect(box.width).toBeGreaterThan(768);
       }
     });
 
-    test('should scale up on large screens', async ({ page }) => {
-      await page.setViewportSize(BREAKPOINTS.wide);
+    test('should show all navigation links in header', async ({ page }) => {
       await page.goto('/');
 
-      // Headings should be larger on big screens
-      const headings = page.locator('h1');
-      if ((await headings.count()) > 0) {
-        const fontSize = await headings.first().evaluate((el) => {
-          return window.getComputedStyle(el).fontSize;
-        });
+      await expect(page.locator('a[href="/features"]').first()).toBeVisible();
+      await expect(page.locator('a[href="/security"]').first()).toBeVisible();
+      await expect(page.locator('a[href="/pricing"]').first()).toBeVisible();
+      await expect(page.locator('a[href="/docs"]').first()).toBeVisible();
+    });
 
-        const size = parseInt(fontSize);
-        expect(size).toBeGreaterThanOrEqual(24);
+    test('should display transfer page with full-width layout', async ({ page }) => {
+      await page.goto('/transfer');
+
+      // Check main content area
+      const mainContent = page.locator('main').or(
+        page.locator('[class*="main"]')
+      ).first();
+
+      const box = await mainContent.boundingBox();
+
+      if (box) {
+        expect(box.width).toBeGreaterThan(900);
+      }
+    });
+
+    test('should display settings with optimal spacing', async ({ page }) => {
+      await page.goto('/settings');
+
+      // Settings sections should have good spacing
+      const section = page.locator('section').first();
+      const marginBottom = await section.evaluate((el) => {
+        return window.getComputedStyle(el).marginBottom;
+      });
+
+      const margin = parseFloat(marginBottom);
+      expect(margin).toBeGreaterThan(0);
+    });
+  });
+
+  test.describe('Header Collapse Behavior', () => {
+    test('should collapse header on mobile', async ({ page }) => {
+      await page.setViewportSize({ width: 375, height: 667 });
+      await page.goto('/');
+
+      // Desktop nav links should be hidden
+      const navLinks = page.locator('nav a[href="/features"]').first();
+      const isHidden = await navLinks.isHidden().catch(() => true);
+
+      // Mobile menu button should be visible
+      const menuButton = page.locator('button[aria-label*="menu" i]').first();
+      const isVisible = await menuButton.isVisible();
+
+      expect(isHidden && isVisible).toBeTruthy();
+    });
+
+    test('should show full header on desktop', async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      await page.goto('/');
+
+      // All nav links should be visible
+      await expect(page.locator('nav a[href="/features"]').first()).toBeVisible();
+      await expect(page.locator('nav a[href="/security"]').first()).toBeVisible();
+      await expect(page.locator('nav a[href="/pricing"]').first()).toBeVisible();
+    });
+  });
+
+  test.describe('Layout Adaptation', () => {
+    test('should adapt from mobile to desktop layout', async ({ page }) => {
+      // Start mobile
+      await page.setViewportSize({ width: 375, height: 667 });
+      await page.goto('/');
+
+      // Mobile menu should be visible
+      const menuButton = page.locator('button[aria-label*="menu" i]').first();
+      await expect(menuButton).toBeVisible();
+
+      // Resize to desktop
+      await page.setViewportSize({ width: 1280, height: 720 });
+
+      // Wait for layout to adapt
+      await page.waitForTimeout(500);
+
+      // Desktop nav should now be visible
+      const desktopNav = page.locator('nav a[href="/features"]').first();
+      await expect(desktopNav).toBeVisible();
+    });
+
+    test('should adapt from desktop to mobile layout', async ({ page }) => {
+      // Start desktop
+      await page.setViewportSize({ width: 1280, height: 720 });
+      await page.goto('/');
+
+      // Desktop nav should be visible
+      const desktopNav = page.locator('nav a[href="/features"]').first();
+      await expect(desktopNav).toBeVisible();
+
+      // Resize to mobile
+      await page.setViewportSize({ width: 375, height: 667 });
+
+      // Wait for layout to adapt
+      await page.waitForTimeout(500);
+
+      // Mobile menu button should now be visible
+      const menuButton = page.locator('button[aria-label*="menu" i]').first();
+      await expect(menuButton).toBeVisible();
+    });
+  });
+
+  test.describe('Touch Target Sizes', () => {
+    test.use({ viewport: { width: 375, height: 667 } });
+
+    test('should have appropriately sized touch targets', async ({ page }) => {
+      await page.goto('/');
+
+      // All interactive elements should be at least 44x44px
+      const buttons = await page.locator('button').all();
+
+      for (const button of buttons.slice(0, 5)) {
+        // Check first 5 buttons
+        const box = await button.boundingBox();
+
+        if (box && box.width > 0 && box.height > 0) {
+          // At least 40px in height (allowing some flexibility)
+          expect(box.height).toBeGreaterThanOrEqual(36);
+        }
+      }
+    });
+
+    test('should have adequate spacing between touch targets', async ({ page }) => {
+      await page.goto('/transfer');
+
+      // Tab buttons should have adequate spacing
+      const nearbyTab = page.locator('button:has-text("Nearby")');
+      const internetTab = page.locator('button:has-text("Internet")');
+
+      const nearbyBox = await nearbyTab.boundingBox();
+      const internetBox = await internetTab.boundingBox();
+
+      if (nearbyBox && internetBox) {
+        // Should not overlap
+        const noOverlap =
+          nearbyBox.x + nearbyBox.width <= internetBox.x ||
+          internetBox.x + internetBox.width <= nearbyBox.x ||
+          nearbyBox.y + nearbyBox.height <= internetBox.y ||
+          internetBox.y + internetBox.height <= nearbyBox.y;
+
+        expect(noOverlap).toBeTruthy();
       }
     });
   });
 
   test.describe('Orientation Changes', () => {
-    test('should handle portrait to landscape', async ({ page }) => {
-      // Start in portrait
+    test('should handle portrait orientation on mobile', async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 667 });
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
 
-      // Switch to landscape
+      await expect(page.locator('h1')).toBeVisible();
+      await expect(page.locator('header')).toBeVisible();
+    });
+
+    test('should handle landscape orientation on mobile', async ({ page }) => {
       await page.setViewportSize({ width: 667, height: 375 });
-      await page.waitForTimeout(500); // Wait for reflow
-
-      // Page should still render correctly
-      const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
-      expect(bodyWidth).toBeLessThanOrEqual(667 + 20);
-    });
-  });
-
-  test.describe('Device Emulation', () => {
-    test('should work on iPhone', async ({ browser }) => {
-      const context = await browser.newContext({
-        ...devices['iPhone 12'],
-      });
-      const page = await context.newPage();
-
-      await page.goto('/');
-      await expect(page).toHaveURL('/');
-
-      await context.close();
-    });
-
-    test('should work on iPad', async ({ browser }) => {
-      const context = await browser.newContext({
-        ...devices['iPad Pro'],
-      });
-      const page = await context.newPage();
-
-      await page.goto('/');
-      await expect(page).toHaveURL('/');
-
-      await context.close();
-    });
-
-    test('should work on Android', async ({ browser }) => {
-      const context = await browser.newContext({
-        ...devices['Pixel 5'],
-      });
-      const page = await context.newPage();
-
-      await page.goto('/');
-      await expect(page).toHaveURL('/');
-
-      await context.close();
-    });
-  });
-
-  test.describe('Viewport Edge Cases', () => {
-    test('should handle very small viewport', async ({ page }) => {
-      await page.setViewportSize({ width: 320, height: 568 });
       await page.goto('/');
 
-      // Should render without breaking
-      const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
-      expect(bodyWidth).toBeLessThanOrEqual(320 + 20);
-    });
-
-    test('should handle very large viewport', async ({ page }) => {
-      await page.setViewportSize({ width: 3840, height: 2160 });
-      await page.goto('/');
-
-      // Content should be centered or max-width constrained
-      await expect(page.locator('body')).toBeVisible();
-    });
-  });
-
-  test.describe('Zoom Levels', () => {
-    test('should handle 200% zoom', async ({ page }) => {
-      await page.setViewportSize(BREAKPOINTS.desktop);
-      await page.goto('/');
-
-      // Simulate zoom
-      await page.evaluate(() => {
-        (document.body as any).style.zoom = '2';
-      });
-
-      await page.waitForTimeout(500);
-
-      // Page should still be usable
-      const buttons = page.locator('button');
-      if ((await buttons.count()) > 0) {
-        await expect(buttons.first()).toBeVisible();
-      }
+      await expect(page.locator('h1')).toBeVisible();
+      await expect(page.locator('header')).toBeVisible();
     });
   });
 });

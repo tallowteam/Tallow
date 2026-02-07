@@ -1,32 +1,38 @@
 'use client';
 
-import { HTMLAttributes, ReactNode } from 'react';
+import { type HTMLAttributes, type ReactNode } from 'react';
 import styles from './Badge.module.css';
 
 export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
-  variant?: 'primary' | 'success' | 'warning' | 'danger' | 'neutral';
-  showDot?: boolean;
-  children: ReactNode;
+  variant?: 'default' | 'secondary' | 'outline' | 'success' | 'warning' | 'error' | 'info';
+  size?: 'sm' | 'md' | 'lg';
+  icon?: ReactNode;
+  dot?: boolean;
 }
 
 export function Badge({
-  variant = 'neutral',
-  showDot = false,
-  children,
+  variant = 'default',
+  size = 'md',
+  icon,
+  dot = false,
   className = '',
+  children,
   ...props
 }: BadgeProps) {
-  const badgeClasses = [
+  const classes = [
     styles.badge,
     styles[variant],
+    styles[size],
+    dot && styles.dot,
     className,
   ]
     .filter(Boolean)
     .join(' ');
 
   return (
-    <span className={badgeClasses} {...props}>
-      {showDot && <span className={styles.dot} aria-hidden="true" />}
+    <span className={classes} {...props}>
+      {dot && <span className={styles.dotIndicator} />}
+      {icon && <span className={styles.icon}>{icon}</span>}
       {children}
     </span>
   );

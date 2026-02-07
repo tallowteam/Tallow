@@ -1,0 +1,795 @@
+/* Device Discovery - LocalSend Grid Style with Purple Accent */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* ============================================
+   Scan Status
+   ============================================ */
+
+.scanStatus {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3);
+  background: rgba(23, 23, 23, 0.4);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-lg);
+}
+
+.statusActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.scanning,
+.scanned {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: #a1a1a1;
+}
+
+.scanned {
+  color: #5E5CE6;
+}
+
+.iconSpin {
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   Manual Connect Button
+   ============================================ */
+
+.manualConnectButton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: rgba(94, 92, 230, 0.1);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(94, 92, 230, 0.3);
+  border-radius: var(--radius-md);
+  color: #5E5CE6;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.manualConnectButton:hover {
+  background: rgba(94, 92, 230, 0.2);
+  border-color: rgba(94, 92, 230, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(94, 92, 230, 0.2);
+}
+
+.manualConnectButton:focus-visible {
+  outline: 2px solid #5E5CE6;
+  outline-offset: 2px;
+}
+
+.manualConnectButton:active {
+  transform: translateY(0);
+}
+
+.manualConnectButton[aria-expanded="true"] {
+  background: rgba(94, 92, 230, 0.2);
+  border-color: rgba(94, 92, 230, 0.5);
+}
+
+/* ============================================
+   Broadcast Button
+   ============================================ */
+
+.broadcastContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: linear-gradient(135deg, rgba(94, 92, 230, 0.08), rgba(123, 121, 255, 0.05));
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(94, 92, 230, 0.3);
+  border-radius: var(--radius-xl);
+  animation: slideDown 0.3s ease-out;
+}
+
+.broadcastButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  background: linear-gradient(135deg, #5E5CE6, #7B79FF);
+  backdrop-filter: blur(8px);
+  border: none;
+  border-radius: var(--radius-lg);
+  color: white;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+  box-shadow:
+    0 4px 16px rgba(94, 92, 230, 0.3),
+    0 0 0 1px rgba(94, 92, 230, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+.broadcastButton::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.broadcastButton:hover:not(:disabled)::before {
+  opacity: 1;
+}
+
+.broadcastButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 24px rgba(94, 92, 230, 0.4),
+    0 0 0 1px rgba(94, 92, 230, 0.6),
+    0 0 40px rgba(94, 92, 230, 0.2);
+  animation: broadcast-pulse 2s ease-in-out infinite;
+}
+
+.broadcastButton:focus-visible {
+  outline: 2px solid #5E5CE6;
+  outline-offset: 3px;
+}
+
+.broadcastButton:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+.broadcastButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  animation: none;
+}
+
+.broadcastButton svg {
+  flex-shrink: 0;
+}
+
+.broadcastHint {
+  margin: 0;
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: #a1a1a1;
+  text-align: center;
+}
+
+@keyframes broadcast-pulse {
+  0%, 100% {
+    box-shadow:
+      0 8px 24px rgba(94, 92, 230, 0.4),
+      0 0 0 1px rgba(94, 92, 230, 0.6),
+      0 0 40px rgba(94, 92, 230, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 8px 28px rgba(94, 92, 230, 0.5),
+      0 0 0 1px rgba(94, 92, 230, 0.7),
+      0 0 50px rgba(94, 92, 230, 0.3);
+  }
+}
+
+/* ============================================
+   Manual Connect Form
+   ============================================ */
+
+.manualConnectForm {
+  padding: var(--space-5);
+  background: rgba(23, 23, 23, 0.9);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(94, 92, 230, 0.3);
+  border-radius: var(--radius-xl);
+  box-shadow:
+    0 0 0 1px rgba(94, 92, 230, 0.1),
+    0 8px 24px rgba(0, 0, 0, 0.4);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.formHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.formTitle {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: #ededed;
+  margin: 0;
+}
+
+.closeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  color: #a1a1a1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #ededed;
+}
+
+.closeButton:active {
+  transform: scale(0.95);
+}
+
+.formFields {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+@media (max-width: 640px) {
+  .formFields {
+    grid-template-columns: 1fr;
+  }
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.formLabel {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: #a1a1a1;
+}
+
+.formInput {
+  padding: var(--space-3);
+  background: rgba(10, 10, 10, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  color: #ededed;
+  font-size: var(--font-size-base);
+  font-family: inherit;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.formInput::placeholder {
+  color: #666666;
+}
+
+.formInput:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.formInput:focus {
+  border-color: rgba(94, 92, 230, 0.5);
+  box-shadow: 0 0 0 3px rgba(94, 92, 230, 0.1);
+}
+
+.formInput:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.formField:last-child .formInput {
+  width: 120px;
+}
+
+@media (max-width: 640px) {
+  .formField:last-child .formInput {
+    width: 100%;
+  }
+}
+
+.formError {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: rgba(238, 0, 0, 0.1);
+  border: 1px solid rgba(238, 0, 0, 0.3);
+  border-radius: var(--radius-md);
+  color: #ee0000;
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-4);
+  animation: shake 0.4s ease-in-out;
+}
+
+.formActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.cancelButton,
+.connectButton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  border: none;
+}
+
+.cancelButton {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #a1a1a1;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #ededed;
+}
+
+.connectButton {
+  background: linear-gradient(135deg, #5E5CE6, #7B79FF);
+  color: white;
+  box-shadow: 0 2px 8px rgba(94, 92, 230, 0.3);
+}
+
+.connectButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(94, 92, 230, 0.4);
+}
+
+.connectButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.cancelButton:disabled,
+.connectButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.connectButton:focus-visible,
+.cancelButton:focus-visible {
+  outline: 2px solid #5E5CE6;
+  outline-offset: 2px;
+}
+
+/* ============================================
+   Device Grid
+   ============================================ */
+
+.deviceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+}
+
+@media (min-width: 640px) {
+  .deviceGrid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .deviceGrid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+}
+
+/* ============================================
+   Device Card
+   ============================================ */
+
+.deviceCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-4);
+  background: rgba(23, 23, 23, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.deviceCard:hover:not(.deviceCardDisabled):not(.thisDevice) {
+  background: rgba(23, 23, 23, 0.9);
+  border-color: rgba(94, 92, 230, 0.4);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow:
+    0 0 0 1px rgba(94, 92, 230, 0.2),
+    0 8px 24px rgba(94, 92, 230, 0.2),
+    0 16px 48px rgba(0, 0, 0, 0.4);
+  animation: device-glow 2s ease-in-out infinite;
+}
+
+.deviceCard:focus-visible {
+  outline: 2px solid #5E5CE6;
+  outline-offset: 2px;
+}
+
+.deviceCard:active:not(.deviceCardDisabled):not(.thisDevice) {
+  transform: translateY(-2px) scale(1.01);
+}
+
+.deviceCardDisabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* This Device Special Styling */
+.thisDevice {
+  background: rgba(94, 92, 230, 0.08);
+  border-color: rgba(94, 92, 230, 0.3);
+  cursor: default;
+}
+
+.thisDevice::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(135deg, rgba(94, 92, 230, 0.1), transparent);
+  pointer-events: none;
+}
+
+/* ============================================
+   Device Icon
+   ============================================ */
+
+.deviceIcon {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 10, 10, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-xl);
+  color: #5E5CE6;
+  transition: all 0.3s ease;
+}
+
+.deviceCard:hover:not(.deviceCardDisabled) .deviceIcon {
+  background: rgba(10, 10, 10, 1);
+  border-color: rgba(94, 92, 230, 0.3);
+  box-shadow: 0 0 20px rgba(94, 92, 230, 0.2);
+}
+
+.deviceCard:hover:not(.deviceCardDisabled) .deviceSvg {
+  transform: scale(1.1);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.thisDevice .deviceIcon {
+  background: rgba(94, 92, 230, 0.15);
+  border-color: rgba(94, 92, 230, 0.4);
+}
+
+.deviceIcon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-xl);
+}
+
+.deviceSvg {
+  width: 36px;
+  height: 36px;
+}
+
+.onlineIndicator {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  background: #0cce6b;
+  border: 3px solid rgba(10, 10, 10, 0.9);
+  border-radius: var(--radius-full);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(0.95);
+  }
+}
+
+/* ============================================
+   Device Info
+   ============================================ */
+
+.deviceInfo {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.deviceHeader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.deviceName {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: #ededed;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.favoriteButton {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #666666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.favoriteButton:hover {
+  color: #f5a623;
+  background: rgba(245, 166, 35, 0.1);
+}
+
+/* Platform Badge */
+.platformBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  background: rgba(94, 92, 230, 0.1);
+  border: 1px solid rgba(94, 92, 230, 0.2);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: #a1a1a1;
+}
+
+.platformEmoji {
+  font-size: 14px;
+}
+
+/* ============================================
+   Send Indicator
+   ============================================ */
+
+.sendIndicator {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(94, 92, 230, 0.2);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(94, 92, 230, 0.4);
+  border-radius: var(--radius-full);
+  color: #5E5CE6;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.deviceCard:hover:not(.deviceCardDisabled) .sendIndicator {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* ============================================
+   This Device Badge
+   ============================================ */
+
+.thisDeviceBadge {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  display: flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  background: rgba(94, 92, 230, 0.2);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(94, 92, 230, 0.4);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: #5E5CE6;
+}
+
+/* ============================================
+   Empty State
+   ============================================ */
+
+.emptyState {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-16) var(--space-8);
+  text-align: center;
+  background: rgba(23, 23, 23, 0.3);
+  backdrop-filter: blur(8px);
+  border: 1px dashed rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-xl);
+  min-height: 300px;
+}
+
+.emptyState svg {
+  color: #666666;
+}
+
+.emptyTitle {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: #ededed;
+  margin: 0;
+}
+
+.emptySubtitle {
+  font-size: var(--font-size-sm);
+  color: #666666;
+  margin: 0;
+  max-width: 320px;
+}
+
+/* ============================================
+   Error
+   ============================================ */
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(238, 0, 0, 0.1);
+  border: 1px solid rgba(238, 0, 0, 0.2);
+  border-radius: var(--radius-lg);
+  color: #ee0000;
+  font-size: var(--font-size-sm);
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+@keyframes device-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(94, 92, 230, 0.2),
+      0 8px 24px rgba(94, 92, 230, 0.2),
+      0 16px 48px rgba(0, 0, 0, 0.4);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(94, 92, 230, 0.3),
+      0 8px 32px rgba(94, 92, 230, 0.3),
+      0 16px 56px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* ============================================
+   Reduced Motion
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .iconSpin,
+  .onlineIndicator,
+  .error,
+  .formError,
+  .manualConnectForm,
+  .broadcastContainer {
+    animation: none;
+  }
+
+  .deviceCard:hover:not(.deviceCardDisabled):not(.thisDevice) {
+    transform: none;
+    animation: none;
+  }
+
+  .deviceCard:hover:not(.deviceCardDisabled) .sendIndicator,
+  .deviceCard:hover:not(.deviceCardDisabled) .deviceSvg {
+    transform: none;
+  }
+
+  .manualConnectButton:hover,
+  .connectButton:hover:not(:disabled),
+  .broadcastButton:hover:not(:disabled) {
+    transform: none;
+    animation: none;
+  }
+
+  .broadcastButton:active:not(:disabled) {
+    transform: none;
+  }
+}

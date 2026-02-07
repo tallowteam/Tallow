@@ -43,7 +43,7 @@ export async function registerDeviceAction(formData: FormData) {
     const validated = DeviceSchema.parse(data);
 
     // In a real app, this would save to database
-    console.log('[Server Action] Register device:', validated);
+    console.info('[Server Action] Register device:', validated);
 
     // Revalidate
     revalidatePath('/app');
@@ -82,7 +82,7 @@ export async function updateDeviceAction(formData: FormData) {
     const validated = DeviceUpdateSchema.parse(cleanData);
 
     // In a real app, this would update database
-    console.log('[Server Action] Update device:', validated);
+    console.info('[Server Action] Update device:', validated);
 
     // Revalidate
     revalidatePath('/app');
@@ -107,7 +107,7 @@ export async function updateDeviceAction(formData: FormData) {
 export async function deleteDeviceAction(deviceId: string) {
   try {
     // In a real app, this would delete from database
-    console.log('[Server Action] Delete device:', deviceId);
+    console.info('[Server Action] Delete device:', deviceId);
 
     // Revalidate
     revalidatePath('/app');
@@ -132,7 +132,7 @@ export async function deleteDeviceAction(deviceId: string) {
 export async function toggleDeviceFavoriteAction(deviceId: string, isFavorite: boolean) {
   try {
     // In a real app, this would update database
-    console.log('[Server Action] Toggle device favorite:', { deviceId, isFavorite });
+    console.info('[Server Action] Toggle device favorite:', { deviceId, isFavorite });
 
     // Revalidate
     revalidatePath('/app');
@@ -156,7 +156,7 @@ export async function toggleDeviceFavoriteAction(deviceId: string, isFavorite: b
 export async function getDeviceStatsAction(deviceId: string) {
   try {
     // In a real app, this would query database
-    console.log('[Server Action] Get device stats:', deviceId);
+    console.info('[Server Action] Get device stats:', deviceId);
 
     // Simulate stats
     const stats = {
@@ -184,7 +184,7 @@ export async function getDeviceStatsAction(deviceId: string) {
 export async function syncDevicesAction() {
   try {
     // In a real app, this would sync with backend
-    console.log('[Server Action] Sync devices');
+    console.info('[Server Action] Sync devices');
 
     // Revalidate
     revalidatePath('/app');

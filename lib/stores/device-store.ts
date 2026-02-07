@@ -6,7 +6,7 @@
  */
 
 import { create } from 'zustand';
-import { devtools, subscribeWithSelector, persist } from 'zustand/middleware';
+import { devtools, subscribeWithSelector, persist, createJSONStorage } from 'zustand/middleware';
 import { Device } from '../types';
 import { safeStorage } from './storage';
 
@@ -378,7 +378,7 @@ export const useDeviceStore = create<DeviceStoreState>()(
         }),
         {
           name: 'tallow-device-store',
-          storage: safeStorage,
+          storage: createJSONStorage(() => safeStorage),
           partialize: (state) => ({
             favoriteDeviceIds: state.favoriteDeviceIds,
             recentDeviceIds: state.recentDeviceIds,
@@ -406,3 +406,11 @@ export const selectOnlineDevices = (state: DeviceStoreState) =>
 export const selectOfflineDevices = (state: DeviceStoreState) =>
   state.devices.filter((d) => !d.isOnline);
 export const selectFavoriteIds = (state: DeviceStoreState) => state.favoriteDeviceIds;
+
+/**
+ * Non-hook accessor for useDeviceStore.
+ * Use this in callbacks / effects where you call .getState() so the React
+ * compiler does not hoist it into a reactive subscription (it only hoists
+ * identifiers that start with "use").
+ */
+export const deviceStoreApi = useDeviceStore;

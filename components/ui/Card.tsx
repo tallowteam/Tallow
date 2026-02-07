@@ -1,89 +1,102 @@
-'use client';
-
-import { forwardRef, HTMLAttributes, ReactNode } from 'react';
+import { type HTMLAttributes, type ReactNode } from 'react';
 import styles from './Card.module.css';
 
 export interface CardProps extends HTMLAttributes<HTMLDivElement> {
-  variant?: 'default' | 'highlighted' | 'interactive';
-  children: ReactNode;
+  variant?: 'default' | 'bordered' | 'elevated' | 'ghost' | 'gradient';
+  padding?: 'none' | 'sm' | 'md' | 'lg';
+  hover?: boolean;
+  glow?: boolean;
+  interactive?: boolean;
 }
 
-export interface CardHeaderProps extends HTMLAttributes<HTMLDivElement> {
-  children: ReactNode;
+export function Card({
+  variant = 'default',
+  padding = 'md',
+  hover = false,
+  glow = false,
+  interactive = false,
+  className = '',
+  children,
+  ...props
+}: CardProps) {
+  const classes = [
+    styles.card,
+    styles[variant],
+    styles[`padding-${padding}`],
+    hover && styles.hover,
+    glow && styles.glow,
+    interactive && styles.interactive,
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return (
+    <div className={classes} {...props}>
+      {children}
+    </div>
+  );
 }
 
-export interface CardBodyProps extends HTMLAttributes<HTMLDivElement> {
-  children: ReactNode;
+export interface CardHeaderProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
+  title?: ReactNode;
+  description?: ReactNode;
+  action?: ReactNode;
 }
 
-export interface CardFooterProps extends HTMLAttributes<HTMLDivElement> {
-  children: ReactNode;
+export function CardHeader({
+  title,
+  description,
+  action,
+  className = '',
+  children,
+  ...props
+}: CardHeaderProps) {
+  return (
+    <div className={`${styles.header} ${className}`} {...props}>
+      <div className={styles.headerContent}>
+        {title && <h3 className={styles.title}>{title}</h3>}
+        {description && <p className={styles.description}>{description}</p>}
+        {children}
+      </div>
+      {action && <div className={styles.action}>{action}</div>}
+    </div>
+  );
 }
 
-export const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ variant = 'default', children, className = '', ...props }, ref) => {
-    const cardClasses = [
-      styles.card,
-      styles[variant],
-      className,
-    ]
-      .filter(Boolean)
-      .join(' ');
+export interface CardContentProps extends HTMLAttributes<HTMLDivElement> {
+  noPadding?: boolean;
+}
 
-    return (
-      <div ref={ref} className={cardClasses} {...props}>
-        {children}
-      </div>
-    );
-  }
-);
+export function CardContent({
+  noPadding = false,
+  className = '',
+  children,
+  ...props
+}: CardContentProps) {
+  const classes = [
+    styles.content,
+    noPadding && styles.noPadding,
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
 
-Card.displayName = 'Card';
+  return (
+    <div className={classes} {...props}>
+      {children}
+    </div>
+  );
+}
 
-export const CardHeader = forwardRef<HTMLDivElement, CardHeaderProps>(
-  ({ children, className = '', ...props }, ref) => {
-    return (
-      <div
-        ref={ref}
-        className={`${styles.header} ${className}`}
-        {...props}
-      >
-        {children}
-      </div>
-    );
-  }
-);
-
-CardHeader.displayName = 'CardHeader';
-
-export const CardBody = forwardRef<HTMLDivElement, CardBodyProps>(
-  ({ children, className = '', ...props }, ref) => {
-    return (
-      <div
-        ref={ref}
-        className={`${styles.body} ${className}`}
-        {...props}
-      >
-        {children}
-      </div>
-    );
-  }
-);
-
-CardBody.displayName = 'CardBody';
-
-export const CardFooter = forwardRef<HTMLDivElement, CardFooterProps>(
-  ({ children, className = '', ...props }, ref) => {
-    return (
-      <div
-        ref={ref}
-        className={`${styles.footer} ${className}`}
-        {...props}
-      >
-        {children}
-      </div>
-    );
-  }
-);
-
-CardFooter.displayName = 'CardFooter';
+export function CardFooter({
+  className = '',
+  children,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={`${styles.footer} ${className}`} {...props}>
+      {children}
+    </div>
+  );
+}

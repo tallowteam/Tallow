@@ -146,9 +146,7 @@ export function useNATOptimizedConnection(options: UseNATOptimizedConnectionOpti
   /**
    * Calculate optimal connection strategy
    */
-  const calculateStrategy = useCallback(() => {
-    const { localNAT, remoteNAT } = state;
-
+  const calculateStrategy = useCallback((localNAT: NATType | null, remoteNAT: NATType | null) => {
     if (!localNAT || !remoteNAT) {
       secureLog.warn('[NAT Hook] Cannot calculate strategy: missing NAT info');
       return null;
@@ -169,7 +167,7 @@ export function useNATOptimizedConnection(options: UseNATOptimizedConnectionOpti
     secureLog.log('[NAT Hook] Strategy calculated:', strategy.strategy);
 
     return strategy;
-  }, [state.localNAT, state.remoteNAT, onStrategySelected]);
+  }, [onStrategySelected]);
 
   /**
    * Initialize TURN health monitoring
@@ -225,9 +223,7 @@ export function useNATOptimizedConnection(options: UseNATOptimizedConnectionOpti
   /**
    * Get optimized ICE configuration
    */
-  const getICEConfig = useCallback((): RTCConfiguration | null => {
-    const { localNAT, bestTURNServer } = state;
-
+  const getICEConfig = useCallback((localNAT: NATType | null, bestTURNServer: TURNServer | null): RTCConfiguration | null => {
     if (!localNAT) {
       secureLog.warn('[NAT Hook] Cannot get ICE config: NAT not detected');
       return null;
@@ -252,14 +248,17 @@ export function useNATOptimizedConnection(options: UseNATOptimizedConnectionOpti
     }
 
     return getOptimizedICEConfig(localNAT, turnServer, turnCredentials);
-  }, [state.localNAT, state.bestTURNServer]);
+  }, []);
 
   /**
    * Record connection attempt start
    */
-  const startConnectionAttempt = useCallback(() => {
-    const { localNAT, remoteNAT, strategy, shouldUseTURN } = state;
-
+  const startConnectionAttempt = useCallback((
+    localNAT: NATType | null,
+    remoteNAT: NATType | null,
+    strategy: AdaptiveStrategyResult | null,
+    shouldUseTURN: boolean
+  ) => {
     if (!localNAT || !remoteNAT || !strategy) {
       secureLog.warn('[NAT Hook] Cannot start connection: missing info');
       return;
@@ -280,14 +279,12 @@ export function useNATOptimizedConnection(options: UseNATOptimizedConnectionOpti
     }));
 
     secureLog.log('[NAT Hook] Connection attempt started');
-  }, [state.localNAT, state.remoteNAT, state.strategy, state.shouldUseTURN]);
+  }, []);
 
   /**
    * Record successful connection
    */
-  const recordConnectionSuccess = useCallback((connectionTime: number, connectionType: 'direct' | 'relayed') => {
-    const { strategy } = state;
-
+  const recordConnectionSuccess = useCallback((connectionTime: number, connectionType: 'direct' | 'relayed', strategy: AdaptiveStrategyResult | null) => {
     if (!strategy) {return;}
 
     strategySelector.current.recordSuccess(strategy.strategy, connectionTime);
@@ -306,14 +303,12 @@ export function useNATOptimizedConnection(options: UseNATOptimizedConnectionOpti
       time: `${connectionTime}ms`,
       type: connectionType,
     });
-  }, [state.strategy, onConnectionSuccess]);
+  }, [onConnectionSuccess]);
 
   /**
    * Record connection failure
    */
-  const recordConnectionFailure = useCallback((error: string) => {
-    const { strategy } = state;
-
+  const recordConnectionFailure = useCallback((error: string, strategy: AdaptiveStrategyResult | null) => {
     if (!strategy) {return;}
 
     strategySelector.current.recordFailure(strategy.strategy, error);
@@ -328,7 +323,7 @@ export function useNATOptimizedConnection(options: UseNATOptimizedConnectionOpti
     onConnectionFailure?.(error);
 
     secureLog.error('[NAT Hook] Connection failed:', error);
-  }, [state.strategy, onConnectionFailure]);
+  }, [onConnectionFailure]);
 
   /**
    * Reset connection state
@@ -368,7 +363,7 @@ export function useNATOptimizedConnection(options: UseNATOptimizedConnectionOpti
   // Calculate strategy when both NAT types are known
   useEffect(() => {
     if (state.localNAT && state.remoteNAT) {
-      calculateStrategy();
+      calculateStrategy(state.localNAT, state.remoteNAT);
     }
   }, [state.localNAT, state.remoteNAT, calculateStrategy]);
 
@@ -379,11 +374,12 @@ export function useNATOptimizedConnection(options: UseNATOptimizedConnectionOpti
     // Actions
     detectLocalNAT,
     setRemoteNAT,
-    calculateStrategy,
-    getICEConfig,
-    startConnectionAttempt,
-    recordConnectionSuccess,
-    recordConnectionFailure,
+    calculateStrategy: () => calculateStrategy(state.localNAT, state.remoteNAT),
+    getICEConfig: () => getICEConfig(state.localNAT, state.bestTURNServer),
+    startConnectionAttempt: () => startConnectionAttempt(state.localNAT, state.remoteNAT, state.strategy, state.shouldUseTURN),
+    recordConnectionSuccess: (connectionTime: number, connectionType: 'direct' | 'relayed') =>
+      recordConnectionSuccess(connectionTime, connectionType, state.strategy),
+    recordConnectionFailure: (error: string) => recordConnectionFailure(error, state.strategy),
     resetConnection,
     getMetrics,
 

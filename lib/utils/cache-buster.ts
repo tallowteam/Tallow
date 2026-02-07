@@ -17,16 +17,16 @@ export async function clearOldCaches() {
 
     // If the version has changed, clear all caches
     if (currentVersion !== APP_VERSION) {
-      console.log('[Cache Buster] Version mismatch detected. Clearing old caches...');
-      console.log('[Cache Buster] Old version:', currentVersion);
-      console.log('[Cache Buster] New version:', APP_VERSION);
+      console.info('[Cache Buster] Version mismatch detected. Clearing old caches...');
+      console.info('[Cache Buster] Old version:', currentVersion);
+      console.info('[Cache Buster] New version:', APP_VERSION);
 
       // Clear service worker caches
       if ('caches' in window) {
         const cacheNames = await caches.keys();
         await Promise.all(
           cacheNames.map(cacheName => {
-            console.log('[Cache Buster] Deleting cache:', cacheName);
+            console.info('[Cache Buster] Deleting cache:', cacheName);
             return caches.delete(cacheName);
           })
         );
@@ -36,7 +36,7 @@ export async function clearOldCaches() {
       if ('serviceWorker' in navigator) {
         const registrations = await navigator.serviceWorker.getRegistrations();
         for (const registration of registrations) {
-          console.log('[Cache Buster] Unregistering service worker');
+          console.info('[Cache Buster] Unregistering service worker');
           await registration.unregister();
         }
       }
@@ -54,14 +54,14 @@ export async function clearOldCaches() {
         }
       }
       keysToRemove.forEach(key => {
-        console.log('[Cache Buster] Removing localStorage key:', key);
+        console.info('[Cache Buster] Removing localStorage key:', key);
         localStorage.removeItem(key);
       });
 
       // Update the version
       localStorage.setItem('tallow-app-version', APP_VERSION);
 
-      console.log('[Cache Buster] Cache clearing complete. Page will reload in 2 seconds...');
+      console.info('[Cache Buster] Cache clearing complete. Page will reload in 2 seconds...');
 
       // Reload the page to ensure fresh content
       setTimeout(() => {
@@ -71,7 +71,7 @@ export async function clearOldCaches() {
       return true;
     }
 
-    console.log('[Cache Buster] App version is current:', APP_VERSION);
+    console.info('[Cache Buster] App version is current:', APP_VERSION);
     return false;
   } catch (error) {
     console.error('[Cache Buster] Error clearing caches:', error);

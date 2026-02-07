@@ -1,323 +1,272 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import {
-  ShieldCheckIcon,
-  ServerIcon,
-  EyeSlashIcon,
-  DevicePhoneMobileIcon,
-  ArrowRightIcon,
-  CheckIcon
-} from '@heroicons/react/24/outline';
+'use client';
 
-export const metadata: Metadata = {
-  title: 'Tallow - Secure File Transfers. Quantum-Safe.',
-  description: 'Transfer files directly between devices with post-quantum encryption. No cloud storage, no compromises. Peer-to-peer, zero-knowledge file sharing.',
-  keywords: 'secure file transfer, quantum-safe, post-quantum encryption, peer-to-peer, p2p, zero knowledge, encrypted file sharing',
-  openGraph: {
-    title: 'Tallow - Secure File Transfers. Quantum-Safe.',
-    description: 'Transfer files directly between devices with post-quantum encryption. No cloud storage, no compromises.',
-    type: 'website',
-    url: 'https://tallow.app',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Tallow - Secure File Transfers. Quantum-Safe.',
-    description: 'Transfer files directly between devices with post-quantum encryption.',
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-};
+import Link from 'next/link';
+import { Shield, Lock, Zap, Check, Upload } from '@/components/icons';
+import styles from './page.module.css';
 
 export default function LandingPage() {
+  const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
+    e.preventDefault();
+    const element = document.getElementById(targetId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
-    <div className="landing-page">
-      {/* Hero Section */}
-      <section className="hero-section">
-        <div className="hero-container">
-          <div className="hero-content">
-            <h1 className="hero-title">
-              Secure File Transfers.
-              <span className="gradient-text"> Quantum-Safe.</span>
+    <main className={styles.main}>
+      {/* Ambient Background Blobs */}
+      <div className={styles.ambientBlob1} />
+      <div className={styles.ambientBlob2} />
+
+      {/* 1. HERO SECTION — 100vh Grid 55%/45% */}
+      <section className={styles.hero}>
+        <div className={styles.heroGrid}>
+          {/* Left Side — 55% */}
+          <div className={styles.heroLeft}>
+            <div className={styles.heroBadge}>
+              <span className={styles.pulseDot} />
+              QUANTUM-SAFE FILE TRANSFER
+            </div>
+            <h1 className={styles.heroHeading}>
+              <span className={styles.heroHeadingPrimary}>Your files.</span>
+              <span className={styles.heroHeadingSecondary}>Your rules.</span>
             </h1>
-
-            <p className="hero-subtitle">
-              Transfer files directly between devices with post-quantum encryption.
-              No cloud storage, no compromises.
+            <p className={styles.heroParagraph}>
+              Post-quantum encrypted. Peer-to-peer. No servers touch your files. No accounts track your activity. Just open and send.
             </p>
-
-            <div className="hero-cta">
-              <Link href="/app" className="btn btn-primary">
-                Start Transferring
-                <ArrowRightIcon className="btn-icon" />
+            <div className={styles.heroButtons}>
+              <Link href="/transfer" className={styles.btnPrimary}>
+                Open App
               </Link>
-              <Link href="#how-it-works" className="btn btn-secondary">
-                Learn More
-              </Link>
+              <a
+                href="#features"
+                className={styles.btnSecondary}
+                onClick={(e) => handleSmoothScroll(e, 'features')}
+              >
+                See How It Works →
+              </a>
             </div>
           </div>
 
-          <div className="hero-glow" aria-hidden="true"></div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="features-section" id="features">
-        <div className="section-container">
-          <h2 className="section-title">Built for Security & Privacy</h2>
-
-          <div className="features-grid">
-            <div className="feature-card">
-              <div className="feature-icon">
-                <ShieldCheckIcon />
+          {/* Right Side — 45% Glass App Window */}
+          <div className={styles.heroRight}>
+            <div className={styles.appWindow}>
+              {/* Window Chrome */}
+              <div className={styles.windowChrome}>
+                <div className={styles.trafficLights}>
+                  <span className={styles.trafficRed} />
+                  <span className={styles.trafficYellow} />
+                  <span className={styles.trafficGreen} />
+                </div>
+                <div className={styles.urlBar}>tallow.app/transfer</div>
               </div>
-              <h3 className="feature-title">Post-Quantum Encryption</h3>
-              <p className="feature-description">
-                Protected against quantum computer attacks with Kyber-1024 and ML-KEM encryption.
-                Your files are safe today and tomorrow.
-              </p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon">
-                <ServerIcon />
-              </div>
-              <h3 className="feature-title">Peer-to-Peer Transfers</h3>
-              <p className="feature-description">
-                Direct device-to-device connections using WebRTC. Your files never touch our servers
-                or any cloud storage.
-              </p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon">
-                <EyeSlashIcon />
-              </div>
-              <h3 className="feature-title">Zero Knowledge</h3>
-              <p className="feature-description">
-                End-to-end encryption means only you and your recipient can access the files.
-                We can't see what you share.
-              </p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon">
-                <DevicePhoneMobileIcon />
-              </div>
-              <h3 className="feature-title">Cross-Platform</h3>
-              <p className="feature-description">
-                Works seamlessly across desktop, mobile, and tablet. Transfer between any devices,
-                any operating systems.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section className="how-it-works-section" id="how-it-works">
-        <div className="section-container">
-          <h2 className="section-title">How It Works</h2>
-          <p className="section-subtitle">
-            Three simple steps to secure file transfers
-          </p>
-
-          <div className="steps-grid">
-            <div className="step-card">
-              <div className="step-number">1</div>
-              <h3 className="step-title">Connect Devices</h3>
-              <p className="step-description">
-                Scan QR code or share a secure link to establish encrypted connection
-                between your devices.
-              </p>
-            </div>
-
-            <div className="step-arrow" aria-hidden="true">
-              <ArrowRightIcon />
-            </div>
-
-            <div className="step-card">
-              <div className="step-number">2</div>
-              <h3 className="step-title">Select Files</h3>
-              <p className="step-description">
-                Choose files, folders, or drag and drop. Supports unlimited file sizes
-                and multiple files.
-              </p>
-            </div>
-
-            <div className="step-arrow" aria-hidden="true">
-              <ArrowRightIcon />
-            </div>
-
-            <div className="step-card">
-              <div className="step-number">3</div>
-              <h3 className="step-title">Transfer Securely</h3>
-              <p className="step-description">
-                Files are encrypted and sent directly to the recipient. No intermediary
-                servers, no data retention.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Security Section */}
-      <section className="security-section" id="security">
-        <div className="section-container">
-          <div className="security-content">
-            <div className="security-text">
-              <h2 className="section-title">Military-Grade Security</h2>
-              <p className="security-intro">
-                Tallow uses multiple layers of encryption to ensure your files remain private
-                and secure at all times.
-              </p>
-
-              <div className="security-features">
-                <div className="security-feature">
-                  <CheckIcon className="check-icon" />
-                  <div>
-                    <h4>Post-Quantum Cryptography</h4>
-                    <p>Kyber-1024 and ML-KEM resistant to quantum attacks</p>
+              {/* Window Body */}
+              <div className={styles.windowBody}>
+                {/* Drop Zone */}
+                <div className={styles.dropZone}>
+                  <Upload />
+                  <span>Drop files here or click to browse</span>
+                </div>
+                {/* Device Cards */}
+                <div className={styles.deviceCard}>
+                  <span className={styles.deviceDot} style={{ background: '#28c840' }} />
+                  <div className={styles.deviceInfo}>
+                    <span className={styles.deviceName}>MacBook Pro</span>
+                    <span className={styles.deviceStatus}>Online</span>
                   </div>
                 </div>
-
-                <div className="security-feature">
-                  <CheckIcon className="check-icon" />
-                  <div>
-                    <h4>Triple-Ratchet Protocol</h4>
-                    <p>Forward secrecy with automatic key rotation</p>
+                <div className={styles.deviceCard}>
+                  <span className={styles.deviceDot} style={{ background: '#0099ff' }} />
+                  <div className={styles.deviceInfo}>
+                    <span className={styles.deviceName}>iPhone 15</span>
+                    <span className={styles.deviceStatus}>Nearby</span>
                   </div>
                 </div>
-
-                <div className="security-feature">
-                  <CheckIcon className="check-icon" />
-                  <div>
-                    <h4>Metadata Stripping</h4>
-                    <p>Automatic removal of identifying information from files</p>
+                <div className={styles.deviceCard}>
+                  <span className={styles.deviceDot} style={{ background: '#febc2e' }} />
+                  <div className={styles.deviceInfo}>
+                    <span className={styles.deviceName}>Pixel 8</span>
+                    <span className={styles.deviceStatus}>Connecting...</span>
                   </div>
                 </div>
-
-                <div className="security-feature">
-                  <CheckIcon className="check-icon" />
-                  <div>
-                    <h4>Onion Routing</h4>
-                    <p>Multi-layer routing for enhanced anonymity</p>
+                {/* Transfer Progress */}
+                <div className={styles.transferProgress}>
+                  <div className={styles.transferHeader}>
+                    <span className={styles.transferFile}>presentation.pdf</span>
+                    <span className={styles.transferSize}>24.7 MB</span>
+                  </div>
+                  <div className={styles.progressBar}>
+                    <div className={styles.progressFill} style={{ width: '67%' }} />
+                  </div>
+                  <div className={styles.transferFooter}>
+                    <span className={styles.transferSpeed}>12.4 MB/s</span>
+                    <span className={styles.encryptionBadge}>ML-KEM</span>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
 
-            <div className="security-visual">
-              <div className="encryption-diagram">
-                <div className="encryption-layer">
-                  <span className="layer-label">Post-Quantum</span>
+      {/* 2. MARQUEE TRUST STRIP */}
+      <section className={styles.marquee}>
+        <div className={styles.marqueeTrack}>
+          <span className={styles.marqueeContent}>
+            End-to-End Encrypted · Zero Knowledge · Open Source · Post-Quantum Safe · No File Limits · WebRTC P2P · End-to-End Encrypted · Zero Knowledge · Open Source · Post-Quantum Safe · No File Limits · WebRTC P2P · End-to-End Encrypted · Zero Knowledge · Open Source · Post-Quantum Safe · No File Limits · WebRTC P2P
+          </span>
+        </div>
+      </section>
+
+      {/* 3. FEATURES SECTION — 3 Alternating 50/50 Magazine Blocks */}
+      <section className={styles.features} id="features">
+        {/* Block 1 — Transfer (text left, visual right) */}
+        <div className={styles.featureBlock}>
+          <div className={styles.featureText}>
+            <span className={styles.featureLabel}>01</span>
+            <h2 className={styles.featureHeading}>Direct peer-to-peer transfer</h2>
+            <p className={styles.featureParagraph}>
+              Your files travel directly from device to device with zero intermediaries. No cloud storage, no server bottlenecks—just pure P2P speed at your network's maximum capacity. WebRTC ensures the fastest possible connection while maintaining end-to-end encryption.
+            </p>
+            <a href="/features" className={styles.featureLink}>Learn more →</a>
+          </div>
+          <div className={styles.featureVisual}>
+            <div className={styles.featureCard}>
+              <div className={styles.transferMockup}>
+                <div className={styles.mockupHeader}>
+                  <Zap />
+                  <span>P2P Direct Connection</span>
                 </div>
-                <div className="encryption-layer">
-                  <span className="layer-label">AES-256-GCM</span>
+                <div className={styles.mockupDevice}>
+                  <div className={styles.deviceIcon}>💻</div>
+                  <div className={styles.deviceLabel}>Sender</div>
                 </div>
-                <div className="encryption-layer">
-                  <span className="layer-label">Triple Ratchet</span>
+                <div className={styles.mockupArrow}>→</div>
+                <div className={styles.mockupDevice}>
+                  <div className={styles.deviceIcon}>📱</div>
+                  <div className={styles.deviceLabel}>Receiver</div>
                 </div>
-                <div className="encryption-core">
-                  <span>Your Files</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Block 2 — Security (visual left, text right) */}
+        <div className={`${styles.featureBlock} ${styles.featureBlockReverse}`}>
+          <div className={styles.featureVisual}>
+            <div className={styles.featureCard}>
+              <div className={styles.securityStack}>
+                <div className={styles.stackItem}>
+                  <Shield />
+                  <span>ML-KEM-768</span>
                 </div>
+                <div className={styles.stackDivider} />
+                <div className={styles.stackItem}>
+                  <Lock />
+                  <span>AES-256-GCM</span>
+                </div>
+                <div className={styles.stackDivider} />
+                <div className={styles.stackItem}>
+                  <Zap />
+                  <span>WebRTC P2P</span>
+                </div>
+                <div className={styles.stackDivider} />
+                <div className={styles.stackItem}>
+                  <Check />
+                  <span>Zero-Knowledge</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className={styles.featureText}>
+            <span className={styles.featureLabel}>02</span>
+            <h2 className={styles.featureHeading}>Post-quantum encryption</h2>
+            <p className={styles.featureParagraph}>
+              Protected against both current and future threats with ML-KEM-768 post-quantum cryptography. Your files are encrypted with military-grade AES-256-GCM, ensuring security that will withstand even the quantum computers of tomorrow.
+            </p>
+            <a href="/security" className={styles.featureLink}>Learn more →</a>
+          </div>
+        </div>
+
+        {/* Block 3 — Platform (text left, visual right) */}
+        <div className={styles.featureBlock}>
+          <div className={styles.featureText}>
+            <span className={styles.featureLabel}>03</span>
+            <h2 className={styles.featureHeading}>Works everywhere</h2>
+            <p className={styles.featureParagraph}>
+              No apps to install, no accounts to create. Tallow runs in any modern browser—Chrome, Firefox, Safari, Edge. Desktop, mobile, tablet. Windows, macOS, Linux, iOS, Android. One codebase, infinite compatibility.
+            </p>
+            <a href="/about" className={styles.featureLink}>Learn more →</a>
+          </div>
+          <div className={styles.featureVisual}>
+            <div className={styles.featureCard}>
+              <div className={styles.platformGrid}>
+                <div className={styles.platformIcon}>🌐</div>
+                <div className={styles.platformIcon}>💻</div>
+                <div className={styles.platformIcon}>📱</div>
+                <div className={styles.platformIcon}>🖥️</div>
+              </div>
+              <div className={styles.platformLabels}>
+                <span>Browser</span>
+                <span>Desktop</span>
+                <span>Mobile</span>
+                <span>Tablet</span>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="stats-section">
-        <div className="section-container">
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-number">10M+</div>
-              <div className="stat-label">Files Transferred</div>
-            </div>
+      {/* 4. PULL QUOTE */}
+      <section className={styles.pullQuote}>
+        <div className={styles.quoteAccent} />
+        <blockquote className={styles.quote}>
+          Privacy isn't a feature. It's a fundamental right.
+        </blockquote>
+      </section>
 
-            <div className="stat-card">
-              <div className="stat-number">500TB+</div>
-              <div className="stat-label">Data Encrypted</div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-number">150+</div>
-              <div className="stat-label">Countries Served</div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-number">99.9%</div>
-              <div className="stat-label">Uptime</div>
-            </div>
+      {/* 5. STATS SECTION — 4 Inline Blocks */}
+      <section className={styles.stats}>
+        <div className={styles.statsContainer}>
+          <div className={styles.statItem}>
+            <div className={styles.statValue}>256</div>
+            <div className={styles.statLabel}>Bit Encryption</div>
+          </div>
+          <div className={styles.statDivider} />
+          <div className={styles.statItem}>
+            <div className={styles.statValue}>0</div>
+            <div className={styles.statLabel}>Servers Involved</div>
+          </div>
+          <div className={styles.statDivider} />
+          <div className={styles.statItem}>
+            <div className={styles.statValue}>P2P</div>
+            <div className={styles.statLabel}>Direct Transfer</div>
+          </div>
+          <div className={styles.statDivider} />
+          <div className={styles.statItem}>
+            <div className={styles.statValue}>∞</div>
+            <div className={styles.statLabel}>No File Limits</div>
           </div>
         </div>
       </section>
 
-      {/* Final CTA Section */}
-      <section className="cta-section">
-        <div className="cta-container">
-          <h2 className="cta-title">Ready to Transfer Securely?</h2>
-          <p className="cta-description">
-            Join thousands of users who trust Tallow for secure, private file transfers.
-          </p>
-          <Link href="/app" className="btn btn-primary btn-large">
-            Try Tallow Now
-            <ArrowRightIcon className="btn-icon" />
-          </Link>
+      {/* 6. CTA SECTION — 50/50 Grid */}
+      <section className={styles.cta}>
+        <div className={styles.ctaGrid}>
+          <div className={styles.ctaLeft}>
+            <h2 className={styles.ctaHeading}>Ready to take control of your files?</h2>
+          </div>
+          <div className={styles.ctaRight}>
+            <p className={styles.ctaParagraph}>
+              No signup required. No credit card needed. No tracking. Just open Tallow in your browser and start sharing files the way it should be—secure, private, and directly between devices.
+            </p>
+            <Link href="/transfer" className={styles.ctaButton}>
+              Open Tallow →
+            </Link>
+          </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="footer">
-        <div className="footer-container">
-          <div className="footer-content">
-            <div className="footer-brand">
-              <h3>Tallow</h3>
-              <p>Secure file transfers, quantum-safe.</p>
-            </div>
-
-            <div className="footer-links">
-              <div className="footer-column">
-                <h4>Product</h4>
-                <Link href="/app">App</Link>
-                <Link href="#features">Features</Link>
-                <Link href="#security">Security</Link>
-                <Link href="#how-it-works">How It Works</Link>
-              </div>
-
-              <div className="footer-column">
-                <h4>Company</h4>
-                <Link href="/about">About</Link>
-                <Link href="/privacy">Privacy</Link>
-                <Link href="/terms">Terms</Link>
-                <Link href="/security">Security</Link>
-              </div>
-
-              <div className="footer-column">
-                <h4>Resources</h4>
-                <Link href="/docs">Documentation</Link>
-                <Link href="/help">Help Center</Link>
-                <Link href="/api">API</Link>
-                <Link href="/blog">Blog</Link>
-              </div>
-
-              <div className="footer-column">
-                <h4>Connect</h4>
-                <a href="https://github.com/tallow" target="_blank" rel="noopener noreferrer">GitHub</a>
-                <a href="https://twitter.com/tallow" target="_blank" rel="noopener noreferrer">Twitter</a>
-                <a href="https://discord.gg/tallow" target="_blank" rel="noopener noreferrer">Discord</a>
-                <a href="mailto:hello@tallow.app">Contact</a>
-              </div>
-            </div>
-          </div>
-
-          <div className="footer-bottom">
-            <p>&copy; {new Date().getFullYear()} Tallow. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
-    </div>
+    </main>
   );
 }

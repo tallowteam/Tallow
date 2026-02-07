@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Console Cleanup Utility
  * Suppresses non-essential development console noise

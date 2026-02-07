@@ -1,0 +1,152 @@
+- link "Skip to main content":
+  - /url: "#main-content"
+- banner:
+  - link "Tallow - Home":
+    - /url: /
+    - text: Tallow
+  - navigation "Main navigation":
+    - link "Features":
+      - /url: /features
+    - link "Security":
+      - /url: /security
+    - link "Pricing":
+      - /url: /pricing
+    - link "Docs":
+      - /url: /docs
+  - button "Switch to dark mode"
+  - link "Open App":
+    - /url: /transfer
+    - button "Open App"
+- main:
+  - heading "The Future of File Sharing" [level=1]
+  - paragraph: Post-quantum encrypted. Peer-to-peer. Zero knowledge.
+  - link "Start Sharing":
+    - /url: /transfer
+    - button "Start Sharing"
+  - link "Learn More":
+    - /url: /docs
+    - button "Learn More"
+  - paragraph: Trusted by developers at
+  - text: GitHub Linear Vercel Figma
+  - img
+  - heading "Lightning Fast" [level=3]
+  - paragraph: P2P direct connection with no server bottleneck. Transfer at network speed with zero intermediaries.
+  - img
+  - heading "Quantum Safe" [level=3]
+  - paragraph: ML-KEM-768 post-quantum encryption protects against future threats. Your files stay secure forever.
+  - img
+  - heading "Zero Knowledge" [level=3]
+  - paragraph: Your files never touch our servers. End-to-end encryption means only you hold the keys.
+  - heading "How It Works" [level=2]
+  - paragraph: Three simple steps to secure file transfer
+  - text: "01"
+  - img
+  - heading "Drop files" [level=3]
+  - paragraph: Drag and drop your files. Encryption happens instantly on your device before transfer.
+  - text: "02"
+  - img
+  - heading "Connect peer" [level=3]
+  - paragraph: Share a secure room code or discover nearby devices automatically via mDNS.
+  - text: "03"
+  - img
+  - heading "Transfer securely" [level=3]
+  - paragraph: Files stream directly peer-to-peer at maximum speed with real-time progress.
+  - text: 10GB+ Max File Size 0 Servers Between You 256-bit Encryption <100ms Local Latency
+  - img
+  - text: Your Device
+  - img
+  - text: Encrypted Tunnel
+  - img
+  - text: Recipient
+  - heading "Military-Grade Security" [level=2]
+  - paragraph: Built with cryptographic standards trusted by governments and enterprises worldwide.
+  - list:
+    - listitem:
+      - img
+      - text: Post-quantum cryptography (ML-KEM-768)
+    - listitem:
+      - img
+      - text: End-to-end AES-256-GCM encryption
+    - listitem:
+      - img
+      - text: Zero-knowledge architecture
+    - listitem:
+      - img
+      - text: Perfect forward secrecy
+    - listitem:
+      - img
+      - text: Automatic metadata stripping
+    - listitem:
+      - img
+      - text: No logs, no tracking, no cloud
+  - link "Security Details":
+    - /url: /security
+    - button "Security Details":
+      - text: Security Details
+      - img
+  - heading "Ready to share securely?" [level=2]
+  - paragraph: No signup required. No credit card needed. Just secure, private file sharing.
+  - link "Start Transferring":
+    - /url: /transfer
+    - button "Start Transferring"
+- contentinfo:
+  - heading "Product" [level=3]
+  - list:
+    - listitem:
+      - link "Features":
+        - /url: /features
+    - listitem:
+      - link "Security":
+        - /url: /security
+    - listitem:
+      - link "Pricing":
+        - /url: /pricing
+    - listitem:
+      - link "Download":
+        - /url: /transfer
+  - heading "Resources" [level=3]
+  - list:
+    - listitem:
+      - link "Docs":
+        - /url: /docs
+    - listitem:
+      - link "Guides":
+        - /url: /about
+    - listitem:
+      - link "API":
+        - /url: https://github.com/tallow
+    - listitem:
+      - link "Changelog":
+        - /url: /docs
+  - heading "Legal" [level=3]
+  - list:
+    - listitem:
+      - link "Privacy":
+        - /url: /privacy
+    - listitem:
+      - link "Terms":
+        - /url: /terms
+    - listitem:
+      - link "Cookies":
+        - /url: /privacy
+  - heading "Connect" [level=3]
+  - list:
+    - listitem:
+      - link "GitHub":
+        - /url: https://github.com/tallow
+        - img
+        - text: GitHub
+    - listitem:
+      - link "Twitter":
+        - /url: https://twitter.com/tallow
+        - img
+        - text: Twitter
+    - listitem:
+      - link "Discord":
+        - /url: https://discord.gg/tallow
+        - img
+        - text: Discord
+  - paragraph: © 2026 Tallow. All rights reserved.
+  - paragraph: Built with privacy in mind
+- region "Notifications"
+- alert

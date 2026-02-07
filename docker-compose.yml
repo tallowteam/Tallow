@@ -1,44 +1,82 @@
-# Docker Compose for Production Environment
-# Optimized builds, health checks, and resource limits
+# ============================================================================
+# Docker Compose for Tallow Production Environment
+# Optimized for multi-architecture support (AMD64, ARM64) and Synology NAS
+# ============================================================================
 
 version: '3.8'
 
 services:
-  # Tallow Web App
+  # --------------------------------------------------------------------------
+  # Tallow Web Application (Next.js standalone)
+  # --------------------------------------------------------------------------
   tallow:
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        - NODE_ENV=production
+        - NODE_VERSION=20
+        - ALPINE_VERSION=3.20
+        - NEXT_TELEMETRY_DISABLED=1
+      cache_from:
+        - type=registry,ref=tallow:buildcache
+      platforms:
+        - linux/amd64
+        - linux/arm64
     image: tallow:latest
-    container_name: tallow
+    container_name: tallow-app
     restart: unless-stopped
     ports:
       - "3000:3000"
+    networks:
+      - tallow-network
     environment:
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
-      # Signaling uses same origin with /signaling path via Cloudflare Tunnel
-      - NEXT_PUBLIC_SIGNALING_URL=${NEXT_PUBLIC_SIGNALING_URL:-}
-      - NEXT_PUBLIC_TURN_SERVER=${NEXT_PUBLIC_TURN_SERVER:-}
-      - NEXT_PUBLIC_TURN_USERNAME=${NEXT_PUBLIC_TURN_USERNAME:-}
-      - NEXT_PUBLIC_TURN_CREDENTIAL=${NEXT_PUBLIC_TURN_CREDENTIAL:-}
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      # Signaling/Relay
+      - NEXT_PUBLIC_SIGNALING_URL=${NEXT_PUBLIC_SIGNALING_URL:-ws://signaling:3001}
       - NEXT_PUBLIC_FORCE_RELAY=${NEXT_PUBLIC_FORCE_RELAY:-true}
       - NEXT_PUBLIC_ALLOW_DIRECT=${NEXT_PUBLIC_ALLOW_DIRECT:-false}
-      - RESEND_API_KEY=${RESEND_API_KEY:-}
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
-      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
-      - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
+      # TURN Server
+      - NEXT_PUBLIC_TURN_SERVER=${NEXT_PUBLIC_TURN_SERVER}
+      - NEXT_PUBLIC_TURN_USERNAME=${NEXT_PUBLIC_TURN_USERNAME}
+      - NEXT_PUBLIC_TURN_CREDENTIAL=${NEXT_PUBLIC_TURN_CREDENTIAL}
+      # Email (Resend)
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL:-Tallow <noreply@tallow.app>}
+      # AWS S3
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET}
+      # Stripe
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      # Security
+      - API_SECRET_KEY=${API_SECRET_KEY}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://tallow.app,https://www.tallow.app}
+      # LaunchDarkly Feature Flags
+      - NEXT_PUBLIC_LAUNCHDARKLY_CLIENT_ID=${NEXT_PUBLIC_LAUNCHDARKLY_CLIENT_ID}
+      # Analytics
+      - NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN}
+      - NEXT_PUBLIC_PLAUSIBLE_DOMAIN=${NEXT_PUBLIC_PLAUSIBLE_DOMAIN}
+      - NEXT_PUBLIC_PLAUSIBLE_HOST=${NEXT_PUBLIC_PLAUSIBLE_HOST:-https://plausible.io}
     depends_on:
       signaling:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     deploy:
       resources:
         limits:
@@ -47,34 +85,45 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
-    networks:
-      - tallow-network
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
 
-  # Signaling Server for P2P WebRTC connections
+  # --------------------------------------------------------------------------
+  # Signaling/Relay Server (WebSocket + PQC)
+  # --------------------------------------------------------------------------
   signaling:
     build:
       context: .
       dockerfile: Dockerfile.signaling
+      args:
+        - NODE_VERSION=20
+        - ALPINE_VERSION=3.20
+      cache_from:
+        - type=registry,ref=tallow-signaling:buildcache
+      platforms:
+        - linux/amd64
+        - linux/arm64
     image: tallow-signaling:latest
     container_name: tallow-signaling
     restart: unless-stopped
     ports:
       - "3001:3001"
+    networks:
+      - tallow-network
     environment:
-      - SIGNALING_PORT=3001
       - NODE_ENV=production
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://tallow.manisahome.com}
+      - RELAY_PORT=3001
+      - RELAY_ROLE=${RELAY_ROLE:-any}
+      - RELAY_REGION=${RELAY_REGION:-us-west}
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 20s
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     deploy:
       resources:
         limits:
@@ -83,41 +132,86 @@ services:
         reservations:
           cpus: '0.25'
           memory: 128M
-    networks:
-      - tallow-network
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
 
-  # Playwright E2E Test Runner
-  playwright:
-    build:
-      context: .
-      dockerfile: Dockerfile.playwright
-    container_name: tallow-playwright
-    depends_on:
-      tallow:
-        condition: service_healthy
-    environment:
-      - BASE_URL=http://tallow:3000
-    volumes:
-      - ./test-results:/app/test-results
-      - ./playwright-report:/app/playwright-report
-    networks:
-      - tallow-network
-    profiles:
-      - test
+  # --------------------------------------------------------------------------
+  # TURN Server for NAT traversal (Optional - uncomment to use)
+  # --------------------------------------------------------------------------
+  # coturn:
+  #   image: coturn/coturn:latest
+  #   container_name: tallow-coturn
+  #   restart: unless-stopped
+  #   ports:
+  #     - "3478:3478/tcp"
+  #     - "3478:3478/udp"
+  #     - "49152-65535:49152-65535/udp"
+  #   networks:
+  #     - tallow-network
+  #   environment:
+  #     - TURNSERVER_ENABLED=1
+  #     - TURNSERVER_USERNAME=${TURN_USERNAME:-tallow}
+  #     - TURNSERVER_PASSWORD=${TURN_PASSWORD:-changeme}
+  #   volumes:
+  #     - ./coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:3478/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 10s
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "3"
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '0.5'
+  #         memory: 256M
+  #       reservations:
+  #         cpus: '0.25'
+  #         memory: 64M
 
+  # --------------------------------------------------------------------------
+  # Cloudflare Tunnel (Optional - uncomment to use)
+  # --------------------------------------------------------------------------
+  # cloudflared:
+  #   image: cloudflare/cloudflared:latest
+  #   container_name: tallow-cloudflared
+  #   restart: unless-stopped
+  #   command: tunnel run
+  #   environment:
+  #     - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+  #   networks:
+  #     - tallow-network
+  #   depends_on:
+  #     tallow:
+  #       condition: service_healthy
+  #     signaling:
+  #       condition: service_healthy
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "3"
+
+# ============================================================================
+# Networks
+# ============================================================================
 networks:
   tallow-network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.19.0.0/16
+    name: tallow-network
+    driver_opts:
+      com.docker.network.bridge.name: br-tallow
 
-volumes:
-  # Placeholder for future persistent data needs
-  app-data:
-    driver: local
+# ============================================================================
+# Volumes (Optional - for data persistence)
+# ============================================================================
+# volumes:
+#   tallow-data:
+#     driver: local
+#     driver_opts:
+#       type: none
+#       o: bind
+#       device: ${DATA_VOLUME_PATH:-/data/tallow}

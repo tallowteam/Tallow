@@ -4,12 +4,46 @@ Advanced security hardening features for Tallow.
 
 ## Overview
 
-This module provides four layers of advanced security protection:
+This module provides six layers of advanced security protection:
 
-1. **Credential Encryption** - Double-encrypted TURN server credentials
-2. **Key Rotation** - Automatic forward-secret key rotation
-3. **Memory Wiping** - Secure cleanup of sensitive data
-4. **Timing-Safe Operations** - Constant-time cryptographic comparisons
+1. **Incident Response** - Codified procedures for 8 security incident types
+2. **Breach Notification** - User communication and regulatory compliance reporting
+3. **Credential Encryption** - Double-encrypted TURN server credentials
+4. **Key Rotation** - Automatic forward-secret key rotation
+5. **Memory Wiping** - Secure cleanup of sensitive data
+6. **Timing-Safe Operations** - Constant-time cryptographic comparisons
+
+## What's New: Incident Response System
+
+**NEW** Complete incident response and breach notification system for handling security events.
+
+```typescript
+import { createIncidentReport, escalate } from '@/lib/security';
+import { notifyBreach, shouldWipeEmergency, clearSensitiveData } from '@/lib/security';
+
+// Create and escalate incident
+const report = createIncidentReport('key_compromise', 'critical', 'Private key exposed');
+escalate(report);
+
+// Create breach notification
+const notification = notifyBreach('Security Incident', 'Description...', ['Data Type'], 100);
+
+// Emergency wipe if critical incident
+if (shouldWipeEmergency('critical', 'key_compromise')) {
+  const consent = await getUserConsent('Clear all local data?');
+  if (consent) clearSensitiveData();
+}
+```
+
+**Features**:
+- 8 incident types with full response procedures
+- SLA-based response timelines (15 min to 24 hrs)
+- Escalation and status tracking
+- User notifications
+- Regulatory compliance support (GDPR, CCPA, HIPAA)
+- Emergency data wipe procedures
+
+See [INCIDENT_RESPONSE.md](./INCIDENT_RESPONSE.md) and [BREACH_NOTIFICATION.md](./BREACH_NOTIFICATION.md) for complete documentation.
 
 ## Installation
 
@@ -85,15 +119,125 @@ await addCustomTurnServer({
 
 ```
 lib/security/
-├── credential-encryption.ts  # TURN credential encryption
-├── key-rotation.ts          # Session key rotation
-├── memory-wiper.ts          # Memory wiping utilities
-├── timing-safe.ts           # Timing-safe comparisons
-├── index.ts                 # Centralized exports
-└── README.md                # This file
+├── Core Modules
+│   ├── incident-response.ts          # Incident response procedures (NEW)
+│   ├── breach-notification.ts        # Breach notifications & emergency (NEW)
+│   ├── credential-encryption.ts      # TURN credential encryption
+│   ├── key-rotation.ts               # Session key rotation
+│   ├── memory-wiper.ts               # Memory wiping utilities
+│   ├── timing-safe.ts                # Timing-safe comparisons
+│   └── csrf.ts                       # CSRF protection
+│
+├── Documentation
+│   ├── INCIDENT_RESPONSE.md          # Detailed incident procedures (NEW)
+│   ├── BREACH_NOTIFICATION.md        # Breach notification guide (NEW)
+│   ├── SECURITY_PROCEDURES.md        # Integration guide (NEW)
+│   ├── IMPLEMENTATION_SUMMARY.md     # Architecture overview (NEW)
+│   ├── QUICK_REFERENCE.md            # Quick reference card (NEW)
+│   └── README.md                     # This file
+│
+└── exports
+    └── index.ts                      # Centralized exports
 ```
 
 ## API Reference
+
+### Incident Response (NEW)
+
+#### `createIncidentReport(type, severity, description): IncidentReport`
+Create a new incident report.
+
+```typescript
+const report = createIncidentReport(
+  'key_compromise',
+  'critical',
+  'Private key exposed in git history'
+);
+```
+
+#### `escalate(report): void`
+Escalate incident for immediate action (logs and stores).
+
+```typescript
+escalate(report);
+// Logs to console with styling
+// Stores in localStorage
+// Triggers auto-investigation
+```
+
+#### `updateIncidentStatus(report, status): IncidentReport`
+Track incident through lifecycle.
+
+```typescript
+report = updateIncidentStatus(report, 'investigating');
+report = updateIncidentStatus(report, 'contained');
+report = updateIncidentStatus(report, 'resolved');
+```
+
+#### `getResponseProcedure(type): ResponseProcedure`
+Get step-by-step response procedures.
+
+```typescript
+const proc = getResponseProcedure('key_compromise');
+console.log(proc.immediateActions);
+console.log(proc.investigationSteps);
+console.log(proc.containmentActions);
+console.log(proc.recoverySteps);
+```
+
+#### Query Functions
+```typescript
+getAllIncidents(): IncidentReport[]
+getIncidentsBySeverity(severity): IncidentReport[]
+getIncidentsByType(type): IncidentReport[]
+getIncidentById(id): IncidentReport | undefined
+```
+
+### Breach Notification (NEW)
+
+#### `notifyBreach(title, description, dataTypes, userCount): BreachNotification`
+Create a breach notification.
+
+```typescript
+const notification = notifyBreach(
+  'Security Incident',
+  'Description...',
+  ['Data Type 1', 'Data Type 2'],
+  500 // affected users
+);
+```
+
+#### `generateBreachReport(incidents): BreachReport`
+Aggregate incidents into compliance report.
+
+```typescript
+const report = generateBreachReport([incident1, incident2]);
+```
+
+#### `prepareUserNotification(notification): UserMessage`
+Format for user email.
+
+```typescript
+const msg = prepareUserNotification(notification);
+// msg.subject, msg.body, msg.actionUrl
+```
+
+#### `prepareComplianceReport(report): ComplianceDoc`
+Format for regulatory filing.
+
+```typescript
+const compliance = prepareComplianceReport(report);
+await submitToRegulators(compliance);
+```
+
+#### `clearSensitiveData(): void`
+Emergency wipe of all sensitive browser data.
+
+```typescript
+if (shouldWipeEmergency('critical', 'key_compromise')) {
+  clearSensitiveData();
+}
+```
 
 ### Memory Wiper
 
@@ -360,6 +504,15 @@ npx tsx scripts/verify-security-features.ts
 
 ## Documentation
 
+### Incident Response (New)
+- **[INCIDENT_RESPONSE.md](./INCIDENT_RESPONSE.md)** - Detailed incident procedures
+- **[BREACH_NOTIFICATION.md](./BREACH_NOTIFICATION.md)** - Breach notification procedures
+- **[SECURITY_PROCEDURES.md](./SECURITY_PROCEDURES.md)** - Integration and usage guide
+- **[IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)** - Architecture and design
+- **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - Printable quick reference card
+- **[../../INCIDENT_RESPONSE_DELIVERY.md](../../INCIDENT_RESPONSE_DELIVERY.md)** - Full delivery summary
+
+### Existing Security Features
 - **[ADVANCED_SECURITY.md](../../ADVANCED_SECURITY.md)** - Comprehensive guide
 - **[SECURITY_QUICK_REFERENCE.md](../../SECURITY_QUICK_REFERENCE.md)** - Quick reference
 - **[SECURITY_IMPLEMENTATION_SUMMARY.md](../../SECURITY_IMPLEMENTATION_SUMMARY.md)** - Implementation details

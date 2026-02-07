@@ -1,0 +1,443 @@
+/* ============================================================================
+   Firewall Status Component Styles
+   - Dark theme with purple accent
+   - Expandable panel design
+   - Smooth animations
+   - Responsive layout
+   ============================================================================ */
+
+.container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(17, 17, 19, 0.8);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 12px;
+  backdrop-filter: blur(12px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  user-select: none;
+}
+
+.container:hover {
+  background: rgba(17, 17, 19, 0.95);
+  border-color: rgba(139, 92, 246, 0.4);
+  transform: translateY(-1px);
+}
+
+.container:active {
+  transform: translateY(0);
+}
+
+/* Status Icon */
+.statusIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.statusIcon.green {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.statusIcon.yellow {
+  background: rgba(234, 179, 8, 0.2);
+  color: #eab308;
+}
+
+.statusIcon.red {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.statusIcon.testing {
+  background: rgba(139, 92, 246, 0.2);
+  color: #8b5cf6;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Status Text */
+.statusText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.statusLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #f3f4f6;
+  line-height: 1.2;
+}
+
+.statusDescription {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Expand Button */
+.expandButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: rgba(139, 92, 246, 0.1);
+  border-radius: 6px;
+  color: #8b5cf6;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.expandButton:hover {
+  background: rgba(139, 92, 246, 0.2);
+  transform: scale(1.05);
+}
+
+.expandButton.expanded {
+  transform: rotate(180deg);
+}
+
+.expandButton.expanded:hover {
+  transform: rotate(180deg) scale(1.05);
+}
+
+/* Expanded Panel */
+.expandedPanel {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  background: rgba(17, 17, 19, 0.98);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  z-index: 50;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3),
+              0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 400px;
+  max-width: 500px;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Panel Header */
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.panelTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f3f4f6;
+  margin: 0;
+}
+
+.retestButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 8px;
+  color: #a78bfa;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retestButton:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.25);
+  border-color: rgba(139, 92, 246, 0.5);
+  color: #c4b5fd;
+  transform: translateY(-1px);
+}
+
+.retestButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.retestButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.retestIcon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Test Results */
+.testResults {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.testItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.testItem:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.testInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.testIconContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.testIconContainer.success {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.testIconContainer.failure {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.testDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.testName {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #f3f4f6;
+}
+
+.testTime {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.testStatus {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.testStatus.success {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.testStatus.failure {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+/* Recommendations */
+.recommendations {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.recommendationsTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #a78bfa;
+  margin-bottom: 0.75rem;
+}
+
+.recommendationsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.recommendationItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.625rem;
+  background: rgba(139, 92, 246, 0.05);
+  border-left: 2px solid rgba(139, 92, 246, 0.5);
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  color: #d1d5db;
+  line-height: 1.5;
+}
+
+.recommendationIcon {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+  color: #8b5cf6;
+}
+
+/* Detection Time Badge */
+.detectionTime {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.625rem;
+  background: rgba(139, 92, 246, 0.1);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: #a78bfa;
+  margin-top: 0.75rem;
+}
+
+/* Loading State */
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  gap: 1rem;
+}
+
+.loadingSpinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(139, 92, 246, 0.2);
+  border-top-color: #8b5cf6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loadingText {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  text-align: center;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .container {
+    width: 100%;
+  }
+
+  .expandedPanel {
+    min-width: unset;
+    max-width: unset;
+    left: -1rem;
+    right: -1rem;
+    width: calc(100% + 2rem);
+  }
+
+  .panelHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .retestButton {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .testItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .testStatus {
+    align-self: flex-start;
+  }
+}
+
+/* Dark Mode Enhancements */
+@media (prefers-color-scheme: dark) {
+  .container {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3),
+                0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  }
+
+  .expandedPanel {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5),
+                0 10px 10px -5px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Print Styles */
+@media print {
+  .expandButton,
+  .retestButton {
+    display: none;
+  }
+
+  .expandedPanel {
+    position: static;
+    box-shadow: none;
+    border: 1px solid #e5e7eb;
+  }
+}

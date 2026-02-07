@@ -84,6 +84,8 @@ export function useResumableTransfer(options: UseResumableTransferOptions = {}) 
    */
   useEffect(() => {
     loadResumableTransfers();
+    // Only run on mount - loadResumableTransfers is stable
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
@@ -169,6 +171,8 @@ export function useResumableTransfer(options: UseResumableTransferOptions = {}) 
       }));
       throw error;
     }
+    // handleConnectionLost is defined later but stable
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoResumeEnabled, options]);
 
   /**
@@ -238,6 +242,8 @@ export function useResumableTransfer(options: UseResumableTransferOptions = {}) 
       }));
       throw error;
     }
+    // handleConnectionLost is defined later but stable
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoResumeEnabled, options, loadResumableTransfers]);
 
   /**
@@ -287,6 +293,8 @@ export function useResumableTransfer(options: UseResumableTransferOptions = {}) 
       setState((prev) => ({ ...prev, connectionLost: true }));
       handleConnectionLost();
     });
+    // handleConnectionLost is defined later but stable
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**

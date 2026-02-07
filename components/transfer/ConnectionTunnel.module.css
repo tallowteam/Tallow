@@ -1,0 +1,260 @@
+/* ============================================
+   Connection Tunnel Component
+   ============================================ */
+
+.container {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+/* ============================================
+   Device Icons
+   ============================================ */
+
+.device {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  z-index: 2;
+}
+
+.deviceIcon {
+  width: 64px;
+  height: 64px;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  padding: var(--space-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-base);
+}
+
+.deviceIcon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.deviceIcon:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-lg);
+}
+
+.deviceLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wider);
+}
+
+/* ============================================
+   Tunnel Visualization
+   ============================================ */
+
+.tunnel {
+  position: relative;
+  flex: 1;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tunnelSvg {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.tunnelLine {
+  animation: dashMove 2s linear infinite;
+}
+
+@keyframes dashMove {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+
+/* ============================================
+   Flowing Particles
+   ============================================ */
+
+.particlesContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.tunnelParticle {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--particle-color);
+  transform: translateY(-50%);
+  opacity: 0;
+  animation: particleFlow 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation-delay: var(--particle-delay);
+  box-shadow: 0 0 12px var(--particle-color);
+}
+
+.tunnelParticle:nth-child(odd) {
+  top: 35%;
+}
+
+.tunnelParticle:nth-child(even) {
+  top: 65%;
+}
+
+@keyframes particleFlow {
+  0% {
+    left: -10px;
+    opacity: 0;
+    transform: translateY(-50%) scale(0.5);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+  90% {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+  100% {
+    left: calc(100% + 10px);
+    opacity: 0;
+    transform: translateY(-50%) scale(0.5);
+  }
+}
+
+/* ============================================
+   Connection Badge
+   ============================================ */
+
+.connectionBadge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1-5) var(--space-3);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  backdrop-filter: blur(var(--blur-md));
+  box-shadow: var(--shadow-sm);
+  z-index: 3;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--badge-color);
+  box-shadow: 0 0 8px var(--badge-color);
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.2);
+  }
+}
+
+.connectionLabel {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+
+@media (max-width: 640px) {
+  .container {
+    height: 140px;
+    padding: var(--space-2);
+  }
+
+  .deviceIcon {
+    width: 48px;
+    height: 48px;
+    padding: var(--space-2);
+  }
+
+  .deviceLabel {
+    font-size: 10px;
+  }
+
+  .tunnel {
+    height: 60px;
+  }
+
+  .connectionBadge {
+    padding: var(--space-1) var(--space-2);
+    font-size: 10px;
+  }
+
+  .statusDot {
+    width: 4px;
+    height: 4px;
+  }
+
+  .tunnelParticle {
+    width: 6px;
+    height: 6px;
+  }
+}
+
+/* ============================================
+   Reduced Motion Support
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .tunnelLine,
+  .tunnelParticle,
+  .statusDot {
+    animation: none !important;
+  }
+
+  .tunnelParticle {
+    display: none;
+  }
+
+  .statusDot {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .deviceIcon:hover {
+    transform: none;
+  }
+}

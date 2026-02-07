@@ -1,3 +1,4 @@
+/* eslint-disable no-console, @typescript-eslint/no-require-imports */
 /**
  * TALLOW Relay Server
  *
@@ -318,7 +319,7 @@ async function handleExtendCircuit(ws, clientInfo, message) {
     // Parse next hop address (null-terminated string followed by ciphertext for next relay)
     const nullIndex = decrypted.indexOf(0);
     const nextHopAddress = decrypted.slice(0, nullIndex).toString();
-    const nextCiphertext = decrypted.slice(nullIndex + 1);
+    const _nextCiphertext = decrypted.slice(nullIndex + 1);
 
     console.log(`[Relay] Extending circuit ${message.circuitId} to ${nextHopAddress}`);
 
@@ -447,7 +448,7 @@ const server = http.createServer((req, res) => {
 
 const wss = new WebSocket.Server({ server, path: '/relay' });
 
-wss.on('connection', (ws, req) => {
+wss.on('connection', (ws, _req) => {
     const clientId = `client-${crypto.randomBytes(4).toString('hex')}`;
     const clientInfo = {
         id: clientId,

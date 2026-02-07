@@ -75,7 +75,8 @@
     "tallow-cli",
     "tallow-relay",
     "tallow-wasm",
-    "tallow-mobile"
+    "tallow-mobile",
+    "extension"
   ],
   "ts-node": {
     "compilerOptions": {

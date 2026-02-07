@@ -1,0 +1,460 @@
+/* Guides Index Page */
+
+.main {
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--bg-base);
+}
+
+/* ============================================
+   Breadcrumb
+   ============================================ */
+
+.breadcrumb {
+  padding: var(--space-8) 0 var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.breadcrumbList {
+  list-style: none;
+  margin: 0;
+  padding: 0 var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .breadcrumbList {
+    padding: 0 var(--space-8);
+  }
+}
+
+.breadcrumbList li {
+  font-size: var(--font-size-sm);
+}
+
+.breadcrumbList li:not(:last-child)::after {
+  content: '/';
+  margin-left: var(--space-3);
+  color: var(--text-tertiary);
+}
+
+.breadcrumbList a {
+  color: var(--text-link);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.breadcrumbList a:hover {
+  color: var(--text-link-hover);
+}
+
+.breadcrumbList li:last-child {
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+/* ============================================
+   Hero Section
+   ============================================ */
+
+.hero {
+  padding: var(--space-16) var(--space-4) var(--space-12);
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .hero {
+    padding: var(--space-20) var(--space-8) var(--space-16);
+  }
+}
+
+.heroContainer {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.heroTitle {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .heroTitle {
+    font-size: var(--font-size-5xl);
+  }
+}
+
+.heroTitleGradient {
+  background: linear-gradient(
+    135deg,
+    var(--primary-400) 0%,
+    var(--primary-600) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.heroDescription {
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
+  color: var(--text-secondary);
+  max-width: 640px;
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .heroDescription {
+    font-size: var(--font-size-lg);
+  }
+}
+
+/* ============================================
+   Content Container
+   ============================================ */
+
+.contentContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .contentContainer {
+    padding: 0 var(--space-8);
+  }
+}
+
+/* ============================================
+   Guides Section
+   ============================================ */
+
+.guidesSection {
+  padding: var(--space-12) 0;
+}
+
+.categorySection {
+  margin-bottom: var(--space-16);
+}
+
+.categorySection:last-child {
+  margin-bottom: 0;
+}
+
+.categoryHeader {
+  margin-bottom: var(--space-8);
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.categoryTitleWrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.categoryIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background-color: var(--accent-subtle);
+  border-radius: var(--radius-lg);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.categoryIcon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.categoryTitle {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-1) 0;
+}
+
+.categoryDescription {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ============================================
+   Guides List
+   ============================================ */
+
+.guidesList {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .guidesList {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-6);
+  }
+}
+
+@media (min-width: 1024px) {
+  .guidesList {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.guideCard {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  padding: var(--space-6);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  text-decoration: none;
+  transition: all var(--transition-base);
+}
+
+.guideCard:hover {
+  border-color: var(--accent);
+  background-color: var(--bg-elevated);
+  box-shadow: 0 0 20px rgba(94, 92, 230, 0.15);
+}
+
+.guideContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.guideTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-2) 0;
+  line-height: var(--line-height-snug);
+}
+
+.guideDescription {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-4) 0;
+  line-height: var(--line-height-relaxed);
+}
+
+.guideMeta {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.guideDuration {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.guideDifficulty {
+  font-size: var(--font-size-xs);
+  color: var(--accent);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.guideArrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: var(--space-4);
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.guideCard:hover .guideArrow {
+  color: var(--accent);
+  transform: translateX(4px);
+  transition: all var(--transition-base);
+}
+
+.guideArrow svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ============================================
+   Quick Tips
+   ============================================ */
+
+.quickTips {
+  padding: var(--space-16) 0;
+  background-color: var(--bg-surface);
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.quickTipsTitle {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-8) 0;
+  text-align: center;
+}
+
+.tipsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+@media (min-width: 640px) {
+  .tipsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .tipsGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.tipCard {
+  padding: var(--space-5);
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all var(--transition-base);
+}
+
+.tipCard:hover {
+  border-color: var(--border-strong);
+  background-color: var(--bg-overlay);
+}
+
+.tipIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: var(--accent-subtle);
+  border-radius: var(--radius-md);
+  color: var(--accent);
+  margin-bottom: var(--space-3);
+}
+
+.tipIcon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.tipTitle {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-2) 0;
+}
+
+.tipText {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: var(--line-height-relaxed);
+}
+
+/* ============================================
+   Help CTA
+   ============================================ */
+
+.helpCta {
+  padding: var(--space-16) 0;
+}
+
+.helpCard {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--space-10) var(--space-6);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-2xl);
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .helpCard {
+    padding: var(--space-12) var(--space-8);
+  }
+}
+
+.helpTitle {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-3) 0;
+}
+
+.helpDescription {
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-6) 0;
+  line-height: var(--line-height-relaxed);
+}
+
+.helpActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+@media (min-width: 640px) {
+  .helpActions {
+    flex-direction: row;
+    justify-content: center;
+  }
+}
+
+.helpLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  color: var(--text-link);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-default);
+  transition: all var(--transition-base);
+}
+
+.helpLink:hover {
+  color: var(--text-link-hover);
+  border-color: var(--border-strong);
+  background-color: var(--bg-elevated);
+}
+
+.helpLink svg {
+  width: 16px;
+  height: 16px;
+}

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tallow — Mastra + Linear Style</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #050505; --bg-2: #0a0a0a; --bg-3: #111; --bg-4: #1a1a1a;
+    --text: #fafafa; --text-2: #a0a0a0; --text-3: #666;
+    --border: #1f1f1f; --border-2: #2a2a2a;
+    --accent: #fff; --accent-2: #6366f1;
+  }
+  body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+
+  /* HEADER */
+  .header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(5,5,5,0.8); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0 40px; height: 56px; display: flex; align-items: center; justify-content: space-between; }
+  .logo { font-weight: 700; font-size: 1rem; letter-spacing: -0.02em; }
+  .nav { display: flex; align-items: center; gap: 28px; }
+  .nav a { color: var(--text-3); text-decoration: none; font-size: 0.8125rem; font-weight: 500; transition: color 0.15s; }
+  .nav a:hover { color: var(--text); }
+  .btn-primary { background: var(--accent); color: #000; border: none; padding: 6px 16px; border-radius: 6px; font-size: 0.8125rem; font-weight: 600; cursor: pointer; }
+  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border-2); padding: 6px 16px; border-radius: 6px; font-size: 0.8125rem; font-weight: 500; cursor: pointer; }
+
+  /* HERO */
+  .hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 120px 40px 80px; position: relative; }
+  .hero::before { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; height: 600px; background: radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%); pointer-events: none; }
+  .hero-label { font-size: 0.75rem; color: var(--accent-2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 24px; }
+  .hero h1 { font-size: 4.5rem; font-weight: 800; line-height: 1.05; letter-spacing: -0.04em; max-width: 750px; margin-bottom: 20px; }
+  .hero h1 span { background: linear-gradient(135deg, #fff 40%, var(--accent-2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero p { font-size: 1.125rem; color: var(--text-2); max-width: 480px; margin-bottom: 36px; line-height: 1.6; }
+  .hero-btns { display: flex; gap: 12px; }
+
+  /* GRID SECTION */
+  .section { padding: 100px 40px; border-top: 1px solid var(--border); }
+  .section-center { text-align: center; max-width: 1100px; margin: 0 auto; }
+  .section h2 { font-size: 2.25rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 12px; }
+  .section .sub { color: var(--text-2); font-size: 1rem; margin-bottom: 56px; }
+
+  .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .feature-cell { background: var(--bg); padding: 36px 32px; }
+  .feature-cell:hover { background: var(--bg-2); }
+  .feature-icon { width: 36px; height: 36px; border: 1px solid var(--border-2); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1rem; color: var(--text-2); }
+  .feature-cell h3 { font-size: 0.9375rem; font-weight: 600; margin-bottom: 8px; }
+  .feature-cell p { color: var(--text-3); font-size: 0.8125rem; line-height: 1.6; }
+
+  /* STATS */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .stat { background: var(--bg); padding: 48px 32px; text-align: center; }
+  .stat-num { font-size: 3rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1; margin-bottom: 8px; }
+  .stat-label { color: var(--text-3); font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* HOW IT WORKS */
+  .steps { max-width: 800px; margin: 0 auto; }
+  .step { display: flex; gap: 32px; align-items: flex-start; padding: 32px 0; border-bottom: 1px solid var(--border); }
+  .step:last-child { border-bottom: none; }
+  .step-num { font-size: 0.75rem; font-weight: 700; color: var(--accent-2); background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2); border-radius: 6px; padding: 4px 10px; white-space: nowrap; }
+  .step h3 { font-size: 1rem; font-weight: 600; margin-bottom: 6px; }
+  .step p { color: var(--text-2); font-size: 0.875rem; }
+
+  /* CTA */
+  .cta-section { padding: 120px 40px; text-align: center; background: var(--bg-2); border-top: 1px solid var(--border); }
+  .cta-section h2 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 16px; }
+  .cta-section p { color: var(--text-2); margin-bottom: 32px; font-size: 1rem; }
+  .btn-cta { background: var(--accent); color: #000; border: none; padding: 12px 28px; border-radius: 8px; font-size: 0.9375rem; font-weight: 600; cursor: pointer; }
+
+  /* FOOTER */
+  .footer { padding: 40px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .footer p { color: var(--text-3); font-size: 0.75rem; }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { color: var(--text-3); text-decoration: none; font-size: 0.75rem; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">Tallow</div>
+  <nav class="nav">
+    <a href="#">Features</a><a href="#">Security</a><a href="#">Pricing</a><a href="#">Docs</a>
+    <button class="btn-ghost">Sign In</button>
+    <button class="btn-primary">Open App</button>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-label">Post-Quantum Encrypted File Transfer</div>
+  <h1>Transfer files <span>without compromise</span></h1>
+  <p>Peer-to-peer. End-to-end encrypted. No servers, no accounts, no tracking. Just fast, secure file transfer.</p>
+  <div class="hero-btns">
+    <button class="btn-primary" style="padding:10px 24px;font-size:0.9375rem;border-radius:8px;">Start Transferring</button>
+    <button class="btn-ghost" style="padding:10px 24px;font-size:0.9375rem;border-radius:8px;">Documentation &rarr;</button>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-center">
+    <h2>Built for developers who value privacy</h2>
+    <p class="sub">Everything you need. Nothing you don't.</p>
+    <div class="features-grid">
+      <div class="feature-cell"><div class="feature-icon">&#x26A1;</div><h3>P2P Transfer</h3><p>Direct device-to-device. No cloud relay, no middleman. Your files never touch a server.</p></div>
+      <div class="feature-cell"><div class="feature-icon">&#x1f512;</div><h3>Post-Quantum Crypto</h3><p>ML-KEM key exchange + AES-256-GCM. Future-proof against quantum attacks.</p></div>
+      <div class="feature-cell"><div class="feature-icon">&#x1f4f1;</div><h3>Cross-Platform</h3><p>Works in any browser. Phone, tablet, laptop, desktop. No install required.</p></div>
+      <div class="feature-cell"><div class="feature-icon">&#x1f680;</div><h3>WebRTC Speed</h3><p>Transfers at LAN speed when devices are nearby. No bandwidth limits.</p></div>
+      <div class="feature-cell"><div class="feature-icon">&#x1f6e1;</div><h3>Zero Knowledge</h3><p>We can't see your files. Ever. No logs, no metadata, no analytics.</p></div>
+      <div class="feature-cell"><div class="feature-icon">&#x267b;</div><h3>Open Source</h3><p>Fully auditable. Verify every line. Trust through transparency.</p></div>
+    </div>
+  </div>
+</section>
+
+<div class="stats">
+  <div class="stat"><div class="stat-num">256</div><div class="stat-label">Bit Encryption</div></div>
+  <div class="stat"><div class="stat-num">0</div><div class="stat-label">Servers Touched</div></div>
+  <div class="stat"><div class="stat-num">P2P</div><div class="stat-label">Direct Transfer</div></div>
+  <div class="stat"><div class="stat-num">&infin;</div><div class="stat-label">File Size Limit</div></div>
+</div>
+
+<section class="section">
+  <div class="section-center">
+    <h2>How it works</h2>
+    <p class="sub">Three steps. No signup required.</p>
+    <div class="steps">
+      <div class="step"><div class="step-num">01</div><div><h3>Open Tallow on both devices</h3><p>Navigate to tallow.app. Devices on the same network discover each other automatically.</p></div></div>
+      <div class="step"><div class="step-num">02</div><div><h3>Select and send files</h3><p>Drag and drop any file. Photos, videos, documents — no size limit, no file type restrictions.</p></div></div>
+      <div class="step"><div class="step-num">03</div><div><h3>Transfer completes instantly</h3><p>Files arrive encrypted end-to-end. Nothing stored, nothing logged.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section">
+  <h2>Start transferring files securely</h2>
+  <p>No signup. No download. Just open and go.</p>
+  <button class="btn-cta">Open Tallow &rarr;</button>
+</section>
+
+<footer class="footer">
+  <p>&copy; 2026 Tallow</p>
+  <div class="footer-links"><a href="#">Features</a><a href="#">Security</a><a href="#">Pricing</a><a href="#">Docs</a><a href="#">Privacy</a><a href="#">Terms</a></div>
+</footer>
+</body>
+</html>

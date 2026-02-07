@@ -62,6 +62,41 @@ export {
   type EncryptedField,
 } from './credential-encryption';
 
+// Incident response procedures
+export {
+  createIncidentReport,
+  getResponseProcedure,
+  getResponseTimeline,
+  escalate,
+  updateIncidentStatus,
+  getIncidentById,
+  getAllIncidents,
+  getIncidentsBySeverity,
+  getIncidentsByType,
+  clearIncidentHistory,
+  formatIncidentSummary,
+  incidentResponse,
+  type Severity,
+  type IncidentType,
+  type IncidentStatus,
+  type IncidentReport,
+} from './incident-response';
+
+// Breach notification and emergency procedures
+export {
+  notifyBreach,
+  generateBreachReport,
+  clearSensitiveData,
+  formatBreachNotification,
+  formatBreachReport,
+  prepareUserNotification,
+  prepareComplianceReport,
+  shouldWipeEmergency,
+  breachNotification,
+  type BreachNotification,
+  type BreachReport,
+} from './breach-notification';
+
 /**
  * Convenience object with all security utilities
  */
@@ -79,6 +114,33 @@ export const security = {
 
   // Credential encryption
   credentials: CredentialEncryption,
+
+  // Incident response
+  incidents: {
+    create: createIncidentReport,
+    getProcedure: getResponseProcedure,
+    getTimeline: getResponseTimeline,
+    escalate,
+    updateStatus: updateIncidentStatus,
+    getById: getIncidentById,
+    getAll: getAllIncidents,
+    getBySeverity: getIncidentsBySeverity,
+    getByType: getIncidentsByType,
+    clearHistory: clearIncidentHistory,
+    formatSummary: formatIncidentSummary,
+  },
+
+  // Breach notification
+  breach: {
+    notifyBreach,
+    generateReport: generateBreachReport,
+    clearData: clearSensitiveData,
+    formatNotification: formatBreachNotification,
+    formatReport: formatBreachReport,
+    prepareUserNotification,
+    prepareComplianceReport,
+    shouldWipeEmergency,
+  },
 };
 
 export default security;

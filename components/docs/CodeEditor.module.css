@@ -1,0 +1,193 @@
+/* Code Editor Component */
+.container {
+  position: relative;
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-default);
+  gap: var(--space-3);
+}
+
+.label {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.copyButton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  font-family: var(--font-sans);
+  transition: all var(--transition-fast);
+}
+
+.copyButton:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.copyButton:active {
+  transform: scale(0.98);
+}
+
+.copyButton.copied {
+  background: var(--success-subtle);
+  color: var(--success-500);
+  border-color: var(--success-500);
+}
+
+.copyIcon {
+  width: 14px;
+  height: 14px;
+}
+
+.editorWrapper {
+  position: relative;
+  display: flex;
+  min-height: 200px;
+  max-height: 500px;
+}
+
+.lineNumbers {
+  flex-shrink: 0;
+  padding: var(--space-4);
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-default);
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  text-align: right;
+  user-select: none;
+  min-width: 40px;
+  overflow-y: hidden;
+}
+
+.lineNumber {
+  display: block;
+}
+
+.textarea {
+  flex: 1;
+  padding: var(--space-4);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: none;
+  outline: none;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  resize: none;
+  overflow-y: auto;
+  tab-size: 2;
+  white-space: pre;
+  overflow-wrap: normal;
+}
+
+.textarea:focus {
+  outline: none;
+}
+
+.textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* Readonly mode */
+.readonly .textarea {
+  cursor: default;
+  background: var(--bg-surface);
+}
+
+/* Syntax highlighting approximation */
+.syntaxHighlight {
+  flex: 1;
+  padding: var(--space-4);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  overflow-y: auto;
+  overflow-x: auto;
+  white-space: pre;
+  tab-size: 2;
+}
+
+/* Simple syntax highlighting */
+.syntaxHighlight .keyword {
+  color: #c792ea;
+}
+
+.syntaxHighlight .string {
+  color: #c3e88d;
+}
+
+.syntaxHighlight .number {
+  color: #f78c6c;
+}
+
+.syntaxHighlight .comment {
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.syntaxHighlight .function {
+  color: #82aaff;
+}
+
+.syntaxHighlight .tag {
+  color: #f07178;
+}
+
+.syntaxHighlight .attr {
+  color: #c792ea;
+}
+
+.syntaxHighlight .punctuation {
+  color: var(--text-secondary);
+}
+
+/* Scrollbar for editor */
+.textarea::-webkit-scrollbar,
+.syntaxHighlight::-webkit-scrollbar,
+.lineNumbers::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.textarea::-webkit-scrollbar-track,
+.syntaxHighlight::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.textarea::-webkit-scrollbar-thumb,
+.syntaxHighlight::-webkit-scrollbar-thumb {
+  background: var(--gray-700);
+  border-radius: var(--radius-full);
+}
+
+.textarea::-webkit-scrollbar-thumb:hover,
+.syntaxHighlight::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-600);
+}

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tallow — Cineglass Immersive</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;1,300&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #030306; --bg-2: #08080e; --bg-3: #0f0f18;
+    --text: #f2f2f8; --text-2: #9494a8; --text-3: #5a5a70;
+    --border: #18182a; --border-2: #24243a;
+    --accent: #6366f1; --accent-2: #818cf8; --accent-glow: rgba(99,102,241,0.4);
+    --glass: rgba(12,12,22,0.55); --glass-border: rgba(99,102,241,0.08);
+  }
+  body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; overflow-x: hidden; }
+
+  /* AMBIENT BACKGROUND — Large cinematic gradient wash */
+  .ambient { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+  .ambient::before { content: ''; position: absolute; top: -20%; left: -10%; width: 70%; height: 70%; background: radial-gradient(ellipse, rgba(99,102,241,0.09) 0%, transparent 60%); }
+  .ambient::after { content: ''; position: absolute; bottom: -10%; right: -15%; width: 60%; height: 60%; background: radial-gradient(ellipse, rgba(139,92,246,0.06) 0%, transparent 55%); }
+  .content { position: relative; z-index: 1; }
+
+  /* NAV — Minimal left edge, vertical on desktop */
+  .side-nav { position: fixed; left: 0; top: 0; bottom: 0; width: 64px; z-index: 100; display: flex; flex-direction: column; align-items: center; padding: 24px 0; background: rgba(3,3,6,0.6); backdrop-filter: blur(20px); border-right: 1px solid var(--glass-border); }
+  .side-nav .logo { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 1.5rem; margin-bottom: 48px; writing-mode: vertical-rl; text-orientation: mixed; letter-spacing: 0.05em; }
+  .side-nav .nav-dots { display: flex; flex-direction: column; gap: 24px; flex: 1; justify-content: center; }
+  .side-nav .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border-2); transition: all 0.2s; cursor: pointer; }
+  .side-nav .dot:hover { background: var(--text-3); }
+  .side-nav .dot.active { background: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
+  .side-nav .cta-bottom { writing-mode: vertical-rl; font-size: 0.7rem; font-weight: 600; color: var(--accent-2); text-transform: uppercase; letter-spacing: 0.12em; cursor: pointer; }
+
+  /* HERO — Full viewport cinematic with glass panel overlay */
+  .hero { min-height: 100vh; margin-left: 64px; display: flex; align-items: flex-end; padding: 0 0 80px 80px; position: relative; }
+  .hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, var(--bg) 0%, transparent 40%); pointer-events: none; z-index: 1; }
+  .hero-text { position: relative; z-index: 2; max-width: 600px; }
+  .hero-eyebrow { font-size: 0.65rem; color: var(--accent-2); text-transform: uppercase; letter-spacing: 0.18em; font-weight: 600; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
+  .hero-eyebrow::before { content: ''; width: 32px; height: 1px; background: var(--accent); }
+  .hero h1 { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 5.5rem; line-height: 0.95; letter-spacing: -0.04em; margin-bottom: 28px; }
+  .hero h1 .fade { color: var(--text-3); }
+  .hero p { color: var(--text-2); font-size: 0.95rem; line-height: 1.75; max-width: 400px; margin-bottom: 36px; }
+  .hero-cta { display: flex; gap: 16px; }
+  .btn-glass { background: var(--glass); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); color: var(--text); padding: 14px 32px; border-radius: 14px; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+  .btn-glass:hover { border-color: rgba(99,102,241,0.2); }
+  .btn-solid { background: var(--accent); color: #fff; border: none; padding: 14px 32px; border-radius: 14px; font-size: 0.875rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 24px var(--accent-glow); }
+
+  /* Glass floating panel — right side of hero */
+  .hero-panel { position: absolute; right: 80px; bottom: 120px; z-index: 2; width: 380px; }
+  .glass-panel { background: var(--glass); backdrop-filter: blur(24px); border: 1px solid var(--glass-border); border-radius: 20px; overflow: hidden; }
+  .panel-header { padding: 16px 24px; border-bottom: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: space-between; }
+  .panel-header .title { font-size: 0.8rem; font-weight: 600; }
+  .panel-header .status { font-size: 0.65rem; color: #22c55e; display: flex; align-items: center; gap: 6px; }
+  .panel-header .status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #22c55e; }
+  .panel-item { padding: 14px 24px; border-bottom: 1px solid rgba(99,102,241,0.04); display: flex; align-items: center; gap: 14px; }
+  .panel-item:last-child { border-bottom: none; }
+  .panel-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(99,102,241,0.08); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
+  .panel-item .name { font-size: 0.82rem; font-weight: 500; }
+  .panel-item .meta { font-size: 0.7rem; color: var(--text-3); }
+
+  /* MARQUEE — Cinematic trust strip */
+  .marquee { margin-left: 64px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 18px 0; overflow: hidden; white-space: nowrap; }
+  .marquee-inner { display: inline-block; animation: slide 25s linear infinite; }
+  .marquee span { color: var(--text-3); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 500; margin-right: 56px; }
+  .marquee .sep { color: var(--accent); opacity: 0.5; }
+  @keyframes slide { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+  /* FEATURES — Overlapping glass cards on cinematic backdrop */
+  .features { margin-left: 64px; padding: 120px 80px; position: relative; }
+  .features::before { content: ''; position: absolute; top: 0; right: 0; width: 50%; height: 100%; background: linear-gradient(135deg, rgba(99,102,241,0.04) 0%, transparent 60%); pointer-events: none; }
+  .features-header { margin-bottom: 64px; }
+  .features-header h2 { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 3.2rem; letter-spacing: -0.03em; margin-bottom: 12px; }
+  .features-header p { color: var(--text-2); font-size: 0.95rem; max-width: 400px; }
+  .feat-stack { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 1100px; }
+  .feat-card { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 36px 28px; transition: all 0.25s; position: relative; overflow: hidden; }
+  .feat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(99,102,241,0.15), transparent); }
+  .feat-card:hover { transform: translateY(-4px); border-color: rgba(99,102,241,0.15); box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+  .feat-num { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 3rem; color: var(--border-2); line-height: 1; margin-bottom: 20px; }
+  .feat-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
+  .feat-card p { color: var(--text-3); font-size: 0.82rem; line-height: 1.65; }
+
+  /* STATS — Horizontal glass bar */
+  .stats-bar { margin-left: 64px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); }
+  .stat { background: var(--bg); padding: 56px 32px; text-align: center; position: relative; }
+  .stat::before { content: ''; position: absolute; inset: 0; background: var(--glass); opacity: 0.3; }
+  .stat .n { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 3.5rem; line-height: 1; margin-bottom: 8px; position: relative; background: linear-gradient(180deg, var(--text) 0%, var(--text-3) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .stat .l { font-size: 0.68rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.1em; position: relative; }
+
+  /* CTA — Full-width cinematic with glass overlay */
+  .cta { margin-left: 64px; padding: 140px 80px; position: relative; text-align: center; }
+  .cta::before { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 500px; height: 400px; background: radial-gradient(ellipse, rgba(99,102,241,0.08) 0%, transparent 60%); pointer-events: none; }
+  .cta h2 { font-family: 'Playfair Display', serif; font-weight: 300; font-size: 3.5rem; line-height: 1.1; margin-bottom: 18px; letter-spacing: -0.03em; position: relative; }
+  .cta p { color: var(--text-2); font-size: 0.95rem; margin-bottom: 36px; position: relative; }
+
+  /* FOOTER */
+  .footer { margin-left: 64px; border-top: 1px solid var(--border); padding: 28px 80px; display: flex; justify-content: space-between; align-items: center; }
+  .footer p { color: var(--text-3); font-size: 0.72rem; }
+  .footer .tagline { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 300; }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { color: var(--text-3); text-decoration: none; font-size: 0.72rem; }
+</style>
+</head>
+<body>
+
+<div class="ambient"></div>
+
+<nav class="side-nav">
+  <div class="logo">T</div>
+  <div class="nav-dots">
+    <div class="dot active"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  </div>
+  <div class="cta-bottom">Open App</div>
+</nav>
+
+<div class="content">
+
+<section class="hero">
+  <div class="hero-text">
+    <div class="hero-eyebrow">Post-Quantum Encrypted</div>
+    <h1>Send anything.<br><span class="fade">Trust everything.</span></h1>
+    <p>Peer-to-peer file transfer with post-quantum encryption. No servers store your data. No accounts track your activity.</p>
+    <div class="hero-cta">
+      <button class="btn-solid">Start Transferring</button>
+      <button class="btn-glass">How It Works</button>
+    </div>
+  </div>
+  <div class="hero-panel">
+    <div class="glass-panel">
+      <div class="panel-header">
+        <span class="title">Nearby Devices</span>
+        <span class="status">Scanning</span>
+      </div>
+      <div class="panel-item"><div class="panel-icon">&#x1f4bb;</div><div><div class="name">MacBook Pro</div><div class="meta">Same network &middot; 2ms</div></div></div>
+      <div class="panel-item"><div class="panel-icon">&#x1f4f1;</div><div><div class="name">iPhone 15 Pro</div><div class="meta">Same network &middot; 5ms</div></div></div>
+      <div class="panel-item"><div class="panel-icon">&#x1f4bb;</div><div><div class="name">Windows Desktop</div><div class="meta">Same network &middot; 3ms</div></div></div>
+    </div>
+  </div>
+</section>
+
+<div class="marquee">
+  <div class="marquee-inner">
+    <span>End-to-End Encrypted</span><span class="sep">/</span>
+    <span>Zero Knowledge</span><span class="sep">/</span>
+    <span>Open Source</span><span class="sep">/</span>
+    <span>Post-Quantum Safe</span><span class="sep">/</span>
+    <span>No File Limits</span><span class="sep">/</span>
+    <span>WebRTC P2P</span><span class="sep">/</span>
+    <span>End-to-End Encrypted</span><span class="sep">/</span>
+    <span>Zero Knowledge</span><span class="sep">/</span>
+    <span>Open Source</span><span class="sep">/</span>
+    <span>Post-Quantum Safe</span><span class="sep">/</span>
+    <span>No File Limits</span><span class="sep">/</span>
+    <span>WebRTC P2P</span><span class="sep">/</span>
+  </div>
+</div>
+
+<section class="features">
+  <div class="features-header">
+    <h2>Built different</h2>
+    <p>Six things that make Tallow unlike anything else you've used.</p>
+  </div>
+  <div class="feat-stack">
+    <div class="feat-card"><div class="feat-num">01</div><h3>Direct P2P Transfer</h3><p>Files go straight between devices over WebRTC data channels. Nothing touches a server.</p></div>
+    <div class="feat-card"><div class="feat-num">02</div><h3>Post-Quantum Crypto</h3><p>ML-KEM key exchange with AES-256-GCM. Protected against threats that don't exist yet.</p></div>
+    <div class="feat-card"><div class="feat-num">03</div><h3>Cross-Platform</h3><p>Any device with a modern browser. No download, no install, no setup.</p></div>
+    <div class="feat-card"><div class="feat-num">04</div><h3>Zero Knowledge</h3><p>No logs, no metadata, no analytics. We literally can't see your files.</p></div>
+    <div class="feat-card"><div class="feat-num">05</div><h3>No Size Limits</h3><p>Transfer gigabytes. No restrictions, no premium tiers, no throttling.</p></div>
+    <div class="feat-card"><div class="feat-num">06</div><h3>Open Source</h3><p>Every line auditable. Trust through transparency, not promises.</p></div>
+  </div>
+</section>
+
+<div class="stats-bar">
+  <div class="stat"><div class="n">256</div><div class="l">Bit Encryption</div></div>
+  <div class="stat"><div class="n">0</div><div class="l">Servers Touched</div></div>
+  <div class="stat"><div class="n">P2P</div><div class="l">Direct Transfer</div></div>
+  <div class="stat"><div class="n">&infin;</div><div class="l">File Size Limit</div></div>
+</div>
+
+<section class="cta">
+  <h2>Your files deserve better.</h2>
+  <p>No signup. No download. No credit card. Just open and transfer.</p>
+  <button class="btn-solid">Open Tallow &rarr;</button>
+</section>
+
+<footer class="footer">
+  <p>&copy; 2026 Tallow</p>
+  <span class="tagline">Your files. Your rules.</span>
+  <div class="footer-links"><a href="#">Features</a><a href="#">Security</a><a href="#">Docs</a><a href="#">Privacy</a></div>
+</footer>
+
+</div>
+</body>
+</html>

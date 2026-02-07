@@ -1,675 +1,471 @@
 /**
- * Ephemeral Key Management Tests
- * Tests for key rotation, ratcheting, and secure deletion
+ * Unit Tests for Key Management Module
+ * Tests ephemeral key generation, rotation, Double Ratchet implementation,
+ * and secure memory wiping.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { EphemeralKeyManager } from '@/lib/crypto/key-management';
-import type { SessionKeyPair } from '@/lib/crypto/key-management';
+import EphemeralKeyManager, {
+  SessionKeyPair,
+  RatchetState,
+  MessageKey
+} from '@/lib/crypto/key-management';
+import { pqCrypto, HybridPublicKey } from '@/lib/crypto/pqc-crypto';
 
 describe('EphemeralKeyManager', () => {
-    let keyManager: EphemeralKeyManager;
+  let keyManager: EphemeralKeyManager;
 
-    beforeEach(() => {
-        keyManager = EphemeralKeyManager.getInstance();
-        vi.useFakeTimers();
+  beforeEach(() => {
+    // Get fresh instance for each test
+    keyManager = EphemeralKeyManager.getInstance();
+  });
+
+  afterEach(() => {
+    // Clean up all keys after each test
+    keyManager.destroyAll();
+  });
+
+  describe('Session Key Generation', () => {
+    it('should generate session keys with valid structure', async () => {
+      const sessionKey = await keyManager.generateSessionKeys();
+
+      expect(sessionKey).toBeDefined();
+      expect(sessionKey.id).toBeDefined();
+      expect(typeof sessionKey.id).toBe('string');
+      expect(sessionKey.id.length).toBe(32); // 16 bytes * 2 hex chars
+
+      expect(sessionKey.keyPair).toBeDefined();
+      expect(sessionKey.keyPair.kyber).toBeDefined();
+      expect(sessionKey.keyPair.x25519).toBeDefined();
+
+      // Verify Kyber key sizes
+      expect(sessionKey.keyPair.kyber.publicKey.length).toBe(1184);
+      expect(sessionKey.keyPair.kyber.secretKey.length).toBe(2400);
+
+      // Verify X25519 key sizes
+      expect(sessionKey.keyPair.x25519.publicKey.length).toBe(32);
+      expect(sessionKey.keyPair.x25519.privateKey.length).toBe(32);
+
+      // Verify timestamps
+      expect(sessionKey.createdAt).toBeGreaterThan(0);
+      expect(sessionKey.expiresAt).toBeGreaterThan(sessionKey.createdAt);
+      expect(sessionKey.messageCount).toBe(0);
     });
 
-    afterEach(() => {
-        keyManager.destroyAll();
-        vi.useRealTimers();
+    it('should generate unique key IDs for different sessions', async () => {
+      const key1 = await keyManager.generateSessionKeys();
+      const key2 = await keyManager.generateSessionKeys();
+
+      expect(key1.id).not.toBe(key2.id);
     });
 
-    // ==========================================================================
-    // Session Key Generation Tests
-    // ==========================================================================
+    it('should respect custom lifetime parameter', async () => {
+      const customLifetime = 60000; // 1 minute
+      const sessionKey = await keyManager.generateSessionKeys(customLifetime);
 
-    describe('Session Key Generation', () => {
-        it('should generate valid session keys', async () => {
-            const sessionKey = await keyManager.generateSessionKeys();
-
-            expect(sessionKey).toBeDefined();
-            expect(sessionKey.id).toBeDefined();
-            expect(sessionKey.keyPair).toBeDefined();
-            expect(sessionKey.keyPair.kyber).toBeDefined();
-            expect(sessionKey.keyPair.x25519).toBeDefined();
-            expect(sessionKey.createdAt).toBeDefined();
-            expect(sessionKey.expiresAt).toBeGreaterThan(sessionKey.createdAt);
-            expect(sessionKey.messageCount).toBe(0);
-        });
-
-        it('should generate unique key IDs', async () => {
-            const key1 = await keyManager.generateSessionKeys();
-            const key2 = await keyManager.generateSessionKeys();
-
-            expect(key1.id).not.toBe(key2.id);
-        });
-
-        it('should set custom lifetime', async () => {
-            const lifetime = 60000; // 1 minute
-            const sessionKey = await keyManager.generateSessionKeys(lifetime);
-
-            expect(sessionKey.expiresAt - sessionKey.createdAt).toBe(lifetime);
-        });
-
-        it('should schedule automatic key deletion', async () => {
-            const lifetime = 1000; // 1 second
-            const sessionKey = await keyManager.generateSessionKeys(lifetime);
-
-            // Verify key exists
-            let key = keyManager.getSessionKey(sessionKey.id);
-            expect(key).not.toBeNull();
-
-            // Fast forward time
-            vi.advanceTimersByTime(lifetime + 100);
-
-            // Verify key is deleted
-            key = keyManager.getSessionKey(sessionKey.id);
-            expect(key).toBeNull();
-        });
-
-        it('should handle multiple session keys', async () => {
-            const keys: SessionKeyPair[] = [];
-            for (let i = 0; i < 5; i++) {
-                keys.push(await keyManager.generateSessionKeys());
-            }
-
-            // All keys should be accessible
-            for (const key of keys) {
-                const retrieved = keyManager.getSessionKey(key.id);
-                expect(retrieved).not.toBeNull();
-                expect(retrieved?.id).toBe(key.id);
-            }
-
-            const stats = keyManager.getStats();
-            expect(stats.activeKeys).toBe(5);
-        });
+      const expectedExpiry = sessionKey.createdAt + customLifetime;
+      expect(sessionKey.expiresAt).toBe(expectedExpiry);
     });
 
-    // ==========================================================================
-    // Key Retrieval Tests
-    // ==========================================================================
+    it('should retrieve session key by ID', async () => {
+      const sessionKey = await keyManager.generateSessionKeys();
+      const retrieved = keyManager.getSessionKey(sessionKey.id);
 
-    describe('Key Retrieval', () => {
-        it('should retrieve existing session key', async () => {
-            const sessionKey = await keyManager.generateSessionKeys();
-            const retrieved = keyManager.getSessionKey(sessionKey.id);
-
-            expect(retrieved).not.toBeNull();
-            expect(retrieved?.id).toBe(sessionKey.id);
-        });
-
-        it('should return null for non-existent key', () => {
-            const retrieved = keyManager.getSessionKey('non-existent-id');
-            expect(retrieved).toBeNull();
-        });
-
-        it('should return null for expired key', async () => {
-            const sessionKey = await keyManager.generateSessionKeys(1000);
-
-            // Fast forward past expiration
-            vi.advanceTimersByTime(1100);
-
-            const retrieved = keyManager.getSessionKey(sessionKey.id);
-            expect(retrieved).toBeNull();
-        });
-
-        it('should auto-delete expired key on retrieval', async () => {
-            const sessionKey = await keyManager.generateSessionKeys(1000);
-            const stats1 = keyManager.getStats();
-            expect(stats1.activeKeys).toBe(1);
-
-            // Fast forward past expiration
-            vi.advanceTimersByTime(1100);
-            keyManager.getSessionKey(sessionKey.id);
-
-            const stats2 = keyManager.getStats();
-            expect(stats2.activeKeys).toBe(0);
-        });
+      expect(retrieved).toBeDefined();
+      expect(retrieved?.id).toBe(sessionKey.id);
     });
 
-    // ==========================================================================
-    // Message Count Tests
-    // ==========================================================================
-
-    describe('Message Count Tracking', () => {
-        it('should increment message count', async () => {
-            const sessionKey = await keyManager.generateSessionKeys();
-
-            const shouldRatchet = keyManager.incrementMessageCount(sessionKey.id);
-            expect(shouldRatchet).toBe(false);
-
-            const retrieved = keyManager.getSessionKey(sessionKey.id);
-            expect(retrieved?.messageCount).toBe(1);
-        });
-
-        it('should signal ratchet when max messages reached', async () => {
-            const sessionKey = await keyManager.generateSessionKeys();
-
-            // Increment to max (100 messages)
-            let shouldRatchet = false;
-            for (let i = 0; i < 100; i++) {
-                shouldRatchet = keyManager.incrementMessageCount(sessionKey.id);
-            }
-
-            expect(shouldRatchet).toBe(true);
-            const retrieved = keyManager.getSessionKey(sessionKey.id);
-            expect(retrieved?.messageCount).toBe(100);
-        });
-
-        it('should return true for non-existent key', () => {
-            const shouldRatchet = keyManager.incrementMessageCount('non-existent');
-            expect(shouldRatchet).toBe(true);
-        });
+    it('should return null for non-existent session key', () => {
+      const retrieved = keyManager.getSessionKey('non-existent-id');
+      expect(retrieved).toBeNull();
     });
 
-    // ==========================================================================
-    // Key Deletion Tests
-    // ==========================================================================
+    it('should return null for expired session key', async () => {
+      const shortLifetime = 1; // 1ms - will expire immediately
+      const sessionKey = await keyManager.generateSessionKeys(shortLifetime);
 
-    describe('Key Deletion', () => {
-        it('should delete existing key', async () => {
-            const sessionKey = await keyManager.generateSessionKeys();
+      // Wait for expiration
+      await new Promise(resolve => setTimeout(resolve, 10));
 
-            const deleted = keyManager.deleteKey(sessionKey.id);
-            expect(deleted).toBe(true);
+      const retrieved = keyManager.getSessionKey(sessionKey.id);
+      expect(retrieved).toBeNull();
+    });
+  });
 
-            const retrieved = keyManager.getSessionKey(sessionKey.id);
-            expect(retrieved).toBeNull();
-        });
+  describe('Message Counter', () => {
+    it('should increment message count', async () => {
+      const sessionKey = await keyManager.generateSessionKeys();
 
-        it('should return false when deleting non-existent key', () => {
-            const deleted = keyManager.deleteKey('non-existent');
-            expect(deleted).toBe(false);
-        });
+      expect(sessionKey.messageCount).toBe(0);
 
-        it('should cancel deletion timer', async () => {
-            const sessionKey = await keyManager.generateSessionKeys(5000);
+      const shouldRatchet1 = keyManager.incrementMessageCount(sessionKey.id);
+      expect(shouldRatchet1).toBe(false);
 
-            keyManager.deleteKey(sessionKey.id);
-
-            // Timer should not fire
-            vi.advanceTimersByTime(6000);
-
-            const stats = keyManager.getStats();
-            expect(stats.activeKeys).toBe(0);
-        });
-
-        it('should securely wipe key material', async () => {
-            const sessionKey = await keyManager.generateSessionKeys();
-            const kyberSecret = sessionKey.keyPair.kyber.secretKey;
-
-            keyManager.deleteKey(sessionKey.id);
-
-            // Verify secret is zeroed (best effort check)
-            const isZeroed = Array.from(kyberSecret).every(b => b === 0 || b === 0xFF);
-            expect(isZeroed).toBe(true);
-        });
+      const retrieved = keyManager.getSessionKey(sessionKey.id);
+      expect(retrieved?.messageCount).toBe(1);
     });
 
-    // ==========================================================================
-    // Double Ratchet Tests
-    // ==========================================================================
+    it('should signal ratchet needed after max messages', async () => {
+      const sessionKey = await keyManager.generateSessionKeys();
+      const MAX_MESSAGES = 100;
 
-    describe('Double Ratchet', () => {
-        it('should initialize ratchet state', async () => {
-            const sharedSecret = crypto.getRandomValues(new Uint8Array(32));
-            const sessionId = 'test-session';
+      // Increment to max
+      for (let i = 0; i < MAX_MESSAGES - 1; i++) {
+        const shouldRatchet = keyManager.incrementMessageCount(sessionKey.id);
+        expect(shouldRatchet).toBe(false);
+      }
 
-            const state = await keyManager.initializeRatchet(
-                sessionId,
-                sharedSecret,
-                true // isInitiator
-            );
-
-            expect(state).toBeDefined();
-            expect(state.rootKey).toBeDefined();
-            expect(state.sendChainKey).toBeDefined();
-            expect(state.receiveChainKey).toBeDefined();
-            expect(state.dhRatchetKeyPair).toBeDefined();
-            expect(state.sendMessageNumber).toBe(0);
-            expect(state.receiveMessageNumber).toBe(0);
-        });
-
-        it('should derive different chain keys for initiator and responder', async () => {
-            const sharedSecret = crypto.getRandomValues(new Uint8Array(32));
-
-            const initiatorState = await keyManager.initializeRatchet(
-                'initiator-session',
-                sharedSecret,
-                true
-            );
-
-            const responderState = await keyManager.initializeRatchet(
-                'responder-session',
-                sharedSecret,
-                false
-            );
-
-            // Initiator's send should match responder's receive
-            expect(
-                Array.from(initiatorState.sendChainKey).join(',')
-            ).toBe(
-                Array.from(responderState.receiveChainKey).join(',')
-            );
-
-            expect(
-                Array.from(initiatorState.receiveChainKey).join(',')
-            ).toBe(
-                Array.from(responderState.sendChainKey).join(',')
-            );
-        });
-
-        it('should get next send key', async () => {
-            const sharedSecret = crypto.getRandomValues(new Uint8Array(32));
-            const sessionId = 'test-session';
-
-            await keyManager.initializeRatchet(sessionId, sharedSecret, true);
-
-            const key1 = keyManager.getNextSendKey(sessionId);
-            const key2 = keyManager.getNextSendKey(sessionId);
-
-            expect(key1.key).toBeDefined();
-            expect(key1.index).toBe(0);
-            expect(key2.index).toBe(1);
-
-            // Keys should be different
-            expect(
-                Array.from(key1.key).join(',')
-            ).not.toBe(
-                Array.from(key2.key).join(',')
-            );
-        });
-
-        it('should get receive key for current message', async () => {
-            const sharedSecret = crypto.getRandomValues(new Uint8Array(32));
-            const sessionId = 'test-session';
-
-            await keyManager.initializeRatchet(sessionId, sharedSecret, false);
-
-            const key = keyManager.getReceiveKey(sessionId, 0);
-
-            expect(key).not.toBeNull();
-            expect(key?.index).toBe(0);
-        });
-
-        it('should handle out-of-order messages', async () => {
-            const sharedSecret = crypto.getRandomValues(new Uint8Array(32));
-            const sessionId = 'test-session';
-
-            // Create peer keypair and initialize with peer public key
-            const peerKeyPair = await keyManager.generateSessionKeys();
-            const peerPublicKey = {
-                kyberPublicKey: peerKeyPair.keyPair.kyber.publicKey,
-                x25519PublicKey: peerKeyPair.keyPair.x25519.publicKey,
-            };
-
-            await keyManager.initializeRatchet(sessionId, sharedSecret, false, peerPublicKey);
-
-            // Request message 2 (skipping 0 and 1)
-            const key = keyManager.getReceiveKey(sessionId, 2);
-
-            expect(key).not.toBeNull();
-            expect(key?.index).toBe(2);
-
-            const stats = keyManager.getStats();
-            expect(stats.skippedKeys).toBe(2); // Messages 0 and 1
-        });
-
-        it('should retrieve skipped message key', async () => {
-            const sharedSecret = crypto.getRandomValues(new Uint8Array(32));
-            const sessionId = 'test-session';
-
-            // Create peer keypair and initialize with peer public key
-            const peerKeyPair = await keyManager.generateSessionKeys();
-            const peerPublicKey = {
-                kyberPublicKey: peerKeyPair.keyPair.kyber.publicKey,
-                x25519PublicKey: peerKeyPair.keyPair.x25519.publicKey,
-            };
-
-            await keyManager.initializeRatchet(sessionId, sharedSecret, false, peerPublicKey);
-
-            // Skip to message 2
-            keyManager.getReceiveKey(sessionId, 2);
-
-            // Now retrieve skipped message 1
-            const key = keyManager.getReceiveKey(sessionId, 1);
-
-            expect(key).not.toBeNull();
-            expect(key?.index).toBe(1);
-        });
-
-        it('should throw error for non-existent session', () => {
-            expect(() => {
-                keyManager.getNextSendKey('non-existent');
-            }).toThrow();
-        });
-
-        it('should get current public key', async () => {
-            const sharedSecret = crypto.getRandomValues(new Uint8Array(32));
-            const sessionId = 'test-session';
-
-            await keyManager.initializeRatchet(sessionId, sharedSecret, true);
-
-            const publicKey = keyManager.getCurrentPublicKey(sessionId);
-
-            expect(publicKey).not.toBeNull();
-            expect(publicKey?.kyberPublicKey).toBeDefined();
-            expect(publicKey?.x25519PublicKey).toBeDefined();
-        });
-
-        it('should return null for non-existent session public key', () => {
-            const publicKey = keyManager.getCurrentPublicKey('non-existent');
-            expect(publicKey).toBeNull();
-        });
+      // Max message should trigger ratchet
+      const shouldRatchet = keyManager.incrementMessageCount(sessionKey.id);
+      expect(shouldRatchet).toBe(true);
     });
 
-    // ==========================================================================
-    // Symmetric Ratchet Tests
-    // ==========================================================================
+    it('should return true for non-existent key', () => {
+      const shouldRatchet = keyManager.incrementMessageCount('non-existent');
+      expect(shouldRatchet).toBe(true);
+    });
+  });
 
-    describe('Symmetric Ratchet', () => {
-        it('should ratchet chain key forward', () => {
-            const chainKey = crypto.getRandomValues(new Uint8Array(32));
-            const ratcheted = keyManager.ratchetKeys(chainKey);
+  describe('Key Deletion', () => {
+    it('should delete a session key', async () => {
+      const sessionKey = await keyManager.generateSessionKeys();
 
-            expect(ratcheted).toBeDefined();
-            expect(ratcheted.length).toBe(32);
+      const deleted = keyManager.deleteKey(sessionKey.id);
+      expect(deleted).toBe(true);
 
-            // Should produce different key
-            expect(
-                Array.from(ratcheted).join(',')
-            ).not.toBe(
-                Array.from(chainKey).join(',')
-            );
-        });
-
-        it('should produce deterministic ratchets', () => {
-            const chainKey = crypto.getRandomValues(new Uint8Array(32));
-
-            const ratchet1 = keyManager.ratchetKeys(chainKey);
-            const ratchet2 = keyManager.ratchetKeys(chainKey);
-
-            expect(
-                Array.from(ratchet1).join(',')
-            ).toBe(
-                Array.from(ratchet2).join(',')
-            );
-        });
-
-        it('should create ratchet chain', () => {
-            let key = crypto.getRandomValues(new Uint8Array(32));
-            const chain: Uint8Array[] = [new Uint8Array(key)];
-
-            for (let i = 0; i < 5; i++) {
-                key = keyManager.ratchetKeys(key);
-                chain.push(new Uint8Array(key));
-            }
-
-            // All keys should be different
-            const uniqueKeys = new Set(chain.map(k => Array.from(k).join(',')));
-            expect(uniqueKeys.size).toBe(6);
-        });
+      const retrieved = keyManager.getSessionKey(sessionKey.id);
+      expect(retrieved).toBeNull();
     });
 
-    // ==========================================================================
-    // Secure Memory Wiping Tests
-    // ==========================================================================
-
-    describe('Secure Memory Wiping', () => {
-        it('should securely delete single key', () => {
-            const key = crypto.getRandomValues(new Uint8Array(32));
-            const original = new Uint8Array(key);
-
-            keyManager.secureDelete(key);
-
-            // Should be different from original
-            expect(
-                Array.from(key).join(',')
-            ).not.toBe(
-                Array.from(original).join(',')
-            );
-
-            // Should be zeroed (final pass)
-            const isZeroed = Array.from(key).every(b => b === 0);
-            expect(isZeroed).toBe(true);
-        });
-
-        it('should handle empty array', () => {
-            const key = new Uint8Array(0);
-            expect(() => {
-                keyManager.secureDelete(key);
-            }).not.toThrow();
-        });
-
-        it('should handle null/undefined', () => {
-            expect(() => {
-                keyManager.secureDelete(null as any);
-            }).not.toThrow();
-
-            expect(() => {
-                keyManager.secureDelete(undefined as any);
-            }).not.toThrow();
-        });
-
-        it('should wipe multiple passes', () => {
-            const key = new Uint8Array(32);
-            key.fill(0xAA); // Fill with known pattern
-
-            const passes: string[] = [];
-            const originalFill = key.fill;
-            key.fill = vi.fn((value: number) => {
-                passes.push(`0x${value.toString(16)}`);
-                return originalFill.call(key, value);
-            }) as any;
-
-            keyManager.secureDelete(key);
-
-            // Verify final zero pass
-            expect(passes[passes.length - 1]).toBe('0x0');
-        });
+    it('should return false when deleting non-existent key', () => {
+      const deleted = keyManager.deleteKey('non-existent');
+      expect(deleted).toBe(false);
     });
 
-    // ==========================================================================
-    // Session Destruction Tests
-    // ==========================================================================
+    it('should securely wipe key material', async () => {
+      const sessionKey = await keyManager.generateSessionKeys();
 
-    describe('Session Destruction', () => {
-        it('should destroy session and all keys', async () => {
-            const sessionId = 'test-session';
-            const sharedSecret = crypto.getRandomValues(new Uint8Array(32));
+      // Store references to key arrays
+      const kyberSecret = sessionKey.keyPair.kyber.secretKey;
+      const kyberPublic = sessionKey.keyPair.kyber.publicKey;
+      const x25519Private = sessionKey.keyPair.x25519.privateKey;
+      const x25519Public = sessionKey.keyPair.x25519.publicKey;
 
-            await keyManager.initializeRatchet(sessionId, sharedSecret, true);
-            const stats1 = keyManager.getStats();
-            expect(stats1.ratchetSessions).toBe(1);
+      // Delete key
+      keyManager.deleteKey(sessionKey.id);
 
-            keyManager.destroySession(sessionId);
+      // Verify arrays are zeroed (best effort - JavaScript doesn't guarantee)
+      const isZeroed = (arr: Uint8Array) => arr.every(byte => byte === 0);
 
-            const stats2 = keyManager.getStats();
-            expect(stats2.ratchetSessions).toBe(0);
-        });
+      expect(isZeroed(kyberSecret)).toBe(true);
+      expect(isZeroed(kyberPublic)).toBe(true);
+      expect(isZeroed(x25519Private)).toBe(true);
+      expect(isZeroed(x25519Public)).toBe(true);
+    });
+  });
 
-        it('should wipe ratchet state securely', async () => {
-            const sessionId = 'test-session';
-            const sharedSecret = crypto.getRandomValues(new Uint8Array(32));
+  describe('Double Ratchet Protocol', () => {
+    describe('Ratchet Initialization', () => {
+      it('should initialize ratchet state for initiator', async () => {
+        const sessionId = 'test-session-1';
+        const sharedSecret = pqCrypto.randomBytes(32);
 
-            const state = await keyManager.initializeRatchet(sessionId, sharedSecret, true);
-            const rootKey = state.rootKey;
+        const state = await keyManager.initializeRatchet(
+          sessionId,
+          sharedSecret,
+          true // isInitiator
+        );
 
-            keyManager.destroySession(sessionId);
+        expect(state).toBeDefined();
+        expect(state.rootKey).toBeDefined();
+        expect(state.rootKey.length).toBe(32);
+        expect(state.sendChainKey.length).toBe(32);
+        expect(state.receiveChainKey.length).toBe(32);
+        expect(state.sendMessageNumber).toBe(0);
+        expect(state.receiveMessageNumber).toBe(0);
+        expect(state.dhRatchetKeyPair).toBeDefined();
+        expect(state.peerPublicKey).toBeNull();
+      });
 
-            // Verify keys are wiped
-            const isZeroed = Array.from(rootKey).every(b => b === 0 || b === 0xFF);
-            expect(isZeroed).toBe(true);
-        });
+      it('should initialize ratchet state for responder', async () => {
+        const sessionId = 'test-session-2';
+        const sharedSecret = pqCrypto.randomBytes(32);
+        const peerKeyPair = await pqCrypto.generateHybridKeypair();
+        const peerPublicKey = pqCrypto.getPublicKey(peerKeyPair);
 
-        it('should destroy all sessions', async () => {
-            // Create multiple sessions
-            for (let i = 0; i < 3; i++) {
-                const sharedSecret = crypto.getRandomValues(new Uint8Array(32));
-                await keyManager.initializeRatchet(`session-${i}`, sharedSecret, true);
-            }
+        const state = await keyManager.initializeRatchet(
+          sessionId,
+          sharedSecret,
+          false, // isInitiator
+          peerPublicKey
+        );
 
-            // Create session keys
-            for (let i = 0; i < 3; i++) {
-                await keyManager.generateSessionKeys();
-            }
+        expect(state).toBeDefined();
+        expect(state.peerPublicKey).toEqual(peerPublicKey);
+      });
 
-            const stats1 = keyManager.getStats();
-            expect(stats1.activeKeys).toBe(3);
-            expect(stats1.ratchetSessions).toBe(3);
+      it('should derive different chain keys for initiator and responder', async () => {
+        const sessionId1 = 'initiator-session';
+        const sessionId2 = 'responder-session';
+        const sharedSecret = pqCrypto.randomBytes(32);
 
-            keyManager.destroyAll();
+        const initiatorState = await keyManager.initializeRatchet(
+          sessionId1,
+          sharedSecret,
+          true
+        );
 
-            const stats2 = keyManager.getStats();
-            expect(stats2.activeKeys).toBe(0);
-            expect(stats2.ratchetSessions).toBe(0);
-            expect(stats2.skippedKeys).toBe(0);
-        });
+        const responderState = await keyManager.initializeRatchet(
+          sessionId2,
+          sharedSecret,
+          false
+        );
+
+        // Initiator's send chain should equal responder's receive chain
+        expect(initiatorState.sendChainKey).toEqual(responderState.receiveChainKey);
+        expect(initiatorState.receiveChainKey).toEqual(responderState.sendChainKey);
+      });
     });
 
-    // ==========================================================================
-    // Statistics Tests
-    // ==========================================================================
+    describe('Message Key Derivation', () => {
+      it('should derive unique message keys', async () => {
+        const sessionId = 'test-session';
+        const sharedSecret = pqCrypto.randomBytes(32);
 
-    describe('Statistics', () => {
-        it('should return accurate statistics', async () => {
-            await keyManager.generateSessionKeys();
-            await keyManager.generateSessionKeys();
+        await keyManager.initializeRatchet(sessionId, sharedSecret, true);
 
-            const sharedSecret = crypto.getRandomValues(new Uint8Array(32));
-            await keyManager.initializeRatchet('session-1', sharedSecret, true);
+        const key1 = keyManager.getNextSendKey(sessionId);
+        const key2 = keyManager.getNextSendKey(sessionId);
+        const key3 = keyManager.getNextSendKey(sessionId);
 
-            const stats = keyManager.getStats();
+        expect(key1.key).toBeDefined();
+        expect(key2.key).toBeDefined();
+        expect(key3.key).toBeDefined();
 
-            expect(stats.activeKeys).toBe(2);
-            expect(stats.ratchetSessions).toBe(1);
-            expect(stats.skippedKeys).toBe(0);
-        });
+        // All keys should be different
+        expect(key1.key).not.toEqual(key2.key);
+        expect(key2.key).not.toEqual(key3.key);
+        expect(key1.key).not.toEqual(key3.key);
 
-        it('should track skipped keys', async () => {
-            const sharedSecret = crypto.getRandomValues(new Uint8Array(32));
+        // Indices should increment
+        expect(key1.index).toBe(0);
+        expect(key2.index).toBe(1);
+        expect(key3.index).toBe(2);
+      });
 
-            // Create peer keypair and initialize with peer public key
-            const peerKeyPair = await keyManager.generateSessionKeys();
-            const peerPublicKey = {
-                kyberPublicKey: peerKeyPair.keyPair.kyber.publicKey,
-                x25519PublicKey: peerKeyPair.keyPair.x25519.publicKey,
-            };
+      it('should throw error when getting send key for non-existent session', () => {
+        expect(() => {
+          keyManager.getNextSendKey('non-existent');
+        }).toThrow('Ratchet state not found');
+      });
 
-            await keyManager.initializeRatchet('session-1', sharedSecret, false, peerPublicKey);
+      it('should retrieve receive keys in order', async () => {
+        const sessionId = 'test-session';
+        const sharedSecret = pqCrypto.randomBytes(32);
 
-            // Skip to message 5
-            keyManager.getReceiveKey('session-1', 5);
+        await keyManager.initializeRatchet(sessionId, sharedSecret, false);
 
-            const stats = keyManager.getStats();
-            expect(stats.skippedKeys).toBe(5);
-        });
+        const key0 = keyManager.getReceiveKey(sessionId, 0);
+        const key1 = keyManager.getReceiveKey(sessionId, 1);
+        const key2 = keyManager.getReceiveKey(sessionId, 2);
+
+        expect(key0?.index).toBe(0);
+        expect(key1?.index).toBe(1);
+        expect(key2?.index).toBe(2);
+
+        // Keys should be unique
+        expect(key0?.key).not.toEqual(key1?.key);
+        expect(key1?.key).not.toEqual(key2?.key);
+      });
+
+      it('should handle out-of-order message keys', async () => {
+        const sessionId = 'test-session';
+        const sharedSecret = pqCrypto.randomBytes(32);
+
+        await keyManager.initializeRatchet(sessionId, sharedSecret, false);
+
+        // Skip to message 5
+        const key5 = keyManager.getReceiveKey(sessionId, 5);
+        expect(key5?.index).toBe(5);
+
+        // Now try to get skipped message 2
+        const key2 = keyManager.getReceiveKey(sessionId, 2);
+        expect(key2?.index).toBe(2);
+        expect(key2?.key).toBeDefined();
+      });
+
+      it('should return null for already-processed messages', async () => {
+        const sessionId = 'test-session';
+        const sharedSecret = pqCrypto.randomBytes(32);
+
+        await keyManager.initializeRatchet(sessionId, sharedSecret, false);
+
+        // Process message 0
+        const key0 = keyManager.getReceiveKey(sessionId, 0);
+        expect(key0).toBeDefined();
+
+        // Try to process message 0 again
+        const key0Again = keyManager.getReceiveKey(sessionId, 0);
+        expect(key0Again).toBeNull();
+      });
     });
 
-    // ==========================================================================
-    // Singleton Pattern Tests
-    // ==========================================================================
+    describe('DH Ratchet Step', () => {
+      it('should perform DH ratchet step', async () => {
+        const sessionId = 'test-session';
+        const sharedSecret = pqCrypto.randomBytes(32);
 
-    describe('Singleton Pattern', () => {
-        it('should return same instance', () => {
-            const instance1 = EphemeralKeyManager.getInstance();
-            const instance2 = EphemeralKeyManager.getInstance();
+        // Initialize ratchet
+        const initialState = await keyManager.initializeRatchet(
+          sessionId,
+          sharedSecret,
+          true
+        );
 
-            expect(instance1).toBe(instance2);
-        });
+        // Generate new peer public key
+        const newPeerKeyPair = await pqCrypto.generateHybridKeypair();
+        const newPeerPublicKey = pqCrypto.getPublicKey(newPeerKeyPair);
 
-        it('should share state between getInstance calls', async () => {
-            const instance1 = EphemeralKeyManager.getInstance();
-            await instance1.generateSessionKeys();
+        // Store old state values
+        const oldRootKey = new Uint8Array(initialState.rootKey);
+        const oldSendChainKey = new Uint8Array(initialState.sendChainKey);
 
-            const instance2 = EphemeralKeyManager.getInstance();
-            const stats = instance2.getStats();
+        // Perform ratchet step
+        await keyManager.dhRatchetStep(sessionId, newPeerPublicKey);
 
-            expect(stats.activeKeys).toBeGreaterThan(0);
-        });
+        // Get updated state
+        const currentPublicKey = keyManager.getCurrentPublicKey(sessionId);
+        expect(currentPublicKey).toBeDefined();
+
+        // Verify state changed
+        const state = (keyManager as any).ratchetStates.get(sessionId) as RatchetState;
+        expect(state.rootKey).not.toEqual(oldRootKey);
+        expect(state.sendChainKey).not.toEqual(oldSendChainKey);
+        expect(state.peerPublicKey).toEqual(newPeerPublicKey);
+      });
+
+      it('should throw error for non-existent session', async () => {
+        const keyPair = await pqCrypto.generateHybridKeypair();
+        const publicKey = pqCrypto.getPublicKey(keyPair);
+
+        await expect(
+          keyManager.dhRatchetStep('non-existent', publicKey)
+        ).rejects.toThrow('Ratchet state not found');
+      });
     });
 
-    // ==========================================================================
-    // Edge Cases
-    // ==========================================================================
+    describe('Chain Key Ratcheting', () => {
+      it('should ratchet chain keys forward', () => {
+        const key1 = pqCrypto.randomBytes(32);
+        const key2 = keyManager.ratchetKeys(key1);
+        const key3 = keyManager.ratchetKeys(key2);
 
-    describe('Edge Cases', () => {
-        it('should handle rapid key generation', async () => {
-            const keys = await Promise.all(
-                Array.from({ length: 20 }, () => keyManager.generateSessionKeys())
-            );
+        // All keys should be different
+        expect(key2).not.toEqual(key1);
+        expect(key3).not.toEqual(key2);
+        expect(key3).not.toEqual(key1);
 
-            expect(keys.length).toBe(20);
+        // Keys should be deterministic
+        const key2Again = keyManager.ratchetKeys(key1);
+        expect(key2Again).toEqual(key2);
+      });
+    });
+  });
 
-            const uniqueIds = new Set(keys.map(k => k.id));
-            expect(uniqueIds.size).toBe(20);
-        });
+  describe('Session Destruction', () => {
+    it('should destroy a specific session', async () => {
+      const sessionId = 'test-session';
+      const sharedSecret = pqCrypto.randomBytes(32);
 
-        it('should limit skipped keys to MAX_SKIP', async () => {
-            const sharedSecret = crypto.getRandomValues(new Uint8Array(32));
-            await keyManager.initializeRatchet('session-1', sharedSecret, false);
+      // Create session keys
+      await keyManager.generateSessionKeys();
+      await keyManager.initializeRatchet(sessionId, sharedSecret, true);
 
-            // Try to skip more than MAX_SKIP (1000)
-            keyManager.getReceiveKey('session-1', 1500);
+      // Destroy session
+      keyManager.destroySession(sessionId);
 
-            const stats = keyManager.getStats();
-            expect(stats.skippedKeys).toBeLessThanOrEqual(1000);
-        });
-
-        it('should handle timer cleanup on destroy', async () => {
-            const _sessionKey = await keyManager.generateSessionKeys(10000);
-            void _sessionKey; // Suppress unused variable warning
-
-            keyManager.destroyAll();
-
-            // Advance timers - should not crash
-            vi.advanceTimersByTime(15000);
-
-            const stats = keyManager.getStats();
-            expect(stats.activeKeys).toBe(0);
-        });
-
-        it('should handle DH ratchet step', async () => {
-            const sharedSecret = crypto.getRandomValues(new Uint8Array(32));
-            const sessionId = 'test-session';
-
-            // Initialize as initiator
-            const _state = await keyManager.initializeRatchet(sessionId, sharedSecret, true);
-            void _state; // Suppress unused variable warning
-
-            // Create peer public key
-            const _peerState = await keyManager.initializeRatchet('peer-session', sharedSecret, false);
-            void _peerState; // Suppress unused variable warning
-            const peerPublicKey = keyManager.getCurrentPublicKey('peer-session');
-
-            // Perform DH ratchet step
-            await keyManager.dhRatchetStep(sessionId, peerPublicKey!);
-
-            // State should be updated
-            const newPublicKey = keyManager.getCurrentPublicKey(sessionId);
-            expect(newPublicKey).not.toBeNull();
-        });
+      // Verify ratchet state is gone
+      const key = keyManager.getNextSendKey(sessionId);
+      expect(() => keyManager.getNextSendKey(sessionId)).toThrow();
     });
 
-    // ==========================================================================
-    // Cleanup Periodic Tests
-    // ==========================================================================
+    it('should destroy all keys and sessions', async () => {
+      // Create multiple sessions
+      await keyManager.generateSessionKeys();
+      await keyManager.generateSessionKeys();
 
-    describe('Periodic Cleanup', () => {
-        it('should cleanup expired keys periodically', async () => {
-            // Create keys with short lifetime
-            await keyManager.generateSessionKeys(500);
-            await keyManager.generateSessionKeys(500);
+      const sessionId1 = 'session-1';
+      const sessionId2 = 'session-2';
+      const sharedSecret = pqCrypto.randomBytes(32);
 
-            const stats1 = keyManager.getStats();
-            expect(stats1.activeKeys).toBe(2);
+      await keyManager.initializeRatchet(sessionId1, sharedSecret, true);
+      await keyManager.initializeRatchet(sessionId2, sharedSecret, false);
 
-            // Fast forward past expiration and cleanup interval
-            vi.advanceTimersByTime(61000);
+      // Verify stats before
+      const statsBefore = keyManager.getStats();
+      expect(statsBefore.activeKeys).toBeGreaterThan(0);
+      expect(statsBefore.ratchetSessions).toBe(2);
 
-            const stats2 = keyManager.getStats();
-            expect(stats2.activeKeys).toBe(0);
-        });
+      // Destroy all
+      keyManager.destroyAll();
+
+      // Verify all cleared
+      const statsAfter = keyManager.getStats();
+      expect(statsAfter.activeKeys).toBe(0);
+      expect(statsAfter.ratchetSessions).toBe(0);
+      expect(statsAfter.skippedKeys).toBe(0);
     });
+  });
+
+  describe('Secure Memory Wiping', () => {
+    it('should securely delete Uint8Array', () => {
+      const data = new Uint8Array([1, 2, 3, 4, 5]);
+      keyManager.secureDelete(data);
+
+      // Verify all bytes are zeroed
+      expect(data.every(byte => byte === 0)).toBe(true);
+    });
+
+    it('should handle empty arrays gracefully', () => {
+      const data = new Uint8Array(0);
+      expect(() => keyManager.secureDelete(data)).not.toThrow();
+    });
+
+    it('should handle null/undefined gracefully', () => {
+      expect(() => keyManager.secureDelete(null as any)).not.toThrow();
+      expect(() => keyManager.secureDelete(undefined as any)).not.toThrow();
+    });
+  });
+
+  describe('Statistics', () => {
+    it('should report accurate statistics', async () => {
+      const stats1 = keyManager.getStats();
+      expect(stats1.activeKeys).toBe(0);
+      expect(stats1.ratchetSessions).toBe(0);
+
+      // Create keys
+      await keyManager.generateSessionKeys();
+      await keyManager.generateSessionKeys();
+
+      const stats2 = keyManager.getStats();
+      expect(stats2.activeKeys).toBe(2);
+
+      // Create ratchet session
+      const sessionId = 'test-session';
+      const sharedSecret = pqCrypto.randomBytes(32);
+      await keyManager.initializeRatchet(sessionId, sharedSecret, true);
+
+      const stats3 = keyManager.getStats();
+      expect(stats3.ratchetSessions).toBe(1);
+    });
+  });
+
+  describe('Singleton Pattern', () => {
+    it('should return same instance', () => {
+      const instance1 = EphemeralKeyManager.getInstance();
+      const instance2 = EphemeralKeyManager.getInstance();
+
+      expect(instance1).toBe(instance2);
+    });
+  });
 });

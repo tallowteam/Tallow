@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tallow — Send files with zero compromise</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;1,300&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #030306;
+      --bg-2: #08080e;
+      --bg-3: #0f0f18;
+      --text: #f2f2f8;
+      --text-2: #9494a8;
+      --text-3: #5a5a70;
+      --border: #18182a;
+      --border-2: #24243a;
+      --accent: #6366f1;
+      --accent-2: #818cf8;
+      --accent-3: #a78bfa;
+      --glass: rgba(12, 12, 22, 0.55);
+      --glass-border: rgba(99, 102, 241, 0.08);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Aurora ambient background */
+    body::before,
+    body::after,
+    .ambient-bg {
+      content: '';
+      position: fixed;
+      pointer-events: none;
+      z-index: 0;
+      filter: blur(100px);
+      opacity: 0.06;
+    }
+
+    body::before {
+      top: -20%;
+      left: -10%;
+      width: 600px;
+      height: 600px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+      border-radius: 50%;
+    }
+
+    body::after {
+      bottom: -15%;
+      right: -5%;
+      width: 700px;
+      height: 700px;
+      background: linear-gradient(225deg, var(--accent-3) 0%, #8b5cf6 100%);
+      border-radius: 50%;
+      filter: blur(90px);
+      opacity: 0.05;
+    }
+
+    .ambient-bg {
+      top: 40%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 400px;
+      background: linear-gradient(90deg, #3b82f6 0%, var(--accent) 50%, #8b5cf6 100%);
+      filter: blur(80px);
+      opacity: 0.08;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Floating Navigation */
+    nav {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      width: calc(100% - 32px);
+      max-width: 1100px;
+    }
+
+    .nav-container {
+      background: var(--glass);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid var(--glass-border);
+      border-radius: 60px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+                  0 1px 2px rgba(99, 102, 241, 0.1);
+    }
+
+    .nav-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem;
+      font-weight: 400;
+      color: var(--text);
+      text-decoration: none;
+      padding: 6px 16px;
+      transition: opacity 0.2s;
+    }
+
+    .nav-logo:hover {
+      opacity: 0.8;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 4px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-2);
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 40px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .nav-links a:hover {
+      color: var(--text);
+      background: rgba(99, 102, 241, 0.08);
+    }
+
+    .nav-cta {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+      color: white;
+      padding: 8px 20px;
+      border-radius: 40px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3),
+                  0 0 40px rgba(99, 102, 241, 0.15);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .nav-cta:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(99, 102, 241, 0.4),
+                  0 0 50px rgba(99, 102, 241, 0.2);
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 140px 24px 100px;
+    }
+
+    .hero-badge {
+      background: var(--glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: 50px;
+      padding: 8px 18px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 32px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-2);
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: #10b981;
+      border-radius: 50%;
+      position: relative;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .pulse-dot::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
+      height: 100%;
+      background: #10b981;
+      border-radius: 50%;
+      animation: pulse-ring 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    @keyframes pulse-ring {
+      0% {
+        width: 100%;
+        height: 100%;
+        opacity: 0.8;
+      }
+      100% {
+        width: 200%;
+        height: 200%;
+        opacity: 0;
+      }
+    }
+
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 5.5rem;
+      font-weight: 300;
+      line-height: 1.1;
+      margin-bottom: 24px;
+      letter-spacing: -0.02em;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, var(--text) 0%, var(--accent-2) 50%, var(--accent-3) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 1.25rem;
+      color: var(--text-2);
+      max-width: 600px;
+      margin: 0 auto 40px;
+      line-height: 1.7;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 80px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 14px 32px;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 1rem;
+      text-decoration: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: inline-block;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: white;
+      color: var(--bg);
+      box-shadow: 0 4px 20px rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(255, 255, 255, 0.25);
+    }
+
+    .btn-secondary {
+      background: var(--glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      color: var(--text);
+      border: 1px solid var(--glass-border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(12, 12, 22, 0.7);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    /* Metric Cards */
+    .metric-cards {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .metric-card {
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 20px 32px;
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--text);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .metric-card:nth-child(1) {
+      transform: rotate(-2deg);
+    }
+
+    .metric-card:nth-child(2) {
+      transform: rotate(0deg);
+    }
+
+    .metric-card:nth-child(3) {
+      transform: rotate(2deg);
+    }
+
+    .metric-card:hover {
+      transform: rotate(0deg) translateY(-4px);
+      border-color: var(--accent);
+      box-shadow: 0 12px 40px rgba(99, 102, 241, 0.2);
+    }
+
+    /* Features Section */
+    .features {
+      padding: 120px 0;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 80px;
+    }
+
+    .section-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 3.5rem;
+      font-weight: 300;
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+
+    .section-header p {
+      font-size: 1.125rem;
+      color: var(--text-2);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 32px;
+    }
+
+    .feature-card {
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 40px 32px;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent) 0%, var(--accent-2) 50%, var(--accent-3) 100%);
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+
+    .feature-card:nth-child(odd) {
+      transform: translateY(-20px);
+    }
+
+    .feature-card:nth-child(even) {
+      transform: translateY(20px);
+    }
+
+    .feature-card:hover {
+      transform: translateY(0) scale(1.02);
+      border-color: var(--accent);
+      box-shadow: 0 20px 60px rgba(99, 102, 241, 0.15);
+    }
+
+    .feature-card:hover::before {
+      opacity: 1;
+    }
+
+    .feature-icon {
+      width: 56px;
+      height: 56px;
+      background: rgba(99, 102, 241, 0.1);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.75rem;
+      margin-bottom: 24px;
+    }
+
+    .feature-card h3 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .feature-card p {
+      color: var(--text-2);
+      line-height: 1.7;
+    }
+
+    /* App Preview Section */
+    .app-preview {
+      padding: 120px 0;
+      background: linear-gradient(180deg, transparent 0%, rgba(99, 102, 241, 0.02) 50%, transparent 100%);
+    }
+
+    .browser-window {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: var(--glass);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4),
+                  0 0 100px rgba(99, 102, 241, 0.1);
+    }
+
+    .browser-header {
+      background: rgba(12, 12, 22, 0.8);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .browser-dots {
+      display: flex;
+      gap: 8px;
+    }
+
+    .browser-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .browser-dot:nth-child(1) { background: #ff5f57; }
+    .browser-dot:nth-child(2) { background: #ffbd2e; }
+    .browser-dot:nth-child(3) { background: #28ca42; }
+
+    .browser-url {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 12px;
+      color: var(--text-2);
+      font-size: 0.875rem;
+      text-align: center;
+    }
+
+    .browser-content {
+      padding: 60px 40px;
+      min-height: 500px;
+    }
+
+    .drop-zone {
+      background: rgba(99, 102, 241, 0.05);
+      border: 2px dashed var(--accent);
+      border-radius: 16px;
+      padding: 60px 40px;
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .drop-zone-icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+    }
+
+    .drop-zone h4 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .drop-zone p {
+      color: var(--text-2);
+      font-size: 0.875rem;
+    }
+
+    .device-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .device-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .device-card-icon {
+      font-size: 2rem;
+      margin-bottom: 12px;
+    }
+
+    .device-card h5 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .device-card p {
+      font-size: 0.75rem;
+      color: var(--text-3);
+    }
+
+    .mini-progress {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .progress-bar {
+      background: rgba(255, 255, 255, 0.1);
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .progress-fill {
+      background: linear-gradient(90deg, var(--accent) 0%, var(--accent-2) 100%);
+      height: 100%;
+      width: 67%;
+      border-radius: 4px;
+      animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .progress-text {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--text-2);
+    }
+
+    /* Protocol Section */
+    .protocol {
+      padding: 120px 0;
+    }
+
+    .protocol-card {
+      max-width: 700px;
+      margin: 0 auto;
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 48px 40px;
+    }
+
+    .protocol-card h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      font-weight: 300;
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    .protocol-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .protocol-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      transition: all 0.3s;
+    }
+
+    .protocol-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: var(--accent);
+    }
+
+    .protocol-name {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .protocol-tag {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .protocol-tag.quantum {
+      background: rgba(139, 92, 246, 0.15);
+      color: var(--accent-3);
+    }
+
+    .protocol-tag.encryption {
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--accent-2);
+    }
+
+    .protocol-tag.network {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+    }
+
+    .protocol-tag.privacy {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+    }
+
+    /* CTA Section */
+    .cta {
+      padding: 120px 0;
+      text-align: center;
+      position: relative;
+    }
+
+    .cta::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+      filter: blur(60px);
+    }
+
+    .cta h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 3.5rem;
+      font-weight: 300;
+      margin-bottom: 20px;
+      letter-spacing: -0.02em;
+      position: relative;
+      z-index: 1;
+    }
+
+    .cta p {
+      font-size: 1.25rem;
+      color: var(--text-2);
+      margin-bottom: 40px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Footer */
+    footer {
+      padding: 80px 0 40px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-content {
+      text-align: center;
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      list-style: none;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      color: var(--text-2);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.3s;
+    }
+
+    .footer-links a:hover {
+      color: var(--text);
+    }
+
+    .footer-copyright {
+      color: var(--text-3);
+      font-size: 0.875rem;
+      margin-bottom: 8px;
+    }
+
+    .footer-tagline {
+      color: var(--text-3);
+      font-size: 0.875rem;
+      font-style: italic;
+      font-family: 'Playfair Display', serif;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 3.5rem;
+      }
+
+      .section-header h2 {
+        font-size: 2.5rem;
+      }
+
+      .cta h2 {
+        font-size: 2.5rem;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .feature-card:nth-child(odd),
+      .feature-card:nth-child(even) {
+        transform: translateY(0);
+      }
+
+      .browser-content {
+        padding: 40px 20px;
+      }
+
+      .device-cards {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-bg"></div>
+
+  <!-- Floating Navigation -->
+  <nav>
+    <div class="nav-container">
+      <a href="#" class="nav-logo">Tallow</a>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#security">Security</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#docs">Docs</a></li>
+      </ul>
+      <a href="#app" class="nav-cta">Open App</a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-badge">
+      <div class="pulse-dot"></div>
+      <span>Live — 847 Active Transfers</span>
+    </div>
+
+    <h1>Send files with <span class="gradient-text">zero compromise</span>.</h1>
+
+    <p>
+      Post-quantum encrypted P2P transfers. No cloud, no tracking, no limits.
+      Your files stay yours.
+    </p>
+
+    <div class="hero-buttons">
+      <a href="#" class="btn btn-primary">Start Transferring</a>
+      <a href="#" class="btn btn-secondary">View Demo</a>
+    </div>
+
+    <div class="metric-cards">
+      <div class="metric-card">🔒 256-bit Encryption</div>
+      <div class="metric-card">⚡ P2P Direct</div>
+      <div class="metric-card">∞ No Limits</div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features" id="features">
+    <div class="container">
+      <div class="section-header">
+        <h2>Built for the future</h2>
+        <p>Military-grade security meets effortless simplicity. Transfer anything, anywhere, without compromise.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🛡️</div>
+          <h3>Post-Quantum Safe</h3>
+          <p>ML-KEM (Kyber) key encapsulation protects against quantum computer attacks. Future-proof encryption today.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🌐</div>
+          <h3>True Peer-to-Peer</h3>
+          <p>Direct WebRTC connections between devices. No intermediary servers, no data mining, complete privacy.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>Zero Limits</h3>
+          <p>Send files of any size at full network speed. No arbitrary caps, no throttling, no premium tiers.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🔐</div>
+          <h3>End-to-End Encrypted</h3>
+          <p>AES-256-GCM encryption with perfect forward secrecy. Only you and your recipient can access the files.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🌍</div>
+          <h3>Cross-Platform</h3>
+          <p>Works seamlessly across desktop, mobile, and tablets. Browser-based, no installation required.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">👻</div>
+          <h3>Zero Knowledge</h3>
+          <p>We never see your files, metadata, or who you send to. Complete anonymity by design.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- App Preview Section -->
+  <section class="app-preview">
+    <div class="container">
+      <div class="section-header">
+        <h2>Simple. Secure. Instant.</h2>
+        <p>Drop files, share a link, and watch the magic happen.</p>
+      </div>
+
+      <div class="browser-window">
+        <div class="browser-header">
+          <div class="browser-dots">
+            <div class="browser-dot"></div>
+            <div class="browser-dot"></div>
+            <div class="browser-dot"></div>
+          </div>
+          <div class="browser-url">tallow.app/transfer</div>
+        </div>
+
+        <div class="browser-content">
+          <div class="drop-zone">
+            <div class="drop-zone-icon">📁</div>
+            <h4>Drop files here</h4>
+            <p>Or click to browse • Any size, any type</p>
+          </div>
+
+          <div class="device-cards">
+            <div class="device-card">
+              <div class="device-card-icon">💻</div>
+              <h5>MacBook Pro</h5>
+              <p>Online • 127ms</p>
+            </div>
+            <div class="device-card">
+              <div class="device-card-icon">📱</div>
+              <h5>iPhone 15</h5>
+              <p>Online • 89ms</p>
+            </div>
+            <div class="device-card">
+              <div class="device-card-icon">🖥️</div>
+              <h5>Windows PC</h5>
+              <p>Online • 156ms</p>
+            </div>
+          </div>
+
+          <div class="mini-progress">
+            <div class="progress-bar">
+              <div class="progress-fill"></div>
+            </div>
+            <div class="progress-text">
+              <span>presentation.pdf</span>
+              <span>67% • 24 MB/s</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Protocol Section -->
+  <section class="protocol" id="security">
+    <div class="container">
+      <div class="protocol-card">
+        <h3>Protocol Stack</h3>
+        <div class="protocol-list">
+          <div class="protocol-item">
+            <div class="protocol-name">ML-KEM-768</div>
+            <div class="protocol-tag quantum">Quantum-Safe</div>
+          </div>
+          <div class="protocol-item">
+            <div class="protocol-name">AES-256-GCM</div>
+            <div class="protocol-tag encryption">Encryption</div>
+          </div>
+          <div class="protocol-item">
+            <div class="protocol-name">WebRTC Data Channels</div>
+            <div class="protocol-tag network">Network</div>
+          </div>
+          <div class="protocol-item">
+            <div class="protocol-name">Zero-Knowledge Architecture</div>
+            <div class="protocol-tag privacy">Privacy</div>
+          </div>
+          <div class="protocol-item">
+            <div class="protocol-name">Perfect Forward Secrecy</div>
+            <div class="protocol-tag encryption">Encryption</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta">
+    <div class="container">
+      <h2>Your files. Your devices. Your rules.</h2>
+      <p>Join thousands protecting their data with post-quantum encryption.</p>
+      <a href="#" class="btn btn-primary">Get Started Free</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-content">
+        <ul class="footer-links">
+          <li><a href="#features">Features</a></li>
+          <li><a href="#security">Security</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+          <li><a href="#docs">Documentation</a></li>
+          <li><a href="#privacy">Privacy</a></li>
+          <li><a href="#terms">Terms</a></li>
+        </ul>
+        <p class="footer-copyright">&copy; 2026 Tallow. All rights reserved.</p>
+        <p class="footer-tagline">Encrypted by design, private by default.</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,14 +1,14 @@
 'use client';
 
-import { forwardRef, ButtonHTMLAttributes, ReactNode } from 'react';
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import styles from './Button.module.css';
-import { Spinner } from './Spinner';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'icon';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'accent' | 'danger' | 'link';
+  size?: 'sm' | 'md' | 'lg' | 'icon';
   loading?: boolean;
-  children: ReactNode;
+  icon?: ReactNode;
+  iconPosition?: 'left' | 'right';
   fullWidth?: boolean;
 }
 
@@ -18,22 +18,22 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       variant = 'primary',
       size = 'md',
       loading = false,
-      disabled,
-      children,
+      icon,
+      iconPosition = 'left',
       fullWidth = false,
+      disabled,
       className = '',
+      children,
       ...props
     },
     ref
   ) => {
-    const isDisabled = disabled || loading;
-
-    const buttonClasses = [
+    const classes = [
       styles.button,
       styles[variant],
       styles[size],
-      fullWidth ? styles.fullWidth : '',
-      loading ? styles.loading : '',
+      loading && styles.loading,
+      fullWidth && styles.fullWidth,
       className,
     ]
       .filter(Boolean)
@@ -42,19 +42,25 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
-        disabled={isDisabled}
-        className={buttonClasses}
-        aria-busy={loading}
+        className={classes}
+        disabled={disabled || loading}
         {...props}
       >
         {loading && (
-          <span className={styles.spinnerWrapper} aria-hidden="true">
-            <Spinner size={size === 'sm' ? 'sm' : 'md'} />
+          <span className={styles.spinner} aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" opacity="0.25" />
+              <path d="M12 2a10 10 0 0 1 10 10" />
+            </svg>
           </span>
         )}
-        <span className={loading ? styles.contentHidden : ''}>
-          {children}
-        </span>
+        {!loading && icon && iconPosition === 'left' && (
+          <span className={styles.icon}>{icon}</span>
+        )}
+        {children && <span className={styles.label}>{children}</span>}
+        {!loading && icon && iconPosition === 'right' && (
+          <span className={styles.icon}>{icon}</span>
+        )}
       </button>
     );
   }

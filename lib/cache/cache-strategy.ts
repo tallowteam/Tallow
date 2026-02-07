@@ -174,7 +174,7 @@ export async function cleanupOldCaches(): Promise<void> {
   await Promise.all(
     cacheNames.map((cacheName) => {
       if (!currentCaches.includes(cacheName)) {
-        console.log('[Cache] Deleting old cache:', cacheName);
+        console.info('[Cache] Deleting old cache:', cacheName);
         return caches.delete(cacheName);
       }
       return Promise.resolve();
@@ -211,7 +211,7 @@ export async function clearAllCaches(): Promise<void> {
 
   const cacheNames = await caches.keys();
   await Promise.all(cacheNames.map((name) => caches.delete(name)));
-  console.log('[Cache] All caches cleared');
+  console.info('[Cache] All caches cleared');
 }
 
 /**

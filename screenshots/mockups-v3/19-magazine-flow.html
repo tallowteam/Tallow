@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tallow — Quantum-Safe Transfer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;1,300&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #030306;
+      --bg-2: #08080e;
+      --text: #f2f2f8;
+      --text-2: #9494a8;
+      --text-3: #5a5a70;
+      --border: #18182a;
+      --border-2: #24243a;
+      --accent: #6366f1;
+      --accent-2: #818cf8;
+      --glass: rgba(12,12,22,0.55);
+      --glass-border: rgba(99,102,241,0.08);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -25%;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, rgba(99,102,241,0.07) 0%, transparent 70%);
+      filter: blur(100px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: rgba(3,3,6,0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4rem;
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .nav-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      font-weight: 300;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .nav-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--border-2);
+    }
+
+    .nav-tagline {
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-2);
+      font-weight: 500;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--text-2);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--text);
+    }
+
+    .nav-cta {
+      padding: 0.5rem 1.5rem;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: 50px;
+      color: var(--text);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: all 0.3s;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .nav-cta:hover {
+      background: rgba(99,102,241,0.15);
+      border-color: rgba(99,102,241,0.3);
+      transform: translateY(-1px);
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 55% 45%;
+      align-items: center;
+      padding: 0 4rem;
+      padding-top: 64px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-content h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 8rem;
+      font-weight: 300;
+      line-height: 0.95;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-content h1 .accent {
+      color: var(--text-3);
+    }
+
+    .hero-content p {
+      font-size: 1.125rem;
+      color: var(--text-2);
+      line-height: 1.8;
+      max-width: 480px;
+      margin: 2.5rem 0 3rem;
+    }
+
+    .hero-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 2.5rem;
+      background: var(--text);
+      color: var(--bg);
+      border-radius: 50px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9375rem;
+      letter-spacing: 0.02em;
+      transition: all 0.3s;
+    }
+
+    .hero-cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(242,242,248,0.15);
+    }
+
+    /* Transfer Flow Diagram */
+    .flow-diagram {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0;
+      padding: 2rem;
+      position: relative;
+    }
+
+    .flow-step {
+      position: relative;
+      z-index: 2;
+    }
+
+    .flow-card {
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 20px 24px;
+      position: relative;
+    }
+
+    .flow-step-number {
+      position: absolute;
+      top: 16px;
+      right: 20px;
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      font-weight: 300;
+      color: var(--text-3);
+      opacity: 0.3;
+    }
+
+    .flow-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+
+    .flow-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.25rem;
+    }
+
+    .flow-subtitle {
+      font-size: 0.875rem;
+      color: var(--text-2);
+      font-weight: 400;
+    }
+
+    .flow-connector {
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .flow-line {
+      width: 2px;
+      height: 100%;
+      background-image: linear-gradient(to bottom, var(--accent) 50%, transparent 50%);
+      background-size: 2px 8px;
+      opacity: 0.2;
+      position: relative;
+    }
+
+    .flow-dot {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0.6;
+    }
+
+    .flow-step:nth-child(3) .flow-connector .flow-dot {
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .flow-step:nth-child(3) .flow-card {
+      position: relative;
+    }
+
+    .flow-step:nth-child(3) .flow-card::before {
+      content: '';
+      position: absolute;
+      inset: -30px;
+      background: radial-gradient(circle at center, rgba(99,102,241,0.15) 0%, transparent 70%);
+      border-radius: 50%;
+      filter: blur(30px);
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 0.6;
+        transform: translate(-50%, -50%) scale(1);
+      }
+      50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.5);
+      }
+    }
+
+    /* Marquee Section */
+    .marquee-section {
+      padding: 5rem 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-2);
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+    }
+
+    .marquee {
+      display: flex;
+      gap: 4rem;
+      animation: scroll 40s linear infinite;
+      width: max-content;
+    }
+
+    .marquee-item {
+      font-family: 'Playfair Display', serif;
+      font-size: 3rem;
+      font-weight: 300;
+      color: var(--text-3);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 4rem;
+    }
+
+    .marquee-item::after {
+      content: '◆';
+      font-size: 1rem;
+      color: var(--accent);
+    }
+
+    @keyframes scroll {
+      0% {
+        transform: translateX(0);
+      }
+      100% {
+        transform: translateX(-50%);
+      }
+    }
+
+    /* Features Section */
+    .features {
+      position: relative;
+      z-index: 1;
+    }
+
+    .feature-block {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 600px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .feature-block:nth-child(even) .feature-content {
+      order: 2;
+    }
+
+    .feature-content {
+      padding: 5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .feature-label {
+      font-size: 0.8125rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent-2);
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+
+    .feature-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 3.5rem;
+      font-weight: 300;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .feature-description {
+      font-size: 1.125rem;
+      color: var(--text-2);
+      line-height: 1.8;
+      margin-bottom: 2rem;
+    }
+
+    .feature-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .feature-list li {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.9375rem;
+      color: var(--text-2);
+    }
+
+    .feature-list li::before {
+      content: '→';
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .feature-visual {
+      background: var(--bg-2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-visual::before {
+      content: '';
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(99,102,241,0.1) 0%, transparent 70%);
+      border-radius: 50%;
+      filter: blur(60px);
+    }
+
+    .visual-icon {
+      font-size: 8rem;
+      opacity: 0.15;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Pull Quote */
+    .pull-quote {
+      padding: 8rem 4rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      z-index: 1;
+    }
+
+    .pull-quote blockquote {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.5rem;
+      font-weight: 300;
+      font-style: italic;
+      line-height: 1.5;
+      max-width: 900px;
+      margin: 0 auto 2rem;
+      color: var(--text);
+    }
+
+    .pull-quote cite {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9375rem;
+      font-style: normal;
+      color: var(--text-2);
+      font-weight: 500;
+    }
+
+    /* Stats Section */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      z-index: 1;
+    }
+
+    .stat-item {
+      padding: 4rem 3rem;
+      text-align: center;
+      border-right: 1px solid var(--border);
+    }
+
+    .stat-item:last-child {
+      border-right: none;
+    }
+
+    .stat-number {
+      font-family: 'Playfair Display', serif;
+      font-size: 4rem;
+      font-weight: 300;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+      font-size: 0.875rem;
+      color: var(--text-2);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 500;
+    }
+
+    /* CTA Section */
+    .cta-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      z-index: 1;
+    }
+
+    .cta-content {
+      padding: 6rem 5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .cta-content h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 4rem;
+      font-weight: 300;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .cta-content p {
+      font-size: 1.125rem;
+      color: var(--text-2);
+      line-height: 1.8;
+      margin-bottom: 2.5rem;
+    }
+
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1.125rem 2.75rem;
+      background: var(--accent);
+      color: var(--text);
+      border-radius: 50px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1rem;
+      letter-spacing: 0.02em;
+      transition: all 0.3s;
+      align-self: flex-start;
+    }
+
+    .cta-button:hover {
+      background: var(--accent-2);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(99,102,241,0.3);
+    }
+
+    .cta-visual {
+      background: var(--bg-2);
+      border-left: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-visual::before {
+      content: '';
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
+      border-radius: 50%;
+      filter: blur(80px);
+    }
+
+    .cta-icon {
+      font-size: 10rem;
+      opacity: 0.12;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Footer */
+    footer {
+      background: var(--bg-2);
+      position: relative;
+      z-index: 1;
+    }
+
+    .footer-main {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 4rem;
+      padding: 5rem 4rem 3rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .footer-brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      font-weight: 300;
+      margin-bottom: 1rem;
+    }
+
+    .footer-tagline {
+      font-size: 0.9375rem;
+      color: var(--text-2);
+      line-height: 1.7;
+      max-width: 280px;
+    }
+
+    .footer-column h4 {
+      font-size: 0.8125rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text);
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+
+    .footer-links {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .footer-links a {
+      color: var(--text-2);
+      text-decoration: none;
+      font-size: 0.9375rem;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: var(--text);
+    }
+
+    .footer-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2rem 4rem;
+    }
+
+    .footer-copyright {
+      font-size: 0.875rem;
+      color: var(--text-3);
+    }
+
+    .footer-social {
+      display: flex;
+      gap: 1.5rem;
+      list-style: none;
+    }
+
+    .footer-social a {
+      color: var(--text-2);
+      text-decoration: none;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      transition: color 0.2s;
+    }
+
+    .footer-social a:hover {
+      color: var(--text);
+    }
+
+    @media (max-width: 1200px) {
+      .hero {
+        grid-template-columns: 1fr;
+        padding: 6rem 2rem 4rem;
+      }
+
+      .hero-content h1 {
+        font-size: 5rem;
+      }
+
+      .flow-diagram {
+        margin-top: 4rem;
+        max-width: 500px;
+      }
+
+      .feature-block {
+        grid-template-columns: 1fr;
+      }
+
+      .feature-block:nth-child(even) .feature-content {
+        order: 1;
+      }
+
+      .stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .stat-item:nth-child(2) {
+        border-right: none;
+      }
+
+      .cta-section {
+        grid-template-columns: 1fr;
+      }
+
+      .cta-visual {
+        min-height: 400px;
+        border-left: none;
+        border-top: 1px solid var(--border);
+      }
+
+      .footer-main {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      nav {
+        padding: 0 1.5rem;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .hero-content h1 {
+        font-size: 3.5rem;
+      }
+
+      .feature-title {
+        font-size: 2.5rem;
+      }
+
+      .feature-content {
+        padding: 3rem 2rem;
+      }
+
+      .pull-quote blockquote {
+        font-size: 1.75rem;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .stat-item {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .stat-item:last-child {
+        border-bottom: none;
+      }
+
+      .cta-content h2 {
+        font-size: 2.5rem;
+      }
+
+      .footer-main {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav>
+    <div class="nav-left">
+      <a href="#" class="nav-logo">Tallow</a>
+      <div class="nav-divider"></div>
+      <div class="nav-tagline">Quantum-Safe Transfer</div>
+    </div>
+    <div class="nav-right">
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#security">Security</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#docs">Docs</a></li>
+      </ul>
+      <a href="#" class="nav-cta">Open App</a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>
+        Your files.<br>
+        <span class="accent">Your rules.</span>
+      </h1>
+      <p>
+        Post-quantum encrypted file transfers with zero compromise. No cloud storage, no data collection, no middlemen. Just pure peer-to-peer security built for the future.
+      </p>
+      <a href="#" class="hero-cta">
+        Get Started Free
+        <span>→</span>
+      </a>
+    </div>
+
+    <div class="flow-diagram">
+      <!-- Step 1 -->
+      <div class="flow-step">
+        <div class="flow-card">
+          <div class="flow-step-number">01</div>
+          <span class="flow-icon">📁</span>
+          <div class="flow-title">Select Files</div>
+          <div class="flow-subtitle">Drag & drop or browse</div>
+        </div>
+      </div>
+
+      <!-- Connector 1 -->
+      <div class="flow-connector">
+        <div class="flow-line">
+          <div class="flow-dot"></div>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="flow-step">
+        <div class="flow-card">
+          <div class="flow-step-number">02</div>
+          <span class="flow-icon">🔐</span>
+          <div class="flow-title">Encrypt & Connect</div>
+          <div class="flow-subtitle">ML-KEM + AES-256-GCM</div>
+        </div>
+      </div>
+
+      <!-- Connector 2 -->
+      <div class="flow-connector">
+        <div class="flow-line">
+          <div class="flow-dot"></div>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="flow-step">
+        <div class="flow-card">
+          <div class="flow-step-number">03</div>
+          <span class="flow-icon">🚀</span>
+          <div class="flow-title">Transfer P2P</div>
+          <div class="flow-subtitle">Direct device-to-device</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Marquee Section -->
+  <section class="marquee-section">
+    <div class="marquee">
+      <div class="marquee-item">Post-Quantum Encryption</div>
+      <div class="marquee-item">Zero-Knowledge Architecture</div>
+      <div class="marquee-item">End-to-End Security</div>
+      <div class="marquee-item">Direct P2P Transfer</div>
+      <div class="marquee-item">Post-Quantum Encryption</div>
+      <div class="marquee-item">Zero-Knowledge Architecture</div>
+      <div class="marquee-item">End-to-End Security</div>
+      <div class="marquee-item">Direct P2P Transfer</div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features">
+    <!-- Feature 1 -->
+    <div class="feature-block">
+      <div class="feature-content">
+        <div class="feature-label">Quantum-Resistant</div>
+        <h2 class="feature-title">Built for the future of cryptography</h2>
+        <p class="feature-description">
+          Protect your data against quantum computing threats with NIST-standardized ML-KEM (Kyber) encryption. Your files stay secure today and tomorrow.
+        </p>
+        <ul class="feature-list">
+          <li>ML-KEM-768 post-quantum key exchange</li>
+          <li>AES-256-GCM symmetric encryption</li>
+          <li>Perfect forward secrecy</li>
+          <li>Zero metadata leakage</li>
+        </ul>
+      </div>
+      <div class="feature-visual">
+        <span class="visual-icon">🔐</span>
+      </div>
+    </div>
+
+    <!-- Feature 2 -->
+    <div class="feature-block">
+      <div class="feature-content">
+        <div class="feature-label">Direct Transfer</div>
+        <h2 class="feature-title">No cloud, no middlemen</h2>
+        <p class="feature-description">
+          True peer-to-peer transfers using WebRTC. Your files go directly from your device to the recipient. No uploads, no storage, no third-party access.
+        </p>
+        <ul class="feature-list">
+          <li>WebRTC data channels</li>
+          <li>Automatic NAT traversal</li>
+          <li>Relay fallback with encryption</li>
+          <li>Unlimited file sizes</li>
+        </ul>
+      </div>
+      <div class="feature-visual">
+        <span class="visual-icon">⚡</span>
+      </div>
+    </div>
+
+    <!-- Feature 3 -->
+    <div class="feature-block">
+      <div class="feature-content">
+        <div class="feature-label">Privacy First</div>
+        <h2 class="feature-title">Your data, your control</h2>
+        <p class="feature-description">
+          Zero-knowledge architecture means we can't see your files, metadata, or transfer history. Complete privacy by design, not by promise.
+        </p>
+        <ul class="feature-list">
+          <li>No data collection</li>
+          <li>No user accounts required</li>
+          <li>Optional password protection</li>
+          <li>Automatic metadata stripping</li>
+        </ul>
+      </div>
+      <div class="feature-visual">
+        <span class="visual-icon">🛡️</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pull Quote -->
+  <section class="pull-quote">
+    <blockquote>
+      "The most secure file transfer solution I've ever used. Post-quantum encryption with zero friction."
+    </blockquote>
+    <cite>— Security Researcher, Fortune 500</cite>
+  </section>
+
+  <!-- Stats Section -->
+  <section class="stats">
+    <div class="stat-item">
+      <div class="stat-number">256-bit</div>
+      <div class="stat-label">Encryption</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">0ms</div>
+      <div class="stat-label">Server Latency</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">100%</div>
+      <div class="stat-label">Private</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">∞</div>
+      <div class="stat-label">File Size</div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section">
+    <div class="cta-content">
+      <h2>Start transferring securely today</h2>
+      <p>
+        No registration, no credit card, no setup required. Open Tallow in your browser and start sending files with quantum-safe encryption in seconds.
+      </p>
+      <a href="#" class="cta-button">
+        Launch App
+        <span>→</span>
+      </a>
+    </div>
+    <div class="cta-visual">
+      <span class="cta-icon">🚀</span>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-main">
+      <div class="footer-about">
+        <div class="footer-brand">Tallow</div>
+        <p class="footer-tagline">
+          Post-quantum encrypted file transfers. Secure, private, and built for the future.
+        </p>
+      </div>
+      <div class="footer-column">
+        <h4>Product</h4>
+        <ul class="footer-links">
+          <li><a href="#">Features</a></li>
+          <li><a href="#">Security</a></li>
+          <li><a href="#">Pricing</a></li>
+          <li><a href="#">Roadmap</a></li>
+        </ul>
+      </div>
+      <div class="footer-column">
+        <h4>Resources</h4>
+        <ul class="footer-links">
+          <li><a href="#">Documentation</a></li>
+          <li><a href="#">API</a></li>
+          <li><a href="#">Support</a></li>
+          <li><a href="#">Status</a></li>
+        </ul>
+      </div>
+      <div class="footer-column">
+        <h4>Company</h4>
+        <ul class="footer-links">
+          <li><a href="#">About</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Privacy</a></li>
+          <li><a href="#">Terms</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-copyright">© 2026 Tallow. All rights reserved.</div>
+      <ul class="footer-social">
+        <li><a href="#">Twitter</a></li>
+        <li><a href="#">GitHub</a></li>
+        <li><a href="#">Discord</a></li>
+      </ul>
+    </div>
+  </footer>
+</body>
+</html>

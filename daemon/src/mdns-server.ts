@@ -118,7 +118,7 @@ export class MDNSServer extends EventEmitter {
       this.bonjour = new Bonjour();
       this.registry.start();
       this.isRunning = true;
-      console.log('[mDNS] Server started');
+      console.info('[mDNS] Server started');
       this.emit('started');
     } catch (error) {
       console.error('[mDNS] Failed to start server:', error);
@@ -144,7 +144,7 @@ export class MDNSServer extends EventEmitter {
 
     this.registry.stop();
     this.isRunning = false;
-    console.log('[mDNS] Server stopped');
+    console.info('[mDNS] Server stopped');
     this.emit('stopped');
   }
 
@@ -173,7 +173,7 @@ export class MDNSServer extends EventEmitter {
     }
 
     this.isDiscovering = true;
-    console.log('[mDNS] Starting discovery');
+    console.info('[mDNS] Starting discovery');
 
     // Create browser for Tallow services
     this.browser = this.bonjour.find({ type: SERVICE_TYPE });
@@ -215,7 +215,7 @@ export class MDNSServer extends EventEmitter {
     }
 
     this.isDiscovering = false;
-    console.log('[mDNS] Stopped discovery');
+    console.info('[mDNS] Stopped discovery');
   }
 
   /**
@@ -277,7 +277,7 @@ export class MDNSServer extends EventEmitter {
       });
 
       this.isAdvertising = true;
-      console.log(`[mDNS] Advertising: ${serviceName} on port ${port}`);
+      console.info(`[mDNS] Advertising: ${serviceName} on port ${port}`);
     } catch (error) {
       console.error('[mDNS] Failed to advertise:', error);
       this.emit('error', error instanceof Error ? error : new Error(String(error)));
@@ -314,7 +314,7 @@ export class MDNSServer extends EventEmitter {
     }
 
     this.isAdvertising = false;
-    console.log('[mDNS] Stopped advertising');
+    console.info('[mDNS] Stopped advertising');
   }
 
   /**

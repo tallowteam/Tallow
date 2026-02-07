@@ -55,7 +55,7 @@ class RoutePrefetcher {
         this.router.prefetch(route);
         this.prefetchedRoutes.add(route);
         this.prefetchTimeouts.delete(route);
-        console.debug(`[Prefetch] ${route} (${priority})`);
+        console.info(`[Prefetch] ${route} (${priority})`);
       }
     }, delay);
 

@@ -45,7 +45,7 @@ export async function createTransferAction(formData: FormData) {
     const validated = TransferSchema.parse(data);
 
     // In a real app, this would save to database
-    console.log('[Server Action] Create transfer:', validated);
+    console.info('[Server Action] Create transfer:', validated);
 
     // Revalidate relevant paths
     revalidatePath('/app');
@@ -81,7 +81,7 @@ export async function updateTransferStatusAction(formData: FormData) {
     const validated = TransferStatusSchema.parse(data);
 
     // In a real app, this would update database
-    console.log('[Server Action] Update transfer status:', validated);
+    console.info('[Server Action] Update transfer status:', validated);
 
     // Revalidate
     revalidatePath('/app');
@@ -105,7 +105,7 @@ export async function updateTransferStatusAction(formData: FormData) {
 export async function cancelTransferAction(transferId: string) {
   try {
     // In a real app, this would update database and cleanup resources
-    console.log('[Server Action] Cancel transfer:', transferId);
+    console.info('[Server Action] Cancel transfer:', transferId);
 
     // Revalidate
     revalidatePath('/app');
@@ -129,7 +129,7 @@ export async function cancelTransferAction(transferId: string) {
 export async function deleteTransferAction(transferId: string) {
   try {
     // In a real app, this would delete from database
-    console.log('[Server Action] Delete transfer:', transferId);
+    console.info('[Server Action] Delete transfer:', transferId);
 
     // Revalidate
     revalidatePath('/app');
@@ -154,7 +154,7 @@ export async function deleteTransferAction(transferId: string) {
 export async function bulkDeleteTransfersAction(transferIds: string[]) {
   try {
     // In a real app, this would delete multiple records
-    console.log('[Server Action] Bulk delete transfers:', transferIds);
+    console.info('[Server Action] Bulk delete transfers:', transferIds);
 
     // Revalidate
     revalidatePath('/app');
@@ -179,7 +179,7 @@ export async function bulkDeleteTransfersAction(transferIds: string[]) {
 export async function exportTransferHistoryAction(format: 'json' | 'csv') {
   try {
     // In a real app, this would fetch and format data
-    console.log('[Server Action] Export transfer history:', format);
+    console.info('[Server Action] Export transfer history:', format);
 
     // Simulate data
     const data = {

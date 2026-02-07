@@ -1,0 +1,347 @@
+/* ============================================================================
+   FriendsExample Component Styles
+   Example integration page styling
+   ============================================================================ */
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* ============================================================================
+   HEADER
+   ============================================================================ */
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-zinc-100, #f4f4f5);
+  margin: 0;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.statCard {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.statValue {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--color-purple, #5e5ce6);
+  margin-bottom: 0.5rem;
+}
+
+.statLabel {
+  font-size: 0.875rem;
+  color: var(--color-zinc-400, #a1a1aa);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ============================================================================
+   CONTENT
+   ============================================================================ */
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-zinc-100, #f4f4f5);
+  margin: 0;
+}
+
+.sectionDescription {
+  font-size: 0.875rem;
+  color: var(--color-zinc-400, #a1a1aa);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ============================================================================
+   TRANSFER DIALOG
+   ============================================================================ */
+
+.transferDialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.dialogCard {
+  max-width: 500px;
+  width: 100%;
+  padding: 2rem;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dialogTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-zinc-100, #f4f4f5);
+  margin: 0 0 1.5rem 0;
+}
+
+.dialogContent {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* ============================================================================
+   FRIEND PREVIEW
+   ============================================================================ */
+
+.friendPreview {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--color-zinc-800, #27272a);
+  border-radius: 0.75rem;
+}
+
+.friendAvatar {
+  width: 60px;
+  height: 60px;
+  flex-shrink: 0;
+}
+
+.friendAvatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatarPlaceholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5e5ce6 0%, #818cf8 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: white;
+}
+
+.friendInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.friendName {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-zinc-100, #f4f4f5);
+}
+
+.friendStatus {
+  font-size: 0.875rem;
+}
+
+.online {
+  color: #10b981;
+}
+
+.offline {
+  color: var(--color-zinc-400, #a1a1aa);
+}
+
+.trustedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  background: rgba(94, 92, 230, 0.1);
+  color: #a5b4fc;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  border: 1px solid rgba(94, 92, 230, 0.2);
+  width: fit-content;
+  margin-top: 0.25rem;
+}
+
+/* ============================================================================
+   TRANSFER INFO
+   ============================================================================ */
+
+.transferInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.infoText {
+  font-size: 0.875rem;
+  color: var(--color-zinc-400, #a1a1aa);
+  margin: 0;
+}
+
+.transferHistory {
+  font-size: 0.75rem;
+  color: var(--color-zinc-500, #71717a);
+  margin: 0;
+}
+
+/* ============================================================================
+   DIALOG ACTIONS
+   ============================================================================ */
+
+.dialogActions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+/* ============================================================================
+   INSTRUCTIONS
+   ============================================================================ */
+
+.instructions {
+  margin-top: 2rem;
+}
+
+.instructionsTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-zinc-100, #f4f4f5);
+  margin: 0 0 1rem 0;
+}
+
+.instructionsList {
+  margin: 0;
+  padding-left: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.instructionsList li {
+  font-size: 0.875rem;
+  color: var(--color-zinc-400, #a1a1aa);
+  line-height: 1.6;
+}
+
+.instructionsList strong {
+  color: var(--color-zinc-100, #f4f4f5);
+  font-weight: 600;
+}
+
+/* ============================================================================
+   DEBUG
+   ============================================================================ */
+
+.debug {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: var(--color-zinc-900, #18181b);
+  border: 1px solid var(--color-zinc-800, #27272a);
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.debug details {
+  cursor: pointer;
+}
+
+.debug summary {
+  color: var(--color-zinc-400, #a1a1aa);
+  font-weight: 600;
+  padding: 0.5rem;
+}
+
+.debugContent {
+  margin: 1rem 0 0 0;
+  padding: 1rem;
+  background: var(--color-zinc-950, #09090b);
+  border-radius: 0.375rem;
+  color: #10b981;
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* ============================================================================
+   RESPONSIVE
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .stats {
+    grid-template-columns: 1fr;
+  }
+
+  .dialogCard {
+    padding: 1.5rem;
+  }
+
+  .dialogActions {
+    flex-direction: column;
+  }
+
+  .dialogActions button {
+    width: 100%;
+  }
+}

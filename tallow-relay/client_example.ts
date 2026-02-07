@@ -37,7 +37,7 @@ interface JoinRoomRequest {
   code: string;
 }
 
-interface RoomJoinedResponse {
+interface _RoomJoinedResponse {
   room_id: string;
   expires_at: number;
 }
@@ -74,7 +74,7 @@ export class TallowRelayClient {
         this.ws.binaryType = 'arraybuffer';
 
         this.ws.onopen = () => {
-          console.log('[Relay] Connected to relay server');
+          console.info('[Relay] Connected to relay server');
           resolve();
         };
 
@@ -84,7 +84,7 @@ export class TallowRelayClient {
         };
 
         this.ws.onclose = () => {
-          console.log('[Relay] Connection closed');
+          console.info('[Relay] Connection closed');
           this.onClose?.();
         };
 
@@ -282,7 +282,7 @@ export async function transferFileViaRelay(
   relayClient: TallowRelayClient,
   encryptChunk: (data: ArrayBuffer) => Promise<ArrayBuffer>
 ): Promise<void> {
-  const CHUNK_SIZE = 64 * 1024; // 64KB chunks
+  const _CHUNK_SIZE = 64 * 1024; // 64KB chunks
 
   // Wait for peer to join
   await new Promise<void>((resolve) => {
@@ -313,7 +313,7 @@ export async function transferFileViaRelay(
     relayClient.sendData(encryptedChunk);
 
     offset += value.length;
-    console.log(`[Transfer] Progress: ${Math.round(offset / file.size * 100)}%`);
+    console.info(`[Transfer] Progress: ${Math.round(offset / file.size * 100)}%`);
   }
 
   // Send completion marker
@@ -321,7 +321,7 @@ export async function transferFileViaRelay(
   const encryptedEnd = await encryptChunk(endMarker.buffer);
   relayClient.sendData(encryptedEnd);
 
-  console.log('[Transfer] File transfer complete');
+  console.info('[Transfer] File transfer complete');
 }
 
 // Example: Receiving file via relay
@@ -341,7 +341,7 @@ export async function receiveFileViaRelay(
         if (!metadata) {
           const text = new TextDecoder().decode(data);
           metadata = JSON.parse(text);
-          console.log('[Receive] File metadata:', metadata);
+          console.info('[Receive] File metadata:', metadata);
           return;
         }
 
@@ -358,7 +358,7 @@ export async function receiveFileViaRelay(
         // Regular chunk
         chunks.push(data);
         const received = chunks.reduce((sum, c) => sum + c.byteLength, 0);
-        console.log(`[Receive] Progress: ${Math.round(received / metadata.size * 100)}%`);
+        console.info(`[Receive] Progress: ${Math.round(received / metadata.size * 100)}%`);
 
       } catch (error) {
         reject(error);

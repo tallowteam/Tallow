@@ -1,0 +1,370 @@
+name: Multi-Architecture Docker Build
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    tags:
+      - 'v*'
+    paths:
+      - 'Dockerfile*'
+      - 'docker-compose*.yml'
+      - '.dockerignore'
+      - 'app/**'
+      - 'components/**'
+      - 'lib/**'
+      - 'public/**'
+      - 'tallow-relay/**'
+      - 'package.json'
+      - 'package-lock.json'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'Dockerfile*'
+      - 'docker-compose*.yml'
+      - '.dockerignore'
+      - 'app/**'
+      - 'components/**'
+      - 'lib/**'
+      - 'public/**'
+      - 'tallow-relay/**'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+    inputs:
+      push_images:
+        description: 'Push images to registry'
+        required: false
+        default: 'false'
+      registry:
+        description: 'Container registry'
+        required: false
+        default: 'ghcr.io'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ============================================================================
+  # Detect Changes
+  # ============================================================================
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      main-app: ${{ steps.detect.outputs.main-app }}
+      signaling: ${{ steps.detect.outputs.signaling }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed files
+        id: detect
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]] || [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "main-app=true" >> $GITHUB_OUTPUT
+            echo "signaling=true" >> $GITHUB_OUTPUT
+          else
+            # Check if main app changed
+            if git diff HEAD~1 HEAD --quiet -- Dockerfile Dockerfile.signaling app/ components/ lib/ public/ package*.json .dockerignore; then
+              echo "main-app=false" >> $GITHUB_OUTPUT
+            else
+              echo "main-app=true" >> $GITHUB_OUTPUT
+            fi
+
+            # Check if signaling changed
+            if git diff HEAD~1 HEAD --quiet -- Dockerfile.signaling tallow-relay/ package*.json; then
+              echo "signaling=false" >> $GITHUB_OUTPUT
+            else
+              echo "signaling=true" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+  # ============================================================================
+  # Build Main Application
+  # ============================================================================
+  build-main-app:
+    name: Build Tallow Application
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.main-app == 'true' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - dockerfile: Dockerfile
+            image_suffix: ''
+            description: 'Main Tallow Application'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-options: image=moby/buildkit:master
+
+      - name: Log in to Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}${{ matrix.image_suffix }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}${{ matrix.image_suffix }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}${{ matrix.image_suffix }}:buildcache,mode=max
+          build-args: |
+            NODE_VERSION=20
+            ALPINE_VERSION=3.20
+            NEXT_TELEMETRY_DISABLED=1
+
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
+
+  # ============================================================================
+  # Build Signaling Server
+  # ============================================================================
+  build-signaling:
+    name: Build Signaling Server
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.signaling == 'true' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-options: image=moby/buildkit:master
+
+      - name: Log in to Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-signaling
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.signaling
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-signaling:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-signaling:buildcache,mode=max
+          build-args: |
+            NODE_VERSION=20
+            ALPINE_VERSION=3.20
+
+  # ============================================================================
+  # Scan Images
+  # ============================================================================
+  scan-images:
+    name: Scan Images for Vulnerabilities
+    runs-on: ubuntu-latest
+    needs: [build-main-app, build-signaling]
+    if: github.event_name != 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Scan signaling image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-signaling:latest
+          format: 'table'
+
+  # ============================================================================
+  # SBOM Generation
+  # ============================================================================
+  generate-sbom:
+    name: Generate Software Bill of Materials
+    runs-on: ubuntu-latest
+    needs: [build-main-app, build-signaling]
+    if: github.event_name != 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate SBOM for main app
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          format: cyclonedx-json
+          output-file: sbom-main.json
+
+      - name: Generate SBOM for signaling
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-signaling:latest
+          format: cyclonedx-json
+          output-file: sbom-signaling.json
+
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: sbom-reports
+          path: sbom-*.json
+          retention-days: 90
+
+  # ============================================================================
+  # Test Deployment
+  # ============================================================================
+  test-deployment:
+    name: Test Docker Compose Deployment
+    runs-on: ubuntu-latest
+    needs: [build-main-app, build-signaling]
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build images locally
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          load: true
+          tags: tallow:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build signaling image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.signaling
+          load: true
+          tags: tallow-signaling:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test Docker Compose
+        run: |
+          # Replace image tags in compose file
+          sed -i 's/tallow:latest/tallow:test/g' docker-compose.yml
+          sed -i 's/tallow-signaling:latest/tallow-signaling:test/g' docker-compose.yml
+
+          # Start services
+          docker-compose up -d
+          sleep 10
+
+          # Test health endpoints
+          curl -f http://localhost:3000/api/health || exit 1
+          curl -f http://localhost:3001/health || exit 1
+
+          # Check container status
+          docker-compose ps
+
+          # View logs
+          docker-compose logs
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose down -v
+
+  # ============================================================================
+  # Notify Status
+  # ============================================================================
+  notify:
+    name: Notify Build Status
+    runs-on: ubuntu-latest
+    needs: [build-main-app, build-signaling]
+    if: always()
+    steps:
+      - name: Build Status Summary
+        run: |
+          echo "Build Status Summary"
+          echo "===================="
+          echo "Main App: ${{ needs.build-main-app.result }}"
+          echo "Signaling: ${{ needs.build-signaling.result }}"
+          echo ""
+          echo "Images pushed to: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+
+      - name: Comment PR with build status
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = context.payload.pull_request ? 'success' : 'unknown';
+            const comment = `
+            ## Docker Build Status
+
+            - **Main App**: ${{ needs.build-main-app.result }}
+            - **Signaling Server**: ${{ needs.build-signaling.result }}
+
+            Images: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}\`
+            Platforms: \`linux/amd64, linux/arm64\`
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

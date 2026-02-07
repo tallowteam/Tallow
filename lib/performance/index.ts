@@ -148,3 +148,104 @@ export {
   type BudgetStatus,
   type BudgetResult,
 } from './budget';
+
+// Bundle Analysis
+export {
+  analyzeBundleSize,
+  checkBudget as checkBundleBudgets,
+  getOptimizationSuggestions,
+  formatBytes,
+  logBundleReport,
+  BUNDLE_BUDGETS,
+  STRICT_BUNDLE_BUDGETS,
+  RELAXED_BUNDLE_BUDGETS,
+  type BundleReport,
+  type RouteSize,
+  type ModuleSize,
+  type BundleBudgets,
+  type BudgetViolation as BundleBudgetViolation,
+} from './bundle-analyzer';
+
+// Lighthouse & Core Web Vitals
+export {
+  checkVitals,
+  logPerformanceReport,
+  startMonitoring as startLighthouseMonitoring,
+  LIGHTHOUSE_TARGETS,
+  STRICT_LIGHTHOUSE_TARGETS,
+  RELAXED_LIGHTHOUSE_TARGETS,
+  type PerformanceReport as LighthouseReport,
+  type CoreWebVitalsMetrics,
+  type PerformanceIssue,
+  type PerformanceOpportunity,
+  type LighthouseTargets,
+} from './lighthouse-config';
+
+// Resource Optimization
+export {
+  optimizeImages,
+  optimizeImage,
+  deferNonCriticalCSS,
+  inlineCriticalCSS,
+  extractCriticalCSS,
+  removeUnusedCSS,
+  preloadCriticalAssets,
+  preconnect as preconnectOrigins,
+  prefetchResources,
+  deferScript,
+  loadScript,
+  splitVendorChunks,
+  optimizeFonts,
+  hasServiceWorker,
+  registerServiceWorker,
+  optimizeAllResources,
+  type ImageOptimizationOptions,
+  type CriticalAsset,
+  type VendorChunkConfig,
+} from './resource-optimizer';
+
+// Battery Awareness
+export {
+  getBatteryStatus,
+  onBatteryChange,
+  shouldReduceActivity,
+  getPowerMode,
+  detectCPUThrottle,
+  isDeviceThrottled,
+  enableAdaptivePerformance,
+  applyPowerMode,
+  getNetworkSettings,
+  shouldDeferExpensiveOps,
+  startPowerMonitoring,
+  logPowerStatus,
+  type BatteryStatus,
+  type PowerMode,
+  type PowerSettings,
+  type CPUThrottle,
+} from './battery-awareness';
+
+// Memory Monitoring
+export {
+  getMemoryUsage,
+  isMemoryPressured,
+  getMemoryPressure,
+  setMemoryLimit,
+  clearMemoryLimit,
+  getMemoryLimit,
+  registerCache,
+  registerBuffer,
+  registerWebRTCConnection,
+  performMemoryCleanup,
+  autoCleanup,
+  detectMemoryLeak,
+  getMemoryTrend,
+  startMemoryMonitoring,
+  stopMemoryMonitoring,
+  getMemoryStats,
+  logMemoryStatus,
+  withMemoryGuard,
+  type MemoryUsage,
+  type MemoryPressure,
+  type MemoryCleanupOptions,
+  type MemoryStats,
+} from './memory-monitor';

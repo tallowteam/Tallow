@@ -50,6 +50,36 @@ export {
   isRetryableError,
 } from './retry-manager';
 
+// Email validation
+export {
+  validateEmail,
+  validateEmailDetailed,
+  isDisposableEmail,
+  sanitizeEmailInput,
+  normalizeEmail,
+  validateEmailList,
+  extractEmails,
+  hasValidMXRecords,
+  calculateEmailRiskScore,
+} from './email-validation';
+
+// Email templates
+export {
+  shareEmailTemplate,
+  welcomeEmailTemplate,
+} from './email-templates';
+
+// Email client (frontend)
+export {
+  EmailClient,
+  emailClient,
+  sendShareEmail,
+  getEmailStatus,
+  formatFileSize as formatFileSizeClient,
+  validateEmailBeforeSend,
+  handleEmailError,
+} from './email-client';
+
 // Types
 export type {
   EmailFileAttachment,
@@ -65,6 +95,16 @@ export type {
   VirusScanResult,
   EmailRetryPolicy,
 } from './types';
+
+export type {
+  ShareEmailParams,
+  WelcomeEmailParams,
+  EmailTemplate,
+} from './email-templates';
+
+export type {
+  EmailValidationResult,
+} from './email-validation';
 
 export {
   DEFAULT_RETRY_POLICY,

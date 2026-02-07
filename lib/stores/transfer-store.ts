@@ -462,3 +462,10 @@ export const selectTotalSpeed = (state: TransferStoreState) =>
   state.transfers
     .filter((t) => t.status === 'transferring')
     .reduce((acc, t) => acc + (t.speed || 0), 0);
+
+/**
+ * Non-hook accessor for useTransferStore.
+ * Use this in callbacks / effects where you call .getState() so the React
+ * compiler does not hoist it into a reactive subscription.
+ */
+export const transferStoreApi = useTransferStore;

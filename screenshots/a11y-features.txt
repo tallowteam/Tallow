@@ -1,0 +1,331 @@
+- link "Skip to main content":
+  - /url: "#main-content"
+- banner:
+  - link "Tallow - Home":
+    - /url: /
+    - text: Tallow
+  - navigation "Main navigation":
+    - link "Features":
+      - /url: /features
+    - link "Security":
+      - /url: /security
+    - link "Pricing":
+      - /url: /pricing
+    - link "Docs":
+      - /url: /docs
+  - button "Switch to dark mode"
+  - link "Open App":
+    - /url: /transfer
+    - button "Open App"
+- main:
+  - img
+  - img
+  - img
+  - img
+  - heading "Every Feature You Need" [level=1]
+  - paragraph: Three flexible sharing methods. Military-grade encryption. Zero compromises on privacy.
+  - img
+  - heading "Local Network" [level=3]
+  - paragraph: Instant LAN transfers at wire speed
+  - paragraph: Devices on the same network are discovered automatically via mDNS. No codes, no hassle—just drag and drop to transfer at maximum network speed.
+  - list:
+    - listitem:
+      - img
+      - text: Auto-discovery via mDNS
+    - listitem:
+      - img
+      - text: Wire-speed transfers
+    - listitem:
+      - img
+      - text: No internet required
+    - listitem:
+      - img
+      - text: Zero configuration
+  - img
+  - heading "Internet P2P" [level=3]
+  - paragraph: Connect worldwide with room codes
+  - paragraph: Create a private room with a 6-digit code to connect with anyone, anywhere. Direct peer-to-peer connection with automatic NAT traversal.
+  - list:
+    - listitem:
+      - img
+      - text: 6-digit room codes
+    - listitem:
+      - img
+      - text: Global connectivity
+    - listitem:
+      - img
+      - text: NAT traversal
+    - listitem:
+      - img
+      - text: Direct P2P connection
+  - img
+  - heading "Friends Network" [level=3]
+  - paragraph: One-tap sharing with saved contacts
+  - paragraph: Save your frequent contacts for instant one-tap transfers. Build your trusted network and share files with zero friction.
+  - list:
+    - listitem:
+      - img
+      - text: Saved contacts
+    - listitem:
+      - img
+      - text: One-tap transfers
+    - listitem:
+      - img
+      - text: Persistent friendships
+    - listitem:
+      - img
+      - text: Trust network
+  - heading "Packed with power features" [level=2]
+  - paragraph: Everything you need for secure, efficient file transfers—and then some.
+  - img
+  - heading "E2E Encryption" [level=3]
+  - paragraph: AES-256-GCM encryption with keys that never leave your device.
+  - img
+  - heading "Post-Quantum Security" [level=3]
+  - paragraph: ML-KEM-768 (Kyber) protection against quantum computer attacks.
+  - img
+  - heading "File Requests" [level=3]
+  - paragraph: Request specific files from connected peers with approval workflow.
+  - img
+  - heading "Screen Sharing" [level=3]
+  - paragraph: Share your screen in real-time with end-to-end encrypted streaming.
+  - img
+  - heading "Voice Memos" [level=3]
+  - paragraph: Record and send encrypted voice messages up to 5 minutes long.
+  - img
+  - heading "Location Sharing" [level=3]
+  - paragraph: Share real-time GPS coordinates with optional expiration.
+  - img
+  - heading "Transfer History" [level=3]
+  - paragraph: Complete audit trail of all transfers with searchable metadata.
+  - img
+  - heading "Batch Operations" [level=3]
+  - paragraph: Queue multiple transfers and manage them with intelligent scheduling.
+  - img
+  - heading "Scheduled Transfers" [level=3]
+  - paragraph: Schedule file transfers for specific times or when peers come online.
+  - img
+  - heading "Chat Integration" [level=3]
+  - paragraph: Built-in encrypted messaging alongside file transfers.
+  - img
+  - heading "QR Code Pairing" [level=3]
+  - paragraph: Scan QR codes for instant device pairing without typing codes.
+  - img
+  - heading "Smart Compression" [level=3]
+  - paragraph: Automatic compression for faster transfers with no quality loss.
+  - img
+  - heading "Military-grade security, future-proof protection" [level=2]
+  - paragraph: Your files are protected by multiple layers of encryption that would take quantum computers millions of years to break.
+  - heading "ML-KEM-768 (Kyber)" [level=3]
+  - paragraph: NIST-standardized post-quantum key encapsulation. Safe against attacks from future quantum computers.
+  - heading "ChaCha20-Poly1305" [level=3]
+  - paragraph: High-performance authenticated encryption used by Google, Cloudflare, and Signal Protocol.
+  - heading "Triple Ratchet" [level=3]
+  - paragraph: Advanced key rotation protocol providing forward secrecy and post-compromise security.
+  - link "Security Details":
+    - /url: /security
+    - button "Security Details":
+      - text: Security Details
+      - img
+  - heading "How we compare" [level=2]
+  - paragraph: Tallow vs the competition—see why we're the most secure choice.
+  - table:
+    - rowgroup:
+      - row "Feature Tallow AirDrop WeTransfer Send Anywhere":
+        - columnheader "Feature"
+        - columnheader "Tallow"
+        - columnheader "AirDrop"
+        - columnheader "WeTransfer"
+        - columnheader "Send Anywhere"
+    - rowgroup:
+      - row "End-to-end encryption":
+        - cell "End-to-end encryption"
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+      - row "Post-quantum safe":
+        - cell "Post-quantum safe"
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+      - row "No cloud storage":
+        - cell "No cloud storage"
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+      - row "No account required":
+        - cell "No account required"
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+      - row "Cross-platform":
+        - cell "Cross-platform"
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+      - row "Unlimited file size":
+        - cell "Unlimited file size"
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+      - row "Open source":
+        - cell "Open source"
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+      - row "Metadata stripping":
+        - cell "Metadata stripping"
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+      - row "Resumable transfers":
+        - cell "Resumable transfers"
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+      - row "Group transfers":
+        - cell "Group transfers"
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+      - row "Screen sharing":
+        - cell "Screen sharing"
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+      - row "Voice memos":
+        - cell "Voice memos"
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+        - cell:
+          - img
+  - heading "Start sharing securely—no signup required" [level=2]
+  - paragraph: Experience the future of file sharing. Open source, quantum-safe, and completely free.
+  - link "Start Transferring Now":
+    - /url: /transfer
+    - button "Start Transferring Now":
+      - text: Start Transferring Now
+      - img
+  - link "Learn About Security":
+    - /url: /security
+    - button "Learn About Security"
+- contentinfo:
+  - heading "Product" [level=3]
+  - list:
+    - listitem:
+      - link "Features":
+        - /url: /features
+    - listitem:
+      - link "Security":
+        - /url: /security
+    - listitem:
+      - link "Pricing":
+        - /url: /pricing
+    - listitem:
+      - link "Download":
+        - /url: /transfer
+  - heading "Resources" [level=3]
+  - list:
+    - listitem:
+      - link "Docs":
+        - /url: /docs
+    - listitem:
+      - link "Guides":
+        - /url: /about
+    - listitem:
+      - link "API":
+        - /url: https://github.com/tallow
+    - listitem:
+      - link "Changelog":
+        - /url: /docs
+  - heading "Legal" [level=3]
+  - list:
+    - listitem:
+      - link "Privacy":
+        - /url: /privacy
+    - listitem:
+      - link "Terms":
+        - /url: /terms
+    - listitem:
+      - link "Cookies":
+        - /url: /privacy
+  - heading "Connect" [level=3]
+  - list:
+    - listitem:
+      - link "GitHub":
+        - /url: https://github.com/tallow
+        - img
+        - text: GitHub
+    - listitem:
+      - link "Twitter":
+        - /url: https://twitter.com/tallow
+        - img
+        - text: Twitter
+    - listitem:
+      - link "Discord":
+        - /url: https://discord.gg/tallow
+        - img
+        - text: Discord
+  - paragraph: © 2026 Tallow. All rights reserved.
+  - paragraph: Built with privacy in mind
+- region "Notifications"
+- alert

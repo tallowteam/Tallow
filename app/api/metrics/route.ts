@@ -1,80 +1,85 @@
 /**
  * Prometheus Metrics Endpoint
- * Exposes application metrics in Prometheus format
  *
- * Usage:
- * - Configure Prometheus to scrape: http://localhost:3000/api/metrics
- * - Metrics are exposed in OpenMetrics format
- * - Set METRICS_TOKEN env var to enable Bearer token authentication
- * - If METRICS_TOKEN is not set, access is unrestricted (dev mode)
+ * Exposes application metrics in Prometheus text exposition format.
+ * This endpoint should be scraped by Prometheus server for monitoring.
+ *
+ * Security: In production, this endpoint should be:
+ * - Behind internal network/VPN
+ * - Protected by firewall rules
+ * - Only accessible to monitoring infrastructure
+ *
+ * @see https://prometheus.io/docs/instrumenting/exposition_formats/
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getMetrics, getContentType } from '@/lib/monitoring/metrics-server';
-import { secureLog } from '@/lib/utils/secure-logger';
+import { getRegistry } from '@/lib/metrics/prometheus';
 
+// Force dynamic rendering - metrics must be fresh
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 /**
  * GET /api/metrics
- * Returns all registered metrics in Prometheus format
+ *
+ * Returns all registered metrics in Prometheus text format.
+ *
+ * Response format:
+ * - Content-Type: text/plain; version=0.0.4; charset=utf-8
+ * - Body: Prometheus text exposition format
+ *
+ * Example output:
+ * ```
+ * # HELP tallow_transfers_total Total number of file transfers
+ * # TYPE tallow_transfers_total counter
+ * tallow_transfers_total{status="success"} 42
+ * tallow_transfers_total{status="failed"} 3
+ *
+ * # HELP tallow_active_connections Number of currently active peer connections
+ * # TYPE tallow_active_connections gauge
+ * tallow_active_connections{type="webrtc"} 5
+ * ```
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest): Promise<NextResponse> {
   try {
-    // Authentication check for metrics endpoint
-    // If METRICS_TOKEN is set, require Bearer token authentication
-    // If METRICS_TOKEN is not set (dev mode), allow unrestricted access
-    const authHeader = request.headers.get('authorization');
-    const metricsToken = process.env['METRICS_TOKEN'];
+    const registry = getRegistry();
+    const metrics = registry.serialize();
 
-    if (metricsToken && (!authHeader || authHeader !== `Bearer ${metricsToken}`)) {
-      secureLog.warn('[Metrics] Unauthorized access attempt to metrics endpoint');
-      return new NextResponse('Unauthorized', { status: 401 });
-    }
-
-    // Get metrics from registry
-    const metrics = await getMetrics();
-    const contentType = getContentType();
-
-    // Return metrics in Prometheus text format
+    // Prometheus expects specific content type
     return new NextResponse(metrics, {
       status: 200,
       headers: {
-        'Content-Type': contentType,
-        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Content-Type': 'text/plain; version=0.0.4; charset=utf-8',
+        // Prevent caching - metrics should always be fresh
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       },
     });
   } catch (error) {
-    secureLog.error('[Metrics] Error generating metrics:', error);
+    // Log error but don't expose details to prevent information leakage
+    console.error('Error generating metrics:', error);
 
-    return NextResponse.json(
-      {
-        error: 'Failed to generate metrics',
-        message: error instanceof Error ? error.message : 'Unknown error',
+    return new NextResponse('Internal Server Error', {
+      status: 500,
+      headers: {
+        'Content-Type': 'text/plain',
       },
-      { status: 500 }
-    );
+    });
   }
 }
 
 /**
  * HEAD /api/metrics
- * Health check for metrics endpoint
+ *
+ * Health check for metrics endpoint.
+ * Prometheus uses HEAD requests to check if endpoint is available.
  */
-export async function HEAD(request: NextRequest) {
-  // Apply same authentication check to HEAD requests
-  const authHeader = request.headers.get('authorization');
-  const metricsToken = process.env['METRICS_TOKEN'];
-
-  if (metricsToken && (!authHeader || authHeader !== `Bearer ${metricsToken}`)) {
-    return new NextResponse(null, { status: 401 });
-  }
-
+export async function HEAD(_request: NextRequest): Promise<NextResponse> {
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Content-Type': getContentType(),
+      'Content-Type': 'text/plain; version=0.0.4; charset=utf-8',
     },
   });
 }

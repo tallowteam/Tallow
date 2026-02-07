@@ -1,0 +1,360 @@
+/* Quick Access Panel - Dark Theme with Purple Accent */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* Section */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+/* Grid Layout */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--space-3);
+}
+
+/* Folder Card */
+.folderCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: rgba(23, 23, 23, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+  color: var(--text-primary);
+  font-family: inherit;
+  min-height: 100px;
+}
+
+.folderCard:hover:not(.disabled):not(.loading) {
+  background: rgba(23, 23, 23, 0.9);
+  border-color: rgba(94, 92, 230, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.folderCard:focus-visible {
+  outline: 2px solid #5E5CE6;
+  outline-offset: 2px;
+  border-color: #5E5CE6;
+}
+
+.folderCard:active:not(.disabled):not(.loading) {
+  transform: translateY(0);
+}
+
+.folderCard.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.folderCard.loading {
+  cursor: wait;
+  pointer-events: none;
+}
+
+/* Folder Icon */
+.folderIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  color: #a1a1a1;
+  transition: all 0.25s ease;
+}
+
+.folderIcon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.folderCard:hover:not(.disabled):not(.loading) .folderIcon {
+  color: #5E5CE6;
+  transform: scale(1.1);
+}
+
+.folderCard.loading .folderIcon {
+  color: #5E5CE6;
+}
+
+/* Spinner Animation */
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Folder Name */
+.folderName {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+  transition: color 0.25s ease;
+}
+
+.folderCard:hover:not(.disabled):not(.loading) .folderName {
+  color: #5E5CE6;
+}
+
+/* Remove Button (for recent folders) */
+.removeButton {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+}
+
+.removeButton:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.folderCard:hover .removeButton {
+  opacity: 1;
+}
+
+.removeButton svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Clear Button */
+.clearButton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clearButton:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.clearButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Error Message */
+.error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: var(--radius-lg);
+  color: #ef4444;
+  font-size: var(--font-size-sm);
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Unsupported Message */
+.unsupportedMessage {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: var(--radius-lg);
+  color: #3b82f6;
+}
+
+.unsupportedMessage svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.messageContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.messageTitle {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: #3b82f6;
+  margin: 0;
+}
+
+.messageText {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tablet */
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: var(--space-2);
+  }
+
+  .folderCard {
+    padding: var(--space-3);
+    min-height: 90px;
+  }
+
+  .folderIcon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .folderName {
+    font-size: var(--font-size-xs);
+  }
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .container {
+    gap: var(--space-4);
+  }
+
+  .section {
+    gap: var(--space-2);
+  }
+
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: var(--space-2);
+  }
+
+  .folderCard {
+    padding: var(--space-2);
+    min-height: 80px;
+    gap: var(--space-1);
+  }
+
+  .folderIcon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .folderName {
+    font-size: var(--font-size-xs);
+  }
+
+  .sectionTitle {
+    font-size: var(--font-size-xs);
+  }
+
+  .clearButton {
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--font-size-xs);
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .folderCard,
+  .folderIcon,
+  .removeButton,
+  .clearButton {
+    transition: none;
+  }
+
+  .folderCard:hover:not(.disabled):not(.loading) {
+    transform: none;
+  }
+
+  .folderCard:hover:not(.disabled):not(.loading) .folderIcon {
+    transform: none;
+  }
+
+  .folderCard:active:not(.disabled):not(.loading) {
+    transform: none;
+  }
+
+  .spinner {
+    animation: none;
+  }
+
+  .error {
+    animation: none;
+  }
+}

@@ -1,0 +1,953 @@
+/* ============================================
+   Tallow 3.0 Cineglass Magazine Landing Page
+   Mockup #16 — Magazine + App Window Design
+   ============================================ */
+
+.main {
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: var(--bg);
+}
+
+/* ============================================
+   Ambient Background Blobs
+   ============================================ */
+
+.ambientBlob1 {
+  position: fixed;
+  top: -20%;
+  right: -10%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%);
+  filter: blur(100px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ambientBlob2 {
+  position: fixed;
+  bottom: -10%;
+  left: -10%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.05) 0%, transparent 70%);
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============================================
+   1. HERO SECTION — 100vh Grid 55%/45%
+   ============================================ */
+
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0 0 0;
+  z-index: 1;
+}
+
+.heroGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 48px;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 24px;
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .heroGrid {
+    grid-template-columns: 55% 45%;
+    gap: 80px;
+    padding: 0 56px;
+  }
+}
+
+/* Left Side — 55% */
+.heroLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 40px 0;
+}
+
+@media (min-width: 1024px) {
+  .heroLeft {
+    padding: 180px 0 0 0;
+  }
+}
+
+.heroBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent-2);
+  width: fit-content;
+}
+
+.pulseDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #28c840;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(40, 200, 64, 0.7);
+  }
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 0 8px rgba(40, 200, 64, 0);
+  }
+}
+
+.heroHeading {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-display);
+  font-size: 3.5rem;
+  font-weight: 300;
+  line-height: 1.0;
+  letter-spacing: -0.02em;
+}
+
+@media (min-width: 768px) {
+  .heroHeading {
+    font-size: 5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .heroHeading {
+    font-size: 6rem;
+  }
+}
+
+.heroHeadingPrimary {
+  color: #f2f2f8;
+}
+
+.heroHeadingSecondary {
+  color: var(--text-3);
+}
+
+.heroParagraph {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--text-2);
+  max-width: 480px;
+  margin: 0;
+}
+
+.heroButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.btnPrimary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 32px;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #030306;
+  background: #f2f2f8;
+  border: none;
+  border-radius: 60px;
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.btnPrimary:hover {
+  background: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(242, 242, 248, 0.25);
+}
+
+.btnSecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 32px;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 60px;
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.btnSecondary:hover {
+  background: rgba(12, 12, 22, 0.7);
+  border-color: rgba(99, 102, 241, 0.16);
+  transform: translateY(-2px);
+}
+
+/* Right Side — 45% Glass App Window */
+.heroRight {
+  position: relative;
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .heroRight {
+    display: block;
+  }
+}
+
+.appWindow {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  background: var(--bg-2);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.4);
+  transform: perspective(1200px) rotateY(-8deg) rotateX(4deg);
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.appWindow:hover {
+  transform: perspective(1200px) rotateY(-4deg) rotateX(2deg);
+}
+
+.windowChrome {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: rgba(8, 8, 14, 0.95);
+  border-bottom: 1px solid var(--border);
+}
+
+.trafficLights {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trafficRed,
+.trafficYellow,
+.trafficGreen {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.trafficRed {
+  background: #ff5f57;
+}
+
+.trafficYellow {
+  background: #febc2e;
+}
+
+.trafficGreen {
+  background: #28c840;
+}
+
+.urlBar {
+  flex: 1;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  color: var(--text-3);
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  text-align: center;
+}
+
+.windowBody {
+  padding: 24px;
+  background: var(--bg-2);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 400px;
+}
+
+.dropZone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 24px;
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  color: var(--text-3);
+  font-size: 0.85rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.dropZone:hover {
+  border-color: var(--accent);
+  color: var(--accent-2);
+}
+
+.dropZone svg {
+  width: 32px;
+  height: 32px;
+  opacity: 0.5;
+}
+
+.deviceCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.deviceCard:hover {
+  background: rgba(12, 12, 22, 0.65);
+  border-color: rgba(99, 102, 241, 0.12);
+}
+
+.deviceDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.deviceInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.deviceName {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.deviceStatus {
+  font-size: 0.7rem;
+  color: var(--text-3);
+}
+
+.transferProgress {
+  padding: 16px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.transferHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.transferFile {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.transferSize {
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
+
+.progressBar {
+  height: 6px;
+  background: var(--bg);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent-2) 100%);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.transferFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.transferSpeed {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent-2);
+}
+
+.encryptionBadge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 4px 8px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 4px;
+  color: var(--accent-2);
+}
+
+/* ============================================
+   2. MARQUEE TRUST STRIP
+   ============================================ */
+
+.marquee {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 0;
+  background: var(--bg);
+  z-index: 1;
+}
+
+.marqueeTrack {
+  display: flex;
+  animation: marquee-scroll 30s linear infinite;
+  will-change: transform;
+}
+
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-33.333%);
+  }
+}
+
+.marqueeContent {
+  display: inline-block;
+  white-space: nowrap;
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--text-3);
+}
+
+/* ============================================
+   3. FEATURES SECTION — 3 Alternating 50/50
+   ============================================ */
+
+.features {
+  position: relative;
+  z-index: 1;
+}
+
+.featureBlock {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 48px;
+  align-items: center;
+  padding: 80px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+@media (min-width: 1024px) {
+  .featureBlock {
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    padding: 120px 56px;
+  }
+}
+
+.featureBlockReverse {
+  direction: ltr;
+}
+
+@media (min-width: 1024px) {
+  .featureBlockReverse .featureVisual {
+    order: -1;
+  }
+}
+
+.featureText {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.featureLabel {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-3);
+}
+
+.featureHeading {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 300;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .featureHeading {
+    font-size: 2.8rem;
+  }
+}
+
+.featureParagraph {
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--text-2);
+  margin: 0;
+}
+
+.featureLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--accent-2);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  width: fit-content;
+}
+
+.featureLink:hover {
+  color: var(--accent-3);
+  transform: translateX(4px);
+}
+
+.featureVisual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.featureCard {
+  width: 100%;
+  max-width: 480px;
+  padding: 32px;
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.featureCard:hover {
+  background: rgba(12, 12, 22, 0.65);
+  border-color: rgba(99, 102, 241, 0.12);
+  transform: translateY(-4px);
+}
+
+/* Transfer Mockup */
+.transferMockup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.mockupHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent-2);
+}
+
+.mockupHeader svg {
+  width: 20px;
+  height: 20px;
+}
+
+.mockupDevice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.deviceIcon {
+  font-size: 3rem;
+}
+
+.deviceLabel {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.mockupArrow {
+  font-size: 2rem;
+  color: var(--accent);
+}
+
+/* Security Stack */
+.securityStack {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.stackItem {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.stackItem svg {
+  width: 24px;
+  height: 24px;
+  color: var(--accent-2);
+}
+
+.stackDivider {
+  height: 1px;
+  background: var(--border);
+  margin: 0 20px;
+}
+
+/* Platform Grid */
+.platformGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.platformIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  aspect-ratio: 1;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+
+.platformIcon:hover {
+  background: var(--bg-2);
+  border-color: var(--accent);
+  transform: scale(1.05);
+}
+
+.platformLabels {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-3);
+  text-align: center;
+}
+
+/* ============================================
+   4. PULL QUOTE
+   ============================================ */
+
+.pullQuote {
+  position: relative;
+  padding: 100px 56px;
+  text-align: center;
+  z-index: 1;
+}
+
+@media (max-width: 768px) {
+  .pullQuote {
+    padding: 80px 24px;
+  }
+}
+
+.quoteAccent {
+  width: 40px;
+  height: 2px;
+  background: var(--accent);
+  margin: 0 auto 32px;
+}
+
+.quote {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--text-2);
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .quote {
+    font-size: 2.2rem;
+  }
+}
+
+/* ============================================
+   5. STATS SECTION — 4 Inline Blocks
+   ============================================ */
+
+.stats {
+  position: relative;
+  padding: 80px 24px;
+  z-index: 1;
+}
+
+@media (min-width: 768px) {
+  .stats {
+    padding: 100px 56px;
+  }
+}
+
+.statsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  max-width: 900px;
+  margin: 0 auto;
+  gap: 0;
+}
+
+.statItem {
+  flex: 1;
+  min-width: 140px;
+  padding: 32px 24px;
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .statItem {
+    padding: 32px 48px;
+  }
+}
+
+.statValue {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+@media (min-width: 768px) {
+  .statValue {
+    font-size: 3rem;
+  }
+}
+
+.statLabel {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-3);
+}
+
+.statDivider {
+  width: 1px;
+  background: var(--border);
+  align-self: stretch;
+}
+
+@media (max-width: 640px) {
+  .statDivider {
+    display: none;
+  }
+
+  .statsContainer {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .statItem {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .statItem:last-child {
+    border-bottom: none;
+  }
+}
+
+/* ============================================
+   6. CTA SECTION — 50/50 Grid
+   ============================================ */
+
+.cta {
+  position: relative;
+  padding: 80px 24px;
+  border-top: 1px solid var(--border);
+  z-index: 1;
+}
+
+@media (min-width: 768px) {
+  .cta {
+    padding: 120px 56px;
+  }
+}
+
+.ctaGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 48px;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+@media (min-width: 1024px) {
+  .ctaGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+  }
+}
+
+.ctaLeft {
+  display: flex;
+  flex-direction: column;
+}
+
+.ctaHeading {
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  font-weight: 300;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .ctaHeading {
+    font-size: 3rem;
+  }
+}
+
+.ctaRight {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.ctaParagraph {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--text-2);
+  margin: 0;
+}
+
+.ctaButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 40px;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #030306;
+  background: #f2f2f8;
+  border: none;
+  border-radius: 60px;
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  width: fit-content;
+}
+
+.ctaButton:hover {
+  background: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(242, 242, 248, 0.3);
+}
+
+/* ============================================
+   Mobile Responsive Adjustments
+   ============================================ */
+
+@media (max-width: 768px) {
+  .heroHeading {
+    font-size: 3rem;
+  }
+
+  .heroParagraph {
+    font-size: 0.95rem;
+  }
+
+  .featureHeading {
+    font-size: 2rem;
+  }
+
+  .quote {
+    font-size: 1.6rem;
+  }
+
+  .ctaHeading {
+    font-size: 2rem;
+  }
+}
+
+/* ============================================
+   Reduced Motion Support
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .pulseDot,
+  .marqueeTrack,
+  .appWindow {
+    animation: none !important;
+  }
+
+  .btnPrimary:hover,
+  .btnSecondary:hover,
+  .featureCard:hover,
+  .ctaButton:hover {
+    transform: none !important;
+  }
+}

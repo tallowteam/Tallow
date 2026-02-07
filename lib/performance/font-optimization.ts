@@ -65,11 +65,11 @@ export function preloadFont(
   format: 'woff2' | 'woff' = 'woff2',
   crossOrigin = true
 ): void {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {return;}
 
   // Check if already preloaded
   const existing = document.querySelector(`link[href="${src}"]`);
-  if (existing) return;
+  if (existing) {return;}
 
   const link = document.createElement('link');
   link.rel = 'preload';
@@ -160,7 +160,7 @@ export async function loadFonts(
  * const isLoaded = isFontLoaded('Inter', '400');
  */
 export function isFontLoaded(family: string, weight = 'normal'): boolean {
-  if (typeof document === 'undefined') return false;
+  if (typeof document === 'undefined') {return false;}
   return document.fonts.check(`${weight} 16px "${family}"`);
 }
 
@@ -175,10 +175,10 @@ export async function waitForFont(
   weight = 'normal',
   timeout = 3000
 ): Promise<boolean> {
-  if (typeof document === 'undefined') return false;
+  if (typeof document === 'undefined') {return false;}
 
   // Already loaded
-  if (isFontLoaded(family, weight)) return true;
+  if (isFontLoaded(family, weight)) {return true;}
 
   // Wait for fonts ready
   return new Promise((resolve) => {
@@ -220,7 +220,7 @@ export function applyFOUTStrategy(
   fontFamily: string,
   fallbackFamily: string
 ): () => void {
-  if (typeof document === 'undefined') return () => {};
+  if (typeof document === 'undefined') {return () => {};}
 
   // Add class to body for CSS targeting
   document.body.classList.add('fonts-loading');
@@ -251,7 +251,7 @@ export function applyFOITStrategy(
   fontFamily: string,
   timeout = 3000
 ): () => void {
-  if (typeof document === 'undefined') return () => {};
+  if (typeof document === 'undefined') {return () => {};}
 
   // Hide text initially
   const style = document.createElement('style');

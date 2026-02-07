@@ -106,10 +106,12 @@ export class ErrorBoundary extends Component<
 
     // Log in development
     if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
       console.group('[ErrorBoundary] Caught error');
       console.error('Error:', error);
       console.error('Component Stack:', errorInfo.componentStack);
-      console.log('Context:', context);
+      console.info('Context:', context);
+      // eslint-disable-next-line no-console
       console.groupEnd();
     }
   }
