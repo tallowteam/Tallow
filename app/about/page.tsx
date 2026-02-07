@@ -8,6 +8,12 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'About | Tallow',
     description: 'Privacy is a fundamental right. We built Tallow because file sharing should not come at the cost of your privacy.',
+    url: '/about',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'About | Tallow',
+    description: 'Privacy is a fundamental right. We built Tallow because file sharing should not come at the cost of your privacy.',
   },
 };
 

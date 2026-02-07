@@ -1,9 +1,20 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import styles from './page.module.css';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Documentation - Tallow',
   description: 'Everything you need to know about Tallow - guides, API reference, and architecture documentation.',
+  openGraph: {
+    title: 'Documentation | Tallow',
+    description: 'Everything you need to know about Tallow - guides, API reference, and architecture documentation.',
+    url: '/docs',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Documentation | Tallow',
+    description: 'Everything you need to know about Tallow - guides, API reference, and architecture documentation.',
+  },
 };
 
 export default function DocsPage() {

@@ -9,6 +9,13 @@ export const metadata: Metadata = {
     title: 'Privacy Policy | Tallow',
     description:
       'Your privacy is our architecture. Learn how Tallow is designed so that we cannot access your files.',
+    url: '/privacy',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Privacy Policy | Tallow',
+    description:
+      'Your privacy is our architecture. Learn how Tallow is designed so that we cannot access your files.',
   },
 };
 

@@ -1,6 +1,9 @@
 .section {
   padding: 100px 0;
   background: var(--bg);
+  animation: revealUp 1s var(--ease) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
 }
 
 .container {
@@ -19,6 +22,25 @@
 .stat {
   text-align: center;
   position: relative;
+  animation: revealUp 0.8s var(--ease) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
+}
+
+.stat:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.stat:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.stat:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.stat:nth-child(4) {
+  animation-delay: 0.4s;
 }
 
 .value {
@@ -79,5 +101,23 @@
   .divider {
     right: -16px;
     height: 50px;
+  }
+}
+
+@supports not (animation-timeline: view()) {
+  .section,
+  .stat {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section,
+  .stat {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 }

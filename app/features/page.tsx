@@ -5,6 +5,16 @@ import styles from './page.module.css';
 export const metadata: Metadata = {
   title: 'Features — Tallow',
   description: 'Everything you need for secure, private, peer-to-peer file transfer. No limits, no compromises.',
+  openGraph: {
+    title: 'Features | Tallow',
+    description: 'Everything you need for secure, private, peer-to-peer file transfer. No limits, no compromises.',
+    url: '/features',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Features | Tallow',
+    description: 'Everything you need for secure, private, peer-to-peer file transfer. No limits, no compromises.',
+  },
 };
 
 export default function FeaturesPage() {

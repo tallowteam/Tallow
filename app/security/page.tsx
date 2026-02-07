@@ -7,6 +7,12 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Security | Tallow',
     description: 'Post-quantum cryptographic security. End-to-end encrypted file transfers that outlast the quantum age.',
+    url: '/security',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Security | Tallow',
+    description: 'Post-quantum cryptographic security. End-to-end encrypted file transfers that outlast the quantum age.',
   },
 };
 

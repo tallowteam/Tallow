@@ -5,6 +5,16 @@ import styles from './page.module.css';
 export const metadata: Metadata = {
   title: 'How It Works — Tallow',
   description: 'Learn how to transfer files with Tallow across local networks, the internet, and with friends.',
+  openGraph: {
+    title: 'How It Works | Tallow',
+    description: 'Learn how to transfer files with Tallow across local networks, the internet, and with friends.',
+    url: '/how-it-works',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'How It Works | Tallow',
+    description: 'Learn how to transfer files with Tallow across local networks, the internet, and with friends.',
+  },
 };
 
 export default function HowItWorksPage() {

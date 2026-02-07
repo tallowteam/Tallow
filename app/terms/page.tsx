@@ -9,6 +9,13 @@ export const metadata: Metadata = {
     title: 'Terms of Service | Tallow',
     description:
       'Simple terms for a simple tool. Read the terms of service for using Tallow.',
+    url: '/terms',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Terms of Service | Tallow',
+    description:
+      'Simple terms for a simple tool. Read the terms of service for using Tallow.',
   },
 };
 

@@ -1,9 +1,20 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import styles from './page.module.css';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Pricing - Tallow',
   description: 'Free. Forever. No catch. Unlimited file transfers with post-quantum encryption.',
+  openGraph: {
+    title: 'Pricing | Tallow',
+    description: 'Free. Forever. No catch. Unlimited file transfers with post-quantum encryption.',
+    url: '/pricing',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Pricing | Tallow',
+    description: 'Free. Forever. No catch. Unlimited file transfers with post-quantum encryption.',
+  },
 };
 
 export default function PricingPage() {

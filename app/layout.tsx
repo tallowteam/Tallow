@@ -121,6 +121,33 @@ export default function RootLayout({
       className={`${playfairDisplay.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body className={inter.className}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebApplication',
+              name: 'Tallow',
+              description: 'Secure peer-to-peer file transfer with post-quantum encryption.',
+              url: 'https://tallow.app',
+              applicationCategory: 'UtilitiesApplication',
+              operatingSystem: 'Any',
+              offers: {
+                '@type': 'Offer',
+                price: '0',
+                priceCurrency: 'USD',
+              },
+              featureList: [
+                'Peer-to-peer file transfer',
+                'Post-quantum encryption (ML-KEM-768)',
+                'End-to-end encrypted',
+                'No file size limits',
+                'Cross-platform browser support',
+                'Zero knowledge architecture',
+              ],
+            }),
+          }}
+        />
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
