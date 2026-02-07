@@ -1,109 +1,263 @@
-/* Privacy Page - Cineglass Magazine Glass Card Design */
+/* ============================================
+   Privacy Policy Page
+   Magazine-style dark aesthetic
+   ============================================ */
 
 .page {
-  position: relative;
   min-height: 100vh;
+  padding: 120px 0 80px;
+  position: relative;
+}
+
+.container {
   max-width: 800px;
   margin: 0 auto;
-  padding: 160px 56px 80px;
-  background: var(--bg);
+  padding: 0 var(--container-padding);
 }
 
-.ambient {
-  position: absolute;
-  top: 120px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(
-    circle at center,
-    rgba(99, 102, 241, 0.08) 0%,
-    transparent 70%
-  );
-  filter: blur(60px);
-  pointer-events: none;
-  z-index: 0;
+/* ============================================
+   Header
+   ============================================ */
+
+.header {
+  margin-bottom: 60px;
+  text-align: center;
 }
 
-.card {
-  position: relative;
-  background: var(--glass);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-xl);
-  padding: 48px;
-  z-index: 1;
+.label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 16px;
 }
 
 .title {
-  font-family: var(--font-display);
-  font-size: 3rem;
-  font-weight: 300;
-  line-height: 1.2;
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 400;
   color: var(--text);
-  margin: 0 0 8px;
+  line-height: 1.15;
+  margin-bottom: 16px;
+  letter-spacing: -0.02em;
 }
 
-.updated {
-  font-size: 0.78rem;
+.date {
+  font-size: 0.9rem;
   color: var(--text-3);
-  margin: 0 0 48px;
+  font-style: italic;
 }
 
-.heading {
-  font-size: 1.3rem;
-  font-weight: 600;
+/* ============================================
+   Table of Contents
+   ============================================ */
+
+.toc {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  margin-bottom: 48px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.tocTitle {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 500;
   color: var(--text);
-  margin: 40px 0 16px;
+  margin-bottom: 20px;
 }
 
-.paragraph {
-  font-size: 0.92rem;
-  line-height: 1.85;
-  color: var(--text-2);
-  margin: 0 0 16px;
+.tocList {
+  list-style: none;
+  counter-reset: toc-counter;
 }
+
+.tocList li {
+  counter-increment: toc-counter;
+  margin-bottom: 12px;
+}
+
+.tocList li:last-child {
+  margin-bottom: 0;
+}
+
+.tocList a {
+  display: block;
+  color: var(--text-2);
+  font-size: 0.95rem;
+  transition: color var(--duration) var(--ease);
+  padding-left: 24px;
+  position: relative;
+}
+
+.tocList a::before {
+  content: counter(toc-counter);
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.tocList a:hover {
+  color: var(--accent);
+}
+
+/* ============================================
+   Sections
+   ============================================ */
+
+.section {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  margin-bottom: 32px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  scroll-margin-top: 100px;
+}
+
+.lead {
+  font-size: 1.15rem;
+  line-height: 1.8;
+  color: var(--text-2);
+  font-style: italic;
+}
+
+.sectionTitle {
+  font-family: var(--font-heading);
+  font-size: 1.75rem;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 24px;
+  letter-spacing: -0.01em;
+}
+
+.content {
+  color: var(--text-2);
+  font-size: 1rem;
+  line-height: 1.8;
+}
+
+/* ============================================
+   Lists
+   ============================================ */
 
 .list {
-  margin: 0 0 16px;
-  padding-left: 20px;
-  list-style: disc;
+  list-style: none;
+  padding-left: 0;
 }
 
 .list li {
-  font-size: 0.92rem;
-  line-height: 1.85;
-  color: var(--text-2);
-  margin-bottom: 8px;
+  padding-left: 28px;
+  margin-bottom: 16px;
+  position: relative;
 }
 
+.list li:last-child {
+  margin-bottom: 0;
+}
+
+.list li::before {
+  content: '—';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.list strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ============================================
+   Links
+   ============================================ */
+
 .link {
-  color: var(--accent-2);
-  text-decoration: underline;
-  transition: opacity 0.2s ease;
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--duration) var(--ease);
 }
 
 .link:hover {
-  opacity: 0.8;
+  border-bottom-color: var(--accent);
 }
 
-/* Mobile styles */
+/* ============================================
+   Responsive
+   ============================================ */
+
 @media (max-width: 768px) {
   .page {
-    padding: 120px 16px 48px;
+    padding: 100px 0 60px;
   }
 
-  .card {
-    padding: 28px 20px;
+  .header {
+    margin-bottom: 40px;
   }
 
   .title {
-    font-size: 2.2rem;
+    font-size: 2rem;
   }
 
-  .ambient {
-    width: 400px;
-    height: 400px;
+  .toc {
+    padding: 24px;
+    margin-bottom: 32px;
+  }
+
+  .tocTitle {
+    font-size: 1.1rem;
+  }
+
+  .tocList a {
+    font-size: 0.9rem;
+  }
+
+  .section {
+    padding: 28px 24px;
+    margin-bottom: 24px;
+  }
+
+  .sectionTitle {
+    font-size: 1.4rem;
+  }
+
+  .lead {
+    font-size: 1.05rem;
+  }
+
+  .content {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .page {
+    padding: 80px 0 40px;
+  }
+
+  .title {
+    font-size: 1.75rem;
+  }
+
+  .toc {
+    padding: 20px;
+  }
+
+  .section {
+    padding: 24px 20px;
+    margin-bottom: 20px;
+  }
+
+  .sectionTitle {
+    font-size: 1.25rem;
   }
 }

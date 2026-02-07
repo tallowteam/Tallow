@@ -2,88 +2,212 @@ import type { Metadata } from 'next';
 import styles from './page.module.css';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy - Tallow',
-  description: 'Tallow privacy policy. We don\'t collect, store, or process your files. Privacy by design.',
+  title: 'Privacy Policy',
+  description:
+    'Your privacy is our architecture. Learn how Tallow is designed so that we cannot access your files.',
+  openGraph: {
+    title: 'Privacy Policy | Tallow',
+    description:
+      'Your privacy is our architecture. Learn how Tallow is designed so that we cannot access your files.',
+  },
 };
 
 export default function PrivacyPage() {
   return (
-    <main className={styles.page}>
-      <div className={styles.ambient} />
-      <div className={styles.card}>
-        <h1 className={styles.title}>Privacy Policy</h1>
-        <p className={styles.updated}>Last updated: February 2026</p>
+    <div className={styles.page}>
+      <div className={styles.container}>
+        {/* Header */}
+        <header className={styles.header}>
+          <span className={styles.label}>PRIVACY POLICY</span>
+          <h1 className={styles.title}>Your privacy is our architecture.</h1>
+          <p className={styles.date}>Last updated: February 2026</p>
+        </header>
 
-        <section>
-          <h2 className={styles.heading}>Overview</h2>
-          <p className={styles.paragraph}>
-            Tallow is designed with privacy as its core architecture. We don&apos;t collect, store,
-            or process your files. This isn&apos;t just a policy — it&apos;s how the technology works.
+        {/* Table of Contents */}
+        <nav className={styles.toc}>
+          <h2 className={styles.tocTitle}>Contents</h2>
+          <ol className={styles.tocList}>
+            <li>
+              <a href="#overview">Overview</a>
+            </li>
+            <li>
+              <a href="#dont-collect">Information We Don't Collect</a>
+            </li>
+            <li>
+              <a href="#how-works">How Tallow Works</a>
+            </li>
+            <li>
+              <a href="#signaling">Signaling Servers</a>
+            </li>
+            <li>
+              <a href="#cookies">Cookies &amp; Local Storage</a>
+            </li>
+            <li>
+              <a href="#third-party">Third-Party Services</a>
+            </li>
+            <li>
+              <a href="#open-source">Open Source</a>
+            </li>
+            <li>
+              <a href="#contact">Contact</a>
+            </li>
+          </ol>
+        </nav>
+
+        {/* Overview */}
+        <section id="overview" className={styles.section}>
+          <p className={styles.lead}>
+            Tallow is designed so that we cannot access your files. This isn't
+            a policy choice — it's an architectural one.
           </p>
         </section>
 
-        <section>
-          <h2 className={styles.heading}>What We Don&apos;t Collect</h2>
-          <ul className={styles.list}>
-            <li>File contents or metadata</li>
-            <li>Transfer history or logs</li>
-            <li>User accounts or profiles</li>
-            <li>IP addresses or location data</li>
-            <li>Device fingerprints or analytics</li>
-            <li>Cookies or tracking data</li>
-          </ul>
+        {/* Section 1 */}
+        <section id="dont-collect" className={styles.section}>
+          <h2 className={styles.sectionTitle}>
+            1. Information We Don't Collect
+          </h2>
+          <div className={styles.content}>
+            <ul className={styles.list}>
+              <li>
+                <strong>File contents</strong> — never transmitted through our
+                servers
+              </li>
+              <li>
+                <strong>File metadata</strong> — names, sizes, types remain
+                between sender and receiver
+              </li>
+              <li>
+                <strong>Transfer history</strong> — we have no record of your
+                transfers
+              </li>
+              <li>
+                <strong>Personal information</strong> — no accounts, no
+                registration, no email
+              </li>
+              <li>
+                <strong>IP addresses</strong> — connections are peer-to-peer
+              </li>
+              <li>
+                <strong>Usage analytics</strong> — no tracking, no telemetry
+              </li>
+            </ul>
+          </div>
         </section>
 
-        <section>
-          <h2 className={styles.heading}>How Tallow Works</h2>
-          <p className={styles.paragraph}>
-            Files are transferred directly between devices using peer-to-peer WebRTC connections.
-            Our signaling server facilitates the initial connection but never sees or stores file data.
-            All transfers are encrypted end-to-end with post-quantum cryptography (ML-KEM-768 + AES-256-GCM).
-          </p>
+        {/* Section 2 */}
+        <section id="how-works" className={styles.section}>
+          <h2 className={styles.sectionTitle}>2. How Tallow Works</h2>
+          <div className={styles.content}>
+            <ul className={styles.list}>
+              <li>All transfers occur directly between devices (P2P)</li>
+              <li>
+                Encryption keys are generated locally and never shared with us
+              </li>
+              <li>Device discovery uses local network protocols (mDNS)</li>
+              <li>
+                Internet P2P uses relay servers only for signaling (connection
+                setup), not file transfer
+              </li>
+            </ul>
+          </div>
         </section>
 
-        <section>
-          <h2 className={styles.heading}>Signaling Server</h2>
-          <p className={styles.paragraph}>
-            Our signaling server helps devices find each other. It processes:
-          </p>
-          <ul className={styles.list}>
-            <li>Temporary session identifiers (deleted after connection)</li>
-            <li>WebRTC signaling data (ICE candidates, SDP offers)</li>
-          </ul>
-          <p className={styles.paragraph}>
-            This data is ephemeral and never stored permanently.
-          </p>
+        {/* Section 3 */}
+        <section id="signaling" className={styles.section}>
+          <h2 className={styles.sectionTitle}>3. Signaling Servers</h2>
+          <div className={styles.content}>
+            <ul className={styles.list}>
+              <li>
+                Our signaling servers facilitate initial peer discovery for
+                Internet P2P mode
+              </li>
+              <li>
+                They handle connection setup only — no file data passes through
+                them
+              </li>
+              <li>Signaling data is ephemeral and not logged</li>
+            </ul>
+          </div>
         </section>
 
-        <section>
-          <h2 className={styles.heading}>Third-Party Services</h2>
-          <p className={styles.paragraph}>
-            Tallow does not use any third-party analytics, advertising, or tracking services.
-            We do not share data with any third parties because we don&apos;t collect data to share.
-          </p>
+        {/* Section 4 */}
+        <section id="cookies" className={styles.section}>
+          <h2 className={styles.sectionTitle}>4. Cookies &amp; Local Storage</h2>
+          <div className={styles.content}>
+            <ul className={styles.list}>
+              <li>
+                Tallow uses browser localStorage for preferences (theme, device
+                name)
+              </li>
+              <li>No tracking cookies</li>
+              <li>No third-party cookies</li>
+              <li>No advertising identifiers</li>
+            </ul>
+          </div>
         </section>
 
-        <section>
-          <h2 className={styles.heading}>Open Source</h2>
-          <p className={styles.paragraph}>
-            Our entire codebase is open source and auditable. You can verify these privacy claims
-            by examining the source code.
-          </p>
+        {/* Section 5 */}
+        <section id="third-party" className={styles.section}>
+          <h2 className={styles.sectionTitle}>5. Third-Party Services</h2>
+          <div className={styles.content}>
+            <ul className={styles.list}>
+              <li>
+                Tallow does not integrate with any analytics, advertising, or
+                tracking services
+              </li>
+              <li>
+                STUN/TURN servers are used for NAT traversal in Internet P2P
+                mode
+              </li>
+            </ul>
+          </div>
         </section>
 
-        <section>
-          <h2 className={styles.heading}>Contact</h2>
-          <p className={styles.paragraph}>
-            Questions about privacy? Open an issue on our{' '}
-            <a href="https://github.com/tallow-app/tallow" className={styles.link}>
-              GitHub repository
-            </a>
-            .
-          </p>
+        {/* Section 6 */}
+        <section id="open-source" className={styles.section}>
+          <h2 className={styles.sectionTitle}>6. Open Source</h2>
+          <div className={styles.content}>
+            <ul className={styles.list}>
+              <li>
+                Tallow's source code is publicly available at{' '}
+                <a
+                  href="https://github.com/tallowteam/Tallow"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.link}
+                >
+                  https://github.com/tallowteam/Tallow
+                </a>
+              </li>
+              <li>
+                You can verify every claim in this policy by reading the code
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        {/* Section 7 */}
+        <section id="contact" className={styles.section}>
+          <h2 className={styles.sectionTitle}>7. Contact</h2>
+          <div className={styles.content}>
+            <ul className={styles.list}>
+              <li>
+                Questions about privacy:{' '}
+                <a href="mailto:privacy@tallow.app" className={styles.link}>
+                  privacy@tallow.app
+                </a>
+              </li>
+              <li>
+                Security vulnerabilities:{' '}
+                <a href="mailto:security@tallow.app" className={styles.link}>
+                  security@tallow.app
+                </a>
+              </li>
+            </ul>
+          </div>
         </section>
       </div>
-    </main>
+    </div>
   );
 }

@@ -1,58 +1,15 @@
-/* Security Page — Cineglass Magazine Design */
+/* Security Page — Premium Dark Magazine Design */
 
 .main {
   position: relative;
-  background: var(--bg, #030306);
-  color: var(--text, #f2f2f8);
-  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
 }
 
 /* ============================================
-   AMBIENT GRADIENT BLOBS
+   HERO
    ============================================ */
-
-.ambient {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.blob1 {
-  position: absolute;
-  top: 10%;
-  right: -10%;
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, var(--accent, #6366f1) 0%, transparent 70%);
-  opacity: 0.08;
-  border-radius: 50%;
-  filter: blur(80px);
-  animation: float1 20s ease-in-out infinite;
-}
-
-.blob2 {
-  position: absolute;
-  bottom: 20%;
-  left: -5%;
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, var(--accent-3, #a78bfa) 0%, transparent 70%);
-  opacity: 0.06;
-  border-radius: 50%;
-  filter: blur(80px);
-  animation: float2 25s ease-in-out infinite;
-}
-
-@keyframes float1 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-50px, 50px) scale(1.1); }
-}
-
-@keyframes float2 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(50px, -50px) scale(1.05); }
-}
 
 /* ============================================
    HERO SECTION
