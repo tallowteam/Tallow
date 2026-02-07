@@ -12,7 +12,7 @@ const navLinks = [
   { href: '/about', label: 'ABOUT' },
 ];
 
-export default function Header() {
+export function Header() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
