@@ -6,7 +6,7 @@ import './globals.css';
 
 // Font Configuration
 const playfairDisplay = Playfair_Display({
-  weight: ['300', '400'],
+  weight: ['400', '500', '600', '700'],
   style: ['normal', 'italic'],
   subsets: ['latin'],
   display: 'swap',
