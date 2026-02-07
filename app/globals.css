@@ -144,6 +144,31 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
   font-weight: 400;
   line-height: 1.2;
+  margin: 0;
+}
+
+h1 {
+  font-size: var(--font-size-5xl);
+}
+
+h2 {
+  font-size: var(--font-size-4xl);
+}
+
+h3 {
+  font-size: var(--font-size-3xl);
+}
+
+h4 {
+  font-size: var(--font-size-2xl);
+}
+
+h5 {
+  font-size: var(--font-size-xl);
+}
+
+h6 {
+  font-size: var(--font-size-lg);
 }
 
 a {
@@ -153,6 +178,12 @@ a {
 
 code, pre, kbd {
   font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+p {
+  margin: 0;
+  line-height: 1.7;
 }
 
 /* ============================================
@@ -217,20 +248,80 @@ code, pre, kbd {
 }
 
 /* ============================================
-   Responsive
+   Responsive Utilities
    ============================================ */
 
+/* Hide on mobile */
+.hide-mobile {
+  display: block;
+}
+
 @media (max-width: 768px) {
-  :root {
-    --container-padding: 24px;
+  .hide-mobile {
+    display: none !important;
   }
 }
 
-@media (max-width: 480px) {
-  :root {
-    --container-padding: 16px;
+/* Hide on desktop */
+.hide-desktop {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .hide-desktop {
+    display: block !important;
   }
 }
+
+/* Fluid containers */
+.fluid-container {
+  width: 100%;
+  max-width: var(--container-max);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--container-padding);
+  padding-right: var(--container-padding);
+}
+
+/* Fluid section spacing */
+.section {
+  padding-top: var(--section-spacing);
+  padding-bottom: var(--section-spacing);
+}
+
+/* Text overflow utilities */
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+/* Touch target sizes for mobile */
+@media (max-width: 768px) {
+  button,
+  a[role="button"],
+  input[type="button"],
+  input[type="submit"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Prevent text from being too wide */
+.readable {
+  max-width: 65ch;
+}
+
+/* Responsive breakpoints reference:
+   - Mobile: 320px - 767px
+   - Tablet: 768px - 1023px
+   - Desktop: 1024px - 1399px
+   - Wide: 1400px+
+*/
 
 /* ============================================
    Scroll Reveal Animations

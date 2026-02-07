@@ -46,7 +46,7 @@
 .headline {
   font-family: var(--font-heading);
   font-weight: 300;
-  font-size: 2.5rem;
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
   color: var(--text);
   margin-top: 16px;
   line-height: 1.2;
@@ -70,6 +70,16 @@
   animation-range: entry 5% entry 35%;
 }
 
+@media (max-width: 1024px) {
+  .section {
+    padding: 100px 0;
+  }
+
+  .layout {
+    gap: 60px;
+  }
+}
+
 @media (max-width: 768px) {
   .section {
     padding: 80px 0;
@@ -84,16 +94,46 @@
     flex-direction: column;
   }
 
-  .headline {
-    font-size: 2rem;
+  .textSide {
+    text-align: left;
   }
 
   .description {
     max-width: 100%;
+    font-size: clamp(0.9rem, 2.5vw, 1rem);
   }
 
   .visualCard {
     padding: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .section {
+    padding: 60px 0;
+  }
+
+  .layout {
+    gap: 32px;
+  }
+
+  .labelRow {
+    font-size: 0.65rem;
+  }
+
+  .description {
+    font-size: 0.9rem;
+    margin-top: 16px;
+  }
+
+  .visualCard {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 320px) {
+  .visualCard {
+    padding: 16px;
   }
 }
 

@@ -27,6 +27,24 @@
   overflow-y: auto;
 }
 
+/* Desktop: account for sidebar */
+@media (min-width: 769px) {
+  .appLayout {
+    margin-left: 240px; /* Full sidebar width */
+  }
+}
+
+/* Tablet: account for narrow sidebar */
+@media (min-width: 769px) and (max-width: 1023px) {
+  .appLayout {
+    margin-left: 72px; /* Icon-only rail width */
+  }
+
+  .mainContent {
+    padding: 20px;
+  }
+}
+
 @media (min-width: 1024px) {
   .mainContent {
     padding: 32px;
@@ -150,13 +168,33 @@
    MOBILE
    ============================================================================ */
 
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .appLayout {
+    margin-left: 0; /* No sidebar on mobile */
     padding-bottom: 72px; /* Space for mobile tab bar */
   }
 
   .mainContent {
     padding: 16px;
+  }
+
+  .topRow,
+  .bottomRow {
+    grid-template-columns: 1fr; /* Stack on mobile */
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .mainContent {
+    padding: 12px;
+  }
+
+  .topRow,
+  .bottomRow {
+    gap: 12px;
+    margin-bottom: 12px;
   }
 }
 

@@ -17,7 +17,7 @@
 .header {
   position: relative;
   z-index: 1;
-  padding: 160px 56px 80px;
+  padding: clamp(100px, 15vw, 160px) clamp(16px, 4vw, 56px) clamp(48px, 8vw, 80px);
   text-align: center;
   max-width: 900px;
   margin: 0 auto;
@@ -27,29 +27,32 @@
 }
 
 .label {
-  font-size: 0.65rem;
+  font-size: clamp(0.6rem, 1vw + 0.4rem, 0.75rem);
   font-weight: 600;
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--accent-2);
-  margin-bottom: 24px;
+  margin-bottom: clamp(16px, 3vw, 24px);
   display: inline-block;
 }
 
 .title {
   font-family: var(--font-display);
-  font-size: 4rem;
+  font-size: clamp(2rem, 6vw + 1rem, 4rem);
   font-weight: 300;
   line-height: 1.08;
   color: var(--text);
-  margin: 0 0 16px 0;
+  margin: 0 0 clamp(12px, 2vw, 16px) 0;
 }
 
 .subtitle {
-  font-size: 1.05rem;
+  font-size: clamp(0.95rem, 1.5vw + 0.7rem, 1.125rem);
   line-height: 1.6;
   color: var(--text-2);
   margin: 0;
+  max-width: 90%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* ============================================
@@ -60,20 +63,29 @@
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  min-height: 500px;
+  grid-template-columns: 1fr;
+  min-height: auto;
   border-bottom: 1px solid var(--border);
   animation: revealUp 0.9s var(--ease) both;
   animation-timeline: view();
   animation-range: entry 0% entry 35%;
 }
 
+@media (min-width: 768px) {
+  .feature {
+    grid-template-columns: 1fr 1fr;
+    min-height: 500px;
+  }
+}
+
 .featureReverse {
   direction: ltr;
 }
 
-.featureReverse .featureVisual {
-  order: -1;
+@media (min-width: 768px) {
+  .featureReverse .featureVisual {
+    order: -1;
+  }
 }
 
 /* ============================================

@@ -2,15 +2,45 @@
 .sidebar {
   position: fixed;
   left: 0;
-  top: 64px;
+  top: 72px;
   width: 240px;
-  height: calc(100vh - 64px);
+  height: calc(100vh - 72px);
   background: var(--bg-2);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   z-index: 100;
+  transition: width 0.3s ease;
+}
+
+/* Tablet: Icon-only rail (narrow sidebar) */
+@media (min-width: 769px) and (max-width: 1023px) {
+  .sidebar {
+    width: 72px;
+  }
+
+  /* Hide labels on tablet */
+  .sectionLabel,
+  .modeLabel,
+  .panelLabel,
+  .divider,
+  .bottom {
+    display: none;
+  }
+
+  /* Center icons in narrow rail */
+  .modeButton,
+  .panelButton {
+    justify-content: center;
+    padding: 14px 0;
+  }
+
+  .modeIcon,
+  .panelIcon {
+    width: 24px;
+    height: 24px;
+  }
 }
 
 /* Section Container */
@@ -163,7 +193,7 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 56px;
+    height: 64px;
     background: var(--bg-2);
     border-top: 1px solid var(--border);
     display: flex;
@@ -171,6 +201,7 @@
     justify-content: space-around;
     z-index: 1000;
     padding: 0 8px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
   }
 
   .mobileTab {
@@ -179,13 +210,15 @@
     align-items: center;
     justify-content: center;
     flex: 1;
-    height: 100%;
+    min-height: 48px; /* Touch-friendly */
     background: transparent;
     border: none;
     cursor: pointer;
     color: var(--text-3);
     transition: all 0.15s ease;
     position: relative;
+    border-radius: 8px;
+    padding: 8px;
   }
 
   .mobileTab:hover {
@@ -204,16 +237,32 @@
     left: 50%;
     transform: translateX(-50%);
     width: 32px;
-    height: 2px;
+    height: 3px;
     background: var(--accent);
-    border-radius: 0 0 2px 2px;
+    border-radius: 0 0 3px 3px;
   }
 
   .mobileTabIcon {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
+    font-size: 1.4rem;
+    width: 28px;
+    height: 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .mobileTabBar {
+    height: 56px;
+  }
+
+  .mobileTab {
+    min-height: 44px;
+  }
+
+  .mobileTabIcon {
+    font-size: 1.2rem;
     width: 24px;
     height: 24px;
   }

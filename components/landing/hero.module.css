@@ -40,7 +40,7 @@
 
 .headline {
   font-family: var(--font-heading);
-  font-size: 4.5rem;
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
   font-weight: 300;
   line-height: 1.1;
   color: var(--text);
@@ -236,14 +236,24 @@
 }
 
 /* Responsive */
-@media (max-width: 1024px) {
+@media (max-width: 1280px) {
   .content {
-    grid-template-columns: 1fr;
     gap: 60px;
   }
 
-  .headline {
-    font-size: 3.5rem;
+  .glassCard {
+    max-width: 420px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .hero {
+    padding-top: 140px;
+  }
+
+  .content {
+    grid-template-columns: 1fr;
+    gap: 60px;
   }
 
   .visual {
@@ -252,6 +262,13 @@
 
   .textContent {
     order: 1;
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .cta {
+    align-self: center;
   }
 }
 
@@ -259,6 +276,7 @@
   .hero {
     padding-top: 120px;
     padding-bottom: 60px;
+    min-height: auto;
   }
 
   .content {
@@ -266,22 +284,20 @@
     min-height: auto;
   }
 
-  .headline {
-    font-size: 2.5rem;
-  }
-
   .description {
-    font-size: 1rem;
+    font-size: clamp(0.95rem, 2.5vw, 1.1rem);
   }
 
   .cta {
-    padding: 14px 28px;
+    padding: 14px 32px;
     font-size: 0.8rem;
     width: 100%;
+    max-width: 320px;
   }
 
   .glassCard {
     padding: 24px;
+    max-width: 100%;
   }
 
   .fileIcon {
@@ -296,8 +312,9 @@
 }
 
 @media (max-width: 480px) {
-  .headline {
-    font-size: 2rem;
+  .hero {
+    padding-top: 100px;
+    padding-bottom: 40px;
   }
 
   .label {
@@ -306,5 +323,51 @@
 
   .description {
     font-size: 0.95rem;
+  }
+
+  .glassCard {
+    padding: 20px;
+  }
+
+  .recipient {
+    font-size: 0.7rem;
+  }
+
+  .fileName {
+    font-size: 0.9rem;
+  }
+
+  .fileSize {
+    font-size: 0.8rem;
+  }
+
+  .progressInfo {
+    font-size: 0.7rem;
+  }
+
+  .completeBadge {
+    font-size: 0.75rem;
+    padding: 8px 12px;
+  }
+}
+
+@media (max-width: 320px) {
+  .cta {
+    padding: 12px 24px;
+    font-size: 0.75rem;
+  }
+
+  .glassCard {
+    padding: 16px;
+  }
+
+  .fileIcon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .fileIcon svg {
+    width: 20px;
+    height: 20px;
   }
 }
