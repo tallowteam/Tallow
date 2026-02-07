@@ -399,7 +399,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
+  .hero,
+  .feature,
+  .auditCard,
+  .threatCard,
+  .faqItem,
+  .ctaButton {
     animation: none !important;
     transition: none !important;
   }

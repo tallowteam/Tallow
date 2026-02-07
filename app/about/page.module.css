@@ -241,7 +241,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
+  .hero,
+  .valueCard,
+  .teamCard,
+  .ctaButton {
     animation: none !important;
     transition: none !important;
   }
