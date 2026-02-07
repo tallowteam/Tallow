@@ -1,0 +1,310 @@
+.hero {
+  position: relative;
+  min-height: 100vh;
+  padding-top: 160px;
+  padding-bottom: 80px;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.content {
+  display: grid;
+  grid-template-columns: 55fr 45fr;
+  gap: 80px;
+  align-items: center;
+  min-height: calc(100vh - 240px);
+}
+
+/* Left side - Text content */
+.textContent {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  opacity: 0;
+  animation: fadeInUp 0.6s ease-out 0.1s forwards;
+}
+
+.headline {
+  font-family: var(--font-heading);
+  font-size: 4.5rem;
+  font-weight: 300;
+  line-height: 1.1;
+  color: var(--text);
+  margin: 0;
+  opacity: 0;
+  animation: fadeInUp 0.6s ease-out 0.2s forwards;
+}
+
+.description {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: var(--text-2);
+  max-width: 500px;
+  margin: 0;
+  opacity: 0;
+  animation: fadeInUp 0.6s ease-out 0.3s forwards;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 36px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: white;
+  background: var(--accent);
+  border: none;
+  border-radius: 60px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  align-self: flex-start;
+  opacity: 0;
+  animation: fadeInUp 0.6s ease-out 0.4s forwards;
+}
+
+.cta:hover {
+  filter: brightness(1.15);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.25);
+}
+
+/* Right side - Animated visual */
+.visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  animation: fadeInFloat 0.8s ease-out 0.5s forwards;
+}
+
+.glassCard {
+  width: 100%;
+  max-width: 480px;
+  background: rgba(12, 12, 22, 0.55);
+  border: 1px solid rgba(99, 102, 241, 0.08);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  padding: 32px;
+  animation: float 6s ease-in-out infinite;
+}
+
+.transferSim {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.recipient {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.fileInfo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.fileIcon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: 12px;
+  color: var(--accent);
+}
+
+.fileDetails {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fileName {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.fileSize {
+  font-size: 0.85rem;
+  color: var(--text-3);
+}
+
+.progressContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progressTrack {
+  width: 100%;
+  height: 8px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+  transition: width 0.05s linear;
+}
+
+.progressInfo {
+  font-size: 0.75rem;
+  color: var(--text-3);
+  letter-spacing: 0.02em;
+}
+
+.completeBadge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 8px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.4s ease;
+}
+
+.completeBadge.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInFloat {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .content {
+    grid-template-columns: 1fr;
+    gap: 60px;
+  }
+
+  .headline {
+    font-size: 3.5rem;
+  }
+
+  .visual {
+    order: 2;
+  }
+
+  .textContent {
+    order: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero {
+    padding-top: 120px;
+    padding-bottom: 60px;
+  }
+
+  .content {
+    gap: 48px;
+    min-height: auto;
+  }
+
+  .headline {
+    font-size: 2.5rem;
+  }
+
+  .description {
+    font-size: 1rem;
+  }
+
+  .cta {
+    padding: 14px 28px;
+    font-size: 0.8rem;
+    width: 100%;
+  }
+
+  .glassCard {
+    padding: 24px;
+  }
+
+  .fileIcon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .fileIcon svg {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .headline {
+    font-size: 2rem;
+  }
+
+  .label {
+    font-size: 0.65rem;
+  }
+
+  .description {
+    font-size: 0.95rem;
+  }
+}
