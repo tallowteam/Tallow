@@ -1,29 +1,49 @@
 .dashboard {
-  margin-left: 240px;
-  padding: 24px;
-  min-height: calc(100vh - 64px);
-  background: var(--bg);
+  width: 100%;
+  padding: 0;
+  min-height: calc(100vh - 72px);
+  background: transparent;
 }
 
 .grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 24px;
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
 }
 
-/* Responsive - Mobile */
+/* Desktop: 2-column layout handled by page.module.css */
+@media (min-width: 769px) {
+  .grid {
+    gap: 24px;
+  }
+}
+
+/* Tablet */
+@media (min-width: 769px) and (max-width: 1023px) {
+  .grid {
+    gap: 20px;
+  }
+}
+
+/* Mobile */
 @media (max-width: 768px) {
   .dashboard {
-    margin-left: 0;
-    padding: 16px;
-    padding-bottom: 80px; /* Space for bottom tab bar */
-    min-height: calc(100vh - 64px - 80px);
+    padding-bottom: 80px; /* Space for mobile tab bar */
+    min-height: calc(100vh - 72px - 80px);
   }
 
   .grid {
-    grid-template-columns: 1fr;
     gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard {
+    padding-bottom: 72px;
+  }
+
+  .grid {
+    gap: 12px;
   }
 }

@@ -202,10 +202,18 @@
   transform: translateY(0);
 }
 
+/* Responsive - Tablet */
+@media (max-width: 1023px) {
+  .dropZone {
+    padding: 32px;
+    min-height: 180px;
+  }
+}
+
 /* Responsive - Mobile */
 @media (max-width: 768px) {
   .dropZone {
-    padding: 24px;
+    padding: 24px 16px;
     min-height: 160px;
   }
 
@@ -216,16 +224,26 @@
 
   .dropText {
     font-size: 0.9rem;
+    margin: 12px 0 6px;
+  }
+
+  .orText {
+    font-size: 0.75rem;
+    margin: 6px 0;
   }
 
   .buttonGroup {
     flex-direction: column;
     width: 100%;
+    gap: 10px;
   }
 
   .browseButton,
   .cameraButton {
     width: 100%;
+    padding: 12px 20px;
+    min-height: 44px; /* Touch-friendly */
+    justify-content: center;
   }
 
   .fileQueue {
@@ -238,5 +256,77 @@
 
   .fileItem {
     padding: 10px;
+  }
+
+  .sendButton {
+    min-height: 44px; /* Touch-friendly */
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    border-radius: 12px;
+  }
+
+  .dropZone {
+    padding: 20px 12px;
+    min-height: 140px;
+  }
+
+  .uploadIcon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .dropText {
+    font-size: 0.85rem;
+  }
+
+  .browseButton,
+  .cameraButton {
+    font-size: 0.8rem;
+    padding: 10px 16px;
+  }
+
+  .fileQueue {
+    padding: 12px;
+  }
+
+  .fileItem {
+    padding: 8px;
+    gap: 10px;
+  }
+
+  .fileIcon {
+    font-size: 1.3rem;
+  }
+
+  .fileName {
+    font-size: 0.8rem;
+  }
+
+  .fileSize {
+    font-size: 0.75rem;
+  }
+
+  .removeButton {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+  }
+}
+
+@media (max-width: 360px) {
+  .dropZone {
+    padding: 16px 10px;
+  }
+
+  .fileItem {
+    flex-wrap: wrap;
+  }
+
+  .removeButton {
+    margin-left: auto;
   }
 }

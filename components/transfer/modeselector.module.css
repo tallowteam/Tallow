@@ -139,6 +139,17 @@
 }
 
 /* Responsive */
+@media (max-width: 1023px) {
+  .cardsWrapper {
+    gap: 20px;
+  }
+
+  .card {
+    min-width: 280px;
+    padding: 36px 28px;
+  }
+}
+
 @media (max-width: 768px) {
   .container {
     padding-top: 100px;
@@ -169,6 +180,14 @@
     padding: 32px 24px;
   }
 
+  .card:hover {
+    transform: none; /* Disable hover transform on mobile */
+  }
+
+  .card:active {
+    transform: scale(0.98); /* Touch feedback */
+  }
+
   .cardTitle {
     font-size: 1.2rem;
   }
@@ -192,16 +211,37 @@
   }
 
   .card {
-    padding: 28px 20px;
+    padding: 24px 20px;
   }
 
   .iconContainer {
     width: 44px;
     height: 44px;
+    margin-bottom: 16px;
   }
 
   .icon {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .cardTitle {
+    font-size: 1.1rem;
+  }
+
+  .cardDescription {
+    font-size: 0.75rem;
+    margin-bottom: 20px;
+  }
+
+  .featureList li {
+    font-size: 0.7rem;
+    line-height: 1.6;
+  }
+}
+
+@media (max-width: 360px) {
+  .card {
+    padding: 20px 16px;
   }
 }

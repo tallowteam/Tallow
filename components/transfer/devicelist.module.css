@@ -224,3 +224,92 @@
   width: 16px;
   height: 16px;
 }
+
+/* Responsive - Mobile */
+@media (max-width: 768px) {
+  .container {
+    padding: 20px;
+  }
+
+  .title {
+    font-size: 0.95rem;
+  }
+
+  .deviceItem {
+    min-height: 48px; /* Touch-friendly */
+    padding: 12px 14px;
+  }
+
+  .deviceName {
+    font-size: 0.85rem;
+  }
+
+  .deviceType {
+    font-size: 0.75rem;
+  }
+
+  .addFriendButton {
+    min-height: 44px; /* Touch-friendly */
+    padding: 12px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 16px;
+  }
+
+  .header {
+    margin-bottom: 16px;
+  }
+
+  .title {
+    font-size: 0.9rem;
+  }
+
+  .list {
+    gap: 6px;
+  }
+
+  .deviceItem {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .statusDot {
+    width: 6px;
+    height: 6px;
+  }
+
+  .deviceName {
+    font-size: 0.8rem;
+  }
+
+  .deviceType {
+    font-size: 0.7rem;
+  }
+
+  .pqcBadge svg {
+    width: 10px;
+    height: 10px;
+  }
+
+  .refreshButton {
+    padding: 6px;
+  }
+
+  .refreshIcon {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+@media (max-width: 360px) {
+  .deviceName {
+    font-size: 0.75rem;
+  }
+
+  .pqcBadge {
+    display: none; /* Hide PQC badge on very small screens to save space */
+  }
+}
