@@ -19,7 +19,7 @@ export default function TransferPage() {
   const [mode, setMode] = useState<TransferMode | null>(null);
   const [activePanel, setActivePanel] = useState<PanelView>('dashboard');
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
-  const [fileQueue, setFileQueue] = useState<File[]>([]);
+  const [, setFileQueue] = useState<File[]>([]);
   const [showIncoming, setShowIncoming] = useState(false);
 
   const handleSelectMode = useCallback((selected: TransferMode) => {
