@@ -95,7 +95,7 @@
     "@noble/hashes": "^2.0.1",
     "@noble/post-quantum": "^0.5.4",
     "@react-email/components": "^1.0.4",
-    "@stripe/stripe-js": "^8.6.4",
+    "@stripe/stripe-js": "^8.7.0",
     "@types/dompurify": "^3.0.5",
     "date-fns": "^4.1.0",
     "dompurify": "^3.3.1",
