@@ -1,6 +1,6 @@
 import styles from './pullquote.module.css';
 
-export default function PullQuote() {
+export function PullQuote() {
   return (
     <section className={styles.section}>
       <div className={styles.container}>

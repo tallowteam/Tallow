@@ -1,6 +1,6 @@
 import styles from './stats.module.css';
 
-export default function Stats() {
+export function Stats() {
   const stats = [
     { value: '256', label: 'BIT ENCRYPTION' },
     { value: '0', label: 'SERVERS TOUCHED' },

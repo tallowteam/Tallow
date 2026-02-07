@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import styles from './cta.module.css';
 
-export default function CTA() {
+export function CTA() {
   return (
     <section className={styles.section}>
       <div className={styles.container}>

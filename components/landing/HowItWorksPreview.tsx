@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import styles from './howitworkspreview.module.css';
 
-export default function HowItWorksPreview() {
+export function HowItWorksPreview() {
   const steps = [
     {
       number: '01',

@@ -9,7 +9,7 @@ interface FeatureBlockProps {
   children: React.ReactNode;
 }
 
-export default function FeatureBlock({
+export function FeatureBlock({
   number,
   label,
   headline,
