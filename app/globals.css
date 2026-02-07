@@ -73,6 +73,12 @@
   --z-modal: 2000;
   --z-toast: 3000;
 
+  /* Safe area insets for notched devices */
+  --safe-area-top: env(safe-area-inset-top, 0);
+  --safe-area-right: env(safe-area-inset-right, 0);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0);
+  --safe-area-left: env(safe-area-inset-left, 0);
+
   /* Font families (set by next/font in layout) */
   --font-heading: var(--font-playfair), 'Playfair Display', Georgia, serif;
   --font-body: var(--font-inter), 'Inter', system-ui, sans-serif;
@@ -131,9 +137,15 @@ body::before {
   width: 100%;
   height: 100%;
   background: radial-gradient(circle, rgba(99, 102, 241, 0.07) 0%, transparent 70%);
-  filter: blur(100px);
+  filter: blur(clamp(60px, 10vw, 100px));
   pointer-events: none;
   z-index: 0;
+}
+
+@media (max-width: 768px) {
+  body::before {
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, transparent 60%);
+  }
 }
 
 /* ============================================
@@ -186,6 +198,23 @@ p {
   line-height: 1.7;
 }
 
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
 /* ============================================
    Utilities
    ============================================ */
@@ -194,6 +223,12 @@ p {
   max-width: var(--container-max);
   margin: 0 auto;
   padding: 0 var(--container-padding);
+  width: 100%;
+}
+
+/* Ensure main content doesn't hide under fixed header */
+main {
+  padding-top: clamp(56px, 8vh, 72px);
 }
 
 /* Focus visible */
@@ -322,6 +357,68 @@ p {
    - Desktop: 1024px - 1399px
    - Wide: 1400px+
 */
+
+/* Container queries support */
+@supports (container-type: inline-size) {
+  .container-query {
+    container-type: inline-size;
+  }
+}
+
+/* Aspect ratio utilities */
+.aspect-video {
+  aspect-ratio: 16 / 9;
+}
+
+.aspect-square {
+  aspect-ratio: 1 / 1;
+}
+
+.aspect-portrait {
+  aspect-ratio: 3 / 4;
+}
+
+/* Viewport-specific adjustments */
+@media (min-width: 320px) and (max-width: 374px) {
+  :root {
+    --font-size-base: 0.9rem;
+  }
+}
+
+@media (min-width: 1920px) {
+  :root {
+    --container-max: 1600px;
+  }
+}
+
+@media (min-width: 2560px) {
+  :root {
+    --container-max: 1800px;
+  }
+
+  html {
+    font-size: 18px;
+  }
+}
+
+/* Print styles */
+@media print {
+  body::before {
+    display: none;
+  }
+
+  .skip-link,
+  header[role="banner"],
+  nav,
+  .hamburger,
+  .mobileMenu {
+    display: none !important;
+  }
+
+  main {
+    padding-top: 0 !important;
+  }
+}
 
 /* ============================================
    Scroll Reveal Animations
