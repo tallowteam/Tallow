@@ -272,7 +272,7 @@ export async function generateCoturnCredentials(
 ): Promise<TURNCredentials> {
   const ttl = config.ttlSeconds ?? DEFAULT_CREDENTIAL_TTL;
   const expiresAt = Math.floor(Date.now() / 1000) + ttl;
-  const userPart = userId ?? Math.random().toString(36).substring(2, 10);
+  const userPart = userId ?? Array.from(crypto.getRandomValues(new Uint8Array(6))).map(b => b.toString(36)).join('').substring(0, 8);
   const username = `${expiresAt}:${userPart}`;
 
   // HMAC-SHA1 credential generation (coturn standard)

@@ -60,14 +60,14 @@ export function SharedDropFolder({ onFileUpload, onFileDownload }: SharedDropFol
       try {
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
-          if (!file) continue;
+          if (!file) {continue;}
           setUploadProgress(Math.round(((i + 1) / files.length) * 100));
 
           // Read file as data URL for storage/preview
           const dataUrl = await readFileAsDataURL(file);
 
           const sharedFile: SharedFile = {
-            id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            id: `file-${Date.now()}-${Array.from(crypto.getRandomValues(new Uint8Array(7))).map(b => b.toString(36)).join('').substring(0, 9)}`,
             name: file.name,
             size: file.size,
             type: file.type,
@@ -107,13 +107,13 @@ export function SharedDropFolder({ onFileUpload, onFileDownload }: SharedDropFol
       try {
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
-          if (!file) continue;
+          if (!file) {continue;}
           setUploadProgress(Math.round(((i + 1) / files.length) * 100));
 
           const dataUrl = await readFileAsDataURL(file);
 
           const sharedFile: SharedFile = {
-            id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            id: `file-${Date.now()}-${Array.from(crypto.getRandomValues(new Uint8Array(7))).map(b => b.toString(36)).join('').substring(0, 9)}`,
             name: file.name,
             size: file.size,
             type: file.type,
@@ -289,18 +289,18 @@ function FileCard({ file, contributorName, isOwnFile, onDownload, onDelete }: Fi
   const getFileIcon = () => {
     const { type } = file;
 
-    if (type.startsWith('image/')) return <ImageIcon />;
-    if (type.startsWith('video/')) return <VideoIcon />;
-    if (type.startsWith('audio/')) return <AudioIcon />;
-    if (type.includes('pdf')) return <PDFIcon />;
+    if (type.startsWith('image/')) {return <ImageIcon />;}
+    if (type.startsWith('video/')) {return <VideoIcon />;}
+    if (type.startsWith('audio/')) {return <AudioIcon />;}
+    if (type.includes('pdf')) {return <PDFIcon />;}
     if (type.includes('zip') || type.includes('rar') || type.includes('7z'))
-      return <ArchiveIcon />;
+      {return <ArchiveIcon />;}
     if (
       type.includes('word') ||
       type.includes('document') ||
       type.includes('text')
     )
-      return <DocumentIcon />;
+      {return <DocumentIcon />;}
 
     return <FileIcon />;
   };
@@ -310,7 +310,7 @@ function FileCard({ file, contributorName, isOwnFile, onDownload, onDelete }: Fi
       {/* File Preview/Icon */}
       <div className={styles.filePreview}>
         {file.type.startsWith('image/') && file.dataUrl ? (
-          <img src={file.dataUrl} alt={file.name} className={styles.previewImage} />
+          <img src={file.dataUrl} alt={file.name} className={styles.previewImage} width={120} height={80} loading="lazy" />
         ) : (
           <div className={styles.fileIconWrapper}>{getFileIcon()}</div>
         )}

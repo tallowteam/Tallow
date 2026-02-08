@@ -122,7 +122,7 @@ export function addRecentFolder(name: string): void {
 
     // Add new entry at the beginning
     const newFolder: FolderShortcut = {
-      id: `recent-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      id: `recent-${Date.now()}-${Array.from(crypto.getRandomValues(new Uint8Array(7))).map(b => b.toString(36)).join('').substring(0, 7)}`,
       name: name.trim(),
       type: 'recent',
       timestamp: Date.now(),

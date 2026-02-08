@@ -1,28 +1,34 @@
 import type { Metadata, Viewport } from 'next';
-import { Playfair_Display, Inter, JetBrains_Mono } from 'next/font/google';
+import localFont from 'next/font/local';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { ThemeProvider } from '@/components/theme/theme-provider';
 import './globals.css';
 
-// Font Configuration
-const playfairDisplay = Playfair_Display({
-  weight: ['400', '500', '600', '700'],
-  style: ['normal', 'italic'],
-  subsets: ['latin'],
+// Font Configuration — self-hosted, no external dependencies
+const playfairDisplay = localFont({
+  src: [
+    {
+      path: '../public/fonts/playfair-display/playfair-display-normal-latin.woff2',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/playfair-display/playfair-display-italic-latin.woff2',
+      style: 'italic',
+    },
+  ],
   display: 'swap',
   variable: '--font-playfair',
 });
 
-const inter = Inter({
-  weight: ['400', '500', '600', '700', '800'],
-  subsets: ['latin'],
+const inter = localFont({
+  src: '../public/fonts/inter/inter-latin.woff2',
   display: 'swap',
   variable: '--font-inter',
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  weight: ['400'],
-  subsets: ['latin'],
+const jetbrainsMono = localFont({
+  src: '../public/fonts/jetbrains-mono/jetbrains-mono-latin.woff2',
   display: 'swap',
   variable: '--font-jetbrains',
 });
@@ -126,34 +132,40 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               '@context': 'https://schema.org',
-              '@type': 'WebApplication',
+              '@type': 'SoftwareApplication',
               name: 'Tallow',
-              description: 'Secure peer-to-peer file transfer with post-quantum encryption.',
-              url: 'https://tallow.app',
               applicationCategory: 'UtilitiesApplication',
-              operatingSystem: 'Any',
+              operatingSystem: 'Web, macOS, Windows, Linux, iOS, Android',
               offers: {
                 '@type': 'Offer',
                 price: '0',
                 priceCurrency: 'USD',
               },
-              featureList: [
-                'Peer-to-peer file transfer',
-                'Post-quantum encryption (ML-KEM-768)',
-                'End-to-end encrypted',
-                'No file size limits',
-                'Cross-platform browser support',
-                'Zero knowledge architecture',
-              ],
+              description: 'Post-quantum encrypted peer-to-peer file transfer. Send files directly between devices with zero-knowledge security.',
+              url: 'https://tallow.app',
             }),
           }}
         />
-        <a href="#main-content" className="skip-link">
-          Skip to main content
-        </a>
-        <Header />
-        <main id="main-content">{children}</main>
-        <Footer />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Organization',
+              name: 'Tallow',
+              url: 'https://tallow.app',
+              logo: 'https://tallow.app/icon.svg',
+            }),
+          }}
+        />
+        <ThemeProvider>
+          <a href="#main-content" className="skip-link">
+            Skip to main content
+          </a>
+          <Header />
+          <div id="main-content">{children}</div>
+          <Footer />
+        </ThemeProvider>
       </body>
     </html>
   );

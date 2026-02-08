@@ -292,7 +292,7 @@ export class WorkerPool {
      * Generate unique task ID
      */
     private generateTaskId(): string {
-        return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        return `${Date.now()}-${Array.from(crypto.getRandomValues(new Uint8Array(7))).map(b => b.toString(36)).join('').substring(0, 9)}`;
     }
 
     /**

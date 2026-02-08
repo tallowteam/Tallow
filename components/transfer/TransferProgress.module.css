@@ -55,7 +55,26 @@
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border);
   border-radius: 12px;
-  transition: background 0.2s ease;
+  transition: background-color 0.2s var(--ease, ease), border-color 0.2s var(--ease, ease);
+  animation: slideIn 0.3s ease-out backwards;
+}
+
+.transferItem:nth-child(1) { animation-delay: 0s; }
+.transferItem:nth-child(2) { animation-delay: 0.05s; }
+.transferItem:nth-child(3) { animation-delay: 0.1s; }
+.transferItem:nth-child(4) { animation-delay: 0.15s; }
+.transferItem:nth-child(5) { animation-delay: 0.2s; }
+.transferItem:nth-child(n+6) { animation-delay: 0.25s; }
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .transferItem:hover {
@@ -103,7 +122,7 @@
   height: 100%;
   background: var(--accent);
   border-radius: 2px;
-  transition: width 0.3s ease;
+  transition: width 0.3s var(--ease, ease);
 }
 
 .progressLabel {
@@ -157,15 +176,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0;
   background: transparent;
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-3);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.2s var(--ease, ease), background-color 0.2s var(--ease, ease), border-color 0.2s var(--ease, ease), color 0.2s var(--ease, ease);
 }
 
 .actionBtn:hover {
@@ -308,5 +329,25 @@
 
   .speedInfo {
     font-size: 0.65rem;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .transferItem {
+    animation: none;
+    transition: none;
+  }
+
+  .progressFill {
+    transition: none;
+  }
+
+  .actionBtn {
+    transition: none;
+  }
+
+  .actionBtn:active {
+    transform: none;
   }
 }

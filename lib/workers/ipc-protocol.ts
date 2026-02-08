@@ -181,7 +181,7 @@ export class IPCProtocol {
    * Generate unique instance ID
    */
   private generateInstanceId(): string {
-    return `ipc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `ipc-${Date.now()}-${Array.from(crypto.getRandomValues(new Uint8Array(7))).map(b => b.toString(36)).join('').substring(0, 9)}`;
   }
 
   /**

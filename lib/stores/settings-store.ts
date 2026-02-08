@@ -98,7 +98,7 @@ export interface SettingsState {
 
 const generateDeviceId = (): string => {
   // Generate a random device ID
-  return `device-${Math.random().toString(36).substring(2, 15)}`;
+  return `device-${Array.from(crypto.getRandomValues(new Uint8Array(10))).map(b => b.toString(36)).join('').substring(0, 13)}`;
 };
 
 const getDefaultDeviceName = (): string => {

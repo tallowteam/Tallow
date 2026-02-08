@@ -548,7 +548,9 @@ export class TransferFallback {
    */
   private generateR2Key(peerId: string): string {
     const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 10);
+    const bytes = new Uint8Array(8);
+    crypto.getRandomValues(bytes);
+    const random = Array.from(bytes).map(b => b.toString(36)).join('').substring(0, 8);
     // Sanitize peerId to be URL-safe
     const safePeerId = peerId.replace(/[^a-zA-Z0-9-_]/g, '_').substring(0, 32);
     return `${this.config.r2KeyPrefix}${safePeerId}/${timestamp}-${random}`;

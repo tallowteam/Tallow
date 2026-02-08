@@ -169,7 +169,7 @@ function generateRandomCode(): string {
   } else {
     // Fallback for SSR
     for (let i = 0; i < array.length; i++) {
-      array[i] = Math.floor(Math.random() * chars.length);
+      array[i] = Math.floor(Date.now() * (i + 1) % 256); // SSR fallback - non-crypto context
     }
   }
 
@@ -185,7 +185,7 @@ function generateRandomCode(): string {
  * Generate a simple public key (in production, use actual crypto)
  */
 function generatePublicKey(): string {
-  return `pk_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+  return `pk_${Date.now()}_${Array.from(crypto.getRandomValues(new Uint8Array(10))).map(b => b.toString(36)).join('').substring(0, 13)}`;
 }
 
 /**
@@ -226,7 +226,7 @@ export const useFriendsStore = create<FriendsStoreState>()(
 
           addFriendByCode: (code, name, platform) => {
             const newFriend: Friend = {
-              id: `friend_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+              id: `friend_${Date.now()}_${Array.from(crypto.getRandomValues(new Uint8Array(7))).map(b => b.toString(36)).join('').substring(0, 7)}`,
               name,
               platform,
               publicKey: generatePublicKey(),

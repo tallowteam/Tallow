@@ -78,7 +78,7 @@ interface ResponseTimeline {
  */
 function generateIncidentId(): string {
   const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).substring(2, 8);
+  const random = Array.from(crypto.getRandomValues(new Uint8Array(4))).map(b => b.toString(36)).join('').substring(0, 6);
   return `incident-${timestamp}-${random}`;
 }
 

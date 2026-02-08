@@ -160,7 +160,7 @@ export const useTeamStore = create<TeamStoreState>()(
           // Team Management
           createTeam: (name, settings = {}) => {
             const team: Team = {
-              id: `team-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              id: `team-${Date.now()}-${Array.from(crypto.getRandomValues(new Uint8Array(8))).map(b => b.toString(36)).join('').substring(0, 9)}`,
               name,
               code: generateTeamCode(),
               createdAt: Date.now(),
@@ -262,7 +262,7 @@ export const useTeamStore = create<TeamStoreState>()(
           updateTeamSettings: (teamId, settings) => {
             set((state) => {
               const teamIndex = state.teams.findIndex((t) => t.id === teamId);
-              if (teamIndex < 0) return state;
+              if (teamIndex < 0) {return state;}
 
               const newTeams = [...state.teams];
               newTeams[teamIndex] = {
@@ -284,7 +284,7 @@ export const useTeamStore = create<TeamStoreState>()(
           addMember: (member) => {
             set((state) => {
               const exists = state.members.some((m) => m.id === member.id);
-              if (exists) return state;
+              if (exists) {return state;}
 
               return { members: [...state.members, member] };
             });
@@ -396,9 +396,11 @@ export const teamStoreApi = useTeamStore;
  */
 function generateTeamCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed ambiguous chars (0, O, I, 1)
+  const randomBytes = new Uint8Array(8);
+  crypto.getRandomValues(randomBytes);
   let code = '';
   for (let i = 0; i < 8; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+    code += chars.charAt(randomBytes[i] % chars.length);
   }
   return code;
 }

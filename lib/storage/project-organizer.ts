@@ -152,7 +152,7 @@ function createDefaultUnsortedProject(): ProjectFolder {
 }
 
 function generateId(): string {
-  return `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `project_${Date.now()}_${Array.from(crypto.getRandomValues(new Uint8Array(7))).map(b => b.toString(36)).join('').substring(0, 9)}`;
 }
 
 // ============================================================================

@@ -310,14 +310,19 @@ class TeamManagerClass {
   // Private helper methods
 
   private generateId(): string {
-    return `tm_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const bytes = new Uint8Array(7);
+    crypto.getRandomValues(bytes);
+    const rand = Array.from(bytes).map(b => b.toString(36)).join('').substring(0, 7);
+    return `tm_${Date.now()}_${rand}`;
   }
 
   private generateLicenseKey(): string {
     const segments = [];
     for (let i = 0; i < 4; i++) {
+      const bytes = new Uint8Array(6);
+      crypto.getRandomValues(bytes);
       segments.push(
-        Math.random().toString(36).substring(2, 8).toUpperCase()
+        Array.from(bytes).map(b => b.toString(36)).join('').substring(0, 6).toUpperCase()
       );
     }
     return segments.join('-');

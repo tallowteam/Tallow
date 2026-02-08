@@ -284,7 +284,9 @@ export async function timingSafeDelay(
     throw new Error('Invalid delay parameters');
   }
 
-  const delay = minMs + Math.random() * (maxMs - minMs);
+  const randomBytes = new Uint32Array(1);
+  crypto.getRandomValues(randomBytes);
+  const delay = minMs + (randomBytes[0] / 0xFFFFFFFF) * (maxMs - minMs);
   await new Promise((resolve) => setTimeout(resolve, delay));
 }
 

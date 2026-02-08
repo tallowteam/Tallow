@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -171,16 +169,14 @@ export default function SettingsPage() {
 
     const sections = [profileRef, appearanceRef, privacyRef, connectionRef, notificationsRef, aboutRef];
     sections.forEach((ref) => {
-      if (ref.current) observer.observe(ref.current);
+      if (ref.current) {observer.observe(ref.current);}
     });
 
     return () => observer.disconnect();
   }, []);
 
   return (
-    <>
-      <Header />
-      <main className={styles.main}>
+    <main className={styles.main}>
         <div className={styles.container}>
           {/* Header */}
           <div className={styles.header}>
@@ -203,7 +199,7 @@ export default function SettingsPage() {
           {/* Two-column layout */}
           <div className={styles.layout}>
             {/* Sidebar Navigation */}
-            <aside className={styles.sidebar}>
+            <aside className={styles.sidebar} aria-label="Settings navigation">
               <nav className={styles.sidebarNav}>
                 <button
                   className={`${styles.navItem} ${activeSection === 'profile' ? styles.navItemActive : ''}`}
@@ -320,10 +316,10 @@ export default function SettingsPage() {
                           <div className={styles.themePreview}>
                             <div className={`${styles.themePreviewBg} ${styles.themePreviewDark}`}>
                               <div className={styles.themePreviewWindow}>
-                                <div className={styles.themePreviewHeader}></div>
+                                <div className={styles.themePreviewHeader} />
                                 <div className={styles.themePreviewContent}>
-                                  <div className={styles.themePreviewLine}></div>
-                                  <div className={styles.themePreviewLine}></div>
+                                  <div className={styles.themePreviewLine} />
+                                  <div className={styles.themePreviewLine} />
                                 </div>
                               </div>
                             </div>
@@ -345,10 +341,10 @@ export default function SettingsPage() {
                           <div className={styles.themePreview}>
                             <div className={`${styles.themePreviewBg} ${styles.themePreviewLight}`}>
                               <div className={styles.themePreviewWindow}>
-                                <div className={styles.themePreviewHeader}></div>
+                                <div className={styles.themePreviewHeader} />
                                 <div className={styles.themePreviewContent}>
-                                  <div className={styles.themePreviewLine}></div>
-                                  <div className={styles.themePreviewLine}></div>
+                                  <div className={styles.themePreviewLine} />
+                                  <div className={styles.themePreviewLine} />
                                 </div>
                               </div>
                             </div>
@@ -370,10 +366,10 @@ export default function SettingsPage() {
                           <div className={styles.themePreview}>
                             <div className={`${styles.themePreviewBg} ${styles.themePreviewHighContrast}`}>
                               <div className={styles.themePreviewWindow}>
-                                <div className={styles.themePreviewHeader}></div>
+                                <div className={styles.themePreviewHeader} />
                                 <div className={styles.themePreviewContent}>
-                                  <div className={styles.themePreviewLine}></div>
-                                  <div className={styles.themePreviewLine}></div>
+                                  <div className={styles.themePreviewLine} />
+                                  <div className={styles.themePreviewLine} />
                                 </div>
                               </div>
                             </div>
@@ -395,10 +391,10 @@ export default function SettingsPage() {
                           <div className={styles.themePreview}>
                             <div className={`${styles.themePreviewBg} ${styles.themePreviewColorblind}`}>
                               <div className={styles.themePreviewWindow}>
-                                <div className={styles.themePreviewHeader}></div>
+                                <div className={styles.themePreviewHeader} />
                                 <div className={styles.themePreviewContent}>
-                                  <div className={styles.themePreviewLine}></div>
-                                  <div className={styles.themePreviewLine}></div>
+                                  <div className={styles.themePreviewLine} />
+                                  <div className={styles.themePreviewLine} />
                                 </div>
                               </div>
                             </div>
@@ -440,6 +436,7 @@ export default function SettingsPage() {
                             type="checkbox"
                             checked={stripMetadata}
                             onChange={(e) => setStripMetadata(e.target.checked)}
+                            aria-label="Strip metadata from files"
                           />
                           <span className={styles.toggleSlider} />
                         </label>
@@ -457,6 +454,7 @@ export default function SettingsPage() {
                             type="checkbox"
                             checked={ipLeakProtection}
                             onChange={(e) => setIpLeakProtection(e.target.checked)}
+                            aria-label="IP leak protection"
                           />
                           <span className={styles.toggleSlider} />
                         </label>
@@ -481,6 +479,7 @@ export default function SettingsPage() {
                             type="checkbox"
                             checked={guestMode}
                             onChange={(e) => setGuestMode(e.target.checked)}
+                            aria-label="Guest mode"
                           />
                           <span className={styles.toggleSlider} />
                         </label>
@@ -518,6 +517,7 @@ export default function SettingsPage() {
                             type="checkbox"
                             checked={onionRoutingEnabled}
                             onChange={(e) => setOnionRoutingEnabled(e.target.checked)}
+                            aria-label="Onion routing"
                           />
                           <span className={styles.toggleSlider} />
                         </label>
@@ -537,6 +537,7 @@ export default function SettingsPage() {
                             type="checkbox"
                             checked={allowLocalDiscovery}
                             onChange={(e) => setAllowLocalDiscovery(e.target.checked)}
+                            aria-label="Allow local network discovery"
                           />
                           <span className={styles.toggleSlider} />
                         </label>
@@ -556,6 +557,7 @@ export default function SettingsPage() {
                             type="checkbox"
                             checked={allowInternetP2P}
                             onChange={(e) => setAllowInternetP2P(e.target.checked)}
+                            aria-label="Allow internet P2P connections"
                           />
                           <span className={styles.toggleSlider} />
                         </label>
@@ -580,6 +582,7 @@ export default function SettingsPage() {
                             type="checkbox"
                             checked={temporaryVisibility}
                             onChange={(e) => setTemporaryVisibility(e.target.checked)}
+                            aria-label="Temporary visibility"
                           />
                           <span className={styles.toggleSlider} />
                         </label>
@@ -599,6 +602,7 @@ export default function SettingsPage() {
                             type="checkbox"
                             checked={autoAcceptFromFriends}
                             onChange={(e) => setAutoAcceptFromFriends(e.target.checked)}
+                            aria-label="Auto-accept from trusted friends"
                           />
                           <span className={styles.toggleSlider} />
                         </label>
@@ -623,6 +627,7 @@ export default function SettingsPage() {
                         onChange={(e) =>
                           setMaxConcurrentTransfers(Number(e.target.value) as 1 | 2 | 3 | 5)
                         }
+                        aria-label="Maximum concurrent transfers"
                       >
                         <option value={1}>1 transfer</option>
                         <option value={2}>2 transfers</option>
@@ -654,6 +659,7 @@ export default function SettingsPage() {
                               type="checkbox"
                               checked={notificationSound}
                               onChange={(e) => setNotificationSound(e.target.checked)}
+                              aria-label="Sound notifications"
                             />
                             <span className={styles.toggleSlider} />
                           </label>
@@ -671,6 +677,7 @@ export default function SettingsPage() {
                               type="checkbox"
                               checked={browserNotifications}
                               onChange={(e) => setBrowserNotifications(e.target.checked)}
+                              aria-label="Browser notifications"
                             />
                             <span className={styles.toggleSlider} />
                           </label>
@@ -688,6 +695,7 @@ export default function SettingsPage() {
                               type="checkbox"
                               checked={notifyOnTransferComplete}
                               onChange={(e) => setNotifyOnTransferComplete(e.target.checked)}
+                              aria-label="Notify on transfer complete"
                             />
                             <span className={styles.toggleSlider} />
                           </label>
@@ -705,6 +713,7 @@ export default function SettingsPage() {
                               type="checkbox"
                               checked={notifyOnIncomingTransfer}
                               onChange={(e) => setNotifyOnIncomingTransfer(e.target.checked)}
+                              aria-label="Notify on incoming transfer"
                             />
                             <span className={styles.toggleSlider} />
                           </label>
@@ -722,6 +731,7 @@ export default function SettingsPage() {
                               type="checkbox"
                               checked={notifyOnConnectionChange}
                               onChange={(e) => setNotifyOnConnectionChange(e.target.checked)}
+                              aria-label="Notify on connection change"
                             />
                             <span className={styles.toggleSlider} />
                           </label>
@@ -739,6 +749,7 @@ export default function SettingsPage() {
                               type="checkbox"
                               checked={notifyOnDeviceDiscovered}
                               onChange={(e) => setNotifyOnDeviceDiscovered(e.target.checked)}
+                              aria-label="Notify on device discovered"
                             />
                             <span className={styles.toggleSlider} />
                           </label>
@@ -770,6 +781,7 @@ export default function SettingsPage() {
                             value={Math.round((notificationVolume ?? 0.3) * 100)}
                             onChange={(e) => setNotificationVolume(Number(e.target.value) / 100)}
                             className={styles.volumeSlider}
+                            aria-label="Notification volume"
                           />
                           <span className={styles.volumeValue}>
                             {Math.round((notificationVolume ?? 0.3) * 100)}%
@@ -799,6 +811,7 @@ export default function SettingsPage() {
                             type="checkbox"
                             checked={silentHoursEnabled}
                             onChange={(e) => setSilentHoursEnabled(e.target.checked)}
+                            aria-label="Silent hours"
                           />
                           <span className={styles.toggleSlider} />
                         </label>
@@ -808,8 +821,9 @@ export default function SettingsPage() {
                         <>
                           <div className={styles.timePickerGroup}>
                             <div className={styles.timePicker}>
-                              <label className={styles.label}>Start time</label>
+                              <label className={styles.label} htmlFor="silent-start">Start time</label>
                               <input
+                                id="silent-start"
                                 type="time"
                                 value={silentHoursStart}
                                 onChange={(e) => setSilentHoursStart(e.target.value)}
@@ -817,8 +831,9 @@ export default function SettingsPage() {
                               />
                             </div>
                             <div className={styles.timePicker}>
-                              <label className={styles.label}>End time</label>
+                              <label className={styles.label} htmlFor="silent-end">End time</label>
                               <input
+                                id="silent-end"
                                 type="time"
                                 value={silentHoursEnd}
                                 onChange={(e) => setSilentHoursEnd(e.target.value)}
@@ -880,8 +895,6 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
-      </main>
-      <Footer />
-    </>
+    </main>
   );
 }

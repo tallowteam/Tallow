@@ -2,11 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styles from './header.module.css';
 
 const navLinks = [
-  { href: '/#features', label: 'FEATURES' },
+  { href: '/features', label: 'FEATURES' },
   { href: '/how-it-works', label: 'HOW IT WORKS' },
   { href: '/docs', label: 'HELP' },
   { href: '/about', label: 'ABOUT' },
@@ -15,6 +15,8 @@ const navLinks = [
 export function Header() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const hamburgerRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   // Lock body scroll when mobile menu is open
   useEffect(() => {
@@ -27,6 +29,16 @@ export function Header() {
     return () => {
       document.body.style.overflow = '';
     };
+  }, [mobileMenuOpen]);
+
+  // Focus management for mobile menu
+  useEffect(() => {
+    if (mobileMenuOpen && mobileMenuRef.current) {
+      const firstLink = mobileMenuRef.current.querySelector<HTMLElement>('a, button');
+      firstLink?.focus();
+    } else if (!mobileMenuOpen) {
+      hamburgerRef.current?.focus();
+    }
   }, [mobileMenuOpen]);
 
   // Close menu on route change
@@ -60,10 +72,10 @@ export function Header() {
           <span className={styles.tagline}>QUANTUM-SAFE TRANSFER</span>
         </div>
 
-        <nav className={styles.nav}>
+        <nav className={styles.nav} aria-label="Main navigation">
           <ul className={styles.navList}>
             {navLinks.map((link) => (
-              <li key={link.href}>
+              <li key={link.label}>
                 <Link
                   href={link.href}
                   className={`${styles.navLink} ${isActiveLink(link.href) ? styles.active : ''}`}
@@ -79,6 +91,7 @@ export function Header() {
         </nav>
 
         <button
+          ref={hamburgerRef}
           className={styles.hamburger}
           onClick={toggleMobileMenu}
           aria-label="Toggle menu"
@@ -91,11 +104,11 @@ export function Header() {
       </div>
 
       {mobileMenuOpen && (
-        <div className={styles.mobileMenu}>
+        <div ref={mobileMenuRef} className={styles.mobileMenu} role="dialog" aria-label="Navigation menu">
           <div className={styles.mobileMenuContent}>
             <ul className={styles.mobileNavList}>
               {navLinks.map((link) => (
-                <li key={link.href}>
+                <li key={link.label}>
                   <Link
                     href={link.href}
                     className={`${styles.mobileNavLink} ${isActiveLink(link.href) ? styles.active : ''}`}

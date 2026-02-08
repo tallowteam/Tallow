@@ -9,10 +9,10 @@
  */
 
 import {
-  secureWipeBuffer,
+  secureWipeBuffer as _secureWipeBuffer,
   secureWipeString,
-  secureWipeObject,
-  secureWipeBuffers,
+  secureWipeObject as _secureWipeObject,
+  secureWipeBuffers as _secureWipeBuffers,
 } from './memory-wiper';
 
 /**
@@ -58,7 +58,7 @@ export interface BreachReport {
  */
 function generateBreachId(): string {
   const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).substring(2, 8);
+  const random = Array.from(crypto.getRandomValues(new Uint8Array(4))).map(b => b.toString(36)).join('').substring(0, 6);
   return `breach-${timestamp}-${random}`;
 }
 
@@ -123,12 +123,12 @@ export function generateBreachReport(
   // Collect unique affected data types
   const affectedDataTypes = new Set<string>();
   sortedIncidents.forEach((incident) => {
-    if (incident.type === 'data_breach') affectedDataTypes.add('User Files');
-    if (incident.type === 'key_compromise') affectedDataTypes.add('Encryption Keys');
+    if (incident.type === 'data_breach') {affectedDataTypes.add('User Files');}
+    if (incident.type === 'key_compromise') {affectedDataTypes.add('Encryption Keys');}
     if (incident.type === 'unauthorized_access')
-      affectedDataTypes.add('Session Information');
-    if (incident.type === 'relay_compromise') affectedDataTypes.add('Relay Logs');
-    if (incident.type === 'malware_detected') affectedDataTypes.add('System Files');
+      {affectedDataTypes.add('Session Information');}
+    if (incident.type === 'relay_compromise') {affectedDataTypes.add('Relay Logs');}
+    if (incident.type === 'malware_detected') {affectedDataTypes.add('System Files');}
   });
 
   // Summarize findings by type
