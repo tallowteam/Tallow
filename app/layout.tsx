@@ -89,9 +89,8 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: '/icon.svg', type: 'image/svg+xml' },
-      { url: '/favicon.ico', sizes: 'any' },
     ],
-    apple: '/apple-touch-icon.png',
+    apple: '/icon-192.png',
   },
   manifest: '/manifest.json',
   robots: {
