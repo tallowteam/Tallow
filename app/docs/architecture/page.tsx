@@ -3,7 +3,12 @@
 import { useRef, useEffect, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { MermaidDiagram } from '@/components/docs/MermaidDiagram';
+import dynamic from 'next/dynamic';
+
+const MermaidDiagram = dynamic(
+  () => import('@/components/docs/MermaidDiagram').then((mod) => mod.MermaidDiagram),
+  { loading: () => <div style={{ height: 300, background: 'rgba(255,255,255,0.03)', borderRadius: 12 }} />, ssr: false }
+);
 import { architectureDiagrams } from '@/lib/docs/architecture-diagrams';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';

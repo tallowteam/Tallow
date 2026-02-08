@@ -7,8 +7,16 @@ import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { Spinner } from '@/components/ui/Spinner';
-import { CodeEditor } from '@/components/docs/CodeEditor';
-import { LivePreview } from '@/components/docs/LivePreview';
+import dynamic from 'next/dynamic';
+
+const CodeEditor = dynamic(
+  () => import('@/components/docs/CodeEditor').then((mod) => mod.CodeEditor),
+  { loading: () => <div style={{ height: 200, background: 'rgba(255,255,255,0.03)', borderRadius: 12 }} />, ssr: false }
+);
+const LivePreview = dynamic(
+  () => import('@/components/docs/LivePreview').then((mod) => mod.LivePreview),
+  { loading: () => <div style={{ height: 200, background: 'rgba(255,255,255,0.03)', borderRadius: 12 }} />, ssr: false }
+);
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import styles from './page.module.css';

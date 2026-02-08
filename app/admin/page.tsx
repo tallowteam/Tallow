@@ -8,7 +8,12 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { StatsCard } from '@/components/admin/StatsCard';
-import { SimpleChart } from '@/components/admin/SimpleChart';
+import dynamic from 'next/dynamic';
+
+const SimpleChart = dynamic(
+  () => import('@/components/admin/SimpleChart').then((mod) => mod.SimpleChart),
+  { loading: () => <div style={{ height: 200, background: 'rgba(255,255,255,0.03)', borderRadius: 12 }} /> }
+);
 import { ConnectionsTable, type Connection } from '@/components/admin/ConnectionsTable';
 import { UsageTracker } from '@/lib/analytics/usage-tracker';
 import {

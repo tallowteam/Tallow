@@ -1,6 +1,12 @@
 'use client';
 
-import { BiometricAuthExample } from '@/components/transfer/BiometricAuthExample';
+import dynamic from 'next/dynamic';
+import Link from 'next/link';
+
+const BiometricAuthExample = dynamic(
+  () => import('@/components/transfer/BiometricAuthExample').then((mod) => mod.BiometricAuthExample),
+  { loading: () => <div style={{ height: 400, background: 'rgba(255,255,255,0.03)', borderRadius: 12 }} />, ssr: false }
+);
 import styles from './page.module.css';
 
 /**
@@ -14,10 +20,10 @@ export default function BiometricDemoPage() {
     <div className={styles.page}>
       <header className={styles.pageHeader}>
         <div className={styles.headerContent}>
-          <a href="/" className={styles.backLink}>
+          <Link href="/" className={styles.backLink}>
             <BackIcon />
             <span>Back to Home</span>
-          </a>
+          </Link>
           <div className={styles.headerBadge}>
             <span className={styles.badgeIcon}>🔐</span>
             <span className={styles.badgeText}>WebAuthn/FIDO2 Demo</span>
