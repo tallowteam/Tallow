@@ -686,7 +686,7 @@ class CompressionWorkerBridge extends BaseWorkerBridge {
 
           while (true) {
             const { done, value } = await reader.read();
-            if (done) break;
+            if (done) {break;}
             chunks.push(value);
           }
 
@@ -731,7 +731,7 @@ class CompressionWorkerBridge extends BaseWorkerBridge {
 
           while (true) {
             const { done, value } = await reader.read();
-            if (done) break;
+            if (done) {break;}
             chunks.push(value);
           }
 
@@ -757,10 +757,38 @@ class CompressionWorkerBridge extends BaseWorkerBridge {
  * Provides access to all worker bridges
  */
 export class WorkerBridge {
-  public static readonly crypto = CryptoWorkerBridge.getInstance();
-  public static readonly file = FileWorkerBridge.getInstance();
-  public static readonly network = NetworkWorkerBridge.getInstance();
-  public static readonly compression = CompressionWorkerBridge.getInstance();
+  private static _crypto: CryptoWorkerBridge | null = null;
+  private static _file: FileWorkerBridge | null = null;
+  private static _network: NetworkWorkerBridge | null = null;
+  private static _compression: CompressionWorkerBridge | null = null;
+
+  public static get crypto(): CryptoWorkerBridge {
+    if (!this._crypto) {
+      this._crypto = CryptoWorkerBridge.getInstance();
+    }
+    return this._crypto;
+  }
+
+  public static get file(): FileWorkerBridge {
+    if (!this._file) {
+      this._file = FileWorkerBridge.getInstance();
+    }
+    return this._file;
+  }
+
+  public static get network(): NetworkWorkerBridge {
+    if (!this._network) {
+      this._network = NetworkWorkerBridge.getInstance();
+    }
+    return this._network;
+  }
+
+  public static get compression(): CompressionWorkerBridge {
+    if (!this._compression) {
+      this._compression = CompressionWorkerBridge.getInstance();
+    }
+    return this._compression;
+  }
 
   /**
    * Destroy all worker pools
@@ -785,8 +813,8 @@ export class WorkerBridge {
   }
 }
 
-// Export individual bridges for direct access
-export const cryptoWorker = WorkerBridge.crypto;
-export const fileWorker = WorkerBridge.file;
-export const networkWorker = WorkerBridge.network;
-export const compressionWorker = WorkerBridge.compression;
+// Export individual bridges for direct access (lazy getters)
+export const getCryptoWorker = () => WorkerBridge.crypto;
+export const getFileWorker = () => WorkerBridge.file;
+export const getNetworkWorker = () => WorkerBridge.network;
+export const getCompressionWorker = () => WorkerBridge.compression;

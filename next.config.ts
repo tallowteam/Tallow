@@ -25,7 +25,7 @@ const nextConfig: NextConfig = {
   }),
 
   // Server-side external packages (Node.js-only modules)
-  serverExternalPackages: ['pqc-kyber', 'prom-client'],
+  serverExternalPackages: ['pqc-kyber', 'prom-client', '@aws-sdk/client-s3', '@aws-sdk/lib-storage'],
 
   // Security headers
   async headers() {
@@ -61,7 +61,9 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+              // NOTE: 'unsafe-inline' should be replaced with nonce-based CSP in production
+              // Next.js requires inline scripts for hydration - implement nonce system for stronger security
+              "script-src 'self' 'unsafe-inline'",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https:",
               "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com",
@@ -290,8 +292,6 @@ const nextConfig: NextConfig = {
       'web-vitals',
       // Feature flags
       'launchdarkly-react-client-sdk',
-      // Icons (only import what's used)
-      '@heroicons/react',
       // Zustand
       'zustand',
     ],

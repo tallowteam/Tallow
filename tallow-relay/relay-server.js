@@ -32,7 +32,39 @@ const CONFIG = {
     circuitTimeout: 10 * 60 * 1000, // 10 minutes
     maxCircuitsPerClient: 5,
     maxPayloadSize: 64 * 1024, // 64KB
+    maxMessageSize: 1024 * 1024, // 1MB max message size
 };
+
+// ============================================================================
+// Rate Limiting
+// ============================================================================
+
+// Simple rate limiter
+const rateLimiter = new Map(); // ip -> { count, resetTime }
+const RATE_LIMIT = 10; // max circuits per IP per minute
+const RATE_WINDOW = 60000; // 1 minute
+
+function checkRateLimit(ip) {
+    const now = Date.now();
+    const entry = rateLimiter.get(ip);
+    if (!entry || now > entry.resetTime) {
+        rateLimiter.set(ip, { count: 1, resetTime: now + RATE_WINDOW });
+        return true;
+    }
+    if (entry.count >= RATE_LIMIT) {
+        return false;
+    }
+    entry.count++;
+    return true;
+}
+
+// Cleanup old entries every 5 minutes
+setInterval(() => {
+    const now = Date.now();
+    for (const [ip, entry] of rateLimiter) {
+        if (now > entry.resetTime) {rateLimiter.delete(ip);}
+    }
+}, 300000);
 
 // Message types
 const MSG_TYPE = {
@@ -264,6 +296,14 @@ async function handleCreateCircuit(ws, clientInfo, message) {
         return;
     }
 
+    // Apply rate limiting
+    const clientIP = clientInfo.ip || 'unknown';
+    if (!checkRateLimit(clientIP)) {
+        sendError(ws, message.requestId, 'Rate limit exceeded. Try again later.', message.circuitId);
+        console.warn(`[Relay] Rate limit exceeded for ${clientIP}`);
+        return;
+    }
+
     if (clientInfo.circuitCount >= CONFIG.maxCircuitsPerClient) {
         sendError(ws, message.requestId, 'Too many circuits', message.circuitId);
         return;
@@ -374,6 +414,12 @@ async function handleRelayData(ws, clientInfo, message) {
 
     circuit.lastActivity = Date.now();
 
+    // Validate payload size
+    if (message.payload.length > CONFIG.maxMessageSize) {
+        console.warn(`[Relay] Relay data too large: ${message.payload.length} bytes`);
+        return;
+    }
+
     // Decrypt one layer
     const decrypted = decryptMessage(message.payload, circuit.sessionKey);
     if (!decrypted) {
@@ -448,11 +494,13 @@ const server = http.createServer((req, res) => {
 
 const wss = new WebSocket.Server({ server, path: '/relay' });
 
-wss.on('connection', (ws, _req) => {
+wss.on('connection', (ws, req) => {
     const clientId = `client-${crypto.randomBytes(4).toString('hex')}`;
+    const clientIP = req.socket.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
     const clientInfo = {
         id: clientId,
         ws,
+        ip: clientIP,
         sessionKey: null,
         authenticated: false,
         circuitCount: 0,
@@ -460,11 +508,18 @@ wss.on('connection', (ws, _req) => {
     };
     state.clients.set(ws, clientInfo);
 
-    console.log(`[Relay] Client connected: ${clientId}`);
+    console.log(`[Relay] Client connected: ${clientId} from ${clientIP}`);
 
     ws.on('message', async (data) => {
         try {
             let messageData = Buffer.from(data);
+
+            // Check message size limit
+            if (messageData.length > CONFIG.maxMessageSize) {
+                console.warn(`[Relay] Message too large from ${clientId}: ${messageData.length} bytes`);
+                sendError(ws, 0, 'Message too large');
+                return;
+            }
 
             // If authenticated, decrypt first
             if (clientInfo.sessionKey) {

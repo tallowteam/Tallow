@@ -86,15 +86,9 @@ export interface TransportStats {
 // Constants
 // ============================================================================
 
-// Default TURN server (should be overridden in production)
-const DEFAULT_TURN_SERVER = process.env['NEXT_PUBLIC_TURN_SERVER'] || 'turns:relay.metered.ca:443?transport=tcp';
-const TURN_USERNAME = process.env['NEXT_PUBLIC_TURN_USERNAME'] || '';
-const TURN_CREDENTIAL = process.env['NEXT_PUBLIC_TURN_CREDENTIAL'] || '';
-
-// Only force relay when TURN credentials are actually configured
-// Without valid TURN credentials, relay-only mode blocks all connections
-const HAS_TURN_CREDENTIALS = !!(process.env['NEXT_PUBLIC_TURN_USERNAME'] && process.env['NEXT_PUBLIC_TURN_CREDENTIAL']);
-const FORCE_RELAY = HAS_TURN_CREDENTIALS && process.env['NEXT_PUBLIC_FORCE_RELAY'] !== 'false';
+// SECURITY: TURN credentials are now fetched from secure server endpoint
+// instead of being exposed in client-side environment variables
+const FORCE_RELAY = process.env['NEXT_PUBLIC_FORCE_RELAY'] !== 'false';
 const ALLOW_DIRECT = !FORCE_RELAY || process.env['NEXT_PUBLIC_ALLOW_DIRECT'] === 'true';
 
 // IP patterns to filter
@@ -127,7 +121,7 @@ export class PrivateTransport {
 
     constructor(config: PrivateTransportConfig = {}) {
         this.config = {
-            turnServer: config.turnServer || DEFAULT_TURN_SERVER,
+            turnServer: config.turnServer,
             forceRelay: config.forceRelay ?? FORCE_RELAY,
             allowDirect: config.allowDirect ?? ALLOW_DIRECT,
             logCandidates: config.logCandidates ?? true,
@@ -273,25 +267,14 @@ export class PrivateTransport {
     /**
      * Get the private RTCConfiguration
      * Forces relay-only connections when privacy mode is enabled
-     * Now reads from user's proxy configuration settings
+     *
+     * SECURITY: This method returns config with empty iceServers.
+     * Call fetchTURNCredentials() first to get credentials from server endpoint.
      */
     getRTCConfiguration(): RTCConfiguration {
-        // Note: Uses default config values since proxy config is async
-        // For runtime proxy config, use getProxyConfig() and build config manually
         const forceRelay = this.config.forceRelay;
 
         const iceServers: RTCIceServer[] = [];
-
-        // Add default TURN server if credentials are configured
-        if (this.config.turnServer && TURN_USERNAME && TURN_CREDENTIAL) {
-            iceServers.push({
-                urls: this.config.turnServer,
-                username: TURN_USERNAME,
-                credential: TURN_CREDENTIAL,
-            });
-        } else if (forceRelay) {
-            secureLog.warn('[PrivateTransport] relay-only mode enabled but no TURN servers configured - connections may fail');
-        }
 
         // Only add STUN servers if not in relay-only mode (non-Google for privacy)
         if (!forceRelay) {
@@ -299,6 +282,8 @@ export class PrivateTransport {
                 { urls: 'stun:stun.nextcloud.com:443' },
                 { urls: 'stun:stun.stunprotocol.org:3478' }
             );
+        } else {
+            secureLog.warn('[PrivateTransport] relay-only mode enabled. Call fetchTURNCredentials() to fetch TURN servers from /api/turn/credentials');
         }
 
         return {
@@ -311,6 +296,46 @@ export class PrivateTransport {
             // bundlePolicy: 'max-bundle',
             // rtcpMuxPolicy: 'require',
         };
+    }
+
+    /**
+     * Fetch TURN credentials from server endpoint
+     * SECURITY: Credentials are fetched server-side to prevent exposure
+     *
+     * @param ttl - Credential time-to-live in seconds (default: 12 hours)
+     * @returns RTCConfiguration with TURN servers, or null on error
+     */
+    async fetchTURNCredentials(ttl: number = 43200): Promise<RTCConfiguration | null> {
+        try {
+            const response = await fetch(`/api/turn/credentials?ttl=${ttl}`);
+
+            if (!response.ok) {
+                secureLog.error('[PrivateTransport] Failed to fetch TURN credentials:', response.statusText);
+                return null;
+            }
+
+            const data = await response.json() as {
+                iceServers: RTCIceServer[];
+                expiresAt: number;
+                ttl: number;
+                provider: string;
+            };
+
+            if (!data.iceServers || data.iceServers.length === 0) {
+                secureLog.warn('[PrivateTransport] No TURN servers available from endpoint');
+                return null;
+            }
+
+            const config = this.getRTCConfiguration();
+            config.iceServers = [...(config.iceServers || []), ...data.iceServers];
+
+            secureLog.log(`[PrivateTransport] TURN credentials fetched (provider: ${data.provider}, expires: ${new Date(data.expiresAt).toISOString()})`);
+
+            return config;
+        } catch (error) {
+            secureLog.error('[PrivateTransport] Error fetching TURN credentials:', error);
+            return null;
+        }
     }
 
     /**

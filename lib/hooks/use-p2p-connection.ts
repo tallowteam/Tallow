@@ -250,8 +250,9 @@ const BUFFER_HIGH_THRESHOLD = 8 * 1024 * 1024; // 8MB - pause sending when excee
 const BUFFER_LOW_THRESHOLD = 4 * 1024 * 1024; // 4MB - resume sending when below
 
 // Private transport for relay-only connections (IP leak prevention)
+// P2P direct connection preferred; relay used as fallback only
 const privateTransport = getPrivateTransport({
-    forceRelay: true,
+    forceRelay: false,
     logCandidates: process.env.NODE_ENV === 'development',
     onIpLeakDetected: (candidate) => {
         secureLog.warn('IP LEAK DETECTED:', candidate.candidate);
@@ -329,6 +330,7 @@ export function useP2PConnection() {
 
     const peerConnection = useRef<RTCPeerConnection | null>(null);
     const dataChannel = useRef<RTCDataChannel | null>(null);
+    const connectionTimeout = useRef<NodeJS.Timeout | null>(null);
     const receivingFile = useRef<{
         name: string;
         type: string;
@@ -398,7 +400,7 @@ export function useP2PConnection() {
             setState(prev => ({
                 ...prev,
                 verificationPending: false,
-                verificationSession: { ...prev.verificationSession!, status: 'verified' },
+                verificationSession: prev.verificationSession ? { ...prev.verificationSession, status: 'verified' } : null,
             }));
         }
     }, [state.verificationSession]);
@@ -410,7 +412,7 @@ export function useP2PConnection() {
             setState(prev => ({
                 ...prev,
                 verificationPending: false,
-                verificationSession: { ...prev.verificationSession!, status: 'failed' },
+                verificationSession: prev.verificationSession ? { ...prev.verificationSession, status: 'failed' } : null,
             }));
             // Optionally disconnect on failure
             // disconnect();
@@ -424,7 +426,7 @@ export function useP2PConnection() {
             setState(prev => ({
                 ...prev,
                 verificationPending: false,
-                verificationSession: { ...prev.verificationSession!, status: 'skipped' },
+                verificationSession: prev.verificationSession ? { ...prev.verificationSession, status: 'skipped' } : null,
             }));
         }
     }, [state.verificationSession]);
@@ -450,11 +452,20 @@ export function useP2PConnection() {
         pc.onconnectionstatechange = () => {
             secureLog.log('Connection state:', pc.connectionState);
             if (pc.connectionState === 'connected') {
+                // Clear connection timeout on successful connection
+                if (connectionTimeout.current) {
+                    clearTimeout(connectionTimeout.current);
+                    connectionTimeout.current = null;
+                }
                 setState(prev => ({ ...prev, isConnected: true, isConnecting: false }));
                 // Log privacy stats
                 const stats = privateTransport.getStats();
                 secureLog.log('Transport stats:', stats);
             } else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+                if (connectionTimeout.current) {
+                    clearTimeout(connectionTimeout.current);
+                    connectionTimeout.current = null;
+                }
                 setState(prev => ({ ...prev, isConnected: false, isConnecting: false, error: 'Connection failed' }));
             }
         };
@@ -692,9 +703,10 @@ export function useP2PConnection() {
         receivingFile.current.received += data.byteLength;
 
         const progress = Math.min((receivingFile.current.received / receivingFile.current.size) * 100, 100);
+        const currentReceived = receivingFile.current.received;
         setCurrentTransfer(prev => prev ? {
             ...prev,
-            transferredSize: receivingFile.current!.received,
+            transferredSize: currentReceived,
             progress,
         } : null);
     }, []);
@@ -729,6 +741,18 @@ export function useP2PConnection() {
             const pc = createPeerConnection();
             peerConnection.current = pc;
 
+            // Add connection timeout (30 seconds)
+            connectionTimeout.current = setTimeout(() => {
+                if (pc.connectionState !== 'connected') {
+                    secureLog.warn('[P2P] Connection timeout after 30s, retrying...');
+                    setState(prev => ({
+                        ...prev,
+                        isConnecting: false,
+                        error: 'Connection timeout. Please try again.'
+                    }));
+                }
+            }, 30000);
+
             // Create data channel
             const channel = pc.createDataChannel('fileTransfer', { ordered: true });
             dataChannel.current = channel;
@@ -743,6 +767,10 @@ export function useP2PConnection() {
 
             return pc.localDescription;
         } catch (error) {
+            if (connectionTimeout.current) {
+                clearTimeout(connectionTimeout.current);
+                connectionTimeout.current = null;
+            }
             setState(prev => ({ ...prev, isConnecting: false, error: 'Failed to create offer' }));
             throw error;
         }
@@ -756,6 +784,18 @@ export function useP2PConnection() {
             const pc = createPeerConnection();
             peerConnection.current = pc;
 
+            // Add connection timeout (30 seconds)
+            connectionTimeout.current = setTimeout(() => {
+                if (pc.connectionState !== 'connected') {
+                    secureLog.warn('[P2P] Connection timeout after 30s, retrying...');
+                    setState(prev => ({
+                        ...prev,
+                        isConnecting: false,
+                        error: 'Connection timeout. Please try again.'
+                    }));
+                }
+            }, 30000);
+
             await pc.setRemoteDescription(offer);
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
@@ -765,6 +805,10 @@ export function useP2PConnection() {
 
             return pc.localDescription;
         } catch (error) {
+            if (connectionTimeout.current) {
+                clearTimeout(connectionTimeout.current);
+                connectionTimeout.current = null;
+            }
             setState(prev => ({ ...prev, isConnecting: false, error: 'Failed to accept connection' }));
             throw error;
         }
@@ -897,6 +941,12 @@ export function useP2PConnection() {
 
     // Close connection
     const disconnect = useCallback(() => {
+        // Clear connection timeout
+        if (connectionTimeout.current) {
+            clearTimeout(connectionTimeout.current);
+            connectionTimeout.current = null;
+        }
+
         dataChannel.current?.close();
         peerConnection.current?.close();
         dataChannel.current = null;

@@ -263,7 +263,7 @@ export const POST = withAPIMetrics(async (request: NextRequest): Promise<NextRes
     }
 
     // Generate email template
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const template = shareEmailTemplate({
       senderName,
       shareLink,
@@ -315,15 +315,17 @@ export const POST = withAPIMetrics(async (request: NextRequest): Promise<NextRes
         successResponse(response as unknown as Record<string, unknown>),
         request.headers.get('origin')
       );
-    } catch (error) {
-      secureLog.error('[Email API] Failed to send email:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      secureLog.error('[Email API] Failed to send email:', errorMessage);
       return withCORS(
         ApiErrors.internalError(),
         request.headers.get('origin')
       );
     }
-  } catch (error) {
-    secureLog.error('[Email API] POST error:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    secureLog.error('[Email API] POST error:', errorMessage);
     return withCORS(
       ApiErrors.internalError(),
       request.headers.get('origin')

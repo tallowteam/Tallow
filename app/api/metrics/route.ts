@@ -24,6 +24,9 @@ export const runtime = 'nodejs';
  *
  * Returns all registered metrics in Prometheus text format.
  *
+ * SECURITY: This endpoint is protected by bearer token authentication.
+ * Set METRICS_SECRET environment variable to secure this endpoint.
+ *
  * Response format:
  * - Content-Type: text/plain; version=0.0.4; charset=utf-8
  * - Body: Prometheus text exposition format
@@ -40,7 +43,38 @@ export const runtime = 'nodejs';
  * tallow_active_connections{type="webrtc"} 5
  * ```
  */
-export async function GET(_request: NextRequest): Promise<NextResponse> {
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  // SECURITY: Require bearer token authentication
+  const authHeader = request.headers.get('Authorization');
+  const metricsSecret = process.env['METRICS_SECRET'];
+
+  // If METRICS_SECRET is not set, warn and allow (for backward compatibility during deployment)
+  if (metricsSecret) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new NextResponse('Unauthorized: Bearer token required', {
+        status: 401,
+        headers: {
+          'Content-Type': 'text/plain',
+          'WWW-Authenticate': 'Bearer',
+        },
+      });
+    }
+
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+
+    if (token !== metricsSecret) {
+      return new NextResponse('Unauthorized: Invalid token', {
+        status: 401,
+        headers: {
+          'Content-Type': 'text/plain',
+        },
+      });
+    }
+  } else {
+    // Log warning if metrics endpoint is unprotected
+    console.warn('[SECURITY WARNING] /api/metrics is unprotected. Set METRICS_SECRET environment variable.');
+  }
+
   try {
     const registry = getRegistry();
     const metrics = registry.serialize();

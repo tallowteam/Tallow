@@ -26,6 +26,21 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
       return rateLimitResult;
     }
 
+    // SECURITY: Require authentication via API key or session
+    // This prevents IDOR vulnerability where anyone could query any customer's subscription
+    const apiKey = request.headers.get('x-api-key');
+    const internalApiKey = process.env['INTERNAL_API_KEY'];
+
+    if (!apiKey || !internalApiKey || apiKey !== internalApiKey) {
+      return new NextResponse('Unauthorized', {
+        status: 401,
+        headers: {
+          'WWW-Authenticate': 'API Key required',
+          'Content-Type': 'text/plain',
+        }
+      });
+    }
+
     // Check if Stripe is configured
     const stripeService = getStripeService();
     if (!stripeService.isConfigured()) {
@@ -35,7 +50,7 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Get customer ID from query params (in production, get from session/auth)
+    // Get customer ID from query params
     const { searchParams } = new URL(request.url);
     const customerId = searchParams.get('customerId');
 

@@ -178,8 +178,7 @@ async function handleSubscriptionDeleted(
 async function handleInvoicePaymentSucceeded(
   event: Stripe.InvoicePaymentSucceededEvent
 ): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const invoice = event.data.object as any;
+  const invoice = event.data.object as Stripe.Invoice;
 
   console.log('Invoice payment succeeded:', {
     invoiceId: invoice.id,
@@ -208,8 +207,7 @@ async function handleInvoicePaymentSucceeded(
 async function handleInvoicePaymentFailed(
   event: Stripe.InvoicePaymentFailedEvent
 ): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const invoice = event.data.object as any;
+  const invoice = event.data.object as Stripe.Invoice;
 
   console.log('Invoice payment failed:', {
     invoiceId: invoice.id,
@@ -234,8 +232,7 @@ async function handleInvoicePaymentFailed(
 async function handleInvoiceUpcoming(
   event: Stripe.InvoiceUpcomingEvent
 ): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const invoice = event.data.object as any;
+  const invoice = event.data.object as Stripe.Invoice;
 
   console.log('Upcoming invoice:', {
     customerId: invoice.customer,
