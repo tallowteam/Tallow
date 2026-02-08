@@ -1,9 +1,10 @@
 .container {
-  max-width: 1200px;
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto;
   padding-top: 120px;
-  padding-left: 24px;
-  padding-right: 24px;
+  padding-left: clamp(24px, 5vw, 80px);
+  padding-right: clamp(24px, 5vw, 80px);
   padding-bottom: 60px;
   min-height: calc(100vh - 80px);
 }
@@ -17,14 +18,16 @@
   font-family: var(--font-heading);
   font-size: 2rem;
   font-weight: 400;
-  color: var(--text-1);
+  color: #f2f2f8;
+  color: var(--text, #f2f2f8);
   margin: 0 0 12px 0;
   letter-spacing: -0.02em;
 }
 
 .subtitle {
   font-size: 0.9rem;
-  color: var(--text-2);
+  color: #9494a8;
+  color: var(--text-2, #9494a8);
   margin: 0;
 }
 
@@ -41,6 +44,8 @@
   appearance: none;
   border: none;
   font: inherit;
+  color: #f2f2f8;
+  color: var(--text, #f2f2f8);
   text-align: left;
   cursor: pointer;
 
@@ -48,9 +53,8 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  min-width: 320px;
+  min-width: 280px;
   flex: 1;
-  max-width: 380px;
 
   /* Glass morphism */
   background: var(--glass);
@@ -96,16 +100,19 @@
 }
 
 .cardTitle {
+  font-family: var(--font-heading);
   font-size: 1.3rem;
-  font-weight: 600;
-  color: var(--text-1);
+  font-weight: 400;
+  color: #f2f2f8;
+  color: var(--text, #f2f2f8);
   margin: 0 0 8px 0;
   letter-spacing: -0.01em;
 }
 
 .cardDescription {
   font-size: 0.85rem;
-  color: var(--text-2);
+  color: #9494a8;
+  color: var(--text-2, #9494a8);
   margin: 0 0 24px 0;
   line-height: 1.5;
 }
@@ -122,7 +129,8 @@
   align-items: flex-start;
   gap: 8px;
   font-size: 0.8rem;
-  color: var(--text-3);
+  color: #5a5a70;
+  color: var(--text-3, #5a5a70);
   line-height: 1.8;
   margin-bottom: 6px;
 }
@@ -132,7 +140,8 @@
 }
 
 .checkmark {
-  color: var(--accent);
+  color: #6366f1;
+  color: var(--accent, #6366f1);
   font-weight: 600;
   flex-shrink: 0;
   margin-top: 1px;

@@ -431,7 +431,7 @@ export function FriendsList({
           >
             <div className={styles.friendAvatar}>
               {friend.avatar ? (
-                <img src={friend.avatar} alt={friend.name} />
+                <img src={friend.avatar} alt={friend.name} width={40} height={40} loading="lazy" />
               ) : (
                 <div className={styles.avatarPlaceholder}>
                   {friend.name.charAt(0).toUpperCase()}

@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   title: 'Privacy Policy',
   description:
     'Your privacy is our architecture. Learn how Tallow is designed so that we cannot access your files.',
+  alternates: {
+    canonical: 'https://tallow.app/privacy',
+  },
   openGraph: {
     title: 'Privacy Policy | Tallow',
     description:

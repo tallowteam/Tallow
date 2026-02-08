@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   title: 'Terms of Service',
   description:
     'Simple terms for a simple tool. Read the terms of service for using Tallow, the quantum-safe file transfer application.',
+  alternates: {
+    canonical: 'https://tallow.app/terms',
+  },
   openGraph: {
     title: 'Terms of Service | Tallow',
     description:

@@ -31,7 +31,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s ease;
+  transition: color 0.2s var(--ease, ease);
 }
 
 .refreshButton:hover {
@@ -41,7 +41,7 @@
 .refreshIcon {
   width: 16px;
   height: 16px;
-  transition: transform 0.6s ease;
+  transition: transform 0.6s var(--ease, ease);
 }
 
 .refreshIcon.spinning {
@@ -75,7 +75,7 @@
   border: 1px solid transparent;
   background: transparent;
   text-align: left;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s var(--ease, ease), border-color 0.2s var(--ease, ease);
 }
 
 .deviceItem:hover {
@@ -153,7 +153,7 @@
   opacity: 0;
   pointer-events: none;
   margin-bottom: 4px;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s var(--ease, ease);
   border: 1px solid var(--border);
 }
 
@@ -213,7 +213,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s var(--ease, ease), transform 0.2s var(--ease, ease);
 }
 
 .addFriendButton:hover {
@@ -311,5 +311,24 @@
 
   .pqcBadge {
     display: none; /* Hide PQC badge on very small screens to save space */
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .refreshButton,
+  .refreshIcon,
+  .deviceItem,
+  .pqcTooltip,
+  .addFriendButton {
+    transition: none;
+  }
+
+  .refreshIcon.spinning {
+    animation: none;
+  }
+
+  .pulseDot {
+    animation: none;
   }
 }

@@ -4,6 +4,9 @@ import styles from './page.module.css';
 export const metadata: Metadata = {
   title: 'Security',
   description: 'Post-quantum cryptographic security. End-to-end encrypted file transfers that outlast the quantum age.',
+  alternates: {
+    canonical: 'https://tallow.app/security',
+  },
   openGraph: {
     title: 'Security | Tallow',
     description: 'Post-quantum cryptographic security. End-to-end encrypted file transfers that outlast the quantum age.',

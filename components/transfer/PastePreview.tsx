@@ -50,10 +50,14 @@ export function PastePreview({
         return (
           <div className={styles.imagePreview}>
             {src && !imageError ? (
+              // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions, @next/next/no-img-element
               <img
                 src={src}
                 alt={fileName || 'Pasted image'}
                 className={styles.previewImage}
+                width={300}
+                height={200}
+                loading="lazy"
                 onError={() => setImageError(true)}
               />
             ) : (

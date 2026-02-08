@@ -5,6 +5,9 @@ import styles from './page.module.css';
 export const metadata: Metadata = {
   title: 'About',
   description: 'Privacy is a fundamental right. We built Tallow because file sharing should not come at the cost of your privacy.',
+  alternates: {
+    canonical: 'https://tallow.app/about',
+  },
   openGraph: {
     title: 'About | Tallow',
     description: 'Privacy is a fundamental right. We built Tallow because file sharing should not come at the cost of your privacy.',

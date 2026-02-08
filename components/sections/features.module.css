@@ -38,7 +38,7 @@
 
 .header {
   text-align: center;
-  max-width: 768px;
+  max-width: none;
   margin: 0 auto var(--space-16);
 }
 
@@ -106,10 +106,23 @@
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
-  transition: all var(--transition-base);
+  transition: transform var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
   position: relative;
   overflow: hidden;
+  animation: revealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
 }
+
+.cards .feature:nth-child(1) { animation-delay: 50ms; }
+.cards .feature:nth-child(2) { animation-delay: 100ms; }
+.cards .feature:nth-child(3) { animation-delay: 150ms; }
+.cards .feature:nth-child(4) { animation-delay: 200ms; }
+.cards .feature:nth-child(5) { animation-delay: 250ms; }
+.cards .feature:nth-child(6) { animation-delay: 300ms; }
+.cards .feature:nth-child(7) { animation-delay: 350ms; }
+.cards .feature:nth-child(8) { animation-delay: 400ms; }
+.cards .feature:nth-child(9) { animation-delay: 450ms; }
 
 .cards .feature::before {
   content: '';
@@ -138,7 +151,7 @@
 .grid.list {
   grid-template-columns: 1fr;
   gap: var(--space-4);
-  max-width: 900px;
+  max-width: 100%;
   margin: 0 auto;
 }
 
@@ -149,8 +162,18 @@
   gap: var(--space-5);
   padding: var(--space-6);
   border-radius: var(--radius-lg);
-  transition: background-color var(--transition-fast);
+  transition: background-color var(--transition-fast), transform var(--transition-fast);
+  animation: revealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
 }
+
+.list .feature:nth-child(1) { animation-delay: 50ms; }
+.list .feature:nth-child(2) { animation-delay: 100ms; }
+.list .feature:nth-child(3) { animation-delay: 150ms; }
+.list .feature:nth-child(4) { animation-delay: 200ms; }
+.list .feature:nth-child(5) { animation-delay: 250ms; }
+.list .feature:nth-child(6) { animation-delay: 300ms; }
 
 .list .feature:hover {
   background-color: var(--color-surface);
@@ -201,7 +224,17 @@
   padding: 0;
   background: transparent;
   border: none;
+  animation: revealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
 }
+
+.minimal .feature:nth-child(1) { animation-delay: 50ms; }
+.minimal .feature:nth-child(2) { animation-delay: 100ms; }
+.minimal .feature:nth-child(3) { animation-delay: 150ms; }
+.minimal .feature:nth-child(4) { animation-delay: 200ms; }
+.minimal .feature:nth-child(5) { animation-delay: 250ms; }
+.minimal .feature:nth-child(6) { animation-delay: 300ms; }
 
 .minimal .iconWrapper {
   background-color: transparent;
@@ -232,7 +265,7 @@
   height: 48px;
   background-color: var(--color-surface-hover);
   border-radius: var(--radius-lg);
-  transition: all var(--transition-base);
+  transition: transform var(--transition-base), background-color var(--transition-base);
   flex-shrink: 0;
 }
 
@@ -261,7 +294,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
   white-space: nowrap;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
 .cards .feature:hover .badge {
@@ -337,10 +370,23 @@
   animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+@supports not (animation-timeline: view()) {
+  .cards .feature,
+  .list .feature,
+  .minimal .feature {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .fadeUp,
-  .fadeUpVisible {
-    animation: none;
+  .fadeUpVisible,
+  .cards .feature,
+  .list .feature,
+  .minimal .feature {
+    animation: none !important;
   }
 
   .fadeUpHidden {
@@ -348,12 +394,9 @@
     transform: none;
   }
 
-  .cards .feature:hover {
-    transform: none;
-  }
-
+  .cards .feature:hover,
   .cards .feature:hover .iconWrapper {
-    transform: none;
+    transform: none !important;
   }
 }
 

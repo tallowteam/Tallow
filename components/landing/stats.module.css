@@ -1,5 +1,7 @@
 .section {
   padding: 100px 0;
+  width: 100%;
+  max-width: 100%;
   background: var(--bg);
   animation: revealUp 1s var(--ease) both;
   animation-timeline: view();
@@ -7,9 +9,9 @@
 }
 
 .container {
-  max-width: 1400px;
   margin: 0 auto;
-  padding: 0 var(--container-padding);
+  padding: 0 clamp(24px, 5vw, 80px);
+  width: 100%;
 }
 
 .stats {
@@ -71,6 +73,14 @@
 
 /* Responsive */
 @media (max-width: 1024px) {
+  .section {
+    width: 100%;
+  }
+
+  .container {
+    width: 100%;
+  }
+
   .stats {
     gap: 48px;
   }
@@ -79,6 +89,12 @@
 @media (max-width: 768px) {
   .section {
     padding: 80px 0;
+    width: 100%;
+  }
+
+  .container {
+    padding: 0 20px;
+    width: 100%;
   }
 
   .stats {
@@ -109,6 +125,12 @@
 @media (max-width: 480px) {
   .section {
     padding: 60px 0;
+    width: 100%;
+  }
+
+  .container {
+    padding: 0 16px;
+    width: 100%;
   }
 
   .stats {

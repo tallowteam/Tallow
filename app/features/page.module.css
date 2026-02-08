@@ -8,6 +8,7 @@
   background: var(--bg);
   min-height: 100vh;
   overflow-x: hidden;
+  width: 100%;
 }
 
 /* ============================================
@@ -19,7 +20,7 @@
   z-index: 1;
   padding: clamp(100px, 15vw, 160px) clamp(16px, 4vw, 56px) clamp(48px, 8vw, 80px);
   text-align: center;
-  max-width: 900px;
+  max-width: none;
   margin: 0 auto;
   animation: revealUp 1s var(--ease) both;
   animation-timeline: view();
@@ -50,7 +51,7 @@
   line-height: 1.6;
   color: var(--text-2);
   margin: 0;
-  max-width: 90%;
+  max-width: none;
   margin-left: auto;
   margin-right: auto;
 }
@@ -116,12 +117,12 @@
   line-height: 1.1;
   color: var(--text);
   margin: 0 0 clamp(16px, 2.5vw, 20px) 0;
-  max-width: 100%;
+  max-width: none;
 }
 
 @media (min-width: 768px) {
   .featureTitle {
-    max-width: 520px;
+    max-width: none;
   }
 }
 
@@ -135,7 +136,7 @@
 
 @media (min-width: 768px) {
   .featureDescription {
-    max-width: 480px;
+    max-width: 100%;
   }
 }
 
@@ -157,7 +158,7 @@
 
 .statsCard {
   width: 100%;
-  max-width: 420px;
+  max-width: min(420px, 100%);
   padding: 48px 40px;
   background: var(--glass);
   border: 1px solid var(--glass-border);
@@ -195,7 +196,7 @@
 
 .cryptoCard {
   width: 100%;
-  max-width: 420px;
+  max-width: min(420px, 100%);
   padding: 48px 40px;
   background: var(--glass);
   border: 1px solid var(--glass-border);
@@ -250,7 +251,7 @@
 
 .platformGrid {
   width: 100%;
-  max-width: 420px;
+  max-width: min(420px, 100%);
   padding: 48px 40px;
   background: var(--glass);
   border: 1px solid var(--glass-border);
@@ -260,6 +261,9 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
+  animation: revealScale 0.9s var(--ease) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
 }
 
 .platformItem {
@@ -271,8 +275,19 @@
   font-weight: 500;
   color: var(--text-2);
   text-align: center;
-  transition: all 0.3s var(--ease);
+  transition: transform 0.3s var(--ease), background-color 0.3s var(--ease), border-color 0.3s var(--ease), color 0.3s var(--ease);
 }
+
+.platformItem {
+  animation-delay: calc(var(--item-index, 0) * 50ms);
+}
+
+.platformItem:nth-child(1) { --item-index: 0; }
+.platformItem:nth-child(2) { --item-index: 1; }
+.platformItem:nth-child(3) { --item-index: 2; }
+.platformItem:nth-child(4) { --item-index: 3; }
+.platformItem:nth-child(5) { --item-index: 4; }
+.platformItem:nth-child(6) { --item-index: 5; }
 
 .platformItem:hover {
   background: rgba(99, 102, 241, 0.15);
@@ -287,7 +302,7 @@
 
 .privacyCard {
   width: 100%;
-  max-width: 420px;
+  max-width: min(420px, 100%);
   padding: 60px 40px;
   background: var(--glass);
   border: 1px solid var(--glass-border);
@@ -332,7 +347,7 @@
 
 .infinityCard {
   width: 100%;
-  max-width: 420px;
+  max-width: min(420px, 100%);
   padding: 80px 40px;
   background: var(--glass);
   border: 1px solid var(--glass-border);
@@ -365,7 +380,7 @@
 
 .deviceCard {
   width: 100%;
-  max-width: 420px;
+  max-width: min(420px, 100%);
   padding: 48px 40px;
   background: var(--glass);
   border: 1px solid var(--glass-border);
@@ -403,7 +418,7 @@
 
 .connectCard {
   width: 100%;
-  max-width: 420px;
+  max-width: min(420px, 100%);
   padding: 48px 40px;
   background: var(--glass);
   border: 1px solid var(--glass-border);
@@ -467,7 +482,7 @@
 
 .friendsCard {
   width: 100%;
-  max-width: 420px;
+  max-width: min(420px, 100%);
   padding: 48px 40px;
   background: var(--glass);
   border: 1px solid var(--glass-border);
@@ -518,7 +533,7 @@
 
 .ossCard {
   width: 100%;
-  max-width: 420px;
+  max-width: min(420px, 100%);
   padding: 48px 40px;
   background: var(--glass);
   border: 1px solid var(--glass-border);
@@ -584,7 +599,7 @@
   z-index: 1;
   padding: clamp(80px, 12vw, 120px) clamp(16px, 4vw, 56px);
   text-align: center;
-  max-width: 900px;
+  max-width: none;
   margin: 0 auto;
   animation: revealUp 1s var(--ease) both;
   animation-timeline: view();
@@ -609,7 +624,7 @@
   font-weight: 600;
   text-decoration: none;
   border-radius: var(--radius-pill);
-  transition: all 0.3s var(--ease);
+  transition: transform 0.2s var(--ease), background-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
   box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
   min-height: 44px;
   display: inline-flex;
@@ -701,7 +716,16 @@
 @supports not (animation-timeline: view()) {
   .header,
   .feature,
-  .cta {
+  .cta,
+  .platformGrid,
+  .statsCard,
+  .cryptoCard,
+  .privacyCard,
+  .infinityCard,
+  .deviceCard,
+  .connectCard,
+  .friendsCard,
+  .ossCard {
     animation: none;
     opacity: 1;
     transform: none;
@@ -713,7 +737,16 @@
   .feature,
   .cta,
   .platformItem:hover,
-  .ctaButton:hover {
+  .ctaButton:hover,
+  .platformGrid,
+  .statsCard,
+  .cryptoCard,
+  .privacyCard,
+  .infinityCard,
+  .deviceCard,
+  .connectCard,
+  .friendsCard,
+  .ossCard {
     animation: none !important;
     transform: none !important;
     opacity: 1 !important;

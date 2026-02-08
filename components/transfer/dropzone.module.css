@@ -15,7 +15,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: transform 0.3s var(--ease, ease), border-color 0.3s var(--ease, ease), background 0.3s var(--ease, ease);
   cursor: pointer;
   position: relative;
 }
@@ -23,6 +23,22 @@
 .dropZone.dragOver {
   border-color: var(--accent);
   background: rgba(99, 102, 241, 0.05);
+}
+
+.dropZone.dropSuccess {
+  animation: dropPulse 0.3s ease-out;
+}
+
+@keyframes dropPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .uploadIcon {
@@ -57,7 +73,7 @@
   color: var(--accent-2);
   font-size: 0.85rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.2s var(--ease, ease), background-color 0.2s var(--ease, ease), color 0.2s var(--ease, ease);
   font-family: inherit;
   font-weight: 500;
 }
@@ -122,7 +138,7 @@
   background: rgba(0, 0, 0, 0.2);
   border: 1px solid var(--border);
   border-radius: 8px;
-  transition: all 0.2s ease;
+  transition: background 0.2s var(--ease, ease), border-color 0.2s var(--ease, ease);
 }
 
 .fileItem:hover {
@@ -166,7 +182,7 @@
   line-height: 1;
   cursor: pointer;
   border-radius: 4px;
-  transition: all 0.2s ease;
+  transition: color 0.2s var(--ease, ease), background-color 0.2s var(--ease, ease);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -188,7 +204,7 @@
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.2s var(--ease, ease), background-color 0.2s var(--ease, ease), box-shadow 0.2s var(--ease, ease);
   font-family: inherit;
 }
 
@@ -312,8 +328,30 @@
   .removeButton {
     width: 28px;
     height: 28px;
-    min-width: 28px;
-    min-height: 28px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .dropZone,
+  .browseButton,
+  .cameraButton,
+  .fileItem,
+  .removeButton,
+  .sendButton {
+    transition: none;
+  }
+
+  .dropZone.dropSuccess {
+    animation: none;
+  }
+
+  .browseButton:hover,
+  .cameraButton:hover,
+  .sendButton:hover {
+    transform: none;
   }
 }
 

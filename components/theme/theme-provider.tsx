@@ -49,9 +49,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const toggleTheme = () => {
     setThemeState((prev) => {
       // Cycle through: dark → light → high-contrast → colorblind → dark
-      if (prev === 'dark') return 'light';
-      if (prev === 'light') return 'high-contrast';
-      if (prev === 'high-contrast') return 'colorblind';
+      if (prev === 'dark') {return 'light';}
+      if (prev === 'light') {return 'high-contrast';}
+      if (prev === 'high-contrast') {return 'colorblind';}
       return 'dark';
     });
   };
@@ -63,10 +63,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 }
 
+const defaultTheme: ThemeContextType = {
+  theme: 'dark',
+  setTheme: () => {},
+  toggleTheme: () => {},
+};
+
 export function useTheme() {
   const context = useContext(ThemeContext);
-  if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
+  return context ?? defaultTheme;
 }

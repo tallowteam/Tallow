@@ -91,7 +91,7 @@ export function FriendsExample() {
                 <div className={styles.friendPreview}>
                   <div className={styles.friendAvatar}>
                     {selectedFriend.avatar ? (
-                      <img src={selectedFriend.avatar} alt={selectedFriend.name} />
+                      <img src={selectedFriend.avatar} alt={selectedFriend.name} width={48} height={48} loading="lazy" />
                     ) : (
                       <div className={styles.avatarPlaceholder}>
                         {selectedFriend.name.charAt(0).toUpperCase()}

@@ -8,7 +8,7 @@
   display: flex;
   min-height: 100vh;
   position: relative;
-  background-color: var(--bg-base);
+  background-color: var(--bg);
 }
 
 .sidebar {
@@ -176,7 +176,7 @@
    ============================================ */
 
 .hookContent {
-  max-width: 900px;
+  max-width: none;
   margin: 0 auto;
   padding: var(--space-8) var(--space-4);
 }
@@ -257,7 +257,7 @@
   display: block;
   padding: var(--space-4);
   overflow-x: auto;
-  font-family: 'Monaco', 'Courier New', monospace;
+  font-family: var(--font-mono);
   font-size: var(--font-size-sm);
   line-height: 1.6;
   color: var(--text-primary);
@@ -265,7 +265,7 @@
 }
 
 .code code {
-  font-family: inherit;
+  font-family: var(--font-mono);
   font-size: inherit;
 }
 
@@ -335,7 +335,7 @@
 .tableCellName {
   font-weight: 600;
   color: var(--text-primary);
-  font-family: 'Monaco', 'Courier New', monospace;
+  font-family: var(--font-mono);
 }
 
 @media (max-width: 768px) {
@@ -388,28 +388,6 @@
   .code {
     font-size: var(--font-size-xs);
     padding: var(--space-3);
-  }
-}
-
-/* ============================================
-   Dark Mode Support
-   ============================================ */
-
-@media (prefers-color-scheme: dark) {
-  .sidebar {
-    background-color: var(--bg-surface);
-  }
-
-  .codeBlock {
-    background-color: rgba(0, 0, 0, 0.3);
-  }
-
-  .tableHeader {
-    background-color: rgba(0, 0, 0, 0.2);
-  }
-
-  .noteBox {
-    background-color: rgba(94, 92, 230, 0.1);
   }
 }
 

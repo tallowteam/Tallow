@@ -3,7 +3,7 @@
 .main {
   width: 100%;
   min-height: 100vh;
-  background-color: var(--bg-base);
+  background-color: var(--bg);
 }
 
 /* ============================================
@@ -22,7 +22,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
 }
 
@@ -73,7 +73,7 @@
 }
 
 .heroContainer {
-  max-width: 900px;
+  max-width: none;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -111,7 +111,7 @@
   font-size: var(--font-size-base);
   line-height: var(--line-height-relaxed);
   color: var(--text-secondary);
-  max-width: 640px;
+  max-width: none;
   margin: 0;
 }
 
@@ -126,7 +126,8 @@
    ============================================ */
 
 .contentContainer {
-  max-width: 1200px;
+  width: 100%;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 0 var(--space-4);
 }
@@ -391,7 +392,7 @@
 }
 
 .helpCard {
-  max-width: 640px;
+  max-width: none;
   margin: 0 auto;
   padding: var(--space-10) var(--space-6);
   background-color: var(--bg-surface);

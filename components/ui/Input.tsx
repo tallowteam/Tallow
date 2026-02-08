@@ -57,6 +57,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label htmlFor={inputId} className={styles.label}>
             {label}
+            {props.required && <span className={styles.required} aria-label="required"> *</span>}
           </label>
         )}
         <div className={inputWrapperClasses}>
@@ -70,6 +71,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             className={`${styles.input} ${className}`}
             aria-invalid={hasError}
+            aria-required={props.required}
             aria-describedby={describedBy}
             {...props}
           />

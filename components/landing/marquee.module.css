@@ -1,11 +1,13 @@
 /* Marquee Section Container */
 .marqueeSection {
   width: 100%;
+  max-width: 100%;
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   padding: 20px 0;
   background: transparent;
   overflow: hidden;
+  margin: 0;
 }
 
 /* Marquee Container */

@@ -1,7 +1,7 @@
 /* Playground Page Styles */
 .container {
   min-height: 100vh;
-  background: var(--bg-base);
+  background: var(--bg);
   padding: var(--space-8) var(--space-4);
 }
 

@@ -1,41 +1,7 @@
-'use client';
-
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
 import styles from './hero.module.css';
 
 export function Hero() {
-  const [progress, setProgress] = useState(0);
-  const [showComplete, setShowComplete] = useState(false);
-
-  useEffect(() => {
-    const animationDuration = 4000; // 4 seconds to complete
-    const pauseDuration = 2000; // 2 seconds pause when complete
-    const startTime = Date.now();
-
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const cycleTime = animationDuration + pauseDuration;
-      const timeInCycle = elapsed % cycleTime;
-
-      if (timeInCycle < animationDuration) {
-        // Progress from 0 to 100 over 4 seconds
-        const newProgress = (timeInCycle / animationDuration) * 100;
-        setProgress(newProgress);
-        setShowComplete(newProgress >= 100);
-      } else {
-        // Pause at 100% for 2 seconds
-        setProgress(100);
-        setShowComplete(true);
-      }
-
-      requestAnimationFrame(animate);
-    };
-
-    const animationId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationId);
-  }, []);
-
   return (
     <section className={styles.hero}>
       <div className={styles.container}>
@@ -91,17 +57,14 @@ export function Hero() {
 
                 <div className={styles.progressContainer}>
                   <div className={styles.progressTrack}>
-                    <div
-                      className={styles.progressBar}
-                      style={{ width: `${progress}%` }}
-                    />
+                    <div className={styles.progressBar} />
                   </div>
                   <div className={styles.progressInfo}>
                     12.4 MB/s — PQC Encrypted
                   </div>
                 </div>
 
-                <div className={`${styles.completeBadge} ${showComplete ? styles.visible : ''}`}>
+                <div className={styles.completeBadge}>
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <circle cx="8" cy="8" r="8" fill="currentColor" fillOpacity="0.2" />
                     <path

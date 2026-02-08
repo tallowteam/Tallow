@@ -33,31 +33,31 @@ export function Footer() {
 
           <div className={styles.column}>
             <h3 className={styles.heading}>Product</h3>
-            <nav className={styles.links}>
+            <nav className={styles.links} aria-label="Product">
               <Link href="/features">Features</Link>
               <Link href="/security">Security</Link>
               <Link href="/pricing">Pricing</Link>
-              <Link href="/#">Download</Link>
+              <Link href="/how-it-works">How It Works</Link>
             </nav>
           </div>
 
           <div className={styles.column}>
             <h3 className={styles.heading}>Resources</h3>
-            <nav className={styles.links}>
+            <nav className={styles.links} aria-label="Resources">
               <Link href="/docs">Documentation</Link>
-              <Link href="/docs">API Reference</Link>
-              <Link href="/#">Whitepaper</Link>
-              <Link href="/docs">Support</Link>
+              <Link href="/docs/api">API Reference</Link>
+              <Link href="/docs/guides/security">Security Guide</Link>
+              <Link href="/docs/guides">Getting Started</Link>
             </nav>
           </div>
 
           <div className={styles.column}>
             <h3 className={styles.heading}>Legal</h3>
-            <nav className={styles.links}>
+            <nav className={styles.links} aria-label="Legal">
               <Link href="/privacy">Privacy Policy</Link>
               <Link href="/terms">Terms of Service</Link>
               <Link href="/security">Security</Link>
-              <Link href="/#">Compliance</Link>
+              <Link href="/about">About</Link>
             </nav>
           </div>
         </div>

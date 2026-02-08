@@ -42,6 +42,8 @@ export function FilePreview({
             src={thumbnailUrl}
             alt={file.name}
             className={styles.thumbnail}
+            width={64}
+            height={64}
             loading="lazy"
           />
         ) : (

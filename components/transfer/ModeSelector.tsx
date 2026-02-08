@@ -14,7 +14,7 @@ export default function ModeSelector({ onSelectMode }: ModeSelectorProps) {
         <p className={styles.subtitle}>Select how you want to connect</p>
       </div>
 
-      <div className={styles.cardsWrapper}>
+      <div className={styles.cardsWrapper} role="group" aria-label="Transfer mode options">
         {/* Local Network Card */}
         <button
           className={styles.card}

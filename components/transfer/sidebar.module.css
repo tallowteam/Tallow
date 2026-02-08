@@ -11,7 +11,7 @@
   flex-direction: column;
   overflow-y: auto;
   z-index: 100;
-  transition: width 0.3s ease;
+  transition: width 0.3s var(--ease, ease);
 }
 
 /* Tablet: Icon-only rail (narrow sidebar) */
@@ -79,7 +79,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s var(--ease, ease), color 0.15s var(--ease, ease), border-color 0.15s var(--ease, ease);
   border-left: 2px solid transparent;
   position: relative;
 }
@@ -137,7 +137,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s var(--ease, ease), color 0.15s var(--ease, ease);
 }
 
 .panelButton:hover {
@@ -215,7 +215,7 @@
     border: none;
     cursor: pointer;
     color: var(--text-3);
-    transition: all 0.15s ease;
+    transition: color 0.15s var(--ease, ease), background-color 0.15s var(--ease, ease);
     position: relative;
     border-radius: 8px;
     padding: 8px;
@@ -312,6 +312,7 @@
 
 /* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
+  .sidebar,
   .modeButton,
   .panelButton,
   .mobileTab {

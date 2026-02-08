@@ -42,6 +42,8 @@ export default function LocationMessage({
           src={getStaticMapUrl(latitude, longitude, 15, 280, 160)}
           alt="Shared location"
           className={styles.mapImage}
+          width={280}
+          height={160}
           loading="lazy"
         />
         <div className={styles.mapOverlay}>

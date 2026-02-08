@@ -5,6 +5,9 @@ import styles from './page.module.css';
 export const metadata: Metadata = {
   title: 'Features',
   description: 'Everything you need for secure, private, peer-to-peer file transfer. No limits, no compromises.',
+  alternates: {
+    canonical: 'https://tallow.app/features',
+  },
   openGraph: {
     title: 'Features | Tallow',
     description: 'Everything you need for secure, private, peer-to-peer file transfer. No limits, no compromises.',
@@ -191,7 +194,7 @@ export default function FeaturesPage() {
           <div className={styles.connectCard}>
             <div className={styles.roomCode}>847-293</div>
             <div className={styles.qrPlaceholder}>
-              <div className={styles.qrBox}></div>
+              <div className={styles.qrBox} />
             </div>
             <div className={styles.shareLink}>tallow.app/r/847293</div>
           </div>
@@ -203,19 +206,19 @@ export default function FeaturesPage() {
         <div className={styles.featureVisual}>
           <div className={styles.friendsCard}>
             <div className={styles.friendItem}>
-              <div className={styles.friendStatus} data-status="online"></div>
+              <div className={styles.friendStatus} data-status="online" />
               <div className={styles.friendId}>tallow#a8f3</div>
             </div>
             <div className={styles.friendItem}>
-              <div className={styles.friendStatus} data-status="online"></div>
+              <div className={styles.friendStatus} data-status="online" />
               <div className={styles.friendId}>tallow#7k2m</div>
             </div>
             <div className={styles.friendItem}>
-              <div className={styles.friendStatus} data-status="offline"></div>
+              <div className={styles.friendStatus} data-status="offline" />
               <div className={styles.friendId}>tallow#p4n9</div>
             </div>
             <div className={styles.friendItem}>
-              <div className={styles.friendStatus} data-status="online"></div>
+              <div className={styles.friendStatus} data-status="online" />
               <div className={styles.friendId}>tallow#x1v8</div>
             </div>
           </div>

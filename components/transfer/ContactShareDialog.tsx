@@ -100,7 +100,7 @@ export function ContactShareDialog({ friend, open, onClose }: ContactShareDialog
         <div className={styles.contactInfo}>
           <div className={styles.contactAvatar}>
             {friend.avatar ? (
-              <img src={friend.avatar} alt={friend.name} />
+              <img src={friend.avatar} alt={friend.name} width={48} height={48} loading="lazy" />
             ) : (
               <div className={styles.avatarPlaceholder}>
                 {friend.name.charAt(0).toUpperCase()}

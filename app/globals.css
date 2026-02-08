@@ -11,8 +11,8 @@
 
   /* Text */
   --text: #f2f2f8;
-  --text-2: #9494a8;
-  --text-3: #5a5a70;
+  --text-2: #a8a8bc;
+  --text-3: #9494a8;
 
   /* Borders */
   --border: #18182a;
@@ -32,7 +32,7 @@
   --warning: #f59e0b;
 
   /* Spacing - Fluid */
-  --container-max: 1400px;
+  --container-max: 100%;
   --container-padding: clamp(1rem, 3vw, 2.5rem);
   --section-spacing: clamp(3rem, 8vw, 7rem);
   --content-spacing: clamp(1.5rem, 4vw, 3rem);
@@ -65,6 +65,38 @@
   --duration: 0.3s;
   --duration-fast: 0.15s;
   --duration-slow: 0.5s;
+  --duration-base: 0.25s;
+  --duration-slower: 0.6s;
+  --duration-150: 0.15s;
+  --transition-base: all 0.3s var(--ease);
+
+  /* Spacing Tokens */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+
+  /* Blur Tokens for Glass Morphism */
+  --blur-sm: blur(8px);
+  --blur-md: blur(12px);
+  --blur-lg: blur(20px);
+  --blur-xl: blur(30px);
+
+  /* Border Utility Tokens */
+  --border-default: var(--border);
+  --border-strong: var(--border-2);
+  --border-focus: var(--accent);
+
+  /* Background Utility Tokens */
+  --bg-surface: var(--bg-2);
 
   /* Z-index layers */
   --z-base: 1;
@@ -83,11 +115,18 @@
   --font-heading: var(--font-playfair), 'Playfair Display', Georgia, serif;
   --font-body: var(--font-inter), 'Inter', system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), 'JetBrains Mono', 'Fira Code', monospace;
+  --font-display: var(--font-heading);
 }
 
 /* ============================================
    Reset & Base
    ============================================ */
+
+/* Global text overflow protection */
+p, h1, h2, h3, h4, h5, h6, span, a, label, li, td, th, dt, dd, figcaption, blockquote {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
 
 *,
 *::before,
@@ -98,6 +137,7 @@
 }
 
 html {
+  width: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -118,6 +158,7 @@ html {
 }
 
 body {
+  width: 100%;
   font-family: var(--font-body);
   background: var(--bg);
   color: var(--text);
@@ -134,17 +175,18 @@ body::before {
   position: fixed;
   top: -50%;
   left: -25%;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.07) 0%, transparent 70%);
-  filter: blur(clamp(60px, 10vw, 100px));
+  width: 150%;
+  height: 150%;
+  background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.07) 0%, rgba(99, 102, 241, 0.04) 30%, rgba(99, 102, 241, 0.02) 50%, transparent 70%);
+  filter: none;
+  opacity: 0.4;
   pointer-events: none;
   z-index: 0;
 }
 
 @media (max-width: 768px) {
   body::before {
-    background: radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, transparent 60%);
+    background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.05) 0%, rgba(99, 102, 241, 0.03) 30%, rgba(99, 102, 241, 0.015) 50%, transparent 60%);
   }
 }
 
@@ -227,8 +269,16 @@ select {
 }
 
 /* Ensure main content doesn't hide under fixed header */
-main {
+#main-content {
+  width: 100%;
   padding-top: clamp(56px, 8vh, 72px);
+}
+
+/* Transfer page needs full-width edge-to-edge layout */
+#main-content:has([data-transfer-page]) {
+  padding-top: 0;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 /* Focus visible */
@@ -244,7 +294,11 @@ main {
   color: var(--text);
 }
 
-/* Scrollbar */
+/* Scrollbar — thin overlay that doesn't shrink content */
+html {
+  overflow-y: scroll;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -261,6 +315,12 @@ main {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-3);
+}
+
+/* Firefox thin scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-2) transparent;
 }
 
 /* Skip link */
@@ -385,17 +445,7 @@ main {
   }
 }
 
-@media (min-width: 1920px) {
-  :root {
-    --container-max: 1600px;
-  }
-}
-
 @media (min-width: 2560px) {
-  :root {
-    --container-max: 1800px;
-  }
-
   html {
     font-size: 18px;
   }
@@ -512,6 +562,10 @@ main {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   .reveal,
   .reveal-scale,
   .reveal-left,
@@ -521,3 +575,21 @@ main {
     transform: none !important;
   }
 }
+
+/* ============================================
+   Stagger Animation Utilities
+   ============================================ */
+
+/* Stagger animation utilities */
+[data-stagger] > *:nth-child(1) { animation-delay: 0.05s; }
+[data-stagger] > *:nth-child(2) { animation-delay: 0.1s; }
+[data-stagger] > *:nth-child(3) { animation-delay: 0.15s; }
+[data-stagger] > *:nth-child(4) { animation-delay: 0.2s; }
+[data-stagger] > *:nth-child(5) { animation-delay: 0.25s; }
+[data-stagger] > *:nth-child(6) { animation-delay: 0.3s; }
+[data-stagger] > *:nth-child(7) { animation-delay: 0.35s; }
+[data-stagger] > *:nth-child(8) { animation-delay: 0.4s; }
+[data-stagger] > *:nth-child(9) { animation-delay: 0.45s; }
+[data-stagger] > *:nth-child(10) { animation-delay: 0.5s; }
+[data-stagger] > *:nth-child(11) { animation-delay: 0.55s; }
+[data-stagger] > *:nth-child(12) { animation-delay: 0.6s; }

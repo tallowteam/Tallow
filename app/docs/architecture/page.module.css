@@ -8,7 +8,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: var(--bg-base);
+  background-color: var(--bg);
 }
 
 /* ============================================
@@ -35,7 +35,6 @@
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
-  max-width: 1200px;
   height: 600px;
   background: radial-gradient(
     ellipse at center top,
@@ -52,7 +51,7 @@
   flex-direction: column;
   align-items: center;
   gap: var(--space-6);
-  max-width: 900px;
+  max-width: none;
   margin: 0 auto;
   padding: 0 var(--space-4);
 }
@@ -93,7 +92,7 @@
   font-size: var(--font-size-base);
   line-height: var(--line-height-relaxed);
   color: var(--text-secondary);
-  max-width: 600px;
+  max-width: none;
   margin: 0;
 }
 
@@ -110,10 +109,10 @@
 .contentWrapper {
   display: flex;
   gap: var(--space-8);
+  width: 100%;
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 var(--space-4);
-  width: 100%;
   flex: 1;
 }
 
@@ -400,7 +399,7 @@
 }
 
 .gridContent code {
-  background-color: var(--bg-base);
+  background-color: var(--bg);
   padding: var(--space-0-5) var(--space-1-5);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);

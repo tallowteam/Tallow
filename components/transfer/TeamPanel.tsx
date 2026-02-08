@@ -448,7 +448,7 @@ function MemberCard({ member, canManage, isCurrentUser }: MemberCardProps) {
       <div className={styles.memberInfo}>
         <div className={styles.memberAvatar}>
           {member.avatar ? (
-            <img src={member.avatar} alt="" />
+            <img src={member.avatar} alt="" width={32} height={32} loading="lazy" />
           ) : (
             <UserIcon />
           )}

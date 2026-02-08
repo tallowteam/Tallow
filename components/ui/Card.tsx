@@ -31,8 +31,11 @@ export function Card({
     .filter(Boolean)
     .join(' ');
 
+  // Add tabIndex for interactive cards if not already present
+  const tabIndex = interactive && props.tabIndex === undefined ? 0 : props.tabIndex;
+
   return (
-    <div className={classes} {...props}>
+    <div className={classes} tabIndex={tabIndex} {...props}>
       {children}
     </div>
   );

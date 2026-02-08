@@ -3,10 +3,12 @@
   background: var(--bg);
   color: var(--text);
   padding: clamp(80px, 12vw, 120px) 0 clamp(60px, 8vw, 80px);
+  width: 100%;
 }
 
 .container {
-  max-width: 1200px;
+  width: 100%;
+  max-width: none;
   margin: 0 auto;
   padding: 0 clamp(16px, 4vw, 24px);
 }
@@ -50,7 +52,7 @@
   border-radius: var(--radius-xl);
   backdrop-filter: blur(20px);
   padding: clamp(40px, 7vw, 64px) clamp(24px, 5vw, 64px);
-  max-width: 720px;
+  max-width: min(720px, 90vw);
   margin: 0 auto;
   animation: revealScale 1s var(--ease) both;
   animation-timeline: view();
@@ -139,7 +141,7 @@
 /* Philosophy Section */
 .philosophy {
   margin-bottom: clamp(80px, 12vw, 120px);
-  max-width: 840px;
+  max-width: none;
   margin-left: auto;
   margin-right: auto;
   animation: revealUp 0.9s var(--ease) both;
@@ -202,7 +204,8 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: clamp(20px, 3vw, 24px);
-  max-width: 960px;
+  width: 100%;
+  max-width: none;
   margin: 0 auto;
 }
 

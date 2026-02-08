@@ -37,10 +37,11 @@ export function MermaidDiagram({
         const mermaid = mermaidModule.default;
 
         // Configure mermaid for dark theme
+        // SECURITY: Use 'strict' security level to prevent XSS attacks
         mermaid.initialize({
           startOnLoad: false,
           theme: 'dark',
-          securityLevel: 'loose',
+          securityLevel: 'strict',
           flowchart: {
             htmlLabels: true,
             useMaxWidth: true,

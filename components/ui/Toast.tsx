@@ -149,6 +149,8 @@ const ToastPreviewComponent = ({ preview }: { preview: ToastPreview }) => {
               src={preview.src}
               alt={preview.fileName || 'Preview'}
               className={styles.previewImage}
+              width={80}
+              height={80}
               loading="lazy"
             />
           ) : (

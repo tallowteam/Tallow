@@ -5,6 +5,7 @@
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
+  width: 100%;
 }
 
 /* ============================================
@@ -21,7 +22,8 @@
 }
 
 .heroContainer {
-  max-width: 960px;
+  width: 100%;
+  max-width: none;
   margin: 0 auto;
 }
 
@@ -51,7 +53,7 @@
   font-size: clamp(1rem, 1.5vw + 0.7rem, 1.25rem);
   line-height: 1.7;
   color: var(--text-2);
-  max-width: 680px;
+  max-width: none;
   margin: 0 auto;
 }
 
@@ -65,7 +67,8 @@
 }
 
 .overviewGrid {
-  max-width: 1200px;
+  width: 100%;
+  max-width: none;
   margin: 0 auto;
   display: grid;
   grid-template-columns: 1fr;
@@ -90,22 +93,34 @@
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   padding: 40px 32px;
-  transition: border-color 0.3s var(--ease);
+  transition: border-color 0.3s var(--ease), transform 0.3s var(--ease);
   animation: revealScale 0.8s var(--ease) both;
   animation-timeline: view();
   animation-range: entry 0% entry 30%;
 }
 
 .overviewCard:nth-child(1) {
-  animation-delay: 0.1s;
+  animation-delay: 50ms;
 }
 
 .overviewCard:nth-child(2) {
-  animation-delay: 0.2s;
+  animation-delay: 100ms;
 }
 
 .overviewCard:nth-child(3) {
-  animation-delay: 0.3s;
+  animation-delay: 150ms;
+}
+
+.overviewCard:nth-child(4) {
+  animation-delay: 200ms;
+}
+
+.overviewCard:nth-child(5) {
+  animation-delay: 250ms;
+}
+
+.overviewCard:nth-child(6) {
+  animation-delay: 300ms;
 }
 
 .overviewCard:hover {
@@ -146,7 +161,8 @@
 }
 
 .journeyContainer {
-  max-width: 1200px;
+  width: 100%;
+  max-width: none;
   margin: 0 auto;
 }
 
@@ -168,7 +184,7 @@
   color: var(--text-2);
   text-align: center;
   margin: 0 auto clamp(48px, 8vw, 80px);
-  max-width: 640px;
+  max-width: none;
 }
 
 .journeySteps {
@@ -203,23 +219,23 @@
 }
 
 .journeyStep:nth-child(1) {
-  animation-delay: 0.1s;
+  animation-delay: 50ms;
 }
 
 .journeyStep:nth-child(2) {
-  animation-delay: 0.15s;
+  animation-delay: 100ms;
 }
 
 .journeyStep:nth-child(3) {
-  animation-delay: 0.2s;
+  animation-delay: 150ms;
 }
 
 .journeyStep:nth-child(4) {
-  animation-delay: 0.25s;
+  animation-delay: 200ms;
 }
 
 .journeyStep:nth-child(5) {
-  animation-delay: 0.3s;
+  animation-delay: 250ms;
 }
 
 .stepNumber {
@@ -260,7 +276,8 @@
 }
 
 .specsContainer {
-  max-width: 960px;
+  width: 100%;
+  max-width: none;
   margin: 0 auto;
 }
 
@@ -328,7 +345,8 @@
 }
 
 .threatsContainer {
-  max-width: 1200px;
+  width: 100%;
+  max-width: none;
   margin: 0 auto;
 }
 
@@ -363,15 +381,27 @@
 }
 
 .threatCard:nth-child(1) {
-  animation-delay: 0.1s;
+  animation-delay: 50ms;
 }
 
 .threatCard:nth-child(2) {
-  animation-delay: 0.2s;
+  animation-delay: 100ms;
 }
 
 .threatCard:nth-child(3) {
-  animation-delay: 0.3s;
+  animation-delay: 150ms;
+}
+
+.threatCard:nth-child(4) {
+  animation-delay: 200ms;
+}
+
+.threatCard:nth-child(5) {
+  animation-delay: 250ms;
+}
+
+.threatCard:nth-child(6) {
+  animation-delay: 300ms;
 }
 
 .threatCheck {
@@ -413,7 +443,8 @@
 }
 
 .faqContainer {
-  max-width: 960px;
+  width: 100%;
+  max-width: none;
   margin: 0 auto;
 }
 
@@ -500,13 +531,45 @@
   }
 }
 
+/* ============================================
+   Specs Grid - Add scroll animation
+   ============================================ */
+
+.specs {
+  animation: revealUp 1s var(--ease) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
+}
+
+.threats {
+  animation: revealUp 1s var(--ease) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
+}
+
+.journey {
+  animation: revealUp 1s var(--ease) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
+}
+
+.overview {
+  animation: revealUp 1s var(--ease) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
+}
+
 @supports not (animation-timeline: view()) {
   .hero,
   .overviewCard,
   .journeyStep,
   .specsCard,
   .threatCard,
-  .faqItem {
+  .faqItem,
+  .specs,
+  .threats,
+  .journey,
+  .overview {
     animation: none;
     opacity: 1;
     transform: none;
@@ -522,7 +585,11 @@
   .faqItem,
   .feature,
   .auditCard,
-  .ctaButton {
+  .ctaButton,
+  .specs,
+  .threats,
+  .journey,
+  .overview {
     animation: none !important;
     transition: none !important;
     opacity: 1 !important;

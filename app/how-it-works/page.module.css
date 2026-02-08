@@ -8,6 +8,7 @@
   background: var(--bg);
   min-height: 100vh;
   overflow-x: hidden;
+  width: 100%;
 }
 
 /* ============================================
@@ -19,7 +20,7 @@
   z-index: 1;
   padding: 160px 56px 80px;
   text-align: center;
-  max-width: 900px;
+  max-width: none;
   margin: 0 auto;
 }
 
@@ -47,6 +48,9 @@
   line-height: 1.6;
   color: var(--text-2);
   margin: 0;
+  max-width: none;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* ============================================
@@ -58,8 +62,8 @@
   z-index: 1;
   padding: 80px 56px;
   border-bottom: 1px solid var(--border);
-  max-width: 1400px;
   margin: 0 auto;
+  max-width: none;
 }
 
 .section:last-of-type {
@@ -72,7 +76,7 @@
 
 .sectionHeader {
   text-align: center;
-  max-width: 800px;
+  max-width: none;
   margin: 0 auto 80px;
 }
 
@@ -115,7 +119,6 @@
 /* For Friends section with only 3 steps */
 .section:last-of-type .steps {
   grid-template-columns: repeat(3, 1fr);
-  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -186,7 +189,7 @@
   z-index: 1;
   padding: 120px 56px;
   text-align: center;
-  max-width: 900px;
+  max-width: none;
   margin: 0 auto;
 }
 

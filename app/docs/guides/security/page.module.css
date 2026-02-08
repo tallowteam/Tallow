@@ -3,7 +3,7 @@
 .main {
   width: 100%;
   min-height: 100vh;
-  background-color: var(--bg-base);
+  background-color: var(--bg);
 }
 
 /* ============================================
@@ -22,7 +22,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
 }
 
@@ -74,7 +74,7 @@
 }
 
 .heroContainer {
-  max-width: 900px;
+  max-width: none;
   margin: 0 auto;
 }
 
@@ -133,7 +133,7 @@
 }
 
 .contentContainer {
-  max-width: 900px;
+  max-width: none;
   margin: 0 auto;
   padding: 0 var(--space-4);
 }
@@ -723,7 +723,7 @@
 }
 
 .navigationContainer {
-  max-width: 900px;
+  max-width: none;
   margin: 0 auto;
   padding: 0 var(--space-4);
   display: grid;

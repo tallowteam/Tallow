@@ -2,11 +2,13 @@
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
-  padding: clamp(80px, 12vw, 120px) 0 clamp(60px, 8vw, 80px);
+  padding: clamp(120px, 18vw, 200px) 0 clamp(60px, 8vw, 80px);
+  width: 100%;
 }
 
 .container {
-  max-width: 1200px;
+  width: 100%;
+  max-width: none;
   margin: 0 auto;
   padding: 0 clamp(16px, 4vw, 24px);
 }
@@ -30,7 +32,7 @@
 .heading {
   font-family: var(--font-display);
   font-size: clamp(2.5rem, 6vw + 1rem, 5rem);
-  font-weight: 400;
+  font-weight: 300;
   line-height: 1.1;
   margin: 0;
   color: var(--text);
@@ -43,7 +45,7 @@
 
 .searchWrapper {
   position: relative;
-  max-width: 720px;
+  max-width: min(720px, 90vw);
   margin: 0 auto;
 }
 
@@ -269,7 +271,7 @@
 }
 
 .helpCtaContent {
-  max-width: 640px;
+  max-width: none;
   margin: 0 auto;
   text-align: center;
 }

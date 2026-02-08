@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import styles from './page.module.css';
 
 export const metadata: Metadata = {
   title: 'Documentation',
   description: 'Everything you need to know about Tallow - guides, API reference, and architecture documentation.',
+  alternates: {
+    canonical: 'https://tallow.app/docs',
+  },
   openGraph: {
     title: 'Documentation | Tallow',
     description: 'Everything you need to know about Tallow - guides, API reference, and architecture documentation.',
@@ -121,8 +123,10 @@ export default function DocsPage() {
         <section className={styles.quickLinks}>
           <div className={styles.quickLinksGrid}>
             {quickLinks.map((link, index) => (
-              <a key={index} href={link.href} className={styles.quickLinkCard}>
-                <h3 className={styles.quickLinkTitle}>{link.title}</h3>
+              <article key={index} className={styles.quickLinkCard}>
+                <h3 className={styles.quickLinkTitle}>
+                  <a href={link.href}>{link.title}</a>
+                </h3>
                 <p className={styles.quickLinkDescription}>
                   {link.description}
                 </p>
@@ -138,7 +142,7 @@ export default function DocsPage() {
                   <line x1="5" y1="12" x2="19" y2="12" />
                   <polyline points="12 5 19 12 12 19" />
                 </svg>
-              </a>
+              </article>
             ))}
           </div>
         </section>
@@ -152,7 +156,7 @@ export default function DocsPage() {
                 <ul className={styles.articleList}>
                   {category.articles.map((article, articleIndex) => (
                     <li key={articleIndex} className={styles.articleItem}>
-                      <a href="#" className={styles.articleLink}>
+                      <button type="button" className={styles.articleLink}>
                         <span>{article}</span>
                         <svg
                           viewBox="0 0 24 24"
@@ -164,7 +168,7 @@ export default function DocsPage() {
                         >
                           <polyline points="9 18 15 12 9 6" />
                         </svg>
-                      </a>
+                      </button>
                     </li>
                   ))}
                 </ul>

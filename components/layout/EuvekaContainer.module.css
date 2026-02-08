@@ -29,24 +29,24 @@
    Size Variants
    ============================================ */
 
-/* Small - 800px */
+/* Small */
 .size-sm {
-  max-width: 800px;
+  max-width: none;
 }
 
-/* Medium - 1000px */
+/* Medium */
 .size-md {
-  max-width: 1000px;
+  max-width: none;
 }
 
-/* Large - 1200px (default) */
+/* Large (default) */
 .size-lg {
-  max-width: 1200px;
+  width: 100%;
 }
 
-/* Extra Large - 1400px */
+/* Extra Large */
 .size-xl {
-  max-width: 1400px;
+  width: 100%;
 }
 
 /* ============================================

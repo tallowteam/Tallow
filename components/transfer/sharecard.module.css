@@ -46,13 +46,31 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s ease;
+  transition: color 0.2s var(--ease, ease), background-color 0.2s var(--ease, ease), transform 0.2s var(--ease, ease);
   border-radius: 6px;
+  position: relative;
 }
 
 .copyButton:hover {
   color: var(--accent);
   background: rgba(99, 102, 241, 0.08);
+}
+
+.copyButton.copied {
+  animation: copySuccess 0.4s ease-out;
+}
+
+@keyframes copySuccess {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+    color: #22c55e;
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .copyButton svg {
@@ -168,7 +186,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.2s ease;
+  transition: transform 0.2s var(--ease, ease), background-color 0.2s var(--ease, ease), border-color 0.2s var(--ease, ease), color 0.2s var(--ease, ease);
   font-weight: 500;
 }
 
@@ -335,5 +353,21 @@
   .qrPlaceholder {
     width: 120px;
     height: 120px;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .copyButton,
+  .shareButton {
+    transition: none;
+  }
+
+  .copyButton.copied {
+    animation: none;
+  }
+
+  .statusDot {
+    animation: none;
   }
 }

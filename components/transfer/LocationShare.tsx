@@ -229,6 +229,9 @@ export default function LocationShare({
                   )}
                   alt="Location preview"
                   className={styles.mapImage}
+                  width={600}
+                  height={300}
+                  loading="lazy"
                 />
               </div>
 

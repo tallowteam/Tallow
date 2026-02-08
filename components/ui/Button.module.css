@@ -10,13 +10,15 @@
   border-radius: 60px;
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
   white-space: nowrap;
   user-select: none;
   text-decoration: none;
   outline: none;
   position: relative;
   overflow: visible;
+  min-height: 44px;
+  min-width: 44px;
 }
 
 .button:focus-visible {

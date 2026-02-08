@@ -39,11 +39,21 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       .filter(Boolean)
       .join(' ');
 
+    // Construct aria-label for loading state
+    const getAriaLabel = () => {
+      if (loading && typeof children === 'string') {
+        return `${children} (loading)`;
+      }
+      return props['aria-label'];
+    };
+
     return (
       <button
         ref={ref}
         className={classes}
         disabled={disabled || loading}
+        aria-busy={loading}
+        aria-label={getAriaLabel()}
         {...props}
       >
         {loading && (

@@ -1,15 +1,16 @@
 .section {
   padding: 120px 0;
   width: 100%;
+  max-width: 100%;
   animation: revealUp 1s var(--ease) both;
   animation-timeline: view();
   animation-range: entry 0% entry 35%;
 }
 
 .container {
-  max-width: 1400px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 clamp(24px, 5vw, 80px);
+  width: 100%;
 }
 
 .layout {
@@ -56,7 +57,7 @@
   color: var(--text-2);
   font-size: 1rem;
   line-height: 1.7;
-  max-width: 480px;
+  max-width: none;
   margin-top: 20px;
 }
 
@@ -65,6 +66,7 @@
   border: 1px solid var(--glass-border);
   border-radius: 16px;
   padding: 32px;
+  transition: transform 0.3s var(--ease), background-color 0.3s var(--ease), border-color 0.3s var(--ease);
   animation: revealScale 0.8s var(--ease) both;
   animation-timeline: view();
   animation-range: entry 5% entry 35%;
@@ -73,6 +75,11 @@
 @media (max-width: 1024px) {
   .section {
     padding: 100px 0;
+    width: 100%;
+  }
+
+  .container {
+    width: 100%;
   }
 
   .layout {
@@ -83,6 +90,12 @@
 @media (max-width: 768px) {
   .section {
     padding: 80px 0;
+    width: 100%;
+  }
+
+  .container {
+    padding: 0 20px;
+    width: 100%;
   }
 
   .layout {
@@ -111,6 +124,12 @@
 @media (max-width: 480px) {
   .section {
     padding: 60px 0;
+    width: 100%;
+  }
+
+  .container {
+    padding: 0 16px;
+    width: 100%;
   }
 
   .layout {

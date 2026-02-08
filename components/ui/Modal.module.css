@@ -101,7 +101,7 @@
   border-radius: 8px;
   color: var(--text-2, #9494a8);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
   z-index: 10;
 }
 
@@ -197,6 +197,13 @@
    Responsive
    ============================================ */
 
+@media (max-width: 768px) {
+  .closeButton {
+    width: 44px;
+    height: 44px;
+  }
+}
+
 @media (max-width: 640px) {
   .backdrop {
     padding: 0;
@@ -236,6 +243,8 @@
   .closeButton {
     top: 16px;
     right: 16px;
+    width: 44px;
+    height: 44px;
   }
 }
 

@@ -5,6 +5,9 @@ import styles from './page.module.css';
 export const metadata: Metadata = {
   title: 'Pricing',
   description: 'Free. Forever. No catch. Unlimited file transfers with post-quantum encryption.',
+  alternates: {
+    canonical: 'https://tallow.app/pricing',
+  },
   openGraph: {
     title: 'Pricing | Tallow',
     description: 'Free. Forever. No catch. Unlimited file transfers with post-quantum encryption.',
