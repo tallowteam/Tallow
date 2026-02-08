@@ -129,7 +129,6 @@ function DropZoneComponent({ onFilesSelected, selectedDevice }: DropZoneProps) {
   const handleSend = useCallback(() => {
     if (files.length > 0 && selectedDevice) {
       // TODO: Integrate with transfer system
-      console.log('Sending files:', files, 'to device:', selectedDevice);
       // After sending, clear the file list
       setFiles([]);
     }
@@ -204,7 +203,7 @@ function DropZoneComponent({ onFilesSelected, selectedDevice }: DropZoneProps) {
                 <button className={styles.browseButton} onClick={handleBrowseClick}>
                   Browse Files
                 </button>
-                <button className={styles.cameraButton} onClick={() => console.log('Camera clicked')}>
+                <button className={styles.cameraButton} onClick={() => { /* Camera capture not yet implemented */ }} aria-label="Capture with camera">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path
                       d="M2 5C2 4.44772 2.44772 4 3 4H4.5L5.5 2H10.5L11.5 4H13C13.5523 4 14 4.44772 14 5V12C14 12.5523 13.5523 13 13 13H3C2.44772 13 2 12.5523 2 12V5Z"

@@ -67,27 +67,26 @@ export function DeviceDiscovery({ selectedFiles, onDeviceSelect, onBroadcastStar
       // Create broadcast transfer
       const broadcast = createBroadcastTransfer({
         includeSelf: false, // Don't send to self
-        onRecipientProgress: (recipientId, progress, speed) => {
-          console.log(`[Broadcast] ${recipientId} progress: ${progress}% at ${speed} bytes/sec`);
+        onRecipientProgress: () => {
+          // TODO: Update UI with per-recipient progress
         },
-        onRecipientComplete: (recipientId) => {
-          console.log(`[Broadcast] ${recipientId} completed`);
+        onRecipientComplete: () => {
+          // TODO: Update UI with recipient completion
         },
-        onRecipientError: (recipientId, error) => {
-          console.error(`[Broadcast] ${recipientId} failed:`, error);
+        onRecipientError: (_recipientId, error) => {
+          console.error('[Broadcast] Transfer failed:', error);
         },
-        onOverallProgress: (progress) => {
-          console.log(`[Broadcast] Overall progress: ${progress}%`);
+        onOverallProgress: () => {
+          // TODO: Update UI with overall progress bar
         },
-        onComplete: (result) => {
-          console.log('[Broadcast] Complete:', result);
+        onComplete: () => {
           setIsBroadcasting(false);
         },
       });
 
       // Start broadcast with first selected file
       const firstFile = selectedFiles[0];
-      if (firstFile) await broadcast.start(firstFile);
+      if (firstFile) {await broadcast.start(firstFile);}
     } catch (error) {
       console.error('[Broadcast] Failed:', error);
       setIsBroadcasting(false);
