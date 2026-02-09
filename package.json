@@ -149,7 +149,7 @@
     "eslint-plugin-security": "^3.0.1",
     "happy-dom": "^20.3.9",
     "husky": "^9.1.7",
-    "lighthouse": "^12.2.1",
+    "lighthouse": "^13.0.1",
     "lint-staged": "^16.2.7",
     "svgo": "^4.0.0",
     "tsc-files": "^1.1.4",
