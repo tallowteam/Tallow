@@ -141,7 +141,7 @@
     "@types/simple-peer": "^9.11.9",
     "@vitest/coverage-v8": "^4.0.18",
     "@vitest/ui": "^4.0.18",
-    "critters": "^0.0.23",
+    "critters": "^0.0.25",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "eslint-plugin-jsx-a11y": "^6.10.2",
