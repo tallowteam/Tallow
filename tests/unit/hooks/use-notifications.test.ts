@@ -4,17 +4,27 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { useNotifications } from '@/lib/hooks/use-notifications';
 
 // Mock useToast hook
-const mockAddToast = vi.fn(() => 'toast-id-123');
-const mockRemoveToast = vi.fn();
-const mockClearAll = vi.fn();
-const mockSuccess = vi.fn(() => 'success-toast-id');
-const mockError = vi.fn(() => 'error-toast-id');
-const mockWarning = vi.fn(() => 'warning-toast-id');
-const mockInfo = vi.fn(() => 'info-toast-id');
+const toastMocks = vi.hoisted(() => ({
+  addToast: vi.fn(() => 'toast-id-123'),
+  removeToast: vi.fn(),
+  clearAll: vi.fn(),
+  success: vi.fn(() => 'success-toast-id'),
+  error: vi.fn(() => 'error-toast-id'),
+  warning: vi.fn(() => 'warning-toast-id'),
+  info: vi.fn(() => 'info-toast-id'),
+}));
+
+const mockAddToast = toastMocks.addToast;
+const mockRemoveToast = toastMocks.removeToast;
+const mockClearAll = toastMocks.clearAll;
+const mockSuccess = toastMocks.success;
+const mockError = toastMocks.error;
+const mockWarning = toastMocks.warning;
+const mockInfo = toastMocks.info;
 
 vi.mock('@/lib/hooks/use-toast', () => ({
   useToast: vi.fn(() => ({
@@ -29,7 +39,7 @@ vi.mock('@/lib/hooks/use-toast', () => ({
 }));
 
 // Mock useSettingsStore
-const mockSettings = {
+const mockSettings = vi.hoisted(() => ({
   notificationSound: true,
   notificationVolume: 0.5,
   browserNotifications: true,
@@ -40,14 +50,14 @@ const mockSettings = {
   silentHoursEnabled: false,
   silentHoursStart: '22:00',
   silentHoursEnd: '08:00',
-};
+}));
 
 vi.mock('@/lib/stores', () => ({
   useSettingsStore: vi.fn(() => mockSettings),
 }));
 
 // Mock notification manager
-const mockNotificationManager = {
+const mockNotificationManager = vi.hoisted(() => ({
   registerNotificationCallback: vi.fn(),
   updateSettings: vi.fn(),
   setVolume: vi.fn(),
@@ -59,11 +69,11 @@ const mockNotificationManager = {
   connectionLost: vi.fn(),
   deviceDiscovered: vi.fn(),
   incomingTransferRequest: vi.fn(),
-  connectionRequest: vi.fn((deviceName, deviceId, onAccept, onReject) => 'connection-toast-id'),
+  connectionRequest: vi.fn((_deviceName, _deviceId, _onAccept, _onReject) => 'connection-toast-id'),
   requestPermission: vi.fn().mockResolvedValue(undefined),
   isBrowserNotificationsAvailable: vi.fn(() => true),
   isBrowserNotificationsDenied: vi.fn(() => false),
-};
+}));
 
 vi.mock('@/lib/utils/notification-manager', () => ({
   notificationManager: mockNotificationManager,

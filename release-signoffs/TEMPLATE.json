@@ -1,0 +1,53 @@
+{
+  "release": "v0.0.0",
+  "signoffs": [
+    {
+      "approver": "002",
+      "name": "CIPHER",
+      "status": "approved",
+      "signedAt": "2026-02-10T00:00:00.000Z",
+      "evidence": "reports/security/crypto-signoff-v0.0.0.md",
+      "notes": "Crypto policy and implementation review complete."
+    },
+    {
+      "approver": "019",
+      "name": "CRYPTO-AUDITOR",
+      "status": "approved",
+      "signedAt": "2026-02-10T00:00:00.000Z",
+      "evidence": "reports/security/red-team-v0.0.0.md",
+      "notes": "Red-team findings triaged/closed for this release."
+    },
+    {
+      "approver": "078",
+      "name": "SECURITY-PENETRATOR",
+      "status": "approved",
+      "signedAt": "2026-02-10T00:00:00.000Z",
+      "evidence": "reports/security/owasp-validation-v0.0.0.md",
+      "notes": "OWASP and privacy leakage checks passed."
+    },
+    {
+      "approver": "075",
+      "name": "DC-GOLF",
+      "status": "approved",
+      "signedAt": "2026-02-10T00:00:00.000Z",
+      "evidence": "reports/security/qa-directorate-signoff-v0.0.0.md",
+      "notes": "QA directorate gates complete."
+    },
+    {
+      "approver": "086",
+      "name": "DC-HOTEL",
+      "status": "approved",
+      "signedAt": "2026-02-10T00:00:00.000Z",
+      "evidence": "reports/security/ops-directorate-signoff-v0.0.0.md",
+      "notes": "Ops-intel readiness complete."
+    },
+    {
+      "approver": "001",
+      "name": "RAMSAD",
+      "status": "approved",
+      "signedAt": "2026-02-10T00:00:00.000Z",
+      "evidence": "reports/security/final-release-approval-v0.0.0.md",
+      "notes": "Final release approval granted."
+    }
+  ]
+}

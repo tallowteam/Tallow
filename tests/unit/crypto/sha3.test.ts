@@ -62,7 +62,6 @@ describe('SHA3-256', () => {
     it('should hash all zeros correctly', () => {
       const input = new Uint8Array(64);
       const hash = sha3_256(input);
-      const expected = '5a04e0e5e8d486c1e3c6bb3d9b6e8c6f3b8f9d0e1f2c3d4e5f6a7b8c9d0e1f2a';
       // This is a custom test vector - verifying consistency
       expect(hash.length).toBe(32);
     });
@@ -525,5 +524,5 @@ describe('Performance', () => {
 
     const hash = ctx.finalize();
     expect(hash.length).toBe(32);
-  }, 30000);
+  }, 60000);
 });

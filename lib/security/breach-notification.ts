@@ -172,7 +172,7 @@ export function generateBreachReport(
  * - Temporary encryption keys
  * - Device information
  */
-export function clearSensitiveData(): void {
+export async function clearSensitiveData(): Promise<void> {
   console.warn('EMERGENCY: Clearing all sensitive data from browser storage');
 
   // List of localStorage keys to wipe
@@ -274,6 +274,9 @@ export function clearSensitiveData(): void {
     const dbs = await (indexedDB.databases?.() || Promise.resolve([]));
     dbs.forEach((db) => {
       try {
+        if (!db.name) {
+          return;
+        }
         indexedDB.deleteDatabase(db.name);
       } catch (error) {
         console.error(`Failed to delete IndexedDB ${db.name}:`, error);

@@ -1,0 +1,48 @@
+{
+  "timestamp": "2026-02-13T11:09:58.296Z",
+  "checks": [
+    {
+      "name": "Room system architect baseline files exist",
+      "pass": true,
+      "details": [
+        "policy, room api/crypto/manager, and workflows found"
+      ]
+    },
+    {
+      "name": "Rooms enforce default 24h expiry and 50-member cap",
+      "pass": true,
+      "details": [
+        "room creation defaults and max-members guardrails are enforced"
+      ]
+    },
+    {
+      "name": "Room owner/admin can remove members",
+      "pass": true,
+      "details": [
+        "api and room manager expose owner-only member-removal controls"
+      ]
+    },
+    {
+      "name": "Group room encryption uses sender-key protocol semantics",
+      "pass": true,
+      "details": [
+        "sender-specific key derivation and routing are active in room crypto path"
+      ]
+    },
+    {
+      "name": "Room-system policy is documented and actionable",
+      "pass": true,
+      "details": [
+        "policy captures expiry, membership, sender-key, and verifier controls"
+      ]
+    },
+    {
+      "name": "CI/release workflows enforce room-system architect verification",
+      "pass": true,
+      "details": [
+        "room-system architect gate is wired in CI and release workflows"
+      ]
+    }
+  ],
+  "passed": true
+}

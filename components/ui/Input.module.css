@@ -51,9 +51,17 @@
   border-color: rgba(99, 102, 241, 0.12);
 }
 
-.input:focus {
-  border-color: var(--accent, #6366f1);
+.input:focus-visible {
+  border-color: var(--border-focus, var(--accent, #6366f1));
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  outline: none;
+}
+
+/* Fallback for browsers without :focus-visible support */
+.input:focus:not(:focus-visible) {
+  border-color: var(--border-focus, var(--accent, #6366f1));
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  outline: none;
 }
 
 .input:disabled {
@@ -100,9 +108,10 @@
   border-color: #ef4444;
 }
 
-.error .input:focus {
+.error .input:focus-visible {
   border-color: #ef4444;
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  outline: none;
 }
 
 .errorText {

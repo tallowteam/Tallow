@@ -95,9 +95,38 @@ const SAMPLE_SIZE = 64 * 1024;
 const MIN_COMPRESSION_RATIO = 1.1;
 
 /**
+ * Shannon entropy threshold (bits/byte) above which data is considered already compressed.
+ */
+const HIGH_ENTROPY_THRESHOLD = 7.5;
+
+/**
  * Maximum file size to read magic bytes from (16 bytes is sufficient)
  */
 const MAGIC_BYTES_SIZE = 16;
+
+function calculateShannonEntropy(bytes: Uint8Array): number {
+  if (bytes.length === 0) {
+    return 0;
+  }
+
+  const frequencies = new Uint32Array(256);
+  for (const value of bytes) {
+    const current = frequencies[value] ?? 0;
+    frequencies[value] = current + 1;
+  }
+
+  let entropy = 0;
+  for (const count of frequencies) {
+    if (count === 0) {
+      continue;
+    }
+
+    const probability = count / bytes.length;
+    entropy -= probability * Math.log2(probability);
+  }
+
+  return entropy;
+}
 
 /**
  * Analyze if a file is worth compressing by checking its type.
@@ -119,6 +148,20 @@ export async function analyzeCompressibility(file: File): Promise<Compressibilit
       isCompressible: false,
       detectedType,
       reason: `File type ${detectedType || 'detected'} is already compressed`,
+    };
+  }
+
+  // Entropy-first skip for already compressed / high-noise content.
+  const sampleSize = Math.min(file.size, SAMPLE_SIZE);
+  const entropySampleBuffer = await file.slice(0, sampleSize).arrayBuffer();
+  const entropy = calculateShannonEntropy(new Uint8Array(entropySampleBuffer));
+
+  if (entropy > HIGH_ENTROPY_THRESHOLD) {
+    return {
+      isCompressible: false,
+      detectedType,
+      reason: `High entropy sample (${entropy.toFixed(2)} bits/byte) exceeds threshold ${HIGH_ENTROPY_THRESHOLD.toFixed(1)}`,
+      sampleSize,
     };
   }
 
@@ -261,7 +304,7 @@ async function compressBuffer(
 
   if (algorithm === 'zstd') {
     const input = new Uint8Array(buffer);
-    const compressed = compressZstd(input, ZstdLevel.FAST);
+    const compressed = compressZstd(input, ZstdLevel.DEFAULT);
     return compressed.buffer;
   }
 
@@ -304,7 +347,7 @@ async function compressBuffer(
   try {
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
+      if (done) {break;}
       chunks.push(value);
     }
   } finally {
@@ -388,7 +431,7 @@ export async function decompressFile(
   try {
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
+      if (done) {break;}
       chunks.push(value);
     }
   } finally {
@@ -422,7 +465,7 @@ export async function compressFiles(
 
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
-    if (!file) continue;
+    if (!file) {continue;}
     onProgress?.(i + 1, files.length, file.name);
 
     const result = await compressFile(file);
@@ -480,7 +523,7 @@ export function calculateAggregateStats(results: CompressionResult[]): {
  * @returns Formatted string (e.g., "1.5 MB")
  */
 export function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
+  if (bytes === 0) {return '0 B';}
 
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -496,6 +539,6 @@ export function formatBytes(bytes: number): string {
  * @returns Formatted string (e.g., "1.5s")
  */
 export function formatDuration(ms: number): string {
-  if (ms < 1000) return `${Math.round(ms)}ms`;
+  if (ms < 1000) {return `${Math.round(ms)}ms`;}
   return `${(ms / 1000).toFixed(2)}s`;
 }

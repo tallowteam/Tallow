@@ -7,6 +7,7 @@
 
 import { generateUUID } from '../utils/uuid';
 import secureLog from '../utils/secure-logger';
+import secureStorage from '../storage/secure-storage';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -40,11 +41,27 @@ export interface TransferTemplate {
 
 const STORAGE_KEY = 'tallow-transfer-templates';
 
+function canUseStorage(): boolean {
+  return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+}
+
+function parseTemplates(payload: string): TransferTemplate[] {
+  const parsed = JSON.parse(payload);
+  return Array.isArray(parsed) ? parsed : getDefaultTemplates();
+}
+
 function loadTemplates(): TransferTemplate[] {
+  if (!canUseStorage()) {
+    return getDefaultTemplates();
+  }
+
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return getDefaultTemplates();
-    return JSON.parse(stored);
+    if (!stored) {return getDefaultTemplates();}
+    if (stored.startsWith('enc:')) {
+      return getDefaultTemplates();
+    }
+    return parseTemplates(stored);
   } catch (error) {
     secureLog.error('Failed to load transfer templates', { error });
     return getDefaultTemplates();
@@ -52,8 +69,16 @@ function loadTemplates(): TransferTemplate[] {
 }
 
 function saveTemplates(templates: TransferTemplate[]): void {
+  if (!canUseStorage()) {
+    return;
+  }
+
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(templates));
+    const serialized = JSON.stringify(templates);
+    localStorage.setItem(STORAGE_KEY, serialized);
+    void secureStorage.setItem(STORAGE_KEY, serialized).catch((error) => {
+      secureLog.error('Failed to encrypt transfer templates at rest', { error });
+    });
   } catch (error) {
     secureLog.error('Failed to save transfer templates', { error });
   }
@@ -114,7 +139,7 @@ function getDefaultTemplates(): TransferTemplate[] {
 // ============================================================================
 
 let templates: TransferTemplate[] = loadTemplates();
-let listeners: Set<() => void> = new Set();
+const listeners: Set<() => void> = new Set();
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -122,6 +147,23 @@ let listeners: Set<() => void> = new Set();
 
 function notifyListeners(): void {
   listeners.forEach(listener => listener());
+}
+
+async function hydrateTemplatesFromSecureStorage(): Promise<void> {
+  if (!canUseStorage()) {
+    return;
+  }
+
+  try {
+    const stored = await secureStorage.getItem(STORAGE_KEY);
+    if (!stored) {
+      return;
+    }
+    templates = parseTemplates(stored);
+    notifyListeners();
+  } catch (error) {
+    secureLog.error('[TransferTemplate] Failed to hydrate encrypted templates', { error });
+  }
 }
 
 function validateTemplateName(name: string, excludeId?: string): boolean {
@@ -153,11 +195,11 @@ export function createTemplate(
   const template: TransferTemplate = {
     id: generateUUID(),
     name: name.trim(),
-    description: description?.trim(),
     options: { ...options },
     createdAt: Date.now(),
     lastUsed: null,
     useCount: 0,
+    ...(description !== undefined ? { description: description.trim() } : {}),
   };
 
   templates.push(template);
@@ -202,9 +244,10 @@ export function updateTemplate(
   }
 ): boolean {
   const index = templates.findIndex(t => t.id === id);
-  if (index === -1) return false;
+  if (index === -1) {return false;}
 
   const template = templates[index];
+  if (!template) {return false;}
 
   // Check if new name conflicts with existing templates
   if (updates.name && updates.name !== template.name) {
@@ -266,10 +309,11 @@ export function applyTemplate(templateId: string, files: File[]): TransferTempla
  */
 export function deleteTemplate(templateId: string): boolean {
   const index = templates.findIndex(t => t.id === templateId);
-  if (index === -1) return false;
+  if (index === -1) {return false;}
 
   // Prevent deleting default templates (they can be restored)
   const template = templates[index];
+  if (!template) {return false;}
   const isDefault = template.id.startsWith('default-');
 
   if (isDefault) {
@@ -291,7 +335,7 @@ export function deleteTemplate(templateId: string): boolean {
  */
 export function duplicateTemplate(templateId: string, newName?: string): string | null {
   const template = templates.find(t => t.id === templateId);
-  if (!template) return null;
+  if (!template) {return null;}
 
   const baseName = newName || `${template.name} (Copy)`;
   let finalName = baseName;
@@ -335,7 +379,7 @@ export function importTemplates(json: string): number {
 
     for (const template of imported) {
       // Validate structure
-      if (!template.name || !template.options) continue;
+      if (!template.name || !template.options) {continue;}
 
       // Generate new ID and ensure unique name
       const newId = generateUUID();
@@ -402,4 +446,8 @@ export function getTemplateStats(): {
     default: defaultTemplates.length,
     mostUsed,
   };
+}
+
+if (typeof window !== 'undefined') {
+  void hydrateTemplatesFromSecureStorage();
 }

@@ -23,6 +23,7 @@ import { x25519 } from '@noble/curves/ed25519.js';
 import { hkdf } from '@noble/hashes/hkdf.js';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { isObject, hasProperty, isString, isNumber, isArrayOf } from '../types/type-guards';
+import { asPublicKey, asSharedSecret } from '@/lib/types/crypto-brands';
 
 /**
  * DH Public Key Message
@@ -283,6 +284,26 @@ export interface P2PConnectionState {
     verificationSession: VerificationSession | null;
 }
 
+export interface UseP2PConnectionReturn {
+    state: P2PConnectionState;
+    currentTransfer: TransferProgress | null;
+    receivedFiles: ReceivedFile[];
+    dataChannel: RTCDataChannel | null;
+    initializeAsInitiator: () => Promise<RTCSessionDescription | null>;
+    acceptConnection: (offer: RTCSessionDescriptionInit) => Promise<RTCSessionDescription | null>;
+    completeConnection: (answer: RTCSessionDescriptionInit) => Promise<void>;
+    sendFile: (file: File, onProgress?: (progress: number) => void) => Promise<void>;
+    sendFiles: (files: File[], onProgress?: (fileIndex: number, progress: number) => void) => Promise<void>;
+    downloadReceivedFile: (file: ReceivedFile) => void;
+    onFileReceived: (callback: (file: ReceivedFile) => void) => void;
+    onMessage: (callback: (data: string | ArrayBuffer) => void) => void;
+    disconnect: () => void;
+    triggerVerification: () => void;
+    confirmVerification: () => void;
+    failVerification: () => void;
+    skipVerification: () => void;
+}
+
 /**
  * Custom hook for managing P2P WebRTC connections with end-to-end encryption
  *
@@ -316,7 +337,7 @@ export interface P2PConnectionState {
  * // Share answer back...
  * ```
  */
-export function useP2PConnection() {
+export function useP2PConnection(): UseP2PConnectionReturn {
     const [state, setState] = useState<P2PConnectionState>({
         isConnected: false,
         isConnecting: false,
@@ -405,7 +426,8 @@ export function useP2PConnection() {
         }
     }, [state.verificationSession]);
 
-    // Handle verification failed
+    // Handle verification failed -- MANDATORY disconnection per Agent 012 SAS-VERIFIER contract.
+    // SAS mismatch = possible MITM attack. Connection MUST be terminated immediately. No retry.
     const failVerification = useCallback(() => {
         if (state.verificationSession) {
             markSessionFailed(state.verificationSession.id);
@@ -414,8 +436,22 @@ export function useP2PConnection() {
                 verificationPending: false,
                 verificationSession: prev.verificationSession ? { ...prev.verificationSession, status: 'failed' } : null,
             }));
-            // Optionally disconnect on failure
-            // disconnect();
+            // MANDATORY: Disconnect on SAS failure -- no retry permitted.
+            // Close the peer connection, data channels, and reset state.
+            if (peerConnection.current) {
+                peerConnection.current.close();
+                peerConnection.current = null;
+            }
+            if (dataChannel.current) {
+                dataChannel.current.close();
+                dataChannel.current = null;
+            }
+            setState(prev => ({
+                ...prev,
+                status: 'disconnected',
+                error: 'SAS verification failed: possible man-in-the-middle attack. Connection terminated.',
+            }));
+            console.warn('[SAS-VERIFIER] Connection terminated due to SAS mismatch. No retry permitted.');
         }
     }, [state.verificationSession]);
 
@@ -583,7 +619,7 @@ export function useP2PConnection() {
                         break;
                     }
 
-                    const peerPublicKey = new Uint8Array(message.publicKey);
+                    const peerPublicKey = asPublicKey(new Uint8Array(message.publicKey));
 
                     // CRITICAL FIX: Enhanced low-order point validation
                     // Reject known low-order points and predictable patterns
@@ -592,7 +628,9 @@ export function useP2PConnection() {
                         break;
                     }
 
-                    const rawSharedSecret = x25519.getSharedSecret(dhPrivateKey.current, peerPublicKey);
+                    const rawSharedSecret = asSharedSecret(
+                        x25519.getSharedSecret(dhPrivateKey.current, peerPublicKey)
+                    );
 
                     // CRITICAL FIX: Enhanced shared secret validation
                     // Check for low-entropy or predictable shared secrets
@@ -604,7 +642,9 @@ export function useP2PConnection() {
                     // Derive a proper shared secret via HKDF
                     const SAS_INFO = new TextEncoder().encode('tallow-sas-v1');
                     const salt = new TextEncoder().encode('tallow-dh-salt-v1');
-                    const derivedSecret = hkdf(sha256, rawSharedSecret, salt, SAS_INFO, 32);
+                    const derivedSecret = asSharedSecret(
+                        hkdf(sha256, rawSharedSecret, salt, SAS_INFO, 32)
+                    );
                     dhSharedSecret.current = derivedSecret;
 
                     secureLog.log('DH shared secret derived successfully');

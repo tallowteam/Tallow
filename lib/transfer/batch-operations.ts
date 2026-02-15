@@ -128,7 +128,7 @@ const STORAGE_KEY = 'tallow-batch-rules';
 function loadRulesFromStorage(): BatchRule[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return getDefaultRules();
+    if (!stored) {return getDefaultRules();}
     const rules = JSON.parse(stored) as BatchRule[];
     return rules.sort((a, b) => b.priority - a.priority);
   } catch (error) {
@@ -275,7 +275,7 @@ export function evaluateCondition(
         return false;
     }
 
-    if (fieldValue === undefined) return false;
+    if (fieldValue === undefined) {return false;}
 
     switch (operator) {
       case 'contains':
@@ -552,10 +552,12 @@ export function updateRule(
   const rules = loadRulesFromStorage();
   const index = rules.findIndex((rule) => rule.id === id);
 
-  if (index === -1) return null;
+  if (index === -1) {return null;}
+  const existingRule = rules[index];
+  if (!existingRule) {return null;}
 
   const updatedRule: BatchRule = {
-    ...rules[index],
+    ...existingRule,
     ...updates,
     modifiedAt: Date.now(),
   };
@@ -590,7 +592,7 @@ export function toggleRule(id: string): boolean {
   const rules = loadRulesFromStorage();
   const rule = rules.find((r) => r.id === id);
 
-  if (!rule) return false;
+  if (!rule) {return false;}
 
   rule.enabled = !rule.enabled;
   rule.modifiedAt = Date.now();
@@ -644,12 +646,14 @@ function incrementRuleCount(id: string): void {
 function applyRenamePattern(filename: string, pattern: string): string {
   const ext = filename.substring(filename.lastIndexOf('.'));
   const nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
+  const dateToken = new Date().toISOString().split('T')[0] ?? '';
+  const timeToken = (new Date().toTimeString().split(' ')[0] ?? '').replace(/:/g, '-');
 
   return pattern
     .replace('{name}', nameWithoutExt)
     .replace('{ext}', ext)
-    .replace('{date}', new Date().toISOString().split('T')[0])
-    .replace('{time}', new Date().toTimeString().split(' ')[0].replace(/:/g, '-'));
+    .replace('{date}', dateToken)
+    .replace('{time}', timeToken);
 }
 
 /**
@@ -668,9 +672,9 @@ function getFileTypeFolder(mimeType: string): string {
     case 'text':
       return 'Documents';
     case 'application':
-      if (mimeType.includes('pdf')) return 'Documents';
+      if (mimeType.includes('pdf')) {return 'Documents';}
       if (mimeType.includes('zip') || mimeType.includes('archive'))
-        return 'Archives';
+        {return 'Archives';}
       return 'Files';
     default:
       return 'Other';
@@ -695,8 +699,8 @@ export function getRuleDescription(rule: BatchRule): string {
 function getConditionDescription(condition: RuleCondition): string {
   const { field, operator, value } = condition;
 
-  let fieldStr = field.charAt(0).toUpperCase() + field.slice(1);
-  let valueStr = typeof value === 'number' ? formatBytes(value) : String(value);
+  const fieldStr = field.charAt(0).toUpperCase() + field.slice(1);
+  const valueStr = typeof value === 'number' ? formatBytes(value) : String(value);
 
   const operatorMap: Record<RuleConditionOperator, string> = {
     contains: 'contains',
@@ -733,7 +737,7 @@ function getActionDescription(action: RuleAction): string {
  * Format bytes to human-readable string
  */
 function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
+  if (bytes === 0) {return '0 B';}
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));

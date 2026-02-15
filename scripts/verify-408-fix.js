@@ -57,7 +57,7 @@ function main() {
     path.join(process.cwd(), 'next.config.ts'),
     [
       { text: 'httpAgentOptions', description: 'HTTP agent options configured' },
-      { text: 'timeout: 60000', description: 'Timeout set to 60 seconds' },
+      { regex: /proxyTimeout\s*:\s*300000|timeout\s*:\s*60000/, description: 'Timeout guard configured' },
       { text: 'proxyTimeout', description: 'Proxy timeout configured for dev' },
       { text: 'keepAlive: true', description: 'Keep-alive enabled' },
     ],

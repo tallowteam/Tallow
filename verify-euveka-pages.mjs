@@ -23,8 +23,8 @@ const pages = [
     const consoleWarnings = [];
 
     page.on('console', msg => {
-      if (msg.type() === 'error') consoleErrors.push(msg.text());
-      if (msg.type() === 'warning') consoleWarnings.push(msg.text());
+      if (msg.type() === 'error') {consoleErrors.push(msg.text());}
+      if (msg.type() === 'warning') {consoleWarnings.push(msg.text());}
     });
 
     page.on('pageerror', err => {

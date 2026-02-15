@@ -168,37 +168,6 @@ function generateRenamedFileName(fileName: string): string {
   return newName;
 }
 
-/**
- * Parse a filename to extract base name and counter
- * e.g., "file (2).txt" -> { baseName: "file", counter: 2, extension: ".txt" }
- */
-function parseFileName(fileName: string): {
-  baseName: string;
-  counter: number;
-  extension: string;
-} {
-  const lastDotIndex = fileName.lastIndexOf('.');
-  const nameWithoutExt = lastDotIndex > 0 ? fileName.substring(0, lastDotIndex) : fileName;
-  const extension = lastDotIndex > 0 ? fileName.substring(lastDotIndex) : '';
-
-  // Match pattern like "filename (2)"
-  const counterMatch = nameWithoutExt.match(/^(.*?)\s*\((\d+)\)$/);
-
-  if (counterMatch) {
-    return {
-      baseName: counterMatch[1],
-      counter: parseInt(counterMatch[2], 10),
-      extension,
-    };
-  }
-
-  return {
-    baseName: nameWithoutExt,
-    counter: 1,
-    extension,
-  };
-}
-
 // ============================================================================
 // DUPLICATE HANDLING
 // ============================================================================

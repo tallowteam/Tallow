@@ -16,7 +16,7 @@ import {
     isLocalNetwork,
     assessNetworkQuality,
     NetworkQuality,
-    onNetworkChange,
+    onBasicNetworkChange,
 } from '@/lib/network/network-interfaces';
 
 export interface AdaptiveTransferState {
@@ -98,7 +98,7 @@ export function useAdaptiveTransfer(
         init();
 
         // Listen for network changes
-        const cleanup = onNetworkChange(() => {
+        const cleanup = onBasicNetworkChange(() => {
             init();
         });
 

@@ -67,7 +67,7 @@ jobs:
       - name: Detect changed files
         id: detect
         run: |
-          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]] || [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/master" ]] || [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "main-app=true" >> $GITHUB_OUTPUT
             echo "signaling=true" >> $GITHUB_OUTPUT
           else

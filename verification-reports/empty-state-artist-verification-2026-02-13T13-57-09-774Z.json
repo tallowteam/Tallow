@@ -1,0 +1,78 @@
+{
+  "timestamp": "2026-02-13T13:57:09.772Z",
+  "checks": [
+    {
+      "name": "Empty-state policy, components, styles, tests, and workflows exist",
+      "pass": true,
+      "details": [
+        "all required empty-state files are present"
+      ]
+    },
+    {
+      "name": "Device list empty state includes illustration, explanation, and action",
+      "pass": true,
+      "details": [
+        "all required tokens found"
+      ]
+    },
+    {
+      "name": "Active transfer panel empty state includes illustration, explanation, and action",
+      "pass": true,
+      "details": [
+        "all required tokens found"
+      ]
+    },
+    {
+      "name": "Transfer history panel empty state includes illustration, explanation, and action",
+      "pass": true,
+      "details": [
+        "all required tokens found"
+      ]
+    },
+    {
+      "name": "Device list empty-state styles include icon, description, and action classes",
+      "pass": true,
+      "details": [
+        "all required tokens found"
+      ]
+    },
+    {
+      "name": "Transfer progress empty-state styles include icon, description, and action classes",
+      "pass": true,
+      "details": [
+        "all required tokens found"
+      ]
+    },
+    {
+      "name": "Transfer history empty-state styles include icon, description, and action classes",
+      "pass": true,
+      "details": [
+        "all required tokens found"
+      ]
+    },
+    {
+      "name": "No forbidden placeholder-only empty-state copy is present",
+      "pass": true,
+      "details": [
+        "no forbidden placeholder-only copy detected"
+      ]
+    },
+    {
+      "name": "Unit coverage validates guided empty-state actions",
+      "pass": true,
+      "details": [
+        "all required tokens found"
+      ]
+    },
+    {
+      "name": "Empty-state gate is wired in package scripts and workflows",
+      "pass": true,
+      "details": [
+        "verify:empty-states:artist: node scripts/verify-empty-state-artist.js",
+        ".github/workflows/ci.yml runs empty-state verifier",
+        ".github/workflows/release.yml runs empty-state verifier"
+      ]
+    }
+  ],
+  "passed": true
+}

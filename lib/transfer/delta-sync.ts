@@ -239,6 +239,9 @@ export async function createPatch(
 
     for (let i = batchStart; i < batchEnd; i++) {
       const blockIndex = blocksToInclude[i];
+      if (blockIndex === undefined) {
+        continue;
+      }
       batchPromises.push(extractBlock(file, blockIndex, blockSize));
     }
 
@@ -345,7 +348,6 @@ export function estimateSavings(
   totalBlocks: number,
   blockSize: number = DEFAULT_BLOCK_SIZE
 ): SavingsEstimate {
-  const unchangedBlocks = delta.unchanged.length;
   const changedBlocks = delta.changed.length;
   const addedBlocks = delta.added.length;
 

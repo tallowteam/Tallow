@@ -23,7 +23,12 @@ function createMockFile(
   type: string = 'text/plain',
   lastModified: number = Date.now()
 ): File {
-  const file = new File(['x'.repeat(size)], name, { type, lastModified });
+  // Keep fixture memory bounded for very large synthetic files.
+  const byteLength = Math.min(size, 1024);
+  const file = new File([new Uint8Array(byteLength)], name, { type, lastModified });
+  if (file.size !== size) {
+    Object.defineProperty(file, 'size', { value: size });
+  }
   return file;
 }
 

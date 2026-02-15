@@ -243,4 +243,4 @@ Current test coverage:
 - [ ] Add security testing
 - [ ] Add API testing
 - [ ] Add multi-user transfer scenarios
-- [ ] Add network condition testing
+- [x] Add network condition testing (`tests/e2e/network-resilience.spec.ts`: offline, 3G-like latency, flaky request recovery)

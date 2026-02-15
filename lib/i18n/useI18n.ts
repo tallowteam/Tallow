@@ -65,11 +65,9 @@ interface UseI18nReturn {
  */
 export function useI18n(): UseI18nReturn {
   const [language, setLanguageState] = useState<LanguageCode>('en');
-  const [isClient, setIsClient] = useState(false);
 
   // Initialize on client side only
   useEffect(() => {
-    setIsClient(true);
     const effective = getEffectiveLanguage();
     setLanguageState(effective);
   }, []);
@@ -93,7 +91,7 @@ export function useI18n(): UseI18nReturn {
     message: string,
     params?: Record<string, string | number>
   ): string => {
-    if (!params || typeof message !== 'string') return message;
+    if (!params || typeof message !== 'string') {return message;}
 
     return message.replace(/\{\{(\w+)\}\}/g, (_, key) => {
       return String(params[key] ?? `{{${key}}}`);
@@ -161,10 +159,6 @@ export function getServerTranslation(language: LanguageCode | string) {
 }
 
 /**
- * Hook to provide i18n context to child components
- * Use with React Context for global language management
+ * Hook alias for i18n context providers.
  */
-export const createI18nProvider = () => {
-  const i18n = useI18n();
-  return i18n;
-};
+export const useI18nProvider = () => useI18n();

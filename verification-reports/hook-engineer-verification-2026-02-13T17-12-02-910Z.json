@@ -1,0 +1,50 @@
+{
+  "timestamp": "2026-02-13T17:12:02.902Z",
+  "checks": [
+    {
+      "name": "Hook engineer policy, core hooks, and workflows exist",
+      "pass": true,
+      "details": [
+        "all required hook engineer files are present"
+      ]
+    },
+    {
+      "name": "Core WebRTC hooks expose explicit return types",
+      "pass": true,
+      "details": [
+        "all core hooks define explicit return types"
+      ]
+    },
+    {
+      "name": "Core WebRTC hooks are documented with JSDoc",
+      "pass": true,
+      "details": [
+        "JSDoc blocks found for all core hooks"
+      ]
+    },
+    {
+      "name": "Core hooks clean up side effects and WebRTC connections on unmount",
+      "pass": true,
+      "details": [
+        "core hooks include useEffect cleanup and teardown paths"
+      ]
+    },
+    {
+      "name": "Core WebRTC hooks avoid direct Zustand .getState() access",
+      "pass": true,
+      "details": [
+        "no .getState() usage found in core hooks"
+      ]
+    },
+    {
+      "name": "Hook engineer gate is wired in package scripts and workflows",
+      "pass": true,
+      "details": [
+        "verify:hook:engineer: node scripts/verify-hook-engineer.js",
+        ".github/workflows/ci.yml runs hook engineer verification",
+        ".github/workflows/release.yml runs hook engineer verification"
+      ]
+    }
+  ],
+  "passed": true
+}

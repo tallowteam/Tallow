@@ -30,6 +30,10 @@ type FeatureFlagKey =
   | 'scheduled_transfers'
   | 'team_workspaces'
   | 'browser_extension_api'
+  | 'share_sheet_integrations'
+  | 'nfc_pairing'
+  | 'qr_linking'
+  | 'clipboard_sharing'
   | 'advanced_compression'
   | 'delta_sync'
   | 'webauthn'
@@ -59,6 +63,10 @@ const DEFAULT_FLAGS: FeatureFlagValues = {
 
   // Integration features
   browser_extension_api: true,
+  share_sheet_integrations: false,
+  nfc_pairing: false,
+  qr_linking: false,
+  clipboard_sharing: false,
 
   // Advanced features
   advanced_compression: true,
@@ -81,7 +89,7 @@ const DEFAULT_FLAGS: FeatureFlagValues = {
   guest_mode: true,
 
   // Experimental features
-  experimental_pqc: false,
+  experimental_pqc: true,
 
   // Developer features
   debug_mode: false,
@@ -103,6 +111,10 @@ const FLAG_ENV_MAP: Record<FeatureFlagKey, string> = {
   scheduled_transfers: 'FEATURE_FLAG_SCHEDULED_TRANSFERS',
   team_workspaces: 'FEATURE_FLAG_TEAM_WORKSPACES',
   browser_extension_api: 'FEATURE_FLAG_BROWSER_EXTENSION_API',
+  share_sheet_integrations: 'FEATURE_FLAG_SHARE_SHEET_INTEGRATIONS',
+  nfc_pairing: 'FEATURE_FLAG_NFC_PAIRING',
+  qr_linking: 'FEATURE_FLAG_QR_LINKING',
+  clipboard_sharing: 'FEATURE_FLAG_CLIPBOARD_SHARING',
   advanced_compression: 'FEATURE_FLAG_ADVANCED_COMPRESSION',
   delta_sync: 'FEATURE_FLAG_DELTA_SYNC',
   webauthn: 'FEATURE_FLAG_WEBAUTHN',

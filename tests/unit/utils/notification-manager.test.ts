@@ -26,6 +26,19 @@ describe('NotificationManager', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
+    vi.setSystemTime(new Date('2024-01-01T10:00:00'));
+    notificationManager.setSoundEnabled(true);
+    notificationManager.updateSettings({
+      notificationSound: true,
+      browserNotifications: true,
+      notifyOnTransferComplete: true,
+      notifyOnIncomingTransfer: true,
+      notifyOnConnectionChange: true,
+      notifyOnDeviceDiscovered: false,
+      silentHoursEnabled: false,
+      silentHoursStart: '22:00',
+      silentHoursEnd: '08:00',
+    });
   });
 
   afterEach(() => {
@@ -53,7 +66,7 @@ describe('NotificationManager', () => {
   });
 
   describe('Silent Hours', () => {
-    it('should detect silent hours (overnight period)', () => {
+    it('should detect silent hours (overnight period)', async () => {
       // Mock current time to be 23:00 (11 PM)
       vi.setSystemTime(new Date('2024-01-01T23:00:00'));
 
@@ -98,7 +111,6 @@ describe('NotificationManager', () => {
 
       notificationManager.transferComplete('test.txt', 'received');
 
-      const { notificationSounds } = import('../../../lib/audio/notification-sounds');
       // Should be suppressed
       expect(true).toBe(true);
     });
@@ -187,10 +199,12 @@ describe('NotificationManager', () => {
     });
 
     it('should notify on transfer failed', async () => {
+      const { browserNotifications } = await import('../../../lib/utils/browser-notifications');
+      vi.mocked(browserNotifications.isInBackground).mockReturnValue(true);
+
       await notificationManager.transferFailed('test.txt', 'Connection lost');
 
       const { notificationSounds } = await import('../../../lib/audio/notification-sounds');
-      const { browserNotifications } = await import('../../../lib/utils/browser-notifications');
 
       expect(notificationSounds.play).toHaveBeenCalledWith('error');
       expect(browserNotifications.show).toHaveBeenCalledWith(
@@ -272,7 +286,6 @@ describe('NotificationManager', () => {
     it('should set volume', () => {
       notificationManager.setVolume(0.5);
 
-      const { notificationSounds } = import('../../../lib/audio/notification-sounds');
       expect(true).toBe(true);
     });
 

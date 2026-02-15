@@ -47,6 +47,18 @@ describe('Compression Pipeline', () => {
       expect(analysis.detectedType).toBe('image/png');
     });
 
+    it('should skip high-entropy files before compression', async () => {
+      const randomData = new Uint8Array(64 * 1024);
+      crypto.getRandomValues(randomData);
+      const file = new File([randomData], 'entropy.bin', { type: 'application/octet-stream' });
+
+      const analysis = await analyzeCompressibility(file);
+
+      expect(analysis.isCompressible).toBe(false);
+      expect(analysis.reason).toContain('High entropy sample');
+      expect(analysis.reason).toContain('7.5');
+    });
+
     it('should perform sample test on large files', async () => {
       const largeContent = 'A'.repeat(100000);
       const file = createTestFile('large.txt', largeContent);

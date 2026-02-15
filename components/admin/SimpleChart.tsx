@@ -20,6 +20,7 @@ export interface SimpleChartProps {
   showLabels?: boolean;
   showGrid?: boolean;
   animate?: boolean;
+  ariaLabel?: string;
 }
 
 export function SimpleChart({
@@ -31,6 +32,7 @@ export function SimpleChart({
   showLabels = true,
   showGrid = true,
   animate = true,
+  ariaLabel = 'Data visualization chart',
 }: SimpleChartProps) {
   const chartContent = useMemo(() => {
     switch (type) {
@@ -54,8 +56,12 @@ export function SimpleChart({
         height={height}
         viewBox={`0 0 ${width} ${height}`}
         className={styles.chart}
+        role="img"
+        aria-label={ariaLabel}
         style={{ maxWidth: '100%', height: 'auto' }}
       >
+        <title>{ariaLabel}</title>
+        <desc>{`Chart type ${type} with ${data.length} data point${data.length === 1 ? '' : 's'}.`}</desc>
         {chartContent}
       </svg>
       {showLabels && type !== 'donut' && (
@@ -131,6 +137,7 @@ function renderLineChart(
           fill={color}
           className={animate ? styles.animateDot : undefined}
           style={animate ? { animationDelay: `${i * 0.05}s` } : undefined}
+          aria-label={`${data[i]?.label ?? `Point ${i + 1}`}: ${(data[i]?.value ?? 0).toFixed(2)}`}
         />
       ))}
     </g>
@@ -222,6 +229,7 @@ function renderBarChart(
             rx="4"
             className={animate ? styles.animateBar : undefined}
             style={animate ? { animationDelay: `${i * 0.05}s` } : undefined}
+            aria-label={`${point.label}: ${point.value.toFixed(2)}`}
           />
         );
       })}
@@ -262,6 +270,7 @@ function renderDonutChart(
             fill={color}
             className={animate ? styles.animateDonut : undefined}
             style={animate ? { animationDelay: `${i * 0.1}s` } : undefined}
+            aria-label={`${point.label}: ${point.value.toFixed(2)} percent`}
           />
         );
       })}
@@ -370,15 +379,17 @@ function polarToCartesian(
 }
 
 function getColorByIndex(index: number): string {
-  const colors = [
-    '#5e5ce6',
-    '#22c55e',
-    '#eab308',
-    '#ef4444',
-    '#3b82f6',
-    '#8b5cf6',
-    '#ec4899',
-    '#06b6d4',
-  ];
+  const colors = COLOR_BLIND_SAFE_PALETTE;
   return colors[index % colors.length] ?? '#22c55e';
 }
+
+export const COLOR_BLIND_SAFE_PALETTE = [
+  '#0072B2',
+  '#E69F00',
+  '#009E73',
+  '#D55E00',
+  '#CC79A7',
+  '#56B4E9',
+  '#F0E442',
+  '#999999',
+] as const;

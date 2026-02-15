@@ -1,18 +1,37 @@
 /* ============================================
    TALLOW — Design System Tokens & Global Styles
    Magazine-style dark aesthetic
-   ============================================ */
+   ============================================
+
+   TOKEN INVENTORY (Agent 031 — DESIGN-TOKENSMITH)
+   ------------------------------------------------
+   BACKGROUNDS:     --bg, --bg-2, --bg-3, --bg-elevated, --bg-surface, --bg-invert
+   TEXT:             --text, --text-2, --text-3, --text-4, --text-invert
+   BORDERS:         --border, --border-2, --border-default, --border-strong, --border-focus
+   ACCENT:          --accent, --accent-2, --accent-strong, --accent-strong-2, --accent-muted
+   GLASS:           --glass, --glass-border, --glass-heavy
+   SEMANTIC:        --success, --success-light, --error, --error-light, --warning, --warning-light, --info, --info-light
+   OVERLAY:         --overlay, --overlay-heavy
+   WHITE/BLACK:     --color-white, --color-black
+   ALPHA SCALES:    --color-white-alpha-{3..80}, --color-black-alpha-{10..80}, --accent-alpha-{3..40}
+   SYNTAX:          --syntax-keyword, --syntax-string, --syntax-number, --syntax-function, --syntax-tag, --syntax-attr
+   FILE TYPE:       --file-code, --file-media, --file-doc, --file-archive, --file-design, --file-data, --file-spreadsheet, --file-generic
+   ------------------------------------------------ */
 
 :root {
   /* Background */
   --bg: #030306;
   --bg-2: #08080e;
   --bg-3: #0f0f18;
+  --bg-elevated: #1a1a2e;
+  --bg-invert: #f2f2f8;
 
   /* Text */
   --text: #f2f2f8;
   --text-2: #a8a8bc;
   --text-3: #9494a8;
+  --text-4: #5a5a70;
+  --text-invert: #030306;
 
   /* Borders */
   --border: #18182a;
@@ -21,15 +40,83 @@
   /* Accent — Indigo */
   --accent: #6366f1;
   --accent-2: #818cf8;
+  --accent-strong: #4f46e5;
+  --accent-strong-2: #4338ca;
+  --accent-muted: #a5b4fc;
 
   /* Glass */
   --glass: rgba(12, 12, 22, 0.55);
   --glass-border: rgba(99, 102, 241, 0.08);
+  --glass-heavy: rgba(12, 12, 22, 0.7);
 
   /* Semantic */
   --success: #22c55e;
+  --success-light: #4ade80;
   --error: #ef4444;
+  --error-light: #f87171;
   --warning: #f59e0b;
+  --warning-light: #fbbf24;
+  --info: #3b82f6;
+  --info-light: #60a5fa;
+
+  /* Overlay */
+  --overlay: rgba(0, 0, 0, 0.6);
+  --overlay-heavy: rgba(0, 0, 0, 0.8);
+
+  /* Pure White/Black for contrast elements */
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  /* White alpha channel scale */
+  --color-white-alpha-3: rgba(255, 255, 255, 0.03);
+  --color-white-alpha-5: rgba(255, 255, 255, 0.05);
+  --color-white-alpha-8: rgba(255, 255, 255, 0.08);
+  --color-white-alpha-10: rgba(255, 255, 255, 0.1);
+  --color-white-alpha-15: rgba(255, 255, 255, 0.15);
+  --color-white-alpha-20: rgba(255, 255, 255, 0.2);
+  --color-white-alpha-50: rgba(255, 255, 255, 0.5);
+  --color-white-alpha-80: rgba(255, 255, 255, 0.8);
+
+  /* Black alpha channel scale */
+  --color-black-alpha-10: rgba(0, 0, 0, 0.1);
+  --color-black-alpha-15: rgba(0, 0, 0, 0.15);
+  --color-black-alpha-20: rgba(0, 0, 0, 0.2);
+  --color-black-alpha-30: rgba(0, 0, 0, 0.3);
+  --color-black-alpha-40: rgba(0, 0, 0, 0.4);
+  --color-black-alpha-50: rgba(0, 0, 0, 0.5);
+  --color-black-alpha-60: rgba(0, 0, 0, 0.6);
+  --color-black-alpha-80: rgba(0, 0, 0, 0.8);
+
+  /* Accent alpha channel scale */
+  --accent-alpha-3: rgba(99, 102, 241, 0.03);
+  --accent-alpha-5: rgba(99, 102, 241, 0.05);
+  --accent-alpha-6: rgba(99, 102, 241, 0.06);
+  --accent-alpha-8: rgba(99, 102, 241, 0.08);
+  --accent-alpha-10: rgba(99, 102, 241, 0.1);
+  --accent-alpha-12: rgba(99, 102, 241, 0.12);
+  --accent-alpha-15: rgba(99, 102, 241, 0.15);
+  --accent-alpha-20: rgba(99, 102, 241, 0.2);
+  --accent-alpha-25: rgba(99, 102, 241, 0.25);
+  --accent-alpha-30: rgba(99, 102, 241, 0.3);
+  --accent-alpha-40: rgba(99, 102, 241, 0.4);
+
+  /* Syntax highlighting (code editor) */
+  --syntax-keyword: #c792ea;
+  --syntax-string: #c3e88d;
+  --syntax-number: #f78c6c;
+  --syntax-function: #82aaff;
+  --syntax-tag: #f07178;
+  --syntax-attr: #c792ea;
+
+  /* File type icon colors */
+  --file-code: #A5A4F5;
+  --file-media: #FF6B8A;
+  --file-doc: #FFB366;
+  --file-archive: #6DD589;
+  --file-design: #C79EE8;
+  --file-data: #A8D5F5;
+  --file-spreadsheet: #FFD966;
+  --file-generic: #A1A1A6;
 
   /* Spacing - Fluid */
   --container-max: 100%;
@@ -116,6 +203,296 @@
   --font-body: var(--font-inter), 'Inter', system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), 'JetBrains Mono', 'Fira Code', monospace;
   --font-display: var(--font-heading);
+}
+
+[data-theme='light'] {
+  --bg: white;
+  --bg-2: color-mix(in srgb, white 96%, var(--accent) 4%);
+  --bg-3: color-mix(in srgb, white 92%, var(--accent) 8%);
+
+  --text: black;
+  --text-2: color-mix(in srgb, black 70%, var(--accent) 30%);
+  --text-3: color-mix(in srgb, black 56%, var(--accent) 44%);
+
+  --border: color-mix(in srgb, black 14%, transparent);
+  --border-2: color-mix(in srgb, black 22%, transparent);
+
+  --glass: color-mix(in srgb, white 84%, transparent);
+  --glass-border: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+[data-theme='forest'] {
+  --bg: color-mix(in srgb, black 88%, forestgreen 12%);
+  --bg-2: color-mix(in srgb, black 82%, forestgreen 18%);
+  --bg-3: color-mix(in srgb, black 74%, forestgreen 26%);
+
+  --text: color-mix(in srgb, white 94%, honeydew 6%);
+  --text-2: color-mix(in srgb, white 70%, limegreen 30%);
+  --text-3: color-mix(in srgb, white 52%, limegreen 48%);
+
+  --border: color-mix(in srgb, darkgreen 34%, transparent);
+  --border-2: color-mix(in srgb, darkgreen 48%, transparent);
+
+  --accent: mediumseagreen;
+  --accent-2: springgreen;
+  --glass: color-mix(in srgb, black 66%, forestgreen 34%);
+  --glass-border: color-mix(in srgb, mediumseagreen 26%, transparent);
+
+  --success: palegreen;
+  --error: salmon;
+  --warning: khaki;
+}
+
+[data-theme='ocean'] {
+  --bg: color-mix(in srgb, black 88%, midnightblue 12%);
+  --bg-2: color-mix(in srgb, black 82%, midnightblue 18%);
+  --bg-3: color-mix(in srgb, black 74%, steelblue 26%);
+
+  --text: color-mix(in srgb, white 94%, azure 6%);
+  --text-2: color-mix(in srgb, white 72%, lightskyblue 28%);
+  --text-3: color-mix(in srgb, white 54%, lightskyblue 46%);
+
+  --border: color-mix(in srgb, deepskyblue 30%, transparent);
+  --border-2: color-mix(in srgb, deepskyblue 45%, transparent);
+
+  --accent: deepskyblue;
+  --accent-2: aqua;
+  --glass: color-mix(in srgb, black 68%, steelblue 32%);
+  --glass-border: color-mix(in srgb, deepskyblue 28%, transparent);
+
+  --success: lightseagreen;
+  --error: lightsalmon;
+  --warning: gold;
+}
+
+/* ============================================
+   High Contrast Theme — WCAG AAA (7:1 ratio)
+   Pure black/white with bright yellow accents.
+   All interactive elements have thick visible
+   borders and enhanced focus indicators.
+   ============================================ */
+[data-theme='high-contrast'] {
+  /* Background — pure black for maximum contrast */
+  --bg: #000000;
+  --bg-2: #0a0a0a;
+  --bg-3: #141414;
+  --bg-elevated: #1a1a1a;
+  --bg-invert: #ffffff;
+
+  /* Text — pure white for 21:1 contrast ratio */
+  --text: #ffffff;
+  --text-2: #e0e0e0;
+  --text-3: #c0c0c0;
+  --text-4: #a0a0a0;
+  --text-invert: #000000;
+
+  /* Borders — white, highly visible */
+  --border: #ffffff;
+  --border-2: #e0e0e0;
+
+  /* Accent — bright yellow (21:1 on black, WCAG AAA) */
+  --accent: #ffff00;
+  --accent-2: #ffdd00;
+  --accent-strong: #ffff00;
+  --accent-strong-2: #eeee00;
+  --accent-muted: #cccc00;
+
+  /* Glass — opaque for readability, no transparency tricks */
+  --glass: rgba(0, 0, 0, 0.92);
+  --glass-border: rgba(255, 255, 255, 0.6);
+  --glass-heavy: rgba(0, 0, 0, 0.96);
+
+  /* Semantic — high-contrast safe palette */
+  --success: #00ff00;
+  --success-light: #66ff66;
+  --error: #ff3333;
+  --error-light: #ff6666;
+  --warning: #ffff00;
+  --warning-light: #ffff66;
+  --info: #00ccff;
+  --info-light: #66ddff;
+
+  /* Overlay */
+  --overlay: rgba(0, 0, 0, 0.8);
+  --overlay-heavy: rgba(0, 0, 0, 0.95);
+
+  /* Focus ring */
+  --border-focus: #ffff00;
+
+  /* High-contrast specific tokens */
+  --hc-border-width: 2px;
+  --hc-focus-width: 3px;
+  --hc-body-weight: 500;
+  --hc-heading-weight: 700;
+}
+
+/* High-contrast global overrides — thick borders, bold text, enhanced focus */
+[data-theme='high-contrast'] body {
+  font-weight: var(--hc-body-weight, 500);
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+}
+
+[data-theme='high-contrast'] body::before {
+  /* Remove subtle ambient glow — distracting in high-contrast mode */
+  display: none;
+}
+
+[data-theme='high-contrast'] h1,
+[data-theme='high-contrast'] h2,
+[data-theme='high-contrast'] h3,
+[data-theme='high-contrast'] h4,
+[data-theme='high-contrast'] h5,
+[data-theme='high-contrast'] h6 {
+  font-weight: var(--hc-heading-weight, 700);
+}
+
+[data-theme='high-contrast'] a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+[data-theme='high-contrast'] a:hover {
+  text-decoration-thickness: 3px;
+}
+
+[data-theme='high-contrast'] :focus-visible {
+  outline: var(--hc-focus-width, 3px) solid var(--accent, #ffff00);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+[data-theme='high-contrast'] button,
+[data-theme='high-contrast'] input,
+[data-theme='high-contrast'] textarea,
+[data-theme='high-contrast'] select {
+  border: var(--hc-border-width, 2px) solid var(--border, #ffffff);
+}
+
+[data-theme='high-contrast'] ::selection {
+  background: #ffff00;
+  color: #000000;
+}
+
+[data-theme='high-contrast'] ::-webkit-scrollbar-thumb {
+  background: #ffffff;
+  border: 1px solid #000000;
+}
+
+/* ============================================
+   Colorblind Theme — IBM Colorblind-Safe Palette
+   Deuteranopia & Protanopia safe. Replaces all
+   red/green signaling with blue/orange pairs.
+   IBM palette: blue #648FFF, purple #785EF0,
+   magenta #DC267F, orange #FE6100, yellow #FFB000
+   ============================================ */
+[data-theme='colorblind'] {
+  /* Background — same dark base as primary */
+  --bg: #030306;
+  --bg-2: #08080e;
+  --bg-3: #0f0f18;
+  --bg-elevated: #1a1a2e;
+  --bg-invert: #f2f2f8;
+
+  /* Text — unchanged from default */
+  --text: #f2f2f8;
+  --text-2: #a8a8bc;
+  --text-3: #9494a8;
+  --text-4: #5a5a70;
+  --text-invert: #030306;
+
+  /* Borders — unchanged */
+  --border: #18182a;
+  --border-2: #24243a;
+
+  /* Accent — IBM blue (distinguishable for all CVD types) */
+  --accent: #648fff;
+  --accent-2: #85a8ff;
+  --accent-strong: #4a7aff;
+  --accent-strong-2: #3366ff;
+  --accent-muted: #a3bfff;
+
+  /* Glass — unchanged */
+  --glass: rgba(12, 12, 22, 0.55);
+  --glass-border: rgba(100, 143, 255, 0.08);
+  --glass-heavy: rgba(12, 12, 22, 0.7);
+
+  /* Semantic — colorblind-safe replacements (IBM palette):
+     success: blue (not green) — clearly distinguishable
+     error: orange (not red) — visible to deuteranopes/protanopes
+     warning: yellow — already safe for all CVD types
+     info: purple — distinct from blue success */
+  --success: #648fff;
+  --success-light: #85a8ff;
+  --error: #fe6100;
+  --error-light: #ff8844;
+  --warning: #ffb000;
+  --warning-light: #ffc840;
+  --info: #785ef0;
+  --info-light: #9a80ff;
+
+  /* Extended IBM palette tokens for components */
+  --cb-blue: #648fff;
+  --cb-purple: #785ef0;
+  --cb-magenta: #dc267f;
+  --cb-orange: #fe6100;
+  --cb-yellow: #ffb000;
+
+  /* Accent alpha scale (IBM blue based) */
+  --accent-alpha-3: rgba(100, 143, 255, 0.03);
+  --accent-alpha-5: rgba(100, 143, 255, 0.05);
+  --accent-alpha-6: rgba(100, 143, 255, 0.06);
+  --accent-alpha-8: rgba(100, 143, 255, 0.08);
+  --accent-alpha-10: rgba(100, 143, 255, 0.1);
+  --accent-alpha-12: rgba(100, 143, 255, 0.12);
+  --accent-alpha-15: rgba(100, 143, 255, 0.15);
+  --accent-alpha-20: rgba(100, 143, 255, 0.2);
+  --accent-alpha-25: rgba(100, 143, 255, 0.25);
+  --accent-alpha-30: rgba(100, 143, 255, 0.3);
+  --accent-alpha-40: rgba(100, 143, 255, 0.4);
+}
+
+/* Colorblind theme: ensure links use the safe blue */
+[data-theme='colorblind'] a {
+  color: var(--cb-blue, #648fff);
+}
+
+/* Auto-detect: apply high-contrast theme when user has
+   system-level contrast preference enabled (Windows High
+   Contrast, macOS Increase Contrast) and no explicit
+   theme override is saved. The ThemeScript handles localStorage
+   overrides, so this only fires as a baseline. */
+@media (prefers-contrast: more) {
+  :root:not([data-theme]) {
+    --bg: #000000;
+    --bg-2: #0a0a0a;
+    --bg-3: #141414;
+    --text: #ffffff;
+    --text-2: #e0e0e0;
+    --text-3: #c0c0c0;
+    --border: #ffffff;
+    --border-2: #e0e0e0;
+    --accent: #ffff00;
+    --accent-2: #ffdd00;
+    --glass: rgba(0, 0, 0, 0.92);
+    --glass-border: rgba(255, 255, 255, 0.6);
+    --success: #00ff00;
+    --error: #ff3333;
+    --warning: #ffff00;
+    --border-focus: #ffff00;
+  }
+
+  :root:not([data-theme]) body {
+    font-weight: 500;
+    -webkit-font-smoothing: auto;
+    -moz-osx-font-smoothing: auto;
+  }
+
+  :root:not([data-theme]) :focus-visible {
+    outline: 3px solid #ffff00;
+    outline-offset: 2px;
+  }
 }
 
 /* ============================================
@@ -255,6 +632,24 @@ input,
 textarea,
 select {
   font: inherit;
+}
+
+/* ============================================
+   Accessibility Utilities
+   ============================================ */
+
+/* Screen-reader only: visually hidden but accessible to assistive tech.
+   Follows the standard clip-rect pattern recommended by WebAIM. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 /* ============================================
@@ -451,22 +846,119 @@ html {
   }
 }
 
-/* Print styles */
+/* ============================================
+   Print Styles — Agent 042 PRINT-STYLIST
+   Optimized for paper output with ink-saving
+   ============================================ */
 @media print {
+  /* Reset background and colors for print */
+  :root {
+    --bg: #ffffff;
+    --bg-2: #ffffff;
+    --bg-3: #f8f8f8;
+    --text: #000000;
+    --text-2: #333333;
+    --text-3: #666666;
+    --border: #cccccc;
+    --border-2: #dddddd;
+    --accent: #4338ca;
+    --glass: transparent;
+    --glass-border: transparent;
+  }
+
+  *,
+  *::before,
+  *::after {
+    background: transparent !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body {
+    font-size: 12pt;
+    line-height: 1.5;
+    margin: 0;
+    padding: 0;
+  }
+
   body::before {
     display: none;
   }
 
+  /* Hide non-print elements */
   .skip-link,
   header[role="banner"],
   nav,
+  footer,
   .hamburger,
-  .mobileMenu {
+  .mobileMenu,
+  .cookie-banner,
+  button:not([data-print]),
+  [role="dialog"],
+  [data-no-print] {
     display: none !important;
   }
 
   main {
     padding-top: 0 !important;
+  }
+
+  /* Page break controls */
+  h1, h2, h3, h4 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  table, figure, img {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  p, li {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Show link URLs in print */
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    font-weight: normal;
+    color: #666 !important;
+  }
+
+  a[href^="#"]::after,
+  a[href^="javascript"]::after {
+    content: "";
+  }
+
+  /* Ensure images are reasonably sized */
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Print-friendly tables */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  th, td {
+    border: 1px solid #ccc !important;
+    padding: 0.5em;
+  }
+
+  /* Page margins */
+  @page {
+    margin: 2cm;
+  }
+
+  @page :first {
+    margin-top: 3cm;
   }
 }
 
@@ -549,30 +1041,79 @@ html {
 .reveal-delay-3 { animation-delay: 0.3s; }
 .reveal-delay-4 { animation-delay: 0.4s; }
 
-/* Fallback for browsers without animation-timeline */
+/* ============================================
+   Fallback for browsers without animation-timeline
+   (Firefox, Safari) — IntersectionObserver adds
+   .scroll-revealed class; CSS transitions handle
+   the visual animation.
+   ============================================ */
+
 @supports not (animation-timeline: view()) {
+  /* Remove the native scroll-driven animation */
   .reveal,
   .reveal-scale,
   .reveal-left,
   .reveal-right {
     animation: none;
+  }
+
+  /* Start hidden (will be revealed by IntersectionObserver) */
+  .reveal,
+  .reveal-left,
+  .reveal-right {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .reveal-scale {
+    opacity: 0;
+    transform: scale(0.95);
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .reveal-left {
+    transform: translateX(-30px);
+  }
+
+  .reveal-right {
+    transform: translateX(30px);
+  }
+
+  /* Revealed state (added by IntersectionObserver via JS) */
+  .reveal.scroll-revealed,
+  .reveal-scale.scroll-revealed,
+  .reveal-left.scroll-revealed,
+  .reveal-right.scroll-revealed {
     opacity: 1;
     transform: none;
   }
-}
 
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
+  /* Elements with [data-scroll-reveal] also get the fallback */
+  [data-scroll-reveal] {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .reveal,
-  .reveal-scale,
-  .reveal-left,
-  .reveal-right {
-    animation: none !important;
-    opacity: 1 !important;
-    transform: none !important;
+  [data-scroll-reveal="scale"] {
+    transform: scale(0.95);
+  }
+
+  [data-scroll-reveal="left"] {
+    transform: translateX(-30px);
+  }
+
+  [data-scroll-reveal="right"] {
+    transform: translateX(30px);
+  }
+
+  [data-scroll-reveal].scroll-revealed {
+    opacity: 1;
+    transform: none;
   }
 }
 
@@ -593,3 +1134,83 @@ html {
 [data-stagger] > *:nth-child(10) { animation-delay: 0.5s; }
 [data-stagger] > *:nth-child(11) { animation-delay: 0.55s; }
 [data-stagger] > *:nth-child(12) { animation-delay: 0.6s; }
+
+/* ============================================
+   Motion-Safe Utility Class
+   Elements with .motion-safe only animate
+   when prefers-reduced-motion is NOT reduce.
+   ============================================ */
+
+.motion-safe {
+  animation: none;
+  transition: none;
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .motion-safe {
+    animation: revert;
+    transition: revert;
+    opacity: revert;
+    transform: revert;
+  }
+}
+
+/* ============================================
+   Motion-Essential Utility Class
+   Loading spinners, progress bars, etc.
+   Not removed under reduced motion, but slowed.
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-essential {
+    animation-duration: 3s !important;
+    transition-duration: 3s !important;
+  }
+}
+
+/* ============================================
+   Comprehensive prefers-reduced-motion
+   Global catch-all: disables decorative
+   animations and transitions site-wide.
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  /* Global scroll behavior */
+  html {
+    scroll-behavior: auto;
+  }
+
+  /* Disable all decorative animations and transitions globally */
+  *:not(.motion-essential),
+  *:not(.motion-essential)::before,
+  *:not(.motion-essential)::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+
+  /* Ensure visibility — no element left hidden */
+  .reveal,
+  .reveal-scale,
+  .reveal-left,
+  .reveal-right,
+  [data-scroll-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  /* Stagger children: no delay */
+  [data-stagger] > * {
+    animation-delay: 0ms !important;
+  }
+
+  /* Hover transforms: disable */
+  *:hover {
+    transform: none !important;
+  }
+}

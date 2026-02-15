@@ -79,7 +79,7 @@ function updateConnectionStatus(connected: boolean, testing = false): void {
   const indicator = document.getElementById('statusIndicator');
   const text = document.getElementById('statusText');
 
-  if (!indicator || !text) return;
+  if (!indicator || !text) {return;}
 
   if (testing) {
     indicator.className = 'status-indicator';
@@ -98,7 +98,7 @@ function updateConnectionStatus(connected: boolean, testing = false): void {
 
 function showSaveStatus(): void {
   const saveStatus = document.getElementById('saveStatus');
-  if (!saveStatus) return;
+  if (!saveStatus) {return;}
 
   saveStatus.style.display = 'flex';
 
@@ -117,10 +117,10 @@ function populateForm(config: ExtensionConfig): void {
   const notificationsInput = document.getElementById('notificationsEnabled') as HTMLInputElement;
   const contentScriptInput = document.getElementById('contentScriptEnabled') as HTMLInputElement;
 
-  if (tallowUrlInput) tallowUrlInput.value = config.tallowUrl;
-  if (autoOpenAppInput) autoOpenAppInput.checked = config.autoOpenApp;
-  if (notificationsInput) notificationsInput.checked = config.notificationsEnabled;
-  if (contentScriptInput) contentScriptInput.checked = config.contentScriptEnabled;
+  if (tallowUrlInput) {tallowUrlInput.value = config.tallowUrl;}
+  if (autoOpenAppInput) {autoOpenAppInput.checked = config.autoOpenApp;}
+  if (notificationsInput) {notificationsInput.checked = config.notificationsEnabled;}
+  if (contentScriptInput) {contentScriptInput.checked = config.contentScriptEnabled;}
 }
 
 function getFormData(): ExtensionConfig {

@@ -1,0 +1,320 @@
+/* ============================================
+   RouteErrorFallback -- CSS Module
+   Uses Tallow design tokens from globals.css
+   ============================================ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  padding: var(--gap-lg, 2rem);
+  text-align: center;
+  background: var(--bg, #030306);
+  color: var(--text, #f2f2f8);
+}
+
+/* ============================================
+   Error Icon
+   ============================================ */
+
+.iconBox {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-xl, 16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--gap-md, 1.5rem);
+  flex-shrink: 0;
+}
+
+.iconBox svg {
+  width: 28px;
+  height: 28px;
+}
+
+/* Variant colors */
+.iconError {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: var(--error, #ef4444);
+}
+
+.iconWarning {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  color: var(--warning, #f59e0b);
+}
+
+.iconWifi {
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  color: var(--accent, #6366f1);
+}
+
+.iconLock {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: var(--error, #ef4444);
+}
+
+.iconShield {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  color: var(--warning, #f59e0b);
+}
+
+/* ============================================
+   Headline & Guidance Text
+   ============================================ */
+
+.headline {
+  font-family: var(--font-playfair, 'Playfair Display', Georgia, serif);
+  font-size: var(--font-size-2xl, 1.75rem);
+  font-weight: 400;
+  font-style: italic;
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.02em;
+  color: var(--text, #f2f2f8);
+}
+
+.guidance {
+  color: var(--text-2, #9494a8);
+  max-width: 440px;
+  margin: 0 0 var(--gap-md, 1.5rem);
+  line-height: 1.6;
+  font-size: var(--font-size-sm, 0.95rem);
+}
+
+/* ============================================
+   Auto-Retry Countdown
+   ============================================ */
+
+.retryStatus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: var(--gap-md, 1.5rem);
+  padding: 0.625rem 1.25rem;
+  background: rgba(99, 102, 241, 0.06);
+  border: 1px solid rgba(99, 102, 241, 0.12);
+  border-radius: var(--radius-pill, 60px);
+  font-size: var(--font-size-xs, 0.8125rem);
+  color: var(--accent-2, #818cf8);
+}
+
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(99, 102, 241, 0.2);
+  border-top-color: var(--accent, #6366f1);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.retryExhausted {
+  color: var(--text-3, #9494a8);
+  font-size: var(--font-size-xs, 0.8125rem);
+  margin-bottom: var(--gap-md, 1.5rem);
+}
+
+/* ============================================
+   Action Buttons
+   ============================================ */
+
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btnPrimary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.75rem 1.75rem;
+  background: var(--accent, #6366f1);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-pill, 60px);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: all var(--duration-fast, 0.15s) var(--ease, cubic-bezier(0.4, 0, 0.2, 1));
+  text-decoration: none;
+}
+
+.btnPrimary:hover {
+  background: var(--accent-2, #818cf8);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.25);
+}
+
+.btnPrimary:focus-visible {
+  outline: 2px solid var(--accent, #6366f1);
+  outline-offset: 2px;
+}
+
+.btnPrimary:active {
+  transform: translateY(0);
+}
+
+.btnGlass {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.75rem 1.75rem;
+  background: var(--glass, rgba(12, 12, 22, 0.55));
+  color: var(--text, #f2f2f8);
+  border: 1px solid var(--border, #18182a);
+  border-radius: var(--radius-pill, 60px);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--duration-fast, 0.15s) var(--ease, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+.btnGlass:hover {
+  background: rgba(12, 12, 22, 0.7);
+  border-color: rgba(99, 102, 241, 0.2);
+  transform: translateY(-1px);
+}
+
+.btnGlass:focus-visible {
+  outline: 2px solid var(--accent, #6366f1);
+  outline-offset: 2px;
+}
+
+.btnGlass:active {
+  transform: translateY(0);
+}
+
+/* ============================================
+   Copy / Report Feedback
+   ============================================ */
+
+.copyFeedback {
+  margin-top: var(--gap-sm, 0.75rem);
+  font-size: var(--font-size-xs, 0.8125rem);
+  color: var(--success, #22c55e);
+  min-height: 1.25rem;
+}
+
+/* ============================================
+   Error Kind Badge
+   ============================================ */
+
+.kindBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-pill, 60px);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: var(--gap-sm, 0.75rem);
+}
+
+.badgeNetwork {
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--accent-2, #818cf8);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+}
+
+.badgeCrypto {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.15);
+}
+
+.badgeTransfer {
+  background: rgba(245, 158, 11, 0.1);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.15);
+}
+
+.badgePermission {
+  background: rgba(245, 158, 11, 0.1);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.15);
+}
+
+.badgeUnknown {
+  background: rgba(148, 148, 168, 0.1);
+  color: var(--text-3, #9494a8);
+  border: 1px solid rgba(148, 148, 168, 0.15);
+}
+
+/* ============================================
+   Context line (page name)
+   ============================================ */
+
+.contextLine {
+  font-size: var(--font-size-xs, 0.8125rem);
+  color: var(--text-3, #9494a8);
+  margin-bottom: var(--gap-sm, 0.75rem);
+}
+
+/* ============================================
+   Mobile (<768px)
+   ============================================ */
+
+@media (max-width: 767px) {
+  .container {
+    padding: var(--gap-md, 1.5rem);
+    min-height: 70vh;
+  }
+
+  .headline {
+    font-size: var(--font-size-xl, 1.5rem);
+  }
+
+  .guidance {
+    font-size: var(--font-size-xs, 0.875rem);
+  }
+
+  .actions {
+    flex-direction: column;
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .btnPrimary,
+  .btnGlass {
+    width: 100%;
+  }
+}
+
+/* ============================================
+   Reduced Motion
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+    opacity: 0.6;
+  }
+
+  .btnPrimary:hover,
+  .btnGlass:hover {
+    transform: none;
+  }
+}

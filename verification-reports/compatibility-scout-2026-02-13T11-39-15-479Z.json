@@ -1,0 +1,49 @@
+{
+  "timestamp": "2026-02-13T11:39:15.477Z",
+  "checks": [
+    {
+      "name": "Compatibility baseline files exist",
+      "pass": true,
+      "details": [
+        "policy, config, matrix, and fallback implementation files present"
+      ]
+    },
+    {
+      "name": "Required browser/device projects are declared",
+      "pass": true,
+      "details": [
+        "projects present: chromium, firefox, webkit, mobile-chrome, mobile-safari"
+      ]
+    },
+    {
+      "name": "Cross-browser matrix evidence meets compatibility threshold",
+      "pass": true,
+      "details": [
+        "latest report: reports/e2e-infiltration-2026-02-13T11-23-58-093Z.json",
+        "matrix summary: passed=1017, skipped=34, flaky=2, failed=0"
+      ]
+    },
+    {
+      "name": "Worker crypto operations retain main-thread fallback",
+      "pass": true,
+      "details": [
+        "worker bridge keeps crypto fallback imports and fallback execution paths"
+      ]
+    },
+    {
+      "name": "WASM loader retains graceful JS fallback behavior",
+      "pass": true,
+      "details": [
+        "WASM loader performs support detection and JS fallback on unsupported/error states"
+      ]
+    },
+    {
+      "name": "Transport selector preserves fallback chain coverage",
+      "pass": true,
+      "details": [
+        "transport selector keeps webtransport/webrtc/websocket chain with fallback controls"
+      ]
+    }
+  ],
+  "passed": true
+}

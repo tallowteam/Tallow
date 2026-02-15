@@ -3,9 +3,8 @@
  * Tests session management and caching functionality
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DeltaSyncManager, getDefaultManager, resetDefaultManager } from './delta-sync-manager';
-import type { FileSignatures } from './delta-sync';
 
 describe('DeltaSyncManager', () => {
   let manager: DeltaSyncManager;
@@ -442,7 +441,7 @@ describe('DeltaSyncManager', () => {
 
       // Sender computes signatures
       const v1Signatures = await manager.initDeltaSync(fileId, v1);
-      const signaturesJson = manager.exportSignatures(fileId)!;
+      manager.exportSignatures(fileId)!;
 
       // Send signatures to peer...
 

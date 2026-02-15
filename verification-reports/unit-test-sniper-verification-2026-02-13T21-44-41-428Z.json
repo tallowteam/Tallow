@@ -1,0 +1,50 @@
+{
+  "timestamp": "2026-02-13T21:44:41.427Z",
+  "checks": [
+    {
+      "name": "Policy, test, hook, config, and workflow files exist",
+      "pass": true,
+      "details": [
+        "all required files for AGENT 076 verification are present"
+      ]
+    },
+    {
+      "name": "Crypto vector suites contain official NIST/FIPS and BLAKE3 vectors",
+      "pass": true,
+      "details": [
+        "required official vectors found in tests/unit/crypto/blake3.test.ts and tests/unit/crypto/sha3.test.ts"
+      ]
+    },
+    {
+      "name": "Crypto vector suites do not include skipped tests",
+      "pass": true,
+      "details": [
+        "no skip markers detected in required crypto vector suites"
+      ]
+    },
+    {
+      "name": "Hook lifecycle tests and runtime cleanup are enforced",
+      "pass": true,
+      "details": [
+        "hook lifecycle suite covers mount/unmount for file-transfer/onboarding/notifications and runtime timeout cleanup exists"
+      ]
+    },
+    {
+      "name": "Vitest coverage thresholds enforce 90/90/90/80 floor",
+      "pass": true,
+      "details": [
+        "vitest.config.ts includes lines/statements/functions=90 and branches=80 thresholds"
+      ]
+    },
+    {
+      "name": "Unit-test-sniper gate is wired in package scripts and workflows",
+      "pass": true,
+      "details": [
+        "verify:unit:test-sniper: node scripts/verify-unit-test-sniper.js",
+        ".github/workflows/ci.yml runs unit-test-sniper verification",
+        ".github/workflows/release.yml runs unit-test-sniper verification"
+      ]
+    }
+  ],
+  "passed": true
+}

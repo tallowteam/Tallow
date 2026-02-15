@@ -20,7 +20,7 @@ async function main() {
         if (rect.height > 50 && rect.height < 300 && rect.width > 200) {
           cardCount++;
           const bottom = rect.bottom + window.scrollY;
-          if (bottom > lastVisibleBottom) lastVisibleBottom = bottom;
+          if (bottom > lastVisibleBottom) {lastVisibleBottom = bottom;}
         }
       }
     });

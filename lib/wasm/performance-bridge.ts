@@ -241,7 +241,7 @@ export class WasmPerformanceBridge {
   }
 
   private async encryptJS(
-    algorithm: string,
+    _algorithm: string,
     key: Uint8Array,
     data: Uint8Array,
     nonce?: Uint8Array
@@ -329,7 +329,7 @@ export class WasmPerformanceBridge {
   }
 
   private async decryptJS(
-    algorithm: string,
+    _algorithm: string,
     key: Uint8Array,
     data: Uint8Array,
     nonce: Uint8Array
@@ -525,7 +525,6 @@ export class WasmPerformanceBridge {
     const testData = crypto.getRandomValues(new Uint8Array(1024 * 1024)); // 1MB test data
     const testKey = crypto.getRandomValues(new Uint8Array(32));
     const testSalt = crypto.getRandomValues(new Uint8Array(16));
-    const testNonce = crypto.getRandomValues(new Uint8Array(12));
 
     // Hash benchmark
     await this.benchmarkHash('sha256', testData);

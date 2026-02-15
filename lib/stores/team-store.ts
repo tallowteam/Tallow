@@ -259,26 +259,29 @@ export const useTeamStore = create<TeamStoreState>()(
             });
           },
 
-          updateTeamSettings: (teamId, settings) => {
-            set((state) => {
-              const teamIndex = state.teams.findIndex((t) => t.id === teamId);
-              if (teamIndex < 0) {return state;}
+	          updateTeamSettings: (teamId, settings) => {
+	            set((state) => {
+	              const teamIndex = state.teams.findIndex((t) => t.id === teamId);
+	              if (teamIndex < 0) {return state;}
 
-              const newTeams = [...state.teams];
-              newTeams[teamIndex] = {
-                ...newTeams[teamIndex],
-                settings: { ...newTeams[teamIndex].settings, ...settings },
-              };
+	              const newTeams = [...state.teams];
+	              const existingTeam = newTeams[teamIndex];
+	              if (!existingTeam) {return state;}
+	              const updatedTeam: Team = {
+	                ...existingTeam,
+	                settings: { ...existingTeam.settings, ...settings },
+	              };
+	              newTeams[teamIndex] = updatedTeam;
 
-              return {
-                teams: newTeams,
-                activeTeam:
-                  state.activeTeam?.id === teamId
-                    ? newTeams[teamIndex]
-                    : state.activeTeam,
-              };
-            });
-          },
+	              return {
+	                teams: newTeams,
+	                activeTeam:
+	                  state.activeTeam?.id === teamId
+	                    ? updatedTeam
+	                    : state.activeTeam,
+	              };
+	            });
+	          },
 
           // Member Management
           addMember: (member) => {
@@ -400,7 +403,7 @@ function generateTeamCode(): string {
   crypto.getRandomValues(randomBytes);
   let code = '';
   for (let i = 0; i < 8; i++) {
-    code += chars.charAt(randomBytes[i] % chars.length);
+    code += chars.charAt((randomBytes[i] ?? 0) % chars.length);
   }
   return code;
 }

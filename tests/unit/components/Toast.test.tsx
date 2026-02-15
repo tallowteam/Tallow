@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { Toast, type ToastProps } from '@/components/ui/Toast';
 
 describe('Toast Component', () => {
@@ -16,38 +16,48 @@ describe('Toast Component', () => {
   });
 
   afterEach(() => {
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
+    vi.clearAllTimers();
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
-  const defaultProps: ToastProps = {
+  const createDefaultProps = (): ToastProps => ({
     id: 'toast-1',
     message: 'Test message',
     onClose: mockOnClose,
-  };
+  });
 
   describe('Rendering', () => {
     it('renders toast with message', () => {
+      const defaultProps = createDefaultProps();
       render(<Toast {...defaultProps} />);
       expect(screen.getByText('Test message')).toBeInTheDocument();
     });
 
     it('renders toast with title and message', () => {
+      const defaultProps = createDefaultProps();
       render(<Toast {...defaultProps} title="Success" message="Operation completed" />);
       expect(screen.getByText('Success')).toBeInTheDocument();
       expect(screen.getByText('Operation completed')).toBeInTheDocument();
     });
 
     it('renders toast without title', () => {
+      const defaultProps = createDefaultProps();
       render(<Toast {...defaultProps} />);
       expect(screen.getByText('Test message')).toBeInTheDocument();
     });
 
     it('has status role for accessibility', () => {
+      const defaultProps = createDefaultProps();
       render(<Toast {...defaultProps} />);
       expect(screen.getByRole('status')).toBeInTheDocument();
     });
 
     it('has correct aria attributes', () => {
+      const defaultProps = createDefaultProps();
       render(<Toast {...defaultProps} />);
       const toast = screen.getByRole('status');
       expect(toast).toHaveAttribute('aria-live', 'polite');
@@ -65,11 +75,13 @@ describe('Toast Component', () => {
 
     variants.forEach((variant) => {
       it(`renders ${variant} variant`, () => {
+        const defaultProps = createDefaultProps();
         render(<Toast {...defaultProps} variant={variant} />);
         expect(screen.getByRole('status')).toBeInTheDocument();
       });
 
       it(`shows ${variant} icon`, () => {
+        const defaultProps = createDefaultProps();
         render(<Toast {...defaultProps} variant={variant} />);
         const toast = screen.getByRole('status');
         const icon = toast.querySelector('svg');
@@ -78,6 +90,7 @@ describe('Toast Component', () => {
     });
 
     it('defaults to info variant', () => {
+      const defaultProps = createDefaultProps();
       render(<Toast {...defaultProps} />);
       expect(screen.getByRole('status')).toBeInTheDocument();
     });
@@ -85,60 +98,61 @@ describe('Toast Component', () => {
 
   describe('Manual Dismiss', () => {
     it('renders close button', () => {
+      const defaultProps = createDefaultProps();
       render(<Toast {...defaultProps} />);
       expect(screen.getByLabelText('Close notification')).toBeInTheDocument();
     });
 
-    it('calls onClose when close button is clicked', async () => {
+    it('calls onClose when close button is clicked', () => {
+      const defaultProps = createDefaultProps();
       render(<Toast {...defaultProps} />);
 
       const closeButton = screen.getByLabelText('Close notification');
       fireEvent.click(closeButton);
 
-      // Wait for animation
-      vi.advanceTimersByTime(200);
-
-      await waitFor(() => {
-        expect(mockOnClose).toHaveBeenCalledWith('toast-1');
+      act(() => {
+        vi.advanceTimersByTime(200);
       });
+      expect(mockOnClose).toHaveBeenCalledWith('toast-1');
     });
   });
 
   describe('Auto-Dismiss', () => {
-    it('auto-dismisses after default duration', async () => {
+    it('auto-dismisses after default duration', () => {
+      const defaultProps = createDefaultProps();
       render(<Toast {...defaultProps} />);
 
-      // Fast-forward past default 5000ms
-      vi.advanceTimersByTime(5000);
-
-      // Wait for animation
-      vi.advanceTimersByTime(200);
-
-      await waitFor(() => {
-        expect(mockOnClose).toHaveBeenCalledWith('toast-1');
+      act(() => {
+        // 5000ms auto-dismiss + 200ms exit animation
+        vi.advanceTimersByTime(5200);
       });
+      expect(mockOnClose).toHaveBeenCalledWith('toast-1');
     });
 
-    it('auto-dismisses after custom duration', async () => {
+    it('auto-dismisses after custom duration', () => {
+      const defaultProps = createDefaultProps();
       render(<Toast {...defaultProps} duration={3000} />);
 
-      vi.advanceTimersByTime(3000);
-      vi.advanceTimersByTime(200);
-
-      await waitFor(() => {
-        expect(mockOnClose).toHaveBeenCalledWith('toast-1');
+      act(() => {
+        // 3000ms auto-dismiss + 200ms exit animation
+        vi.advanceTimersByTime(3200);
       });
+      expect(mockOnClose).toHaveBeenCalledWith('toast-1');
     });
 
     it('does not auto-dismiss when duration is Infinity', async () => {
+      const defaultProps = createDefaultProps();
       render(<Toast {...defaultProps} duration={Infinity} />);
 
-      vi.advanceTimersByTime(10000);
+      act(() => {
+        vi.advanceTimersByTime(10000);
+      });
 
       expect(mockOnClose).not.toHaveBeenCalled();
     });
 
     it('shows progress bar when duration is set', () => {
+      const defaultProps = createDefaultProps();
       render(<Toast {...defaultProps} duration={5000} />);
       const toast = screen.getByRole('status');
       const progressBar = toast.querySelector('[aria-hidden="true"]');
@@ -146,6 +160,7 @@ describe('Toast Component', () => {
     });
 
     it('does not show progress bar when duration is Infinity', () => {
+      const defaultProps = createDefaultProps();
       render(<Toast {...defaultProps} duration={Infinity} />);
       const toast = screen.getByRole('status');
       // Progress bar should not exist
@@ -160,6 +175,7 @@ describe('Toast Component', () => {
 
   describe('Action Button', () => {
     it('renders single action button', () => {
+      const defaultProps = createDefaultProps();
       const handleAction = vi.fn();
       render(
         <Toast
@@ -171,6 +187,7 @@ describe('Toast Component', () => {
     });
 
     it('calls action onClick handler', async () => {
+      const defaultProps = createDefaultProps();
       const handleAction = vi.fn();
       render(
         <Toast
@@ -185,7 +202,8 @@ describe('Toast Component', () => {
       expect(handleAction).toHaveBeenCalledTimes(1);
     });
 
-    it('closes toast after action is clicked', async () => {
+    it('closes toast after action is clicked', () => {
+      const defaultProps = createDefaultProps();
       const handleAction = vi.fn();
       render(
         <Toast
@@ -197,14 +215,14 @@ describe('Toast Component', () => {
       const actionButton = screen.getByRole('button', { name: 'Action' });
       fireEvent.click(actionButton);
 
-      vi.advanceTimersByTime(200);
-
-      await waitFor(() => {
-        expect(mockOnClose).toHaveBeenCalledWith('toast-1');
+      act(() => {
+        vi.advanceTimersByTime(200);
       });
+      expect(mockOnClose).toHaveBeenCalledWith('toast-1');
     });
 
     it('renders multiple action buttons', () => {
+      const defaultProps = createDefaultProps();
       const handleAction1 = vi.fn();
       const handleAction2 = vi.fn();
       render(
@@ -224,6 +242,7 @@ describe('Toast Component', () => {
 
   describe('Preview Content', () => {
     it('renders image preview', () => {
+      const defaultProps = createDefaultProps();
       render(
         <Toast
           {...defaultProps}
@@ -240,6 +259,7 @@ describe('Toast Component', () => {
     });
 
     it('renders file preview', () => {
+      const defaultProps = createDefaultProps();
       render(
         <Toast
           {...defaultProps}
@@ -255,6 +275,7 @@ describe('Toast Component', () => {
     });
 
     it('renders transfer preview with progress', () => {
+      const defaultProps = createDefaultProps();
       render(
         <Toast
           {...defaultProps}
@@ -270,6 +291,7 @@ describe('Toast Component', () => {
     });
 
     it('hides icon when preview is shown', () => {
+      const defaultProps = createDefaultProps();
       render(
         <Toast
           {...defaultProps}
@@ -282,13 +304,14 @@ describe('Toast Component', () => {
       );
       const toast = screen.getByRole('status');
       // Icon container should not exist
-      const iconContainer = toast.querySelector('.iconContainer');
+      const iconContainer = toast.querySelector('[class*="iconContainer"]');
       expect(iconContainer).not.toBeInTheDocument();
     });
   });
 
   describe('Data Attributes', () => {
     it('adds data-toast-id attribute', () => {
+      const defaultProps = createDefaultProps();
       render(<Toast {...defaultProps} />);
       const toast = screen.getByRole('status');
       expect(toast).toHaveAttribute('data-toast-id', 'toast-1');
@@ -297,6 +320,7 @@ describe('Toast Component', () => {
 
   describe('Exit Animation', () => {
     it('applies exiting class before removing', async () => {
+      const defaultProps = createDefaultProps();
       const { container } = render(<Toast {...defaultProps} />);
 
       const closeButton = screen.getByLabelText('Close notification');
@@ -304,12 +328,13 @@ describe('Toast Component', () => {
 
       // Check for exiting class immediately
       const toast = container.querySelector('[role="status"]');
-      expect(toast).toHaveClass('exiting');
+      expect(toast?.className).toMatch(/\bexiting\b|_exiting_/);
     });
   });
 
   describe('Ref Forwarding', () => {
     it('forwards ref to toast element', () => {
+      const defaultProps = createDefaultProps();
       const ref = { current: null as HTMLDivElement | null };
       render(<Toast {...defaultProps} ref={ref} />);
       expect(ref.current).toBeInstanceOf(HTMLDivElement);
@@ -319,11 +344,13 @@ describe('Toast Component', () => {
 
   describe('Accessibility', () => {
     it('close button has accessible label', () => {
+      const defaultProps = createDefaultProps();
       render(<Toast {...defaultProps} />);
       expect(screen.getByLabelText('Close notification')).toBeInTheDocument();
     });
 
     it('icons have aria-hidden attribute', () => {
+      const defaultProps = createDefaultProps();
       render(<Toast {...defaultProps} variant="success" />);
       const toast = screen.getByRole('status');
       const icon = toast.querySelector('svg');
@@ -331,10 +358,11 @@ describe('Toast Component', () => {
     });
 
     it('progress bar has aria-hidden attribute', () => {
+      const defaultProps = createDefaultProps();
       render(<Toast {...defaultProps} duration={5000} />);
       const toast = screen.getByRole('status');
       const progressBar = Array.from(toast.querySelectorAll('[aria-hidden="true"]')).find(
-        el => el.className.includes('progress')
+        el => String(el.className).includes('progress')
       );
       expect(progressBar).toBeInTheDocument();
     });
@@ -342,6 +370,7 @@ describe('Toast Component', () => {
 
   describe('Rich Toast Styling', () => {
     it('applies rich toast class when preview exists', () => {
+      const defaultProps = createDefaultProps();
       render(
         <Toast
           {...defaultProps}
@@ -352,13 +381,14 @@ describe('Toast Component', () => {
         />
       );
       const toast = screen.getByRole('status');
-      expect(toast).toHaveClass('richToast');
+      expect(toast.className).toMatch(/\brichToast\b|_richToast_/);
     });
 
     it('does not apply rich toast class without preview', () => {
+      const defaultProps = createDefaultProps();
       render(<Toast {...defaultProps} />);
       const toast = screen.getByRole('status');
-      expect(toast).not.toHaveClass('richToast');
+      expect(toast.className).not.toMatch(/\brichToast\b|_richToast_/);
     });
   });
 });

@@ -1,0 +1,158 @@
+/* Tabs Primitive -- Agent 035 (RADIX-SURGEON)
+   WAI-ARIA Tabs Pattern
+   CSS Module with Tallow design tokens */
+
+/* ============================================
+   Root Container
+   ============================================ */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.root[data-orientation="vertical"] {
+  flex-direction: row;
+}
+
+/* ============================================
+   Tab List (tablist)
+   ============================================ */
+
+.tabList {
+  display: flex;
+  gap: var(--space-1, 0.25rem);
+  border-bottom: 1px solid var(--border, #18182a);
+  padding: 0;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.tabList[data-orientation="vertical"] {
+  flex-direction: column;
+  border-bottom: none;
+  border-right: 1px solid var(--border, #18182a);
+  min-width: 160px;
+}
+
+/* ============================================
+   Tab Trigger
+   ============================================ */
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2, 0.5rem);
+  padding: var(--space-2, 0.5rem) var(--space-4, 1rem);
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: 500;
+  font-family: inherit;
+  line-height: 1.4;
+  color: var(--text-2, #a8a8bc);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+  transition: color var(--duration-fast, 0.15s) var(--ease, cubic-bezier(0.4, 0, 0.2, 1)),
+    border-color var(--duration-fast, 0.15s) var(--ease, cubic-bezier(0.4, 0, 0.2, 1)),
+    background-color var(--duration-fast, 0.15s) var(--ease, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+.tab:hover:not(.tabDisabled) {
+  color: var(--text, #f2f2f8);
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--accent, #6366f1);
+  outline-offset: -2px;
+  border-radius: var(--radius-sm, 6px);
+}
+
+/* Active tab */
+.tabActive {
+  color: var(--text, #f2f2f8);
+  border-bottom-color: var(--accent, #6366f1);
+}
+
+/* Disabled tab */
+.tabDisabled {
+  color: var(--text-3, #9494a8);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Vertical orientation overrides */
+.tabList[data-orientation="vertical"] .tab {
+  border-bottom: none;
+  border-right: 2px solid transparent;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.tabList[data-orientation="vertical"] .tabActive {
+  border-right-color: var(--accent, #6366f1);
+}
+
+/* ============================================
+   Tab Panel
+   ============================================ */
+
+.tabPanel {
+  padding: var(--space-4, 1rem) 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.tabPanel:focus-visible {
+  outline: 2px solid var(--accent, #6366f1);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm, 6px);
+}
+
+.tabPanel[hidden] {
+  display: none;
+}
+
+/* ============================================
+   Light Mode
+   ============================================ */
+
+[data-theme="light"] .tabList {
+  border-bottom-color: rgba(24, 24, 42, 0.1);
+}
+
+[data-theme="light"] .tabList[data-orientation="vertical"] {
+  border-right-color: rgba(24, 24, 42, 0.1);
+}
+
+[data-theme="light"] .tab {
+  color: #5a5a70;
+}
+
+[data-theme="light"] .tab:hover:not(.tabDisabled) {
+  color: #0a0a10;
+  background: rgba(99, 102, 241, 0.04);
+}
+
+[data-theme="light"] .tabActive {
+  color: #0a0a10;
+}
+
+[data-theme="light"] .tabDisabled {
+  color: #9a9aae;
+}
+
+/* ============================================
+   Reduced Motion
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .tab {
+    transition: none;
+  }
+}

@@ -88,7 +88,6 @@ export function useOnionRouting(
             message: status.message as typeof ONION_ROUTING_STATUS.message,
         };
         // Note: systemStatus triggers recalculation when it changes
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [systemStatus.available, systemStatus.status]);
 
     // Check availability
@@ -179,7 +178,6 @@ export function useOnionRouting(
             mounted = false;
         };
         // Only run on mount - initialConfig is used once for initialization
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Update configuration

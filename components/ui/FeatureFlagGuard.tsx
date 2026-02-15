@@ -8,7 +8,7 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { useFeatureFlag } from '@/lib/feature-flags/use-feature-flag';
+import { useFeatureFlag, useFeatureFlags } from '@/lib/feature-flags/use-feature-flag';
 import { FeatureFlagKey } from '@/lib/feature-flags/feature-flags';
 
 // ============================================================================
@@ -110,9 +110,8 @@ export function FeatureFlagGuardAll({
   children: ReactNode;
   fallback?: ReactNode;
 }) {
-  // Check all flags
-  const flagStates = flags.map((flag) => useFeatureFlag(flag));
-  const allEnabled = flagStates.every((enabled) => enabled);
+  const allFlags = useFeatureFlags();
+  const allEnabled = flags.every((flag) => allFlags[flag]);
 
   return <>{allEnabled ? children : fallback}</>;
 }
@@ -134,9 +133,8 @@ export function FeatureFlagGuardAny({
   children: ReactNode;
   fallback?: ReactNode;
 }) {
-  // Check all flags
-  const flagStates = flags.map((flag) => useFeatureFlag(flag));
-  const anyEnabled = flagStates.some((enabled) => enabled);
+  const allFlags = useFeatureFlags();
+  const anyEnabled = flags.some((flag) => allFlags[flag]);
 
   return <>{anyEnabled ? children : fallback}</>;
 }

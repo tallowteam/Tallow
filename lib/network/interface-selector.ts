@@ -286,7 +286,10 @@ export class NetworkInterfaceSelector {
         iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
       });
 
-      let timeout: ReturnType<typeof setTimeout>;
+      const timeout = setTimeout(() => {
+        pc.close();
+        resolve(candidates);
+      }, 5000);
 
       // Collect candidates
       pc.onicecandidate = (event) => {
@@ -312,11 +315,6 @@ export class NetworkInterfaceSelector {
           resolve(candidates);
         });
 
-      // Timeout after 5 seconds
-      timeout = setTimeout(() => {
-        pc.close();
-        resolve(candidates);
-      }, 5000);
     });
   }
 
@@ -330,7 +328,7 @@ export class NetworkInterfaceSelector {
       const parsed = this.parseICECandidate(candidate);
       if (!parsed) {return;}
 
-      const { ip, type, protocol } = parsed;
+      const { ip, type } = parsed;
 
       // Skip non-local IPs
       if (!this.isLocalNetwork(ip)) {return;}
@@ -389,7 +387,7 @@ export class NetworkInterfaceSelector {
   private generateInterfaceName(
     ip: string,
     type: NetworkInterfaceType,
-    candidateType: string
+    _candidateType: string
   ): string {
     const typeNames: Record<NetworkInterfaceType, string> = {
       wifi: 'Wi-Fi',

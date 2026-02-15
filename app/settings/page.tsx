@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { useSettingsStore } from '@/lib/stores';
+import { useShallow } from 'zustand/react/shallow';
 import { useTheme } from '@/components/theme';
 import { notificationSounds } from '@/lib/audio/notification-sounds';
 import {
@@ -75,7 +76,54 @@ export default function SettingsPage() {
     setSilentHoursStart,
     setSilentHoursEnd,
     resetToDefaults,
-  } = useSettingsStore();
+  } = useSettingsStore(
+    useShallow((state) => ({
+      deviceName: state.deviceName,
+      deviceId: state.deviceId,
+      stripMetadata: state.stripMetadata,
+      ipLeakProtection: state.ipLeakProtection,
+      onionRoutingEnabled: state.onionRoutingEnabled,
+      allowLocalDiscovery: state.allowLocalDiscovery,
+      allowInternetP2P: state.allowInternetP2P,
+      temporaryVisibility: state.temporaryVisibility,
+      guestMode: state.guestMode,
+      autoAcceptFromFriends: state.autoAcceptFromFriends,
+      saveLocation: state.saveLocation,
+      maxConcurrentTransfers: state.maxConcurrentTransfers,
+      notificationSound: state.notificationSound,
+      notificationVolume: state.notificationVolume,
+      browserNotifications: state.browserNotifications,
+      notifyOnTransferComplete: state.notifyOnTransferComplete,
+      notifyOnIncomingTransfer: state.notifyOnIncomingTransfer,
+      notifyOnConnectionChange: state.notifyOnConnectionChange,
+      notifyOnDeviceDiscovered: state.notifyOnDeviceDiscovered,
+      silentHoursEnabled: state.silentHoursEnabled,
+      silentHoursStart: state.silentHoursStart,
+      silentHoursEnd: state.silentHoursEnd,
+      setDeviceName: state.setDeviceName,
+      setStripMetadata: state.setStripMetadata,
+      setIpLeakProtection: state.setIpLeakProtection,
+      setOnionRoutingEnabled: state.setOnionRoutingEnabled,
+      setAllowLocalDiscovery: state.setAllowLocalDiscovery,
+      setAllowInternetP2P: state.setAllowInternetP2P,
+      setTemporaryVisibility: state.setTemporaryVisibility,
+      setGuestMode: state.setGuestMode,
+      setAutoAcceptFromFriends: state.setAutoAcceptFromFriends,
+      setSaveLocation: state.setSaveLocation,
+      setMaxConcurrentTransfers: state.setMaxConcurrentTransfers,
+      setNotificationSound: state.setNotificationSound,
+      setNotificationVolume: state.setNotificationVolume,
+      setBrowserNotifications: state.setBrowserNotifications,
+      setNotifyOnTransferComplete: state.setNotifyOnTransferComplete,
+      setNotifyOnIncomingTransfer: state.setNotifyOnIncomingTransfer,
+      setNotifyOnConnectionChange: state.setNotifyOnConnectionChange,
+      setNotifyOnDeviceDiscovered: state.setNotifyOnDeviceDiscovered,
+      setSilentHoursEnabled: state.setSilentHoursEnabled,
+      setSilentHoursStart: state.setSilentHoursStart,
+      setSilentHoursEnd: state.setSilentHoursEnd,
+      resetToDefaults: state.resetToDefaults,
+    }))
+  );
 
   const { theme, setTheme } = useTheme();
   const [copied, setCopied] = useState(false);
@@ -353,6 +401,56 @@ export default function SettingsPage() {
                             <Sun className={styles.themeIcon} />
                             <span className={styles.themeCardTitle}>Light</span>
                             {theme === 'light' && (
+                              <Check className={styles.themeCardCheck} />
+                            )}
+                          </div>
+                        </button>
+
+                        <button
+                          className={`${styles.themeCard} ${theme === 'forest' ? styles.themeCardActive : ''}`}
+                          onClick={() => setTheme('forest')}
+                          aria-label="Forest theme"
+                        >
+                          <div className={styles.themePreview}>
+                            <div className={`${styles.themePreviewBg} ${styles.themePreviewForest}`}>
+                              <div className={styles.themePreviewWindow}>
+                                <div className={styles.themePreviewHeader} />
+                                <div className={styles.themePreviewContent}>
+                                  <div className={styles.themePreviewLine} />
+                                  <div className={styles.themePreviewLine} />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className={styles.themeCardContent}>
+                            <Palette className={styles.themeIcon} />
+                            <span className={styles.themeCardTitle}>Forest</span>
+                            {theme === 'forest' && (
+                              <Check className={styles.themeCardCheck} />
+                            )}
+                          </div>
+                        </button>
+
+                        <button
+                          className={`${styles.themeCard} ${theme === 'ocean' ? styles.themeCardActive : ''}`}
+                          onClick={() => setTheme('ocean')}
+                          aria-label="Ocean theme"
+                        >
+                          <div className={styles.themePreview}>
+                            <div className={`${styles.themePreviewBg} ${styles.themePreviewOcean}`}>
+                              <div className={styles.themePreviewWindow}>
+                                <div className={styles.themePreviewHeader} />
+                                <div className={styles.themePreviewContent}>
+                                  <div className={styles.themePreviewLine} />
+                                  <div className={styles.themePreviewLine} />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className={styles.themeCardContent}>
+                            <Zap className={styles.themeIcon} />
+                            <span className={styles.themeCardTitle}>Ocean</span>
+                            {theme === 'ocean' && (
                               <Check className={styles.themeCardCheck} />
                             )}
                           </div>

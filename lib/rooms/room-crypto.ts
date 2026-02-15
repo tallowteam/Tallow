@@ -29,6 +29,7 @@ import { NonceManager } from '@/lib/crypto/nonce-manager';
 
 const ROOM_CRYPTO_INFO = new TextEncoder().encode('tallow-room-crypto-v1');
 const ROOM_CRYPTO_SALT = new TextEncoder().encode('tallow-room-salt-v1');
+const ROOM_SENDER_KEY_INFO_PREFIX = 'tallow-room-sender-key-v1';
 
 // Counter-based nonce manager for room encryption
 // Prevents nonce reuse attacks that random nonces are vulnerable to
@@ -44,7 +45,17 @@ export function resetRoomCryptoNonceManager(): void {
 export interface RoomEncryptionKey {
     key: CryptoKey;
     version: number;
-    algorithm: 'PQC-HKDF-AES-256';
+    algorithm: 'PQC-HKDF-AES-256' | 'PQC-HKDF-AES-256-SENDER';
+}
+
+async function importAesKey(material: Uint8Array): Promise<CryptoKey> {
+    return await crypto.subtle.importKey(
+        'raw',
+        material,
+        { name: 'AES-GCM' },
+        false,
+        ['encrypt', 'decrypt']
+    );
 }
 
 /**
@@ -68,13 +79,7 @@ export async function deriveRoomEncryptionKey(
         const derivedKey = hkdf(sha256, keyBytes, ROOM_CRYPTO_SALT, ROOM_CRYPTO_INFO, 32);
 
         // Import as AES-GCM key
-        const cryptoKey = await crypto.subtle.importKey(
-            'raw',
-            Uint8Array.from(derivedKey),
-            { name: 'AES-GCM' },
-            false,
-            ['encrypt', 'decrypt']
-        );
+        const cryptoKey = await importAesKey(Uint8Array.from(derivedKey));
 
         secureLog.log('[RoomCrypto] Derived room encryption key');
 
@@ -85,6 +90,38 @@ export async function deriveRoomEncryptionKey(
         };
     } catch (error) {
         secureLog.error('[RoomCrypto] Failed to derive room key:', error);
+        throw error;
+    }
+}
+
+/**
+ * Derive sender-specific key material for group rooms.
+ * This follows sender-keys semantics by deriving a unique key per sender.
+ */
+export async function deriveRoomSenderKey(
+    roomCode: string,
+    senderId: string,
+    password?: string
+): Promise<RoomEncryptionKey> {
+    try {
+        const keyMaterial = password
+            ? `${roomCode.toUpperCase()}:${password}:${senderId}`
+            : `${roomCode.toUpperCase()}:${senderId}`;
+
+        const keyBytes = new TextEncoder().encode(keyMaterial);
+        const senderInfo = new TextEncoder().encode(`${ROOM_SENDER_KEY_INFO_PREFIX}:${senderId}`);
+        const derivedKey = hkdf(sha256, keyBytes, ROOM_CRYPTO_SALT, senderInfo, 32);
+        const cryptoKey = await importAesKey(Uint8Array.from(derivedKey));
+
+        secureLog.log('[RoomCrypto] Derived sender key for room encryption');
+
+        return {
+            key: cryptoKey,
+            version: 1,
+            algorithm: 'PQC-HKDF-AES-256-SENDER',
+        };
+    } catch (error) {
+        secureLog.error('[RoomCrypto] Failed to derive sender key:', error);
         throw error;
     }
 }

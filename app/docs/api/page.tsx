@@ -49,7 +49,7 @@ export default function APIDocsPage() {
       try {
         const response = await fetch('/api/docs?format=json', { signal: controller.signal });
         clearTimeout(timeout);
-        if (!response.ok) throw new Error(`API returned ${response.status}`);
+        if (!response.ok) {throw new Error(`API returned ${response.status}`);}
 
         const data = (await response.json()) as OpenAPISpec;
         setSpec(data);
@@ -123,10 +123,10 @@ export default function APIDocsPage() {
 
   const getStatusCodeClass = (code: string): string => {
     const statusCode = parseInt(code);
-    if (statusCode >= 200 && statusCode < 300) return styles['success'] ?? '';
-    if (statusCode >= 300 && statusCode < 400) return styles['redirect'] ?? '';
-    if (statusCode >= 400 && statusCode < 500) return styles['clientError'] ?? '';
-    if (statusCode >= 500 && statusCode < 600) return styles['serverError'] ?? '';
+    if (statusCode >= 200 && statusCode < 300) {return styles['success'] ?? '';}
+    if (statusCode >= 300 && statusCode < 400) {return styles['redirect'] ?? '';}
+    if (statusCode >= 400 && statusCode < 500) {return styles['clientError'] ?? '';}
+    if (statusCode >= 500 && statusCode < 600) {return styles['serverError'] ?? '';}
     return '';
   };
 
@@ -354,7 +354,7 @@ export default function APIDocsPage() {
                   )}
 
                   {/* Request Body */}
-                  {endpoint.requestBody != null && (
+                  {endpoint.requestBody !== null && endpoint.requestBody !== undefined && (
                     <div className={styles.section}>
                       <h3 className={styles.sectionTitle}>Request Body</h3>
                       <p className={styles.endpointDescription}>

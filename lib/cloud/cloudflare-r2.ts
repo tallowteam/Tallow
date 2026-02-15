@@ -480,6 +480,8 @@ export class R2StorageClient {
     const customHeaders: Record<string, string> = {
       'content-type': 'application/octet-stream',
       'content-length': data.byteLength.toString(),
+      // Enforce R2 server-side encryption at rest for ciphertext objects
+      'x-amz-server-side-encryption': 'AES256',
       // Set expiry via x-amz-meta or R2 lifecycle (lifecycle preferred in production)
       'x-amz-meta-tallow-expiry': (Date.now() + this.config.defaultExpirySeconds * 1000).toString(),
       'x-amz-meta-tallow-encrypted': 'true',
@@ -621,6 +623,8 @@ export class R2StorageClient {
 
     const customHeaders: Record<string, string> = {
       'content-type': 'application/octet-stream',
+      // Enforce R2 server-side encryption at rest for ciphertext objects
+      'x-amz-server-side-encryption': 'AES256',
       'x-amz-meta-tallow-expiry': (Date.now() + this.config.defaultExpirySeconds * 1000).toString(),
       'x-amz-meta-tallow-encrypted': 'true',
     };

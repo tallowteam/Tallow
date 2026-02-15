@@ -1,157 +1,291 @@
-/* Transfer Loading Skeleton — Magazine Dark Aesthetic */
-
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes streamIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page {
+  min-height: 100vh;
+  background: var(--bg);
+  background-image:
+    radial-gradient(circle at 20% 30%, color-mix(in srgb, var(--accent) 8%, transparent) 0%, transparent 60%),
+    radial-gradient(circle at 80% 70%, color-mix(in srgb, var(--accent) 5%, transparent) 0%, transparent 60%);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .skeleton {
   background: linear-gradient(
     90deg,
-    rgba(24, 24, 42, 0.4) 0%,
-    rgba(36, 36, 58, 0.6) 40%,
-    rgba(24, 24, 42, 0.4) 80%
+    color-mix(in srgb, var(--bg-2) 78%, transparent) 0%,
+    color-mix(in srgb, var(--bg-3) 86%, transparent) 45%,
+    color-mix(in srgb, var(--bg-2) 78%, transparent) 90%
   );
-  background-size: 200% 100%;
+  background-size: 220% 100%;
   animation: shimmer 1.8s ease-in-out infinite;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
-.container {
+.appLayout {
   display: flex;
   min-height: 100vh;
-  background: var(--bg, #030306);
+  width: 100%;
+  padding-top: 72px;
 }
 
-/* Sidebar Skeleton */
 .sidebar {
+  position: fixed;
+  top: 72px;
+  left: 0;
+  bottom: 0;
   width: 240px;
-  height: 100vh;
-  background: rgba(8, 8, 14, 0.85);
-  border-right: 1px solid var(--border, #18182a);
-  padding: 24px 16px;
+  border-right: 1px solid var(--glass-border);
+  background: color-mix(in srgb, var(--bg-2) 65%, transparent);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  padding: 22px 14px;
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  flex-shrink: 0;
+  gap: 16px;
 }
 
 .sidebarLogo {
-  composes: skeleton;
-  width: 120px;
+  width: 128px;
   height: 24px;
-  border-radius: 6px;
 }
 
 .sidebarNav {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  gap: 10px;
 }
 
 .sidebarItem {
-  composes: skeleton;
   width: 100%;
   height: 40px;
-  border-radius: 8px;
 }
 
-/* Main Content */
-.main {
+.mainContent {
   flex: 1;
-  padding: 24px 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+  min-width: 0;
+  width: 100%;
+  margin-left: 240px;
+  padding: 24px;
+  display: grid;
+  gap: 16px;
 }
 
-/* Mode Selector */
+.streamStage {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: streamIn 220ms var(--ease, ease) forwards;
+}
+
+.streamStage[data-stream-stage='1'] {
+  opacity: 1;
+  transform: translateY(0);
+  animation: none;
+}
+
+.streamStage[data-stream-stage='2'] {
+  animation-delay: 90ms;
+}
+
+.streamStage[data-stream-stage='3'] {
+  animation-delay: 170ms;
+}
+
+.trustStrip {
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--success) 8%, transparent);
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.trustBadge {
+  width: 44px;
+  height: 24px;
+}
+
+.trustText {
+  width: min(280px, 80%);
+  height: 16px;
+}
+
 .modeSelector {
+  margin-top: 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-2) 55%, transparent);
+  padding: 6px;
   display: flex;
   gap: 8px;
-  padding: 4px;
-  background: rgba(12, 12, 22, 0.55);
-  border: 1px solid rgba(99, 102, 241, 0.08);
-  border-radius: 12px;
   width: fit-content;
 }
 
 .modeTab {
-  composes: skeleton;
-  width: 120px;
+  width: 118px;
   height: 40px;
-  border-radius: 8px;
 }
 
-/* Content Area */
-.content {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  flex: 1;
+.powerActions {
+  margin-top: 2px;
 }
 
-/* Drop Zone Skeleton */
-.dropZone {
+.commandPaletteButton {
+  width: min(320px, 100%);
+  height: 44px;
+}
+
+.connectionHeader {
+  margin-top: 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  padding: 12px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 16px;
-  background: rgba(12, 12, 22, 0.55);
-  border: 1px dashed var(--border-2, #24243a);
-  border-radius: 16px;
-  padding: 48px;
-  min-height: 300px;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.connectionSummary {
+  width: min(320px, 72%);
+  height: 18px;
+}
+
+.connectionButton {
+  width: 132px;
+  height: 36px;
+}
+
+.topRow,
+.bottomRow {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  margin-top: 2px;
+}
+
+.panel {
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  background: var(--glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 18px;
+  min-height: 220px;
+  display: grid;
+  align-content: start;
+  gap: 12px;
 }
 
 .dropIcon {
-  composes: skeleton;
   width: 48px;
   height: 48px;
   border-radius: 12px;
 }
 
-.dropText {
-  composes: skeleton;
-  width: 200px;
+.dropLinePrimary {
+  width: min(220px, 80%);
   height: 16px;
 }
 
-/* Device List Skeleton */
-.deviceList {
+.dropLineSecondary {
+  width: min(180px, 70%);
+  height: 14px;
+}
+
+.dropButtons {
+  margin-top: 6px;
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-.deviceListHeader {
-  composes: skeleton;
-  width: 140px;
+.dropButton {
+  width: 128px;
+  height: 40px;
+}
+
+.panelHeader {
+  width: min(170px, 65%);
   height: 16px;
-  margin-bottom: 8px;
 }
 
-.deviceCard {
-  composes: skeleton;
+.deviceRows,
+.transferRows {
+  display: grid;
+  gap: 10px;
+}
+
+.deviceRow {
   width: 100%;
-  height: 64px;
-  border-radius: 12px;
+  height: 62px;
 }
 
-/* Mobile Responsive */
-@media (max-width: 1023px) {
+.transferRow {
+  width: 100%;
+  height: 54px;
+}
+
+@media (min-width: 768px) {
+  .topRow,
+  .bottomRow {
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1023px) {
+  .mainContent {
+    margin-left: 72px;
+    padding: 20px;
+  }
+
+  .sidebar {
+    width: 72px;
+    padding: 22px 10px;
+  }
+
+  .sidebarLogo {
+    width: 48px;
+  }
+}
+
+@media (max-width: 768px) {
   .sidebar {
     display: none;
   }
 
-  .content {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 767px) {
-  .main {
+  .mainContent {
+    margin-left: 0;
     padding: 16px;
   }
 
@@ -161,13 +295,18 @@
 
   .modeTab {
     flex: 1;
+    width: auto;
   }
 }
 
-/* Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
   .skeleton {
     animation: none;
-    background: rgba(24, 24, 42, 0.5);
+  }
+
+  .streamStage {
+    opacity: 1;
+    transform: none;
+    animation: none;
   }
 }

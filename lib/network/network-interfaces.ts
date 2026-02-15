@@ -380,7 +380,7 @@ export async function assessNetworkQuality(): Promise<NetworkQuality> {
 /**
  * Monitor network changes
  */
-export function onNetworkChange(callback: () => void): () => void {
+export function onBasicNetworkChange(callback: () => void): () => void {
     if (typeof window === 'undefined') {return () => {};}
 
     const connection = (navigator as Navigator & {
@@ -420,5 +420,5 @@ export default {
     filterInterfaces,
     selectBestInterface,
     assessNetworkQuality,
-    onNetworkChange,
+    onNetworkChange: onBasicNetworkChange,
 };

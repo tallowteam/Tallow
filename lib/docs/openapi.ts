@@ -780,6 +780,414 @@ print(response.json())`,
         },
       },
     },
+    '/api/contacts': {
+      get: {
+        operationId: 'listContactsSchema',
+        tags: ['Contacts'],
+        summary: 'Get contacts schema',
+        description: 'Returns schema metadata for client-side encrypted contacts.',
+        parameters: [],
+        responses: {
+          '200': {
+            description: 'Contacts schema response',
+            content: {
+              'application/json': {
+                example: {
+                  success: true,
+                  schema: {
+                    version: '1.0.0',
+                    fields: ['deviceId', 'name', 'publicKey', 'lastSeen', 'trusted', 'notes'],
+                    storage: 'client-side-encrypted',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      post: {
+        operationId: 'validateContactCreate',
+        tags: ['Contacts'],
+        summary: 'Validate contact payload',
+        description: 'Validates a contact payload before client-side encrypted persistence.',
+        parameters: [],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              example: {
+                deviceId: 'peer-device-123',
+                name: 'Alice Device',
+                trusted: false,
+              },
+            },
+          },
+        },
+        responses: {
+          '201': {
+            description: 'Contact payload accepted',
+            content: {
+              'application/json': {
+                example: {
+                  success: true,
+                  contact: {
+                    deviceId: 'peer-device-123',
+                    name: 'Alice Device',
+                    trusted: false,
+                    addedAt: 1760000000000,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      delete: {
+        operationId: 'validateContactDelete',
+        tags: ['Contacts'],
+        summary: 'Validate contact deletion',
+        description: 'Validates contact deletion payload.',
+        parameters: [],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              example: {
+                deviceId: 'peer-device-123',
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Contact deletion payload accepted',
+            content: {
+              'application/json': {
+                example: {
+                  success: true,
+                  deleted: 'peer-device-123',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/docs': {
+      get: {
+        operationId: 'getApiDocumentation',
+        tags: ['Documentation'],
+        summary: 'Get API documentation',
+        description: 'Returns OpenAPI JSON or Swagger UI HTML depending on Accept header and format query.',
+        parameters: [
+          {
+            name: 'format',
+            in: 'query',
+            required: false,
+            schema: {
+              type: 'string',
+              enum: ['json', 'html'],
+            },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'API documentation returned',
+            content: {
+              'application/json': {
+                example: {
+                  openapi: '3.1.0',
+                  info: {
+                    title: 'Tallow API',
+                  },
+                },
+              },
+              'text/html': {
+                example: '<!DOCTYPE html><html><head><title>Tallow API - Swagger UI</title></head></html>',
+              },
+            },
+          },
+        },
+      },
+      head: {
+        operationId: 'headApiDocumentation',
+        tags: ['Documentation'],
+        summary: 'Check API documentation availability',
+        description: 'Returns 200 when API documentation endpoint is available.',
+        parameters: [],
+        responses: {
+          '200': {
+            description: 'Documentation endpoint available',
+          },
+        },
+      },
+    },
+    '/api/email/send': {
+      post: {
+        operationId: 'sendShareEmail',
+        tags: ['Email'],
+        summary: 'Send share email',
+        description: 'Sends share-by-email notification with unsubscribe-safe template and privacy controls.',
+        parameters: [],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              example: {
+                to: 'recipient@example.com',
+                senderName: 'Tallow User',
+                shareLink: 'https://tallow.app/transfer/share/abc123',
+                fileName: 'design.pdf',
+                fileCount: 1,
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Email accepted for delivery',
+            content: {
+              'application/json': {
+                example: {
+                  success: true,
+                  messageId: 're_abc123',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/email/status/{id}': {
+      get: {
+        operationId: 'getEmailStatus',
+        tags: ['Email'],
+        summary: 'Get email delivery status',
+        description: 'Returns status for a previously submitted email message ID.',
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: {
+              type: 'string',
+            },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Email status returned',
+            content: {
+              'application/json': {
+                example: {
+                  id: 're_abc123',
+                  status: 'delivered',
+                  timestamp: '2026-02-13T00:00:00.000Z',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/flags': {
+      get: {
+        operationId: 'getFeatureFlags',
+        tags: ['Flags'],
+        summary: 'Get runtime feature flags',
+        description: 'Returns merged feature-flag values from environment and defaults.',
+        parameters: [],
+        responses: {
+          '200': {
+            description: 'Feature flags returned',
+            content: {
+              'application/json': {
+                example: {
+                  flags: {
+                    scheduled_transfers: true,
+                    guest_mode: true,
+                    plausible_analytics: false,
+                  },
+                  source: 'environment',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/metrics': {
+      get: {
+        operationId: 'getPrometheusMetrics',
+        tags: ['Metrics'],
+        summary: 'Get Prometheus metrics',
+        description: 'Returns Prometheus text exposition metrics output.',
+        parameters: [],
+        responses: {
+          '200': {
+            description: 'Prometheus metrics output',
+            content: {
+              'text/plain': {
+                example: '# HELP tallow_transfers_total Total number of file transfers',
+              },
+            },
+          },
+        },
+      },
+      head: {
+        operationId: 'headPrometheusMetrics',
+        tags: ['Metrics'],
+        summary: 'Check Prometheus endpoint',
+        description: 'Returns 200 if metrics endpoint is available.',
+        parameters: [],
+        responses: {
+          '200': {
+            description: 'Metrics endpoint available',
+          },
+        },
+      },
+    },
+    '/api/stripe/create-checkout-session': {
+      post: {
+        operationId: 'createStripeCheckoutSession',
+        tags: ['Stripe'],
+        summary: 'Create Stripe checkout session',
+        description: 'Creates Stripe checkout session for subscription plan purchase.',
+        parameters: [],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              example: {
+                priceId: 'price_pro_monthly',
+                successUrl: 'https://tallow.app/pricing?checkout=success',
+                cancelUrl: 'https://tallow.app/pricing?checkout=cancelled',
+                customerEmail: 'buyer@example.com',
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Checkout session created',
+            content: {
+              'application/json': {
+                example: {
+                  success: true,
+                  sessionId: 'cs_test_abc123',
+                  url: 'https://checkout.stripe.com/c/pay/cs_test_abc123',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/stripe/subscription': {
+      get: {
+        operationId: 'getStripeSubscription',
+        tags: ['Stripe'],
+        summary: 'Get subscription status',
+        description: 'Returns active subscription status for a customer ID.',
+        parameters: [
+          {
+            name: 'customerId',
+            in: 'query',
+            required: true,
+            schema: {
+              type: 'string',
+            },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Subscription status returned',
+            content: {
+              'application/json': {
+                example: {
+                  hasSubscription: true,
+                  subscription: {
+                    id: 'sub_abc123',
+                    plan: 'pro',
+                    status: 'active',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/stripe/webhook': {
+      post: {
+        operationId: 'handleStripeWebhook',
+        tags: ['Stripe'],
+        summary: 'Handle Stripe webhook',
+        description: 'Verifies and processes Stripe webhook events with idempotency checks.',
+        parameters: [],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              example: {
+                id: 'evt_abc123',
+                type: 'checkout.session.completed',
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Webhook acknowledged',
+            content: {
+              'application/json': {
+                example: {
+                  received: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/turn/credentials': {
+      get: {
+        operationId: 'getTurnCredentials',
+        tags: ['TURN'],
+        summary: 'Get temporary TURN credentials',
+        description: 'Returns temporary TURN credentials for NAT traversal.',
+        parameters: [
+          {
+            name: 'ttl',
+            in: 'query',
+            required: false,
+            schema: {
+              type: 'integer',
+            },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'TURN credentials returned',
+            content: {
+              'application/json': {
+                example: {
+                  iceServers: [
+                    {
+                      urls: ['turn:turn.tallow.app:3478?transport=udp'],
+                      username: '1760000000:user',
+                      credential: 'base64-hmac-credential',
+                    },
+                  ],
+                  ttl: 43200,
+                  provider: 'coturn',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   },
   components: {
     schemas: {

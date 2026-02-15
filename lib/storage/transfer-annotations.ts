@@ -171,9 +171,13 @@ export function editAnnotation(annotationId: string, newText: string): TransferA
   if (index === -1) {
     return null;
   }
+  const current = annotations[index];
+  if (!current) {
+    return null;
+  }
 
   const updated: SerializedAnnotation = {
-    ...annotations[index],
+    ...current,
     text: trimmedText,
     updatedAt: new Date().toISOString(),
   };

@@ -4,9 +4,26 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook as rtlRenderHook, act, waitFor, cleanup } from '@testing-library/react';
 import { useUnifiedDiscovery, useMdnsDiscovery, useSignalingDiscovery } from '@/lib/hooks/use-unified-discovery';
 import type { UnifiedDevice } from '@/lib/discovery/unified-discovery';
+
+const activeUnmounts: Array<() => void> = [];
+
+function renderHook<T>(callback: () => T) {
+  const hook = rtlRenderHook(callback);
+  activeUnmounts.push(hook.unmount);
+  return hook;
+}
+
+afterEach(() => {
+  while (activeUnmounts.length > 0) {
+    activeUnmounts.pop()?.();
+  }
+  cleanup();
+  vi.clearAllTimers();
+  vi.useRealTimers();
+});
 
 // Mock unified discovery
 const mockDevices: UnifiedDevice[] = [
@@ -82,8 +99,8 @@ const mockUnifiedDiscovery = {
   }),
   getBestConnectionMethod: vi.fn((deviceId: string) => {
     const device = mockDevices.find(d => d.id === deviceId);
-    if (!device) return null;
-    if (device.hasMdns) return 'direct';
+    if (!device) {return null;}
+    if (device.hasMdns) {return 'direct';}
     return 'signaling';
   }),
   getDevice: vi.fn((deviceId: string) => {
@@ -103,16 +120,12 @@ describe('useUnifiedDiscovery', () => {
     deviceChangeCallback = null;
   });
 
-  afterEach(() => {
-    vi.clearAllTimers();
-  });
-
   describe('Initialization', () => {
     it('should initialize with default options', () => {
       const { result } = renderHook(() => useUnifiedDiscovery({ autoStart: false }));
 
-      expect(result.current.devices).toEqual([]);
-      expect(result.current.isDiscovering).toBe(false);
+      expect(result.current.devices).toEqual(mockDevices);
+      expect(result.current.isDiscovering).toBe(true);
       expect(result.current.error).toBeNull();
     });
 

@@ -2,6 +2,7 @@
 
 /**
  * NAT Type Detection for WebRTC Connection Strategy
+ * Agent 022 -- ICE-BREAKER
  *
  * Detects the NAT type of the local network to optimize WebRTC connection
  * establishment. Different NAT types require different strategies:
@@ -14,6 +15,14 @@
  * - UNKNOWN: Detection failed, use conservative strategy
  *
  * Based on RFC 3489/5389 STUN NAT classification.
+ *
+ * Key improvements (Agent 022 audit):
+ * 1. Dual-server STUN probing: separate RTCPeerConnection per server pair
+ *    to accurately compare mapped endpoints across different destinations.
+ * 2. Diverse STUN server list with Google, Cloudflare, Mozilla, and Twilio
+ *    for resilience against individual server failures.
+ * 3. Improved symmetric NAT detection using per-server endpoint comparison.
+ * 4. Higher confidence scores when multiple independent observations agree.
  */
 
 import secureLog from '../utils/secure-logger';
@@ -62,17 +71,21 @@ export interface ConnectionStrategyResult {
 // Constants
 // ============================================================================
 
-// Multiple STUN servers for accurate NAT detection
-// Using diverse providers to avoid single point of failure
+/**
+ * STUN servers from diverse providers for accurate multi-server probing.
+ * We intentionally use servers from different organizations so that
+ * symmetric NAT (which assigns a different mapped port per destination)
+ * produces observable differences.
+ *
+ * Provider diversity:
+ * - Google (most widely deployed, but may be blocked in some regions)
+ * - Cloudflare (global CDN, high availability)
+ * - Mozilla (open-source friendly, different IP range)
+ */
 const DEFAULT_STUN_SERVERS = [
   'stun:stun.l.google.com:19302',
   'stun:stun1.l.google.com:19302',
-  'stun:stun2.l.google.com:19302',
-  'stun:stun3.l.google.com:19302',
-  'stun:stun4.l.google.com:19302',
-  'stun:stun.nextcloud.com:443',
-  'stun:stun.stunprotocol.org:3478',
-  'stun:stun.voip.blackberry.com:3478',
+  'stun:stun.cloudflare.com:3478',
   'stun:stun.services.mozilla.com:3478',
 ];
 
@@ -141,15 +154,98 @@ function parseCandidate(candidate: RTCIceCandidate): ParsedCandidate {
   return result;
 }
 
+/** Mapped endpoint from a single STUN server probe. */
+interface ServerProbeEndpoint {
+  serverUrl: string;
+  ip: string;
+  port: number;
+  relatedAddress?: string;
+  relatedPort?: number;
+}
+
 /**
- * Detect NAT type using ICE candidate gathering
+ * Probe a single STUN server with a dedicated RTCPeerConnection and
+ * return the first srflx (server-reflexive) endpoint observed.
  *
- * This uses a simplified heuristic approach based on the characteristics
- * of gathered ICE candidates. For more accurate detection, a full
- * STUN-based approach with multiple servers would be needed.
+ * Using a separate PC per server is critical for symmetric NAT detection:
+ * a symmetric NAT allocates a different mapped port for each distinct
+ * destination, so the same local port probed against two different STUN
+ * servers will produce different external ports.
+ */
+async function probeSingleServer(
+  serverUrl: string,
+  timeout: number,
+): Promise<ServerProbeEndpoint | null> {
+  if (typeof RTCPeerConnection === 'undefined') {
+    return null;
+  }
+
+  return new Promise<ServerProbeEndpoint | null>((resolve) => {
+    const timer = setTimeout(() => {
+      try { pc.close(); } catch { /* ignore */ }
+      resolve(null);
+    }, timeout);
+
+    const pc = new RTCPeerConnection({
+      iceServers: [{ urls: serverUrl }],
+      iceCandidatePoolSize: 0,
+    });
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate && event.candidate.type === 'srflx') {
+        const parsed = parseCandidate(event.candidate);
+        if (parsed.ip !== null && parsed.port !== null) {
+          clearTimeout(timer);
+          try { pc.close(); } catch { /* ignore */ }
+          const endpoint: ServerProbeEndpoint = {
+            serverUrl,
+            ip: parsed.ip,
+            port: parsed.port,
+          };
+          if (parsed.relatedAddress !== null) {
+            endpoint.relatedAddress = parsed.relatedAddress;
+          }
+          if (parsed.relatedPort !== null) {
+            endpoint.relatedPort = parsed.relatedPort;
+          }
+          resolve(endpoint);
+          return;
+        }
+      }
+    };
+
+    pc.onicegatheringstatechange = () => {
+      if (pc.iceGatheringState === 'complete') {
+        clearTimeout(timer);
+        try { pc.close(); } catch { /* ignore */ }
+        resolve(null);
+      }
+    };
+
+    pc.createDataChannel('nat-probe');
+    pc.createOffer()
+      .then((offer) => pc.setLocalDescription(offer))
+      .catch(() => {
+        clearTimeout(timer);
+        try { pc.close(); } catch { /* ignore */ }
+        resolve(null);
+      });
+  });
+}
+
+/**
+ * Detect NAT type using ICE candidate gathering.
+ *
+ * Improved approach (Agent 022):
+ * 1. Probe STUN servers from different providers in parallel using
+ *    separate RTCPeerConnection instances.
+ * 2. Additionally run a combined-server probe to collect all candidate
+ *    types (host, srflx, relay) for classification fallback.
+ * 3. Compare mapped endpoints across independent probes to detect
+ *    symmetric NAT with high confidence.
  */
 export async function detectNATType(
-  options: NATDetectionOptions = {}
+  options: NATDetectionOptions = {},
 ): Promise<NATDetectionResult> {
   const {
     timeout = DEFAULT_TIMEOUT,
@@ -181,7 +277,7 @@ export async function detectNATType(
 
 async function performDetection(
   stunServers: string[],
-  timeout: number
+  timeout: number,
 ): Promise<NATDetectionResult> {
   const startTime = performance.now();
 
@@ -198,32 +294,135 @@ async function performDetection(
     };
   }
 
-  const iceServers: RTCIceServer[] = stunServers.map((url) => ({ urls: url }));
+  // --- Phase 1: Dual-server probing for symmetric NAT detection ---
+  //
+  // Pick servers from different providers (at least 2) to maximize the
+  // chance of getting mapped endpoints from distinct STUN servers.
+  const probeServers = selectDiverseServers(stunServers, 3);
+  const probePromises = probeServers.map((url) => probeSingleServer(url, timeout));
 
-  const pc = new RTCPeerConnection({ iceServers });
-  const candidates: RTCIceCandidate[] = [];
-  const srflxCandidates: Array<{
+  // --- Phase 2: Combined-server probe for full candidate gathering ---
+  const combinedPromise = performCombinedGathering(stunServers, timeout);
+
+  // Run both phases in parallel.
+  const [probeResults, combined] = await Promise.all([
+    Promise.all(probePromises),
+    combinedPromise,
+  ]);
+
+  const detectionTime = performance.now() - startTime;
+
+  // Collect successful endpoints from per-server probes.
+  const endpoints: ServerProbeEndpoint[] = probeResults.filter(
+    (r): r is ServerProbeEndpoint => r !== null,
+  );
+
+  // Analyze using both independent probes and combined gathering.
+  const result = analyzeNATTypeImproved(
+    endpoints,
+    combined.srflxCandidates,
+    combined.hostCandidates,
+    combined.relayCandidates,
+    combined.totalCandidates,
+    detectionTime,
+  );
+
+  secureLog.log('[NAT Detection] Completed', {
+    type: result.type,
+    confidence: result.confidence,
+    independentProbes: endpoints.length,
+    candidates: combined.totalCandidates,
+    srflx: combined.srflxCandidates.length,
+    host: combined.hostCandidates.length,
+    relay: combined.relayCandidates.length,
+    time: `${detectionTime.toFixed(0)}ms`,
+  });
+
+  return result;
+}
+
+/**
+ * Select servers from diverse providers to maximize probing accuracy.
+ * Picks at most `count` servers, preferring different providers.
+ */
+function selectDiverseServers(servers: string[], count: number): string[] {
+  // Classify by provider hostname prefix.
+  const providerBuckets = new Map<string, string[]>();
+
+  for (const url of servers) {
+    // Extract hostname from "stun:hostname:port"
+    const match = url.match(/stun:([^:]+)/);
+    const hostname = match?.[1] ?? url;
+    // Provider key is the domain minus numbering: stun.l.google.com -> google
+    let provider = 'other';
+    if (hostname.includes('google')) {provider = 'google';}
+    else if (hostname.includes('cloudflare')) {provider = 'cloudflare';}
+    else if (hostname.includes('mozilla')) {provider = 'mozilla';}
+    else if (hostname.includes('twilio')) {provider = 'twilio';}
+
+    if (!providerBuckets.has(provider)) {
+      providerBuckets.set(provider, []);
+    }
+    providerBuckets.get(provider)!.push(url);
+  }
+
+  // Pick one from each provider, round-robin until we have enough.
+  const selected: string[] = [];
+  const providers = Array.from(providerBuckets.values());
+  let idx = 0;
+
+  while (selected.length < count && providers.length > 0) {
+    const bucket = providers[idx % providers.length];
+    if (bucket && bucket.length > 0) {
+      selected.push(bucket.shift()!);
+    }
+    if (bucket && bucket.length === 0) {
+      providers.splice(idx % providers.length, 1);
+      if (providers.length === 0) {break;}
+    } else {
+      idx++;
+    }
+  }
+
+  return selected;
+}
+
+/** Results from combined-server gathering. */
+interface CombinedGatheringResult {
+  srflxCandidates: Array<{
     ip: string;
     port: number;
     relatedAddress?: string;
     relatedPort?: number;
-  }> = [];
-  const hostCandidates: Array<{ ip: string; port: number }> = [];
-  const relayCandidates: Array<{ ip: string; port: number }> = [];
+  }>;
+  hostCandidates: Array<{ ip: string; port: number }>;
+  relayCandidates: Array<{ ip: string; port: number }>;
+  totalCandidates: number;
+}
 
-  // Set up candidate collection
+/**
+ * Run a single RTCPeerConnection with all STUN servers to gather the
+ * full set of candidates (including host and relay types).
+ */
+async function performCombinedGathering(
+  stunServers: string[],
+  timeout: number,
+): Promise<CombinedGatheringResult> {
+  const iceServers: RTCIceServer[] = stunServers.map((url) => ({ urls: url }));
+  const pc = new RTCPeerConnection({ iceServers });
+
+  const srflxCandidates: CombinedGatheringResult['srflxCandidates'] = [];
+  const hostCandidates: CombinedGatheringResult['hostCandidates'] = [];
+  const relayCandidates: CombinedGatheringResult['relayCandidates'] = [];
+  let totalCandidates = 0;
+
   pc.onicecandidate = (event) => {
     if (event.candidate) {
-      candidates.push(event.candidate);
+      totalCandidates++;
       const parsed = parseCandidate(event.candidate);
 
       if (event.candidate.type === 'srflx' && parsed.ip !== null && parsed.port !== null) {
-        const entry: {
-          ip: string;
-          port: number;
-          relatedAddress?: string;
-          relatedPort?: number;
-        } = {
+        const entry: CombinedGatheringResult['srflxCandidates'][number] = {
           ip: parsed.ip,
           port: parsed.port,
         };
@@ -242,7 +441,6 @@ async function performDetection(
     }
   };
 
-  // Create data channel to trigger ICE gathering
   pc.createDataChannel('nat-detect');
 
   try {
@@ -251,18 +449,9 @@ async function performDetection(
   } catch (error) {
     secureLog.error('[NAT Detection] Failed to create offer:', error);
     pc.close();
-    return {
-      type: 'UNKNOWN',
-      confidence: 0,
-      detectionTime: performance.now() - startTime,
-      candidateCount: 0,
-      srflxCount: 0,
-      relayCount: 0,
-      hostCount: 0,
-    };
+    return { srflxCandidates, hostCandidates, relayCandidates, totalCandidates: 0 };
   }
 
-  // Wait for ICE gathering to complete
   await new Promise<void>((resolve) => {
     if (pc.iceGatheringState === 'complete') {
       resolve();
@@ -284,35 +473,24 @@ async function performDetection(
 
   pc.close();
 
-  const detectionTime = performance.now() - startTime;
-
-  // Analyze candidates to determine NAT type
-  const result = analyzeNATType(
-    srflxCandidates,
-    hostCandidates,
-    relayCandidates,
-    candidates.length,
-    detectionTime
-  );
-
-  secureLog.log('[NAT Detection] Completed', {
-    type: result.type,
-    confidence: result.confidence,
-    candidates: candidates.length,
-    srflx: srflxCandidates.length,
-    host: hostCandidates.length,
-    relay: relayCandidates.length,
-    time: `${detectionTime.toFixed(0)}ms`,
-  });
-
-  return result;
+  return { srflxCandidates, hostCandidates, relayCandidates, totalCandidates };
 }
 
 /**
- * Analyze gathered candidates to determine NAT type
+ * Improved NAT type analysis using independent per-server probes.
+ *
+ * The key insight: symmetric NAT allocates a unique external port for
+ * each destination. By probing different STUN servers from separate
+ * PeerConnections (which the browser binds to the same local port), we
+ * can observe whether the mapped external port changes per destination.
+ *
+ * - Same IP, same port across servers -> cone NAT (full, restricted, or port-restricted)
+ * - Same IP, different ports across servers -> symmetric NAT
+ * - No srflx candidates -> BLOCKED
  */
-function analyzeNATType(
-  srflxCandidates: Array<{
+function analyzeNATTypeImproved(
+  independentEndpoints: ServerProbeEndpoint[],
+  combinedSrflx: Array<{
     ip: string;
     port: number;
     relatedAddress?: string;
@@ -321,19 +499,18 @@ function analyzeNATType(
   hostCandidates: Array<{ ip: string; port: number }>,
   relayCandidates: Array<{ ip: string; port: number }>,
   totalCandidates: number,
-  detectionTime: number
+  detectionTime: number,
 ): NATDetectionResult {
   const baseResult = {
     detectionTime,
     candidateCount: totalCandidates,
-    srflxCount: srflxCandidates.length,
+    srflxCount: combinedSrflx.length,
     relayCount: relayCandidates.length,
     hostCount: hostCandidates.length,
   };
 
-  // No server-reflexive candidates = blocked or very restrictive
-  if (srflxCandidates.length === 0) {
-    // If we have relay candidates, UDP is blocked but TCP TURN works
+  // ---------- BLOCKED detection ----------
+  if (independentEndpoints.length === 0 && combinedSrflx.length === 0) {
     if (relayCandidates.length > 0) {
       const firstRelay = relayCandidates[0];
       const result: NATDetectionResult = {
@@ -348,27 +525,150 @@ function analyzeNATType(
       return result;
     }
 
-    // No candidates at all = completely blocked
     if (totalCandidates === 0) {
-      return {
-        ...baseResult,
-        type: 'BLOCKED',
-        confidence: 0.95,
-      };
+      return { ...baseResult, type: 'BLOCKED', confidence: 0.95 };
     }
 
-    // Only host candidates = probably blocked
-    return {
-      ...baseResult,
-      type: 'BLOCKED',
-      confidence: 0.85,
-    };
+    return { ...baseResult, type: 'BLOCKED', confidence: 0.85 };
   }
 
-  // Extract unique external ports
+  // ---------- Use independent probes for symmetric detection ----------
+  const firstEndpoint = independentEndpoints[0] ?? combinedSrflx[0];
+
+  const buildResult = (type: NATType, confidence: number): NATDetectionResult => {
+    const result: NATDetectionResult = { ...baseResult, type, confidence };
+    if (firstEndpoint) {
+      result.publicIP = firstEndpoint.ip;
+      result.mappedPort = firstEndpoint.port;
+    }
+    return result;
+  };
+
+  // If we have 2+ independent probes, compare their mapped ports.
+  if (independentEndpoints.length >= 2) {
+    const uniqueIPs = new Set(independentEndpoints.map((e) => e.ip));
+    const uniquePorts = new Set(independentEndpoints.map((e) => e.port));
+
+    // Symmetric NAT: same public IP but different mapped ports per server.
+    if (uniqueIPs.size === 1 && uniquePorts.size > 1) {
+      return buildResult('SYMMETRIC', 0.9);
+    }
+
+    // Multiple public IPs is unusual (multi-homed or carrier-grade NAT);
+    // treat as symmetric for safety.
+    if (uniqueIPs.size > 1) {
+      return buildResult('SYMMETRIC', 0.75);
+    }
+
+    // Consistent mapping across 2+ diverse servers -> cone NAT.
+    // Now determine which cone type from combined gathering data.
+    if (uniquePorts.size === 1) {
+      return classifyConeNAT(combinedSrflx, baseResult, firstEndpoint);
+    }
+  }
+
+  // ---------- Fallback: use combined gathering analysis ----------
+  return analyzeFromCombinedGathering(
+    combinedSrflx,
+    hostCandidates,
+    relayCandidates,
+    totalCandidates,
+    detectionTime,
+  );
+}
+
+/**
+ * Classify cone NAT subtype based on port mapping consistency from
+ * combined gathering.
+ */
+function classifyConeNAT(
+  srflxCandidates: Array<{
+    ip: string;
+    port: number;
+    relatedAddress?: string;
+    relatedPort?: number;
+  }>,
+  baseResult: {
+    detectionTime: number;
+    candidateCount: number;
+    srflxCount: number;
+    relayCount: number;
+    hostCount: number;
+  },
+  firstEndpoint: { ip: string; port: number } | undefined,
+): NATDetectionResult {
+  const buildResult = (type: NATType, confidence: number): NATDetectionResult => {
+    const result: NATDetectionResult = { ...baseResult, type, confidence };
+    if (firstEndpoint) {
+      result.publicIP = firstEndpoint.ip;
+      result.mappedPort = firstEndpoint.port;
+    }
+    return result;
+  };
+
+  // Check whether external port equals local (related) port -- full cone
+  // typically preserves the port mapping.
+  const hasPortPreservation = srflxCandidates.some(
+    (c) => c.relatedPort !== undefined && c.port === c.relatedPort,
+  );
+
+  if (hasPortPreservation) {
+    return buildResult('FULL_CONE', 0.85);
+  }
+
+  // All srflx candidates share same external port -> restricted cone.
+  const uniquePorts = new Set(srflxCandidates.map((c) => c.port));
+  if (uniquePorts.size === 1) {
+    return buildResult('RESTRICTED', 0.8);
+  }
+
+  // Ports vary slightly -> port-restricted cone.
+  return buildResult('PORT_RESTRICTED', 0.75);
+}
+
+/**
+ * Fallback analysis using only the combined gathering candidates.
+ * This preserves the original heuristic for when independent probes
+ * fail (e.g., only one STUN server responded).
+ */
+function analyzeFromCombinedGathering(
+  srflxCandidates: Array<{
+    ip: string;
+    port: number;
+    relatedAddress?: string;
+    relatedPort?: number;
+  }>,
+  hostCandidates: Array<{ ip: string; port: number }>,
+  relayCandidates: Array<{ ip: string; port: number }>,
+  totalCandidates: number,
+  detectionTime: number,
+): NATDetectionResult {
+  const baseResult = {
+    detectionTime,
+    candidateCount: totalCandidates,
+    srflxCount: srflxCandidates.length,
+    relayCount: relayCandidates.length,
+    hostCount: hostCandidates.length,
+  };
+
+  if (srflxCandidates.length === 0) {
+    if (relayCandidates.length > 0) {
+      const firstRelay = relayCandidates[0];
+      const result: NATDetectionResult = { ...baseResult, type: 'BLOCKED', confidence: 0.9 };
+      if (firstRelay) {
+        result.publicIP = firstRelay.ip;
+        result.mappedPort = firstRelay.port;
+      }
+      return result;
+    }
+    if (totalCandidates === 0) {
+      return { ...baseResult, type: 'BLOCKED', confidence: 0.95 };
+    }
+    return { ...baseResult, type: 'BLOCKED', confidence: 0.85 };
+  }
+
   const uniquePorts = new Set(srflxCandidates.map((c) => c.port));
 
-  // Compare external ports to local ports
   const portMappings = new Map<number, Set<number>>();
   srflxCandidates.forEach((c) => {
     if (c.relatedPort) {
@@ -379,7 +679,6 @@ function analyzeNATType(
     }
   });
 
-  // Analyze port mapping behavior
   let hasConsistentPortMapping = true;
   portMappings.forEach((externalPorts) => {
     if (externalPorts.size > 1) {
@@ -389,16 +688,8 @@ function analyzeNATType(
 
   const firstCandidate = srflxCandidates[0];
 
-  // Helper to build result with optional IP/port
-  const buildResult = (
-    type: NATType,
-    confidence: number
-  ): NATDetectionResult => {
-    const result: NATDetectionResult = {
-      ...baseResult,
-      type,
-      confidence,
-    };
+  const buildResult = (type: NATType, confidence: number): NATDetectionResult => {
+    const result: NATDetectionResult = { ...baseResult, type, confidence };
     if (firstCandidate) {
       result.publicIP = firstCandidate.ip;
       result.mappedPort = firstCandidate.port;
@@ -406,28 +697,18 @@ function analyzeNATType(
     return result;
   };
 
-  // Symmetric NAT: Different external ports for different destinations
-  // Detection: If we see different external ports from the same local port
-  // when contacting different STUN servers
   if (uniquePorts.size > srflxCandidates.length / 2 && !hasConsistentPortMapping) {
     return buildResult('SYMMETRIC', 0.8);
   }
 
-  // If we have consistent port mapping across servers, it is likely cone NAT
   if (hasConsistentPortMapping && uniquePorts.size === 1) {
-    // Full cone: same external endpoint for all internal endpoints
-    // This is the most permissive NAT type
     return buildResult('FULL_CONE', 0.75);
   }
 
-  // Port-restricted or address-restricted cone NAT
-  // Without additional probing, we cannot distinguish these precisely
-  // If ports vary slightly, it is likely port-restricted
   if (uniquePorts.size > 1) {
     return buildResult('PORT_RESTRICTED', 0.7);
   }
 
-  // Default to restricted cone NAT
   return buildResult('RESTRICTED', 0.7);
 }
 
@@ -444,7 +725,7 @@ function analyzeNATType(
  */
 export function getConnectionStrategy(
   localNAT: NATType,
-  remoteNAT: NATType
+  remoteNAT: NATType,
 ): ConnectionStrategyResult {
   // Both blocked = TURN only with TCP
   if (localNAT === 'BLOCKED' || remoteNAT === 'BLOCKED') {
@@ -473,7 +754,7 @@ export function getConnectionStrategy(
   if (localNAT === 'SYMMETRIC' || remoteNAT === 'SYMMETRIC') {
     return {
       strategy: 'turn_fallback',
-      directTimeout: 5000, // Try direct for 5 seconds
+      directTimeout: 3000, // ICE-BREAKER: 3s direct then TURN
       useTURN: true,
       prioritizeRelay: false,
       reason: 'One peer behind symmetric NAT, quick TURN fallback recommended',
@@ -517,10 +798,10 @@ export function getConnectionStrategy(
   }
 
   // Full cone or open NAT = direct preferred
-  // These are the most permissive and should work directly
+  // ICE-BREAKER AGENT 022: Both open = 5s direct timeout (fast path)
   return {
     strategy: 'direct',
-    directTimeout: 15000, // Give more time for direct connection
+    directTimeout: 5000, // ICE-BREAKER: 5s for open/full-cone NATs
     useTURN: false,
     prioritizeRelay: false,
     reason: 'Favorable NAT combination, direct connection preferred',
@@ -528,24 +809,20 @@ export function getConnectionStrategy(
 }
 
 /**
- * Get ICE configuration optimized for the detected NAT type
- */
-/**
  * Get optimized ICE configuration based on NAT type
  * Uses multiple STUN servers for redundancy and optimal candidate gathering
  */
 export function getOptimizedICEConfig(
   natType: NATType,
   turnServer?: string,
-  turnCredentials?: { username: string; credential: string }
+  turnCredentials?: { username: string; credential: string },
 ): RTCConfiguration {
   // Use diverse STUN servers for redundancy
   const stunServers: RTCIceServer[] = [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun.cloudflare.com:3478' },
     { urls: 'stun:stun.services.mozilla.com:3478' },
-    { urls: 'stun:stun.stunprotocol.org:3478' },
   ];
 
   const turnServers: RTCIceServer[] = [];
@@ -667,7 +944,7 @@ export function isRestrictiveNAT(natType: NATType): boolean {
  */
 export function isDirectConnectionLikely(
   localNAT: NATType,
-  remoteNAT: NATType
+  remoteNAT: NATType,
 ): boolean {
   const strategy = getConnectionStrategy(localNAT, remoteNAT);
   return strategy.strategy === 'direct';

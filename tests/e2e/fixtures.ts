@@ -16,14 +16,14 @@ export const test = base.extend<{
   mockDevice: MockDevice;
   fileHelpers: FileHelpers;
 }>({
-  mockDevice: async ({}, use) => {
+  mockDevice: async ({}, applyFixture) => {
     const device = new MockDevice();
-    await use(device);
+    await applyFixture(device);
   },
 
-  fileHelpers: async ({}, use) => {
+  fileHelpers: async ({}, applyFixture) => {
     const helpers = new FileHelpers();
-    await use(helpers);
+    await applyFixture(helpers);
     helpers.cleanup();
   },
 });

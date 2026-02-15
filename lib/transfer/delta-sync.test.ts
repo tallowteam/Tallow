@@ -3,7 +3,7 @@
  * Tests core delta synchronization functionality
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   computeBlockSignatures,
   computeDelta,
@@ -15,7 +15,6 @@ import {
   deserializeSignatures,
   validateSignatures,
   validatePatch,
-  DEFAULT_BLOCK_SIZE,
 } from './delta-sync';
 
 describe('Delta Sync', () => {
@@ -34,7 +33,7 @@ describe('Delta Sync', () => {
       expect(signatures.blocks[0]).toHaveProperty('offset');
       expect(signatures.blocks[0]).toHaveProperty('size');
       expect(signatures.blocks[0]).toHaveProperty('hash');
-      expect(signatures.blocks[0].hash).toHaveLength(64); // SHA-256 hex
+      expect(signatures.blocks[0]!.hash).toHaveLength(64); // SHA-256 hex
     });
 
     it('should handle empty files', async () => {
@@ -52,7 +51,7 @@ describe('Delta Sync', () => {
       const signatures = await computeBlockSignatures(file, 4096);
 
       expect(signatures.blocks.length).toBe(1);
-      expect(signatures.blocks[0].size).toBe(content.length);
+      expect(signatures.blocks[0]!.size).toBe(content.length);
     });
 
     it('should validate block size limits', async () => {
@@ -319,7 +318,7 @@ describe('Delta Sync', () => {
       const signatures = await computeBlockSignatures(file, 4096);
 
       expect(signatures.blocks.length).toBe(2);
-      expect(signatures.blocks[0].hash).toHaveLength(64);
+      expect(signatures.blocks[0]!.hash).toHaveLength(64);
     });
 
     it('should handle large files efficiently', async () => {
@@ -341,7 +340,7 @@ describe('Delta Sync', () => {
 
       const signatures = await computeBlockSignatures(file, 4096);
       expect(signatures.blocks.length).toBe(1);
-      expect(signatures.blocks[0].size).toBe(4096);
+      expect(signatures.blocks[0]!.size).toBe(4096);
     });
 
     it('should handle multiple block sizes', async () => {
@@ -384,6 +383,7 @@ This is the third paragraph.`;
 
       const delta = computeDelta(updatedSig, originalSig);
       const savings = estimateSavings(delta, updatedSig.blocks.length, blockSize);
+      expect(savings.savingsPercent).toBeGreaterThanOrEqual(0);
 
       // Should detect some unchanged blocks
       expect(delta.unchanged.length).toBeGreaterThan(0);

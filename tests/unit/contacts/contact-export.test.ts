@@ -13,42 +13,57 @@ import {
   copyShareableLink,
   shareContactNative,
 } from '../../../lib/contacts/contact-export';
+import type { Friend } from '../../../lib/stores/friends-store';
+
+const initialFriends = [
+  {
+    id: 'device-1',
+    name: 'Alice',
+    platform: 'ios' as const,
+    publicKey: 'public-key-alice',
+    pairingCode: 'ABC123',
+    isOnline: true,
+    lastSeen: Date.now(),
+    isTrusted: true,
+    avatar: null,
+    addedAt: 1704067200000,
+    notes: 'My best friend',
+    transferCount: 5,
+    lastTransferAt: Date.now(),
+  },
+  {
+    id: 'device-2',
+    name: 'Bob',
+    platform: 'android' as const,
+    publicKey: 'public-key-bob',
+    pairingCode: 'DEF456',
+    isOnline: false,
+    lastSeen: Date.now() - 3600000,
+    isTrusted: false,
+    avatar: null,
+    addedAt: 1704153600000,
+    notes: null,
+    transferCount: 2,
+    lastTransferAt: null,
+  },
+];
+
+const cloneInitialFriends = () => initialFriends.map(friend => ({ ...friend }));
+
+const setNavigatorProperty = (key: 'clipboard' | 'share', value: unknown) => {
+  Object.defineProperty(navigator, key, {
+    configurable: true,
+    writable: true,
+    value,
+  });
+};
 
 // Mock friends store
 const mockFriendsStore = {
-  friends: [
-    {
-      id: 'device-1',
-      name: 'Alice',
-      platform: 'ios' as const,
-      publicKey: 'public-key-alice',
-      pairingCode: 'ABC123',
-      isOnline: true,
-      lastSeen: Date.now(),
-      isTrusted: true,
-      avatar: null,
-      addedAt: 1704067200000,
-      notes: 'My best friend',
-      transferCount: 5,
-      lastTransferAt: Date.now(),
-    },
-    {
-      id: 'device-2',
-      name: 'Bob',
-      platform: 'android' as const,
-      publicKey: 'public-key-bob',
-      pairingCode: 'DEF456',
-      isOnline: false,
-      lastSeen: Date.now() - 3600000,
-      isTrusted: false,
-      avatar: null,
-      addedAt: 1704153600000,
-      notes: null,
-      transferCount: 2,
-      lastTransferAt: null,
-    },
-  ],
-  addFriend: vi.fn(),
+  friends: cloneInitialFriends(),
+  addFriend: vi.fn((friend: Friend) => {
+    mockFriendsStore.friends.push(friend);
+  }),
   getFriendById: (id: string) => mockFriendsStore.friends.find(f => f.id === id),
 };
 
@@ -61,6 +76,12 @@ vi.mock('../../../lib/stores/friends-store', () => ({
 describe('Contact Export', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockFriendsStore.friends = cloneInitialFriends();
+    mockFriendsStore.addFriend.mockImplementation((friend: Friend) => {
+      mockFriendsStore.friends.push(friend);
+    });
+    setNavigatorProperty('clipboard', undefined);
+    setNavigatorProperty('share', undefined);
   });
 
   describe('exportContacts', () => {
@@ -369,10 +390,8 @@ describe('Contact Export', () => {
   describe('copyShareableLink', () => {
     it('should copy link to clipboard', async () => {
       const writeTextMock = vi.fn().mockResolvedValue(undefined);
-      Object.assign(navigator, {
-        clipboard: {
-          writeText: writeTextMock,
-        },
+      setNavigatorProperty('clipboard', {
+        writeText: writeTextMock,
       });
 
       const success = await copyShareableLink('device-1');
@@ -388,9 +407,7 @@ describe('Contact Export', () => {
     });
 
     it('should handle clipboard API unavailable', async () => {
-      Object.assign(navigator, {
-        clipboard: undefined,
-      });
+      setNavigatorProperty('clipboard', undefined);
 
       const success = await copyShareableLink('device-1');
 
@@ -399,10 +416,8 @@ describe('Contact Export', () => {
 
     it('should handle clipboard write error', async () => {
       const writeTextMock = vi.fn().mockRejectedValue(new Error('Permission denied'));
-      Object.assign(navigator, {
-        clipboard: {
-          writeText: writeTextMock,
-        },
+      setNavigatorProperty('clipboard', {
+        writeText: writeTextMock,
       });
 
       const success = await copyShareableLink('device-1');
@@ -414,9 +429,7 @@ describe('Contact Export', () => {
   describe('shareContactNative', () => {
     it('should use Web Share API', async () => {
       const shareMock = vi.fn().mockResolvedValue(undefined);
-      Object.assign(navigator, {
-        share: shareMock,
-      });
+      setNavigatorProperty('share', shareMock);
 
       const success = await shareContactNative('device-1');
 
@@ -431,9 +444,7 @@ describe('Contact Export', () => {
     });
 
     it('should return false if Web Share unavailable', async () => {
-      Object.assign(navigator, {
-        share: undefined,
-      });
+      setNavigatorProperty('share', undefined);
 
       const success = await shareContactNative('device-1');
 
@@ -442,9 +453,7 @@ describe('Contact Export', () => {
 
     it('should return false for non-existent contact', async () => {
       const shareMock = vi.fn();
-      Object.assign(navigator, {
-        share: shareMock,
-      });
+      setNavigatorProperty('share', shareMock);
 
       const success = await shareContactNative('non-existent');
 
@@ -454,9 +463,7 @@ describe('Contact Export', () => {
 
     it('should handle share cancellation', async () => {
       const shareMock = vi.fn().mockRejectedValue(new Error('Share cancelled'));
-      Object.assign(navigator, {
-        share: shareMock,
-      });
+      setNavigatorProperty('share', shareMock);
 
       const success = await shareContactNative('device-1');
 

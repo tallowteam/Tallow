@@ -55,7 +55,7 @@ export interface VendorChunkConfig {
 export function optimizeImages(
   options: ImageOptimizationOptions = {}
 ): void {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {return;}
 
   const {
     lazyLoad = true,
@@ -68,7 +68,7 @@ export function optimizeImages(
 
   images.forEach((img, index) => {
     // Skip if already optimized
-    if (img.dataset.optimized === 'true') return;
+    if (img.dataset.optimized === 'true') {return;}
 
     // Lazy load images below the fold
     if (lazyLoad && index > 2) {
@@ -143,7 +143,7 @@ export function optimizeImage(
  * deferNonCriticalCSS('/styles/non-critical.css');
  */
 export function deferNonCriticalCSS(stylesheet: string): void {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {return;}
 
   const link = document.createElement('link');
   link.rel = 'stylesheet';
@@ -165,7 +165,7 @@ export function deferNonCriticalCSS(stylesheet: string): void {
  * inlineCriticalCSS('.hero, .nav { ... }');
  */
 export function inlineCriticalCSS(css: string): void {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {return;}
 
   const style = document.createElement('style');
   style.textContent = css;
@@ -189,7 +189,7 @@ export function inlineCriticalCSS(css: string): void {
 export function removeUnusedCSS(
   stylesheet: CSSStyleSheet
 ): void {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {return;}
 
   try {
     const rules = Array.from(stylesheet.cssRules || []);
@@ -290,14 +290,14 @@ export function extractCriticalCSS(
 export function preloadCriticalAssets(
   assets: CriticalAsset[]
 ): void {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {return;}
 
   assets.forEach((asset) => {
     // Check if already preloaded
     const existing = document.head.querySelector(
       `link[rel="preload"][href="${asset.href}"]`
     );
-    if (existing) return;
+    if (existing) {return;}
 
     const link = document.createElement('link');
     link.rel = 'preload';
@@ -325,13 +325,13 @@ export function preloadCriticalAssets(
  * preconnect(['https://fonts.googleapis.com', 'https://cdn.example.com']);
  */
 export function preconnect(origins: string[]): void {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {return;}
 
   origins.forEach((origin) => {
     const existing = document.head.querySelector(
       `link[rel="preconnect"][href="${origin}"]`
     );
-    if (existing) return;
+    if (existing) {return;}
 
     const link = document.createElement('link');
     link.rel = 'preconnect';
@@ -357,13 +357,13 @@ export function preconnect(origins: string[]): void {
  * prefetchResources(['/next-page', '/api/data']);
  */
 export function prefetchResources(urls: string[]): void {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {return;}
 
   urls.forEach((url) => {
     const existing = document.head.querySelector(
       `link[rel="prefetch"][href="${url}"]`
     );
-    if (existing) return;
+    if (existing) {return;}
 
     const link = document.createElement('link');
     link.rel = 'prefetch';
@@ -386,7 +386,7 @@ export function prefetchResources(urls: string[]): void {
  * deferScript('/analytics.js');
  */
 export function deferScript(src: string, async = false): void {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {return;}
 
   const script = document.createElement('script');
   script.src = src;
@@ -515,7 +515,7 @@ export function splitVendorChunks(
  * Adds font-display and preload for better performance
  */
 export function optimizeFonts(): void {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {return;}
 
   // Find all font face declarations
   const styleSheets = Array.from(document.styleSheets);
@@ -529,7 +529,7 @@ export function optimizeFonts(): void {
           const src = rule.style.getPropertyValue('src');
           const urlMatch = src.match(/url\(['"]?([^'"]+)['"]?\)/);
 
-          if (urlMatch) {
+          if (urlMatch?.[1]) {
             const fontUrl = urlMatch[1];
 
             // Preload font
@@ -607,7 +607,7 @@ export function optimizeAllResources(options: {
   prefetch?: string[];
   serviceWorker?: string;
 }): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {return;}
 
   // Wait for DOM to be ready
   if (document.readyState === 'loading') {

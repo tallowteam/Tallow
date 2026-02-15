@@ -155,8 +155,11 @@ export function isFocusable(element: HTMLElement): boolean {
   if (tabindex === '-1') {return false;}
 
   const tagName = element.tagName.toLowerCase();
-  const isNativelyFocusable = ['a', 'button', 'input', 'select', 'textarea'].includes(tagName);
+  if (tagName === 'a') {
+    return element.hasAttribute('href') && !element.hasAttribute('disabled');
+  }
 
+  const isNativelyFocusable = ['button', 'input', 'select', 'textarea'].includes(tagName);
   if (isNativelyFocusable) {
     return !element.hasAttribute('disabled');
   }
@@ -203,7 +206,7 @@ export function generateAriaId(prefix = 'aria'): string {
 /**
  * Keyboard event helpers
  */
-export const KeyboardKeys = {
+export const KeyboardKeys = Object.freeze({
   ENTER: 'Enter',
   SPACE: ' ',
   ESCAPE: 'Escape',
@@ -214,7 +217,7 @@ export const KeyboardKeys = {
   ARROW_RIGHT: 'ArrowRight',
   HOME: 'Home',
   END: 'End',
-} as const;
+} as const);
 
 /**
  * Check if element is visible to screen readers

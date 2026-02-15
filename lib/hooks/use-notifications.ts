@@ -5,7 +5,7 @@
  * Unified hook for showing toasts and browser notifications
  */
 
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useToast } from './use-toast';
 import { useSettingsStore } from '@/lib/stores';
 import { notificationManager } from '@/lib/utils/notification-manager';
@@ -24,12 +24,33 @@ export interface NotifyOptions {
 export const useNotifications = () => {
   const toast = useToast();
   const settings = useSettingsStore();
+  const incomingTransferTimeoutsRef = useRef<Array<ReturnType<typeof setTimeout>>>([]);
+
+  const clearIncomingTransferTimeout = useCallback((timeoutId: ReturnType<typeof setTimeout>) => {
+    clearTimeout(timeoutId);
+    incomingTransferTimeoutsRef.current = incomingTransferTimeoutsRef.current.filter(
+      (id) => id !== timeoutId
+    );
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      for (const timeoutId of incomingTransferTimeoutsRef.current) {
+        clearTimeout(timeoutId);
+      }
+      incomingTransferTimeoutsRef.current = [];
+    };
+  }, []);
 
   // Register notification callback with manager
   useEffect(() => {
     notificationManager.registerNotificationCallback((options) => {
       return toast.addToast(options);
     });
+
+    return () => {
+      notificationManager.registerNotificationCallback(() => '');
+    };
   }, [toast]);
 
   // Update notification manager settings when they change
@@ -187,6 +208,7 @@ export const useNotifications = () => {
         action: {
           label: 'Accept',
           onClick: () => {
+            clearIncomingTransferTimeout(timeoutId);
             onAccept();
             toast.removeToast(toastId);
           },
@@ -194,14 +216,18 @@ export const useNotifications = () => {
       });
 
       // Auto-reject after 30 seconds
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
+        incomingTransferTimeoutsRef.current = incomingTransferTimeoutsRef.current.filter(
+          (id) => id !== timeoutId
+        );
         toast.removeToast(toastId);
         onReject();
       }, 30000);
+      incomingTransferTimeoutsRef.current.push(timeoutId);
 
       return toastId;
     },
-    [toast]
+    [clearIncomingTransferTimeout, toast]
   );
 
   /**

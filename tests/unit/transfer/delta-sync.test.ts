@@ -97,10 +97,10 @@ describe('Delta Sync', () => {
       const file1 = createTestFile('Short content');
       const file2 = createTestFile('Short content' + 'X'.repeat(5000));
 
-      const sig1 = await computeBlockSignatures(file1, 1024);
-      const sig2 = await computeBlockSignatures(file2, 1024);
+      const sig1 = await computeBlockSignatures(file1, 1024); // older
+      const sig2 = await computeBlockSignatures(file2, 1024); // newer
 
-      const delta = computeDelta(sig1, sig2);
+      const delta = computeDelta(sig2, sig1);
 
       expect(delta.added.length).toBeGreaterThan(0);
     });
@@ -109,10 +109,10 @@ describe('Delta Sync', () => {
       const file1 = createTestFile('Long content '.repeat(1000));
       const file2 = createTestFile('Long content '.repeat(100));
 
-      const sig1 = await computeBlockSignatures(file1, 1024);
-      const sig2 = await computeBlockSignatures(file2, 1024);
+      const sig1 = await computeBlockSignatures(file1, 1024); // older
+      const sig2 = await computeBlockSignatures(file2, 1024); // newer
 
-      const delta = computeDelta(sig1, sig2);
+      const delta = computeDelta(sig2, sig1);
 
       expect(delta.removed.length).toBeGreaterThan(0);
     });
@@ -143,12 +143,12 @@ describe('Delta Sync', () => {
       const file1 = createTestFile(original);
       const file2 = createTestFile(modified);
 
-      const sig1 = await computeBlockSignatures(file1, 512);
-      const sig2 = await computeBlockSignatures(file2, 512);
+      const sig1 = await computeBlockSignatures(file1, 1024);
+      const sig2 = await computeBlockSignatures(file2, 1024);
       const delta = computeDelta(sig1, sig2);
-      const patch = await createPatch(file1, delta, 512);
+      const patch = await createPatch(file1, delta, 1024);
 
-      const reconstructed = await applyPatch(file2, patch, delta, 512);
+      const reconstructed = await applyPatch(file2, patch, delta, 1024);
       const reconstructedText = await reconstructed.text();
 
       expect(reconstructedText).toBe(original);
@@ -264,9 +264,9 @@ describe('Delta Sync', () => {
 
     it('should serialize and deserialize patch', async () => {
       const file = createTestFile('Test');
-      const sig = await computeBlockSignatures(file, 512);
+      await computeBlockSignatures(file, 1024);
       const delta = { unchanged: [], changed: [0], added: [], removed: [] };
-      const patch = await createPatch(file, delta, 512);
+      const patch = await createPatch(file, delta, 1024);
 
       const { metadata, blocks } = serializePatch(patch);
       const deserialized = deserializePatch(metadata, blocks);
@@ -301,9 +301,9 @@ describe('Delta Sync', () => {
 
     it('should validate correct patch', async () => {
       const file = createTestFile('Test');
-      const sig = await computeBlockSignatures(file, 512);
+      await computeBlockSignatures(file, 1024);
       const delta = { unchanged: [], changed: [0], added: [], removed: [] };
-      const patch = await createPatch(file, delta, 512);
+      const patch = await createPatch(file, delta, 1024);
 
       expect(validatePatch(patch)).toBe(true);
     });

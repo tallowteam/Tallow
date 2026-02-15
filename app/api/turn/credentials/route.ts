@@ -4,39 +4,62 @@
  * GET /api/turn/credentials
  *
  * Returns temporary TURN server credentials for WebRTC NAT traversal.
- * Credentials are time-limited (12 hours default) and generated using either:
+ * Credentials are time-limited (12 hours default) and generated using the
+ * first available provider in the fallback chain:
  *
- *   1. Cloudflare TURN API (managed service, preferred)
- *   2. Coturn HMAC-SHA1 long-term credentials (self-hosted)
+ *   1. Cloudflare TURN (managed service, global edge, primary)
+ *   2. Twilio NTS (managed service, global, fallback)
+ *   3. Coturn HMAC-SHA1 long-term credentials (self-hosted)
+ *   4. Static credentials from environment variables (last resort)
+ *
+ * All providers generate TURN URLs for both UDP and TCP transports to
+ * ensure connectivity through restrictive firewalls.
  *
  * Security:
  *   - Rate limited to 10 requests/minute per IP
- *   - Credentials expire after 12 hours
+ *   - Credentials expire after 12 hours (configurable via ?ttl= query param)
  *   - HMAC-based credential generation prevents credential forgery
- *   - Shared secret never exposed to clients
+ *   - Shared secrets and API tokens never exposed to clients
  *   - Response includes expiry timestamp for client-side caching
+ *   - No-store cache headers prevent credential caching by intermediaries
+ *
+ * Fallback chain:
+ *   P2P (direct) -> STUN -> TURN-UDP -> TURN-TCP -> TURNS-TCP -> Relay
  *
  * Environment variables:
  *   Cloudflare TURN:
  *     - CLOUDFLARE_TURN_API_TOKEN
- *     - CLOUDFLARE_TURN_ACCOUNT_ID
+ *     - CLOUDFLARE_TURN_KEY_ID
  *     - CLOUDFLARE_TURN_TTL (optional, seconds, default 43200)
  *
+ *   Twilio NTS:
+ *     - TWILIO_ACCOUNT_SID
+ *     - TWILIO_AUTH_TOKEN
+ *     - TWILIO_TURN_TTL (optional, seconds, default 43200)
+ *
  *   Self-hosted coturn:
- *     - COTURN_URLS (comma-separated TURN URLs)
+ *     - COTURN_HOST (hostname or IP)
  *     - COTURN_SHARED_SECRET
+ *     - COTURN_PORT (optional, default 3478)
+ *     - COTURN_TLS_PORT (optional, default 443)
  *     - COTURN_REALM (optional)
  *     - COTURN_TTL (optional, seconds, default 43200)
  *
  *   Static fallback:
- *     - NEXT_PUBLIC_TURN_SERVER
- *     - NEXT_PUBLIC_TURN_USERNAME
- *     - NEXT_PUBLIC_TURN_CREDENTIAL
+ *     - TURN_SERVER_URL (or NEXT_PUBLIC_TURN_SERVER)
+ *     - TURN_USERNAME (or NEXT_PUBLIC_TURN_USERNAME)
+ *     - TURN_CREDENTIAL (or NEXT_PUBLIC_TURN_CREDENTIAL)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { jsonResponse, ApiErrors } from '@/lib/api/response';
 import { createRateLimiter } from '@/lib/middleware/rate-limit';
+import {
+  resolveCredentials,
+  getTurnConfigSummary,
+  type TURNCredentialSet,
+  type TURNProvider,
+} from '@/lib/network/turn-config';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -45,7 +68,11 @@ export const runtime = 'nodejs';
 // Constants
 // ============================================================================
 
-const DEFAULT_CREDENTIAL_TTL = 43200; // 12 hours in seconds
+/** Maximum allowed TTL in seconds (12 hours) */
+const MAX_CREDENTIAL_TTL = 43200;
+
+/** Minimum allowed TTL in seconds (5 minutes) */
+const MIN_CREDENTIAL_TTL = 300;
 
 // ============================================================================
 // Rate Limiter
@@ -53,91 +80,29 @@ const DEFAULT_CREDENTIAL_TTL = 43200; // 12 hours in seconds
 
 const turnRateLimiter = createRateLimiter({
   maxRequests: 10,
-  windowMs: 60000, // 1 minute
+  windowMs: 60_000, // 1 minute
   message: 'Too many TURN credential requests. Please try again later.',
 });
 
 // ============================================================================
-// Coturn HMAC Credential Generation (server-side only)
+// Response Types
 // ============================================================================
 
-/**
- * Generate HMAC-SHA1 credentials for coturn
- *
- * coturn --use-auth-secret mechanism:
- *   username = "expiryTimestamp:userId"
- *   credential = base64(HMAC-SHA1(shared_secret, username))
- */
-async function generateCoturnCredential(
-  sharedSecret: string,
-  ttlSeconds: number,
-  userId?: string
-): Promise<{ username: string; credential: string; expiresAt: number }> {
-  const expiresAt = Math.floor(Date.now() / 1000) + ttlSeconds;
-  const userPart = userId ?? Math.random().toString(36).substring(2, 10);
-  const username = `${expiresAt}:${userPart}`;
-
-  // HMAC-SHA1 using Node.js crypto (server-side)
-  const { createHmac } = await import('crypto');
-  const hmac = createHmac('sha1', sharedSecret);
-  hmac.update(username);
-  const credential = hmac.digest('base64');
-
-  return {
-    username,
-    credential,
-    expiresAt: expiresAt * 1000, // Return in milliseconds
-  };
-}
-
-// ============================================================================
-// Cloudflare TURN Credential Fetching
-// ============================================================================
-
-/**
- * Request temporary credentials from Cloudflare TURN API
- */
-async function getCloudflareCredentials(
-  apiToken: string,
-  accountId: string,
-  ttlSeconds: number
-): Promise<{
-  urls: string[];
-  username: string;
-  credential: string;
+interface TURNCredentialResponse {
+  /** ICE servers ready for RTCPeerConnection configuration */
+  iceServers: Array<{
+    urls: string | string[];
+    username?: string;
+    credential?: string;
+  }>;
+  /** Credential expiry timestamp (ms since epoch) */
   expiresAt: number;
-}> {
-  const response = await fetch(
-    `https://rtc.live.cloudflare.com/v1/turn/keys/${accountId}/credentials/generate`,
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ ttl: ttlSeconds }),
-    }
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => 'Unknown error');
-    throw new Error(`Cloudflare TURN API error (${response.status}): ${errorText}`);
-  }
-
-  const data = await response.json() as {
-    iceServers: {
-      urls: string[];
-      username: string;
-      credential: string;
-    };
-  };
-
-  return {
-    urls: data.iceServers.urls,
-    username: data.iceServers.username,
-    credential: data.iceServers.credential,
-    expiresAt: Date.now() + ttlSeconds * 1000,
-  };
+  /** TTL in seconds */
+  ttl: number;
+  /** Which provider generated these credentials */
+  provider: TURNProvider;
+  /** Fallback chain position description */
+  fallbackChain: string;
 }
 
 // ============================================================================
@@ -145,115 +110,89 @@ async function getCloudflareCredentials(
 // ============================================================================
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  // Rate limiting
+  // --- Rate limiting ---
   const rateLimitResult = turnRateLimiter.check(request);
   if (rateLimitResult) {
     return rateLimitResult;
   }
 
   try {
-    // Determine credential TTL from query params or env
+    // --- Parse and validate TTL ---
     const url = new URL(request.url);
     const requestedTtl = url.searchParams.get('ttl');
-    const ttlSeconds = requestedTtl
-      ? Math.min(parseInt(requestedTtl, 10), DEFAULT_CREDENTIAL_TTL)
-      : DEFAULT_CREDENTIAL_TTL;
 
-    if (isNaN(ttlSeconds) || ttlSeconds <= 0) {
-      return ApiErrors.badRequest('Invalid TTL parameter');
-    }
-
-    // -----------------------------------------------------------------------
-    // Strategy 1: Cloudflare TURN (managed, preferred)
-    // -----------------------------------------------------------------------
-    const cfApiToken = process.env['CLOUDFLARE_TURN_API_TOKEN'];
-    const cfAccountId = process.env['CLOUDFLARE_TURN_ACCOUNT_ID'];
-
-    if (cfApiToken && cfAccountId) {
-      try {
-        const credentials = await getCloudflareCredentials(cfApiToken, cfAccountId, ttlSeconds);
-
-        return jsonResponse({
-          iceServers: [{
-            urls: credentials.urls,
-            username: credentials.username,
-            credential: credentials.credential,
-          }],
-          expiresAt: credentials.expiresAt,
-          ttl: ttlSeconds,
-          provider: 'cloudflare',
-        });
-      } catch (error) {
-        // Log but fall through to coturn
-        console.error('[TURN API] Cloudflare TURN credential request failed:', error);
+    let ttlSeconds = MAX_CREDENTIAL_TTL;
+    if (requestedTtl) {
+      const parsed = parseInt(requestedTtl, 10);
+      if (isNaN(parsed) || parsed < MIN_CREDENTIAL_TTL || parsed > MAX_CREDENTIAL_TTL) {
+        return ApiErrors.badRequest(
+          `Invalid TTL parameter. Must be between ${MIN_CREDENTIAL_TTL} and ${MAX_CREDENTIAL_TTL} seconds.`
+        );
       }
+      ttlSeconds = parsed;
     }
 
-    // -----------------------------------------------------------------------
-    // Strategy 2: Self-hosted coturn (HMAC credentials)
-    // -----------------------------------------------------------------------
-    const coturnUrls = process.env['COTURN_URLS'];
-    const coturnSecret = process.env['COTURN_SHARED_SECRET'];
+    // --- Resolve credentials from fallback chain ---
+    const credentials: TURNCredentialSet = await resolveCredentials(ttlSeconds);
 
-    if (coturnUrls && coturnSecret) {
-      const coturnTtl = process.env['COTURN_TTL']
-        ? Math.min(parseInt(process.env['COTURN_TTL'], 10), ttlSeconds)
-        : ttlSeconds;
+    // --- Build response ---
+    const response: TURNCredentialResponse = {
+      iceServers: credentials.iceServers.map((s) => ({
+        urls: s.urls,
+        ...(s.username ? { username: s.username } : {}),
+        ...(s.credential ? { credential: s.credential } : {}),
+      })),
+      expiresAt: credentials.expiresAt,
+      ttl: credentials.ttl,
+      provider: credentials.provider,
+      fallbackChain: 'P2P -> STUN -> TURN-UDP -> TURN-TCP -> TURNS-TCP -> Relay',
+    };
 
-      const urls = coturnUrls.split(',').map(u => u.trim());
-      const { username, credential, expiresAt } = await generateCoturnCredential(
-        coturnSecret,
-        coturnTtl
+    // If no TURN servers are configured, return 200 with empty iceServers
+    // and a helpful message. The client will fall back to STUN-only.
+    if (credentials.provider === 'none') {
+      return jsonResponse(
+        {
+          ...response,
+          message:
+            'No TURN servers configured. Connections will use STUN only. ' +
+            'Set CLOUDFLARE_TURN_API_TOKEN + CLOUDFLARE_TURN_KEY_ID, or ' +
+            'TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN, or ' +
+            'COTURN_HOST + COTURN_SHARED_SECRET to enable TURN.',
+        },
+        200,
+        {
+          // No credential caching needed when there are no credentials
+          'Cache-Control': 'no-store',
+        }
       );
-
-      return jsonResponse({
-        iceServers: [{
-          urls,
-          username,
-          credential,
-        }],
-        expiresAt,
-        ttl: coturnTtl,
-        provider: 'coturn',
-      });
     }
 
-    // -----------------------------------------------------------------------
-    // Strategy 3: Static credentials from environment (fallback)
-    // -----------------------------------------------------------------------
-    const staticUrl = process.env['NEXT_PUBLIC_TURN_SERVER'] ?? process.env['TURN_SERVER_URL'];
-    const staticUsername = process.env['NEXT_PUBLIC_TURN_USERNAME'] ?? process.env['TURN_USERNAME'];
-    const staticCredential = process.env['NEXT_PUBLIC_TURN_CREDENTIAL'] ?? process.env['TURN_CREDENTIAL'];
+    // Return credentials with appropriate cache headers.
+    // Cache for at most 80% of the TTL to ensure clients refresh before expiry.
+    const cacheMaxAge = Math.floor(credentials.ttl * 0.8);
 
-    if (staticUrl && staticUsername && staticCredential) {
-      // Static credentials do not expire, but we set a TTL for client caching
-      return jsonResponse({
-        iceServers: [{
-          urls: [staticUrl],
-          username: staticUsername,
-          credential: staticCredential,
-        }],
-        expiresAt: Date.now() + ttlSeconds * 1000,
-        ttl: ttlSeconds,
-        provider: 'static',
-      });
-    }
-
-    // -----------------------------------------------------------------------
-    // No TURN configured
-    // -----------------------------------------------------------------------
-    return jsonResponse(
-      {
-        iceServers: [],
-        expiresAt: 0,
-        ttl: 0,
-        provider: 'none',
-        message: 'No TURN servers configured. P2P connections will rely on STUN only.',
-      },
-      200
-    );
+    return jsonResponse(response, 200, {
+      'Cache-Control': `private, no-store, max-age=${cacheMaxAge}`,
+    });
   } catch (error) {
     console.error('[TURN API] Unexpected error:', error);
     return ApiErrors.internalError('Failed to generate TURN credentials');
   }
+}
+
+// ============================================================================
+// HEAD Handler (health check without credential generation)
+// ============================================================================
+
+export async function HEAD(_request: NextRequest): Promise<NextResponse> {
+  const summary = getTurnConfigSummary();
+
+  return new NextResponse(null, {
+    status: summary.totalSources > 0 ? 200 : 503,
+    headers: {
+      'X-TURN-Providers': summary.availableProviders.join(',') || 'none',
+      'X-TURN-Provider-Count': summary.totalSources.toString(),
+    },
+  });
 }

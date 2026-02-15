@@ -168,7 +168,7 @@ export function analyzeBundleSize(
 
   resources.forEach((resource) => {
     const size = resource.transferSize || resource.encodedBodySize || 0;
-    if (size === 0) return;
+    if (size === 0) {return;}
 
     const url = new URL(resource.name, window.location.origin);
     const pathname = url.pathname;
@@ -264,13 +264,13 @@ function extractChunkNames(pathname: string): string[] {
 
   // Extract from Next.js chunk patterns
   const chunkMatch = pathname.match(/\/chunks\/([^/]+)/);
-  if (chunkMatch) {
+  if (chunkMatch?.[1]) {
     chunks.push(chunkMatch[1]);
   }
 
   // Extract from page patterns
   const pageMatch = pathname.match(/\/pages\/([^/]+)/);
-  if (pageMatch) {
+  if (pageMatch?.[1]) {
     chunks.push(pageMatch[1]);
   }
 
@@ -397,7 +397,7 @@ export function checkBudget(
 
   // Check per-route budgets
   data.routes.forEach((route) => {
-    if (route.path === '_shared') return; // Skip shared chunks
+    if (route.path === '_shared') {return;} // Skip shared chunks
 
     // Check JS budget
     if (route.gzippedJsSize > budgets.js) {
@@ -561,7 +561,7 @@ export function getOptimizationSuggestions(
  * Format bytes to human-readable size
  */
 export function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
+  if (bytes === 0) {return '0 B';}
 
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];

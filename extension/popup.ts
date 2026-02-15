@@ -95,7 +95,7 @@ class PopupState {
       const isHealthy = await checkTallowHealth(this.config.tallowUrl);
       this.setConnected(isHealthy);
       return isHealthy;
-    } catch (error) {
+    } catch (_error) {
       this.setConnected(false);
       return false;
     }
@@ -370,7 +370,7 @@ async function shareScreenshot(state: PopupState): Promise<void> {
   }
 }
 
-async function shareImage(state: PopupState): Promise<void> {
+async function shareImage(_state: PopupState): Promise<void> {
   alert('Image sharing from context menu - right-click on an image and select "Share with Tallow"');
 }
 
@@ -397,13 +397,6 @@ function showConnectedState(): void {
   document.getElementById('successState')!.style.display = 'none';
   document.getElementById('disconnectedState')!.style.display = 'none';
   document.getElementById('connectedState')!.style.display = 'block';
-}
-
-function showDisconnectedState(): void {
-  document.getElementById('connectedState')!.style.display = 'none';
-  document.getElementById('loadingState')!.style.display = 'none';
-  document.getElementById('successState')!.style.display = 'none';
-  document.getElementById('disconnectedState')!.style.display = 'flex';
 }
 
 // ============================================

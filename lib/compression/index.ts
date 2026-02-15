@@ -129,6 +129,8 @@ export type CompressionAlgorithm =
   | 'deflate'
   | 'deflate-raw'
   | 'brotli'
+  | 'lz4'
+  | 'zstd'
   | 'lzma'
   | 'none';
 
@@ -201,8 +203,8 @@ export async function detectContentType(file: File): Promise<FileContentType> {
 
   const printableRatio = printableCount / sample.length;
 
-  if (printableRatio > 0.9) return 'text';
-  if (printableRatio > 0.5) return 'mixed';
+  if (printableRatio > 0.9) {return 'text';}
+  if (printableRatio > 0.5) {return 'mixed';}
   return 'binary';
 }
 
@@ -212,9 +214,9 @@ export async function detectContentType(file: File): Promise<FileContentType> {
  * Recommendations:
  * - **Text files + balanced/size priority**: Brotli
  * - **Large text files + size priority**: LZMA
- * - **Binary files**: gzip (fastest)
- * - **Small files**: gzip or deflate
- * - **Speed priority**: gzip/deflate
+ * - **Binary files**: Zstd (balanced default)
+ * - **Small files**: gzip (header overhead is small)
+ * - **Speed priority**: LZ4
  *
  * @param file - File to compress
  * @param priority - Compression priority (default: 'balanced')
@@ -233,19 +235,19 @@ export async function selectCompression(
   // Detect content type
   const contentType = await detectContentType(file);
 
-  // Small files (< 10KB) - use fast compression
+  // Small files (< 10KB): keep gzip to avoid custom-header overhead.
   if (file.size < 10 * 1024) {
     return 'gzip';
   }
 
-  // Speed priority - always use gzip
+  // Speed priority: prefer LZ4.
   if (priority === 'speed') {
-    return 'gzip';
+    return 'lz4';
   }
 
-  // Binary files - use gzip (Brotli/LZMA don't help much)
+  // Binary files: default to Zstd for balanced speed/ratio.
   if (contentType === 'binary') {
-    return 'gzip';
+    return 'zstd';
   }
 
   // Text files with size priority
@@ -255,7 +257,7 @@ export async function selectCompression(
       return 'lzma';
     }
 
-    // Medium/large text files - Brotli for good ratio + reasonable speed
+    // Medium/large text files - Brotli for strong ratio with acceptable speed
     if (contentType === 'text' || contentType === 'mixed') {
       return 'brotli';
     }
@@ -263,13 +265,13 @@ export async function selectCompression(
 
   // Balanced priority with text content
   if (priority === 'balanced' && (contentType === 'text' || contentType === 'mixed')) {
-    // Use Brotli if supported, otherwise gzip
+    // Use Brotli if supported, otherwise Zstd.
     const { isBrotliSupported } = await import('./brotli');
-    return isBrotliSupported() ? 'brotli' : 'gzip';
+    return isBrotliSupported() ? 'brotli' : 'zstd';
   }
 
-  // Default to gzip
-  return 'gzip';
+  // Default to Zstd level-3 path in compression pipeline.
+  return 'zstd';
 }
 
 /**
@@ -306,6 +308,20 @@ export function getCompressionInfo(algorithm: CompressionAlgorithm): {
       speed: 'fast' as const,
       ratio: 'medium' as const,
       bestFor: 'Custom protocols, minimal metadata',
+    },
+    lz4: {
+      name: 'LZ4',
+      description: 'Ultra-fast block compression for speed-priority transfers',
+      speed: 'fast' as const,
+      ratio: 'low' as const,
+      bestFor: 'Low-latency transfers, LAN, speed-priority mode',
+    },
+    zstd: {
+      name: 'Zstandard',
+      description: 'Balanced compression with strong speed and ratio characteristics',
+      speed: 'medium' as const,
+      ratio: 'high' as const,
+      bestFor: 'General transfer default, mixed payloads, internet transfers',
     },
     brotli: {
       name: 'Brotli',

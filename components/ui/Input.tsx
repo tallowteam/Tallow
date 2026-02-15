@@ -2,6 +2,7 @@
 
 import { forwardRef, useId, InputHTMLAttributes, ReactNode } from 'react';
 import styles from './Input.module.css';
+import { cva } from '@/lib/ui/cva';
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -11,6 +12,40 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   trailingIcon?: ReactNode;
   fullWidth?: boolean;
 }
+
+const inputWrapperVariants = cva(styles.wrapper, {
+  variants: {
+    fullWidth: {
+      true: styles.fullWidth,
+      false: '',
+    },
+  },
+  defaultVariants: {
+    fullWidth: 'false',
+  },
+});
+
+const inputFieldWrapperVariants = cva(styles.inputWrapper, {
+  variants: {
+    error: {
+      true: styles.error,
+      false: '',
+    },
+    leadingIcon: {
+      true: styles.hasLeadingIcon,
+      false: '',
+    },
+    trailingIcon: {
+      true: styles.hasTrailingIcon,
+      false: '',
+    },
+  },
+  defaultVariants: {
+    error: 'false',
+    leadingIcon: 'false',
+    trailingIcon: 'false',
+  },
+});
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   (
@@ -36,21 +71,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       ? `${inputId}-helper`
       : undefined;
 
-    const wrapperClasses = [
-      styles.wrapper,
-      fullWidth ? styles.fullWidth : '',
-    ]
-      .filter(Boolean)
-      .join(' ');
+    const wrapperClasses = inputWrapperVariants({
+      fullWidth: fullWidth ? 'true' : 'false',
+    });
 
-    const inputWrapperClasses = [
-      styles.inputWrapper,
-      hasError ? styles.error : '',
-      leadingIcon ? styles.hasLeadingIcon : '',
-      trailingIcon ? styles.hasTrailingIcon : '',
-    ]
-      .filter(Boolean)
-      .join(' ');
+    const inputWrapperClasses = inputFieldWrapperVariants({
+      error: hasError ? 'true' : 'false',
+      leadingIcon: leadingIcon ? 'true' : 'false',
+      trailingIcon: trailingIcon ? 'true' : 'false',
+    });
 
     return (
       <div className={wrapperClasses}>

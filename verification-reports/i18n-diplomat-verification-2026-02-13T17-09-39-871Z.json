@@ -1,0 +1,52 @@
+{
+  "timestamp": "2026-02-13T17:09:39.868Z",
+  "checks": [
+    {
+      "name": "i18n policy, runtime modules, and workflows exist",
+      "pass": true,
+      "details": [
+        "all required i18n diplomat files are present"
+      ]
+    },
+    {
+      "name": "Locale inventory and runtime language registry cover 22 locales",
+      "pass": true,
+      "details": [
+        "locale imports in index.ts: 22",
+        "locale type values in types.ts: 22",
+        "runtime registry derives from LOCALE_CODES with full LocaleCode coverage"
+      ]
+    },
+    {
+      "name": "RTL locales and document direction controls are enforced",
+      "pass": true,
+      "details": [
+        "Arabic and Hebrew RTL handling plus document dir/lang switching verified"
+      ]
+    },
+    {
+      "name": "Locale formatting routes through Intl-aware helpers",
+      "pass": true,
+      "details": [
+        "number/date/time/relative/currency/list formatting helpers are present and Intl-backed"
+      ]
+    },
+    {
+      "name": "Missing-translation detection utilities remain available",
+      "pass": true,
+      "details": [
+        "translation missing/extra detection and reporting helpers are present"
+      ]
+    },
+    {
+      "name": "i18n diplomat gate is wired in package scripts and workflows",
+      "pass": true,
+      "details": [
+        "verify:i18n:diplomat: node scripts/verify-i18n-diplomat.js",
+        ".github/workflows/ci.yml runs i18n diplomat verification",
+        ".github/workflows/release.yml runs i18n diplomat verification"
+      ]
+    }
+  ],
+  "passed": true
+}

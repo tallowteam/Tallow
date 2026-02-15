@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
-type Theme = 'dark' | 'light' | 'high-contrast' | 'colorblind';
+type Theme = 'dark' | 'light' | 'forest' | 'ocean' | 'high-contrast' | 'colorblind';
 
 interface ThemeContextType {
   theme: Theme;
@@ -22,7 +22,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const savedTheme = localStorage.getItem('theme') as Theme | null;
 
     // Check if saved theme is valid
-    if (savedTheme && ['dark', 'light', 'high-contrast', 'colorblind'].includes(savedTheme)) {
+    if (savedTheme && ['dark', 'light', 'forest', 'ocean', 'high-contrast', 'colorblind'].includes(savedTheme)) {
       setThemeState(savedTheme);
     } else {
       // Fall back to system preference
@@ -48,9 +48,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const toggleTheme = () => {
     setThemeState((prev) => {
-      // Cycle through: dark → light → high-contrast → colorblind → dark
+      // Cycle through: dark -> light -> forest -> ocean -> high-contrast -> colorblind -> dark
       if (prev === 'dark') {return 'light';}
-      if (prev === 'light') {return 'high-contrast';}
+      if (prev === 'light') {return 'forest';}
+      if (prev === 'forest') {return 'ocean';}
+      if (prev === 'ocean') {return 'high-contrast';}
       if (prev === 'high-contrast') {return 'colorblind';}
       return 'dark';
     });

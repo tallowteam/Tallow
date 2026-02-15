@@ -96,7 +96,7 @@ export function shareEmailTemplate(params: ShareEmailParams): EmailTemplate {
     <tr>
       <td align="center">
         <!-- Content card -->
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: ${BRAND_COLORS.surface}; border-radius: 12px; border: 1px solid ${BRAND_COLORS.border}; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);">
+        <table width="600" cellpadding="0" cellspacing="0" style="width: 600px; max-width: 100%; background-color: ${BRAND_COLORS.surface}; border-radius: 12px; border: 1px solid ${BRAND_COLORS.border}; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);">
 
           <!-- Header with logo -->
           <tr>
@@ -323,7 +323,7 @@ export function welcomeEmailTemplate(params: WelcomeEmailParams): EmailTemplate 
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color: ${BRAND_COLORS.background}; padding: 40px 20px;">
     <tr>
       <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: ${BRAND_COLORS.surface}; border-radius: 12px; border: 1px solid ${BRAND_COLORS.border}; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);">
+        <table width="600" cellpadding="0" cellspacing="0" style="width: 600px; max-width: 100%; background-color: ${BRAND_COLORS.surface}; border-radius: 12px; border: 1px solid ${BRAND_COLORS.border}; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);">
 
           <!-- Header -->
           <tr>

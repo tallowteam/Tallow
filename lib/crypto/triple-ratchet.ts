@@ -20,6 +20,7 @@ import { SparsePQRatchet } from './sparse-pq-ratchet';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { hkdf } from '@noble/hashes/hkdf.js';
 import { x25519 } from '@noble/curves/ed25519.js';
+import { zeroMemory } from './secure-buffer';
 
 // ============================================================================
 // Constants
@@ -27,8 +28,29 @@ import { x25519 } from '@noble/curves/ed25519.js';
 
 const TRIPLE_RATCHET_INFO = new TextEncoder().encode('tallow-triple-ratchet-v1');
 const CHAIN_KEY_INFO = new TextEncoder().encode('tallow-tr-chain-v1');
-const MESSAGE_KEY_INFO = new TextEncoder().encode('tallow-tr-message-v1');
-const MAX_SKIP = 1000;
+const MESSAGE_KEY_INFO_PREFIX = new TextEncoder().encode('tallow-tr-message-v1');
+const COMBINE_KEY_INFO = new TextEncoder().encode('tallow-tr-combine-v1');
+export const DH_RATCHET_MESSAGE_INTERVAL = 1000;
+export const TRIPLE_RATCHET_MAX_SKIP = 1000;
+
+/**
+ * Encode a message number as a big-endian 8-byte (uint64) Uint8Array.
+ * Using 8 bytes avoids overflow concerns for message counters that may
+ * exceed 2^32 in long-lived sessions.
+ *
+ * Exported for unit testing; not part of the public API.
+ * @internal
+ */
+export function encodeMessageNumber(messageNumber: number): Uint8Array {
+    const buf = new Uint8Array(8);
+    // DataView gives us explicit big-endian control.
+    // We split into high 32 bits and low 32 bits to stay within
+    // safe integer range (Number.MAX_SAFE_INTEGER = 2^53 - 1).
+    const view = new DataView(buf.buffer);
+    view.setUint32(0, Math.floor(messageNumber / 0x100000000) >>> 0, false);
+    view.setUint32(4, (messageNumber & 0xFFFFFFFF) >>> 0, false);
+    return buf;
+}
 
 // ============================================================================
 // Types
@@ -178,8 +200,16 @@ export class TripleRatchet {
         // Get PQ ratchet contribution
         const pqResult = await this.state.pqr.prepareSend();
 
-        // Perform DH ratchet step only if we need to (after receiving a message with a new DH key)
-        if (this.state.dr.needsSendRatchet && this.state.dr.peerDHPublicKey) {
+        const shouldIntervalRatchet = (
+            this.state.dr.sendMessageNumber > 0 &&
+            this.state.dr.sendMessageNumber % DH_RATCHET_MESSAGE_INTERVAL === 0
+        );
+
+        // Perform DH ratchet step after receiving a new peer DH key OR on periodic cadence.
+        if (
+            (this.state.dr.needsSendRatchet || shouldIntervalRatchet) &&
+            this.state.dr.peerDHPublicKey
+        ) {
             await this.dhRatchetSend();
             this.state.dr.needsSendRatchet = false;
         }
@@ -304,7 +334,7 @@ export class TripleRatchet {
         this.secureDelete(this.state.dr.sendChainKey);
 
         // Secure cleanup of DH output
-        dhOutput.fill(0);
+        zeroMemory(dhOutput);
 
         // Update state
         this.state.dr.rootKey = rootKey;
@@ -330,7 +360,7 @@ export class TripleRatchet {
         this.secureDelete(this.state.dr.receiveChainKey);
 
         // Secure cleanup of DH output
-        dhOutput.fill(0);
+        zeroMemory(dhOutput);
 
         this.state.dr.rootKey = rootKey;
         this.state.dr.receiveChainKey = chainKey;
@@ -344,7 +374,7 @@ export class TripleRatchet {
     private async skipMessageKeys(until: number): Promise<void> {
         while (
             this.state.dr.receiveMessageNumber < until &&
-            this.state.skippedKeys.size < MAX_SKIP
+            this.state.skippedKeys.size < TRIPLE_RATCHET_MAX_SKIP
         ) {
             const messageKey = this.deriveMessageKey(
                 this.state.dr.receiveChainKey,
@@ -383,14 +413,24 @@ export class TripleRatchet {
         };
 
         // Secure cleanup of intermediate data
-        combined.fill(0);
-        output.fill(0);
+        zeroMemory(combined);
+        zeroMemory(output);
 
         return result;
     }
 
-    private deriveMessageKey(chainKey: Uint8Array, _messageNumber: number): Uint8Array {
-        return hkdf(sha256, chainKey, undefined, MESSAGE_KEY_INFO, 32);
+    private deriveMessageKey(chainKey: Uint8Array, messageNumber: number): Uint8Array {
+        // CRITICAL: The message number MUST be part of the HKDF info parameter
+        // so that each (chainKey, messageNumber) pair produces a unique key.
+        // This is a defense-in-depth measure: even if the chain key fails to
+        // ratchet forward (due to a bug or interrupted state update), distinct
+        // message numbers will still produce distinct message keys, preventing
+        // catastrophic nonce/key reuse in AES-GCM.
+        const msgNumBytes = encodeMessageNumber(messageNumber);
+        const info = new Uint8Array(MESSAGE_KEY_INFO_PREFIX.length + msgNumBytes.length);
+        info.set(MESSAGE_KEY_INFO_PREFIX, 0);
+        info.set(msgNumBytes, MESSAGE_KEY_INFO_PREFIX.length);
+        return hkdf(sha256, chainKey, undefined, info, 32);
     }
 
     private ratchetChainKey(chainKey: Uint8Array): Uint8Array {
@@ -401,10 +441,12 @@ export class TripleRatchet {
         const combined = new Uint8Array(dhKey.length + pqKey.length);
         combined.set(dhKey, 0);
         combined.set(pqKey, dhKey.length);
-        const result = hkdf(sha256, combined, undefined, MESSAGE_KEY_INFO, 32);
+        // Use a dedicated info string for key combination to maintain proper
+        // HKDF domain separation from message key derivation.
+        const result = hkdf(sha256, combined, undefined, COMBINE_KEY_INFO, 32);
 
         // Secure cleanup of intermediate data
-        combined.fill(0);
+        zeroMemory(combined);
 
         return result;
     }
@@ -448,20 +490,13 @@ export class TripleRatchet {
         return result === 0;
     }
 
+    /**
+     * Securely wipe key material using the centralized double-overwrite pattern.
+     * Delegates to zeroMemory() from secure-buffer module.
+     */
     private secureDelete(data: Uint8Array): void {
         if (!data) {return;}
-        try {
-            const random = crypto.getRandomValues(new Uint8Array(data.length));
-            for (let i = 0; i < data.length; i++) {
-                const byte = random[i];
-                if (byte !== undefined) {
-                    data[i] = byte;
-                }
-            }
-            data.fill(0);
-        } catch {
-            data.fill(0);
-        }
+        zeroMemory(data);
     }
 
     /**

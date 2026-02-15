@@ -1,333 +1,198 @@
 'use client';
 
-import { useCallback, useState, useRef } from 'react';
-import { DropZoneLoading } from './LoadingStates';
+import { useRef, ChangeEvent } from 'react';
 import styles from './FileDropZone.module.css';
 
-interface FileWithPath extends File {
-  path?: string;
-}
-
 interface FileDropZoneProps {
-  onFilesSelected: (files: FileWithPath[]) => void;
-  disabled?: boolean;
-  hasFiles?: boolean;
-  maxSize?: number; // in bytes
-  acceptedFileTypes?: string[];
-  loading?: boolean;
-}
-
-/**
- * Recursively scan directory and collect all files
- */
-async function scanDirectory(entry: FileSystemDirectoryEntry, path = ''): Promise<FileWithPath[]> {
-  const files: FileWithPath[] = [];
-  const reader = entry.createReader();
-
-  // Read all entries in directory (may require multiple calls)
-  const readEntries = (): Promise<FileSystemEntry[]> => {
-    return new Promise((resolve, reject) => {
-      reader.readEntries(resolve, reject);
-    });
-  };
-
-  let entries: FileSystemEntry[] = [];
-  let batch: FileSystemEntry[];
-
-  // Keep reading until we get an empty batch
-  do {
-    batch = await readEntries();
-    entries = entries.concat(batch);
-  } while (batch.length > 0);
-
-  // Process each entry
-  for (const entry of entries) {
-    const entryPath = path ? `${path}/${entry.name}` : entry.name;
-
-    if (entry.isFile) {
-      const file = await getFileFromEntry(entry as FileSystemFileEntry);
-      if (file) {
-        // Add path property to file
-        Object.defineProperty(file, 'path', {
-          value: entryPath,
-          writable: false,
-          enumerable: true,
-        });
-        files.push(file as FileWithPath);
-      }
-    } else if (entry.isDirectory) {
-      // Recursively scan subdirectory
-      const subFiles = await scanDirectory(entry as FileSystemDirectoryEntry, entryPath);
-      files.push(...subFiles);
-    }
-  }
-
-  return files;
-}
-
-/**
- * Get File object from FileSystemFileEntry
- */
-async function getFileFromEntry(entry: FileSystemFileEntry): Promise<File | null> {
-  return new Promise((resolve) => {
-    entry.file(resolve, () => resolve(null));
-  });
-}
-
-/**
- * Handle DataTransferItemList (supports folders)
- */
-async function handleDataTransferItems(items: DataTransferItemList): Promise<FileWithPath[]> {
-  const files: FileWithPath[] = [];
-
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    if (!item) {continue;}
-
-    const entry = item.webkitGetAsEntry?.();
-    if (!entry) {continue;}
-
-    if (entry.isFile) {
-      const file = await getFileFromEntry(entry as FileSystemFileEntry);
-      if (file) {
-        Object.defineProperty(file, 'path', {
-          value: entry.name,
-          writable: false,
-          enumerable: true,
-        });
-        files.push(file as FileWithPath);
-      }
-    } else if (entry.isDirectory) {
-      const dirFiles = await scanDirectory(entry as FileSystemDirectoryEntry, entry.name);
-      files.push(...dirFiles);
-    }
-  }
-
-  return files;
+  files: File[];
+  onFilesAdded: (files: File[]) => void;
+  onFileRemoved: (index: number) => void;
+  onClearAll: () => void;
+  isDragActive: boolean;
 }
 
 export function FileDropZone({
-  onFilesSelected,
-  disabled = false,
-  hasFiles = false,
-  maxSize = 5 * 1024 * 1024 * 1024, // 5GB default
-  acceptedFileTypes = [],
-  loading = false,
+  files,
+  onFilesAdded,
+  onFileRemoved,
+  onClearAll,
+  isDragActive,
 }: FileDropZoneProps) {
-  const [isDragging, setIsDragging] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const validateFiles = useCallback((files: File[]): { valid: File[]; errors: string[] } => {
-    const valid: File[] = [];
-    const errors: string[] = [];
+  const handleBrowseClick = () => {
+    inputRef.current?.click();
+  };
 
-    files.forEach((file) => {
-      // Check file size
-      if (file.size > maxSize) {
-        errors.push(`${file.name} exceeds maximum size of ${formatBytes(maxSize)}`);
-        return;
-      }
-
-      // Check file type if specified
-      if (acceptedFileTypes.length > 0) {
-        const isAccepted = acceptedFileTypes.some((type) => {
-          if (type.endsWith('/*')) {
-            const category = type.split('/')[0];
-            return file.type.startsWith(category + '/');
-          }
-          return file.type === type;
-        });
-
-        if (!isAccepted) {
-          errors.push(`${file.name} is not an accepted file type`);
-          return;
-        }
-      }
-
-      valid.push(file);
-    });
-
-    return { valid, errors };
-  }, [maxSize, acceptedFileTypes]);
-
-  const handleFiles = useCallback((files: FileList | null) => {
-    if (!files || files.length === 0) {return;}
-
-    const fileArray = Array.from(files);
-    const { valid, errors } = validateFiles(fileArray);
-
-    if (errors.length > 0) {
-      setError(errors[0] ?? null);
-      setTimeout(() => setError(null), 5000);
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = e.target.files;
+    if (selectedFiles && selectedFiles.length > 0) {
+      onFilesAdded(Array.from(selectedFiles));
     }
-
-    if (valid.length > 0) {
-      onFilesSelected(valid);
-      setError(null);
+    // Reset input value to allow selecting the same file again
+    if (inputRef.current) {
+      inputRef.current.value = '';
     }
-  }, [onFilesSelected, validateFiles]);
+  };
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!disabled) {
-      setIsDragging(true);
-    }
-  }, [disabled]);
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${(bytes / Math.pow(k, i)).toFixed(i === 0 ? 0 : 1)} ${sizes[i]}`;
+  };
 
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  }, []);
+  const getTotalSize = (): string => {
+    const total = files.reduce((sum, file) => sum + file.size, 0);
+    return formatFileSize(total);
+  };
 
-  const handleDrop = useCallback(async (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-
-    if (disabled) {return;}
-
-    // Check if dataTransfer has items (for folder support)
-    if (e.dataTransfer.items) {
-      const files = await handleDataTransferItems(e.dataTransfer.items);
-      if (files.length > 0) {
-        const { valid, errors } = validateFiles(files);
-
-        if (errors.length > 0) {
-          setError(errors[0] ?? null);
-          setTimeout(() => setError(null), 5000);
-        }
-
-        if (valid.length > 0) {
-          onFilesSelected(valid);
-          setError(null);
-        }
-      }
-    } else {
-      handleFiles(e.dataTransfer.files);
-    }
-  }, [disabled, handleFiles, onFilesSelected, validateFiles]);
-
-  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    handleFiles(e.target.files);
-    // Reset input to allow selecting the same file again
-    e.target.value = '';
-  }, [handleFiles]);
-
-  const handleClick = useCallback(() => {
-    if (!disabled) {
-      fileInputRef.current?.click();
-    }
-  }, [disabled]);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      handleClick();
-    }
-  }, [handleClick]);
+  const hasFiles = files.length > 0;
 
   return (
     <div className={styles.container}>
+      {/* Compact bar */}
       <div
-        className={`${styles.dropZone} ${isDragging ? styles.dragging : ''} ${
-          disabled || loading ? styles.disabled : ''
-        } ${hasFiles ? styles.hasFiles : ''}`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={loading ? undefined : handleClick}
-        onKeyDown={loading ? undefined : handleKeyDown}
+        className={`${styles.dropBar} ${isDragActive ? styles.dragging : ''}`}
+        onClick={handleBrowseClick}
         role="button"
-        tabIndex={disabled || loading ? -1 : 0}
-        aria-label="Drop files here or click to select"
-        aria-disabled={disabled || loading}
-        aria-busy={loading}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleBrowseClick();
+          }
+        }}
       >
+        <div className={styles.leftSection}>
+          <svg
+            className={styles.fileIcon}
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+            <polyline points="13 2 13 9 20 9" />
+          </svg>
+          <span className={styles.placeholderText}>
+            {hasFiles
+              ? `${files.length} file${files.length > 1 ? 's' : ''} • ${getTotalSize()}`
+              : 'Drop files here or click to browse'}
+          </span>
+        </div>
+
+        <button
+          type="button"
+          className={styles.browseButton}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleBrowseClick();
+          }}
+        >
+          Browse
+        </button>
+
         <input
-          ref={fileInputRef}
+          ref={inputRef}
           type="file"
           multiple
-          onChange={handleFileInput}
-          className={styles.fileInput}
-          aria-hidden="true"
-          tabIndex={-1}
-          disabled={disabled || loading}
+          onChange={handleFileChange}
+          className={styles.hiddenInput}
+          aria-label="Select files to transfer"
         />
-
-        <div className={styles.content}>
-          {loading ? (
-            <DropZoneLoading />
-          ) : isDragging ? (
-            <>
-              <DropIcon />
-              <p className={styles.title}>Drop files or folders here</p>
-            </>
-          ) : (
-            <>
-              <UploadIcon />
-              <p className={styles.title}>
-                {hasFiles ? 'Add more files' : 'Drop files or folders here'}
-              </p>
-              <p className={styles.subtitle}>
-                or click to browse
-              </p>
-              <p className={styles.hint}>
-                Max file size: {formatBytes(maxSize)}
-              </p>
-            </>
-          )}
-        </div>
       </div>
 
-      {error && (
-        <div className={styles.error} role="alert">
-          <ErrorIcon />
-          <span>{error}</span>
+      {/* Drag overlay */}
+      {isDragActive && (
+        <div className={styles.dragOverlay}>
+          <svg
+            className={styles.uploadIcon}
+            width="64"
+            height="64"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
+            <path d="M12 12v9" />
+            <path d="m16 16-4-4-4 4" />
+          </svg>
+          <p className={styles.dragText}>Drop files to send</p>
+        </div>
+      )}
+
+      {/* File chips section */}
+      {hasFiles && (
+        <div className={styles.fileChipsContainer}>
+          <div className={styles.fileChips}>
+            {files.map((file, index) => (
+              <div key={`${file.name}-${index}`} className={styles.fileChip}>
+                <svg
+                  className={styles.chipIcon}
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+                  <polyline points="13 2 13 9 20 9" />
+                </svg>
+                <span className={styles.chipName}>{file.name}</span>
+                <span className={styles.chipSize}>{formatFileSize(file.size)}</span>
+                <button
+                  type="button"
+                  className={styles.chipRemove}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onFileRemoved(index);
+                  }}
+                  aria-label={`Remove ${file.name}`}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+
+            {files.length >= 2 && (
+              <button
+                type="button"
+                className={styles.clearAllButton}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClearAll();
+                }}
+              >
+                Clear all
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
   );
-}
-
-// Icons
-function UploadIcon() {
-  return (
-    <svg className={styles.icon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="17 8 12 3 7 8" />
-      <line x1="12" y1="3" x2="12" y2="15" />
-    </svg>
-  );
-}
-
-function DropIcon() {
-  return (
-    <svg className={styles.iconLarge} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="7 10 12 15 17 10" />
-      <line x1="12" y1="15" x2="12" y2="3" />
-    </svg>
-  );
-}
-
-function ErrorIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" y1="8" x2="12" y2="12" />
-      <line x1="12" y1="16" x2="12.01" y2="16" />
-    </svg>
-  );
-}
-
-// Utilities
-function formatBytes(bytes: number): string {
-  if (bytes === 0) {return '0 Bytes';}
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
 }

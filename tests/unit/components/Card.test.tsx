@@ -80,7 +80,7 @@ describe('Card Component', () => {
   describe('Hover State', () => {
     it('enables hover effects when hover is true', () => {
       render(
-        <Card hover={true}>
+        <Card hover>
           <div>Hoverable</div>
         </Card>
       );
@@ -100,7 +100,7 @@ describe('Card Component', () => {
   describe('Glow Effect', () => {
     it('enables glow effect when glow is true', () => {
       render(
-        <Card glow={true}>
+        <Card glow>
           <div>Glowing</div>
         </Card>
       );
@@ -120,7 +120,7 @@ describe('Card Component', () => {
   describe('Interactive State', () => {
     it('enables interactive styles when interactive is true', () => {
       render(
-        <Card interactive={true}>
+        <Card interactive>
           <div>Interactive</div>
         </Card>
       );
@@ -130,7 +130,7 @@ describe('Card Component', () => {
     it('handles click events when interactive', () => {
       const handleClick = vi.fn();
       render(
-        <Card interactive={true} onClick={handleClick}>
+        <Card interactive onClick={handleClick}>
           <div>Clickable</div>
         </Card>
       );
@@ -177,11 +177,19 @@ describe('Card Component', () => {
   describe('Combined Props', () => {
     it('combines multiple props correctly', () => {
       render(
-        <Card variant="elevated" padding="lg" hover={true} glow={true} interactive={true}>
+        <Card variant="elevated" padding="lg" hover glow interactive>
           <div>Combined</div>
         </Card>
       );
       expect(screen.getByText('Combined')).toBeInTheDocument();
+    });
+  });
+
+  describe('Ref Forwarding', () => {
+    it('forwards ref to card element', () => {
+      const ref = { current: null as HTMLDivElement | null };
+      render(<Card ref={ref}>Card ref</Card>);
+      expect(ref.current).toBeInstanceOf(HTMLDivElement);
     });
   });
 });
@@ -237,6 +245,14 @@ describe('CardHeader Component', () => {
       expect(screen.getByTestId('custom-title')).toBeInTheDocument();
     });
   });
+
+  describe('Ref Forwarding', () => {
+    it('forwards ref to card header element', () => {
+      const ref = { current: null as HTMLDivElement | null };
+      render(<CardHeader ref={ref} title="Header ref" />);
+      expect(ref.current).toBeInstanceOf(HTMLDivElement);
+    });
+  });
 });
 
 describe('CardContent Component', () => {
@@ -251,14 +267,26 @@ describe('CardContent Component', () => {
     });
 
     it('applies custom className', () => {
-      render(<CardContent className="custom-content">Text</CardContent>);
-      const content = screen.getByText('Text').parentElement;
+      render(
+        <CardContent className="custom-content" data-testid="custom-content">
+          Text
+        </CardContent>
+      );
+      const content = screen.getByTestId('custom-content');
       expect(content).toHaveClass('custom-content');
     });
 
     it('supports HTML div attributes', () => {
       render(<CardContent data-testid="content">Text</CardContent>);
       expect(screen.getByTestId('content')).toBeInTheDocument();
+    });
+  });
+
+  describe('Ref Forwarding', () => {
+    it('forwards ref to card content element', () => {
+      const ref = { current: null as HTMLDivElement | null };
+      render(<CardContent ref={ref}>Content ref</CardContent>);
+      expect(ref.current).toBeInstanceOf(HTMLDivElement);
     });
   });
 });
@@ -275,14 +303,26 @@ describe('CardFooter Component', () => {
     });
 
     it('applies custom className', () => {
-      render(<CardFooter className="custom-footer">Text</CardFooter>);
-      const footer = screen.getByText('Text').parentElement;
+      render(
+        <CardFooter className="custom-footer" data-testid="custom-footer">
+          Text
+        </CardFooter>
+      );
+      const footer = screen.getByTestId('custom-footer');
       expect(footer).toHaveClass('custom-footer');
     });
 
     it('supports HTML div attributes', () => {
       render(<CardFooter data-testid="footer">Text</CardFooter>);
       expect(screen.getByTestId('footer')).toBeInTheDocument();
+    });
+  });
+
+  describe('Ref Forwarding', () => {
+    it('forwards ref to card footer element', () => {
+      const ref = { current: null as HTMLDivElement | null };
+      render(<CardFooter ref={ref}>Footer ref</CardFooter>);
+      expect(ref.current).toBeInstanceOf(HTMLDivElement);
     });
   });
 });

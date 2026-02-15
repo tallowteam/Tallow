@@ -65,7 +65,7 @@ export function formatDateTime(
 export function formatFileSize(bytes: number, locale: Locale): string {
   const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
 
-  if (bytes === 0) return '0 B';
+  if (bytes === 0) {return '0 B';}
 
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
   const value = bytes / Math.pow(1024, i);
@@ -242,7 +242,7 @@ export function formatOrdinal(n: number, locale: Locale): string {
       'zh-TW': { other: '第' },
     };
 
-    const localeSuffixes = suffixes[locale] || suffixes.en;
+    const localeSuffixes = suffixes[locale] ?? suffixes['en'] ?? { other: '' };
     const suffix = localeSuffixes[rule] || localeSuffixes.other;
 
     return `${n}${suffix}`;

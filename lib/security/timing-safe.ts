@@ -286,7 +286,8 @@ export async function timingSafeDelay(
 
   const randomBytes = new Uint32Array(1);
   crypto.getRandomValues(randomBytes);
-  const delay = minMs + (randomBytes[0] / 0xFFFFFFFF) * (maxMs - minMs);
+  const randomValue = randomBytes[0] ?? 0;
+  const delay = minMs + (randomValue / 0xFFFFFFFF) * (maxMs - minMs);
   await new Promise((resolve) => setTimeout(resolve, delay));
 }
 

@@ -22,7 +22,7 @@ export async function clearOldCaches() {
       console.info('[Cache Buster] New version:', APP_VERSION);
 
       // Clear service worker caches
-      if ('caches' in window) {
+      if (typeof caches !== 'undefined' && typeof caches.keys === 'function') {
         const cacheNames = await caches.keys();
         await Promise.all(
           cacheNames.map(cacheName => {
@@ -33,7 +33,11 @@ export async function clearOldCaches() {
       }
 
       // Unregister old service workers
-      if ('serviceWorker' in navigator) {
+      if (
+        'serviceWorker' in navigator &&
+        navigator.serviceWorker &&
+        typeof navigator.serviceWorker.getRegistrations === 'function'
+      ) {
         const registrations = await navigator.serviceWorker.getRegistrations();
         for (const registration of registrations) {
           console.info('[Cache Buster] Unregistering service worker');
@@ -85,9 +89,7 @@ export async function clearOldCaches() {
 export function forceHardRefresh() {
   if (typeof window === 'undefined') {return;}
 
-  // Use location.reload(true) to bypass cache
-  // @ts-ignore - deprecated but still works
-  window.location.reload(true);
+  window.location.reload();
 }
 
 /**
@@ -97,7 +99,7 @@ export async function isServedFromCache(): Promise<boolean> {
   if (typeof window === 'undefined') {return false;}
 
   try {
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    if ('serviceWorker' in navigator && navigator.serviceWorker?.controller) {
       return true;
     }
 

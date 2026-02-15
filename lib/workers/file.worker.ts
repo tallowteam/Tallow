@@ -5,6 +5,8 @@
  * and type detection operations.
  */
 
+export {};
+
 // Message types for communication
 interface FileWorkerMessage {
     type: 'hash-file' | 'chunk-file' | 'merge-chunks' | 'detect-type' | 'read-metadata';
@@ -119,7 +121,11 @@ async function mergeChunks(chunks: ArrayBuffer[]): Promise<ArrayBuffer> {
 
     let offset = 0;
     for (let i = 0; i < chunks.length; i++) {
-        const chunk = new Uint8Array(chunks[i]);
+        const chunkBuffer = chunks[i];
+        if (!chunkBuffer) {
+            continue;
+        }
+        const chunk = new Uint8Array(chunkBuffer);
         merged.set(chunk, offset);
         offset += chunk.byteLength;
 

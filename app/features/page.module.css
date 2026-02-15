@@ -591,6 +591,233 @@
 }
 
 /* ============================================
+   Comparison Section
+   ============================================ */
+
+.comparisonSection {
+  position: relative;
+  z-index: 1;
+  padding: clamp(56px, 8vw, 84px) clamp(16px, 4vw, 56px);
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.08), rgba(99, 102, 241, 0.02));
+  animation: revealUp 0.9s var(--ease) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 35%;
+}
+
+.comparisonHeader {
+  max-width: 960px;
+  margin: 0 auto 28px;
+}
+
+.comparisonLabel {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+  margin-bottom: 12px;
+}
+
+.comparisonTitle {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3.5vw + 0.4rem, 2.6rem);
+  font-weight: 300;
+  line-height: 1.15;
+  color: var(--text);
+}
+
+.comparisonSubtitle {
+  margin: 0;
+  font-size: clamp(0.9rem, 1.3vw + 0.65rem, 1rem);
+  line-height: 1.65;
+  color: var(--text-2);
+}
+
+.comparisonTableWrap {
+  max-width: 960px;
+  margin: 0 auto;
+  overflow-x: auto;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.comparisonTable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+
+.comparisonCaption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.comparisonTable thead th {
+  padding: 16px 18px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--text-3);
+  border-bottom: 1px solid var(--glass-border);
+  background: rgba(99, 102, 241, 0.09);
+}
+
+.comparisonTable tbody th,
+.comparisonTable tbody td {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.comparisonTable tbody tr:last-child th,
+.comparisonTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.comparisonTable tbody th {
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--text);
+  text-align: left;
+}
+
+.comparisonTable tbody td {
+  font-size: 0.9rem;
+  color: var(--text-2);
+}
+
+.comparisonTable tbody td:nth-child(2) {
+  color: var(--success);
+  font-weight: 600;
+}
+
+/* ============================================
+   Education Journey
+   ============================================ */
+
+.educationSection {
+  position: relative;
+  z-index: 1;
+  padding: clamp(56px, 8vw, 84px) clamp(16px, 4vw, 56px);
+  border-bottom: 1px solid var(--border);
+  background: rgba(99, 102, 241, 0.03);
+  animation: revealUp 0.9s var(--ease) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 35%;
+}
+
+.educationHeader {
+  max-width: 960px;
+  margin: 0 auto 24px;
+}
+
+.educationLabel {
+  display: inline-block;
+  margin-bottom: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+}
+
+.educationTitle {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3.5vw + 0.4rem, 2.6rem);
+  font-weight: 300;
+  line-height: 1.15;
+  color: var(--text);
+}
+
+.educationSubtitle {
+  margin: 0;
+  font-size: clamp(0.9rem, 1.3vw + 0.65rem, 1rem);
+  line-height: 1.65;
+  color: var(--text-2);
+}
+
+.educationSteps {
+  list-style: none;
+  padding: 0;
+  margin: 0 auto;
+  max-width: 960px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.educationStep {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  background: var(--glass);
+}
+
+.educationStepNumber {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.16);
+  color: var(--accent-2);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.educationStepContent h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.educationStepContent p {
+  margin: 0 0 8px;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.educationLink {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent-2);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+.educationLink:hover,
+.educationLink:focus-visible {
+  border-bottom-color: var(--accent-2);
+}
+
+@media (min-width: 768px) {
+  .educationSteps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ============================================
    CTA Section
    ============================================ */
 
@@ -618,7 +845,7 @@
 .ctaButton {
   display: inline-block;
   padding: clamp(14px, 2vw, 16px) clamp(32px, 5vw, 40px);
-  background: var(--accent);
+  background: var(--accent-strong, #4f46e5);
   color: #fff;
   font-size: clamp(0.9rem, 1.2vw + 0.6rem, 1rem);
   font-weight: 600;
@@ -633,7 +860,7 @@
 }
 
 .ctaButton:hover {
-  background: var(--accent-2);
+  background: var(--accent-strong-2, #4338ca);
   box-shadow: 0 6px 24px rgba(99, 102, 241, 0.4);
   transform: translateY(-2px);
 }
@@ -690,6 +917,18 @@
     padding: 18px 12px;
     font-size: 0.85rem;
   }
+
+  .comparisonSection {
+    padding: 42px 16px;
+  }
+
+  .comparisonTable {
+    min-width: 560px;
+  }
+
+  .educationSection {
+    padding: 42px 16px;
+  }
 }
 
 /* ============================================
@@ -716,6 +955,8 @@
 @supports not (animation-timeline: view()) {
   .header,
   .feature,
+  .comparisonSection,
+  .educationSection,
   .cta,
   .platformGrid,
   .statsCard,
@@ -735,6 +976,8 @@
 @media (prefers-reduced-motion: reduce) {
   .header,
   .feature,
+  .comparisonSection,
+  .educationSection,
   .cta,
   .platformItem:hover,
   .ctaButton:hover,

@@ -8,6 +8,29 @@ import { memoryWiper } from './memory-wiper';
 import { timingSafe } from './timing-safe';
 import { CredentialEncryption } from './credential-encryption';
 import { createKeyRotationManager } from './key-rotation';
+import {
+  createIncidentReport,
+  getResponseProcedure,
+  getResponseTimeline,
+  escalate,
+  updateIncidentStatus,
+  getIncidentById,
+  getAllIncidents,
+  getIncidentsBySeverity,
+  getIncidentsByType,
+  clearIncidentHistory,
+  formatIncidentSummary,
+} from './incident-response';
+import {
+  notifyBreach,
+  generateBreachReport,
+  clearSensitiveData,
+  formatBreachNotification,
+  formatBreachReport,
+  prepareUserNotification,
+  prepareComplianceReport,
+  shouldWipeEmergency,
+} from './breach-notification';
 
 // Memory wiping utilities
 export {

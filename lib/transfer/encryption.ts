@@ -4,16 +4,30 @@
  * Encryption Module
  * Provides end-to-end encryption using Web Crypto API and ChaCha20-Poly1305
  *
- * Supports two AEAD ciphers:
+ * Supports three AEAD ciphers (via SymmetricSentinel):
  * - AES-256-GCM (Web Crypto API, hardware accelerated)
  * - ChaCha20-Poly1305 (Noble library, constant-time)
+ * - AEGIS-256 (pure JS, fastest on AES-NI hardware)
  *
  * SECURITY: Uses counter-based nonces to prevent nonce reuse attacks.
  * Random nonces have birthday paradox risk; counter-based nonces guarantee uniqueness.
+ *
+ * The Sentinel-based API (encryptFileChunksWithSentinel / decryptFileChunksWithSentinel)
+ * is the recommended path for new code. It automatically negotiates the cipher and
+ * binds each chunk's index as associated data to prevent reordering attacks.
  */
 
 import { chacha20poly1305 } from '@noble/ciphers/chacha.js';
 import { NonceManager } from '@/lib/crypto/nonce-manager';
+import {
+  SymmetricSentinel,
+  type SymmetricEncryptedChunk,
+  type NonceDirection,
+} from '@/lib/crypto/symmetric';
+import {
+  selectSymmetricCipher,
+  type SymmetricCipherAlgorithm,
+} from '@/lib/crypto/cipher-selection';
 
 // Encryption algorithm types
 export type EncryptionAlgorithm = 'AES-GCM' | 'ChaCha20-Poly1305';
@@ -23,11 +37,24 @@ const ALGORITHM = 'AES-GCM';
 const KEY_LENGTH = 256;
 const CHACHA_NONCE_LENGTH = 12; // 96 bits for XChaCha20
 const CHACHA_KEY_LENGTH = 32; // 256 bits
+const FIPS_MODE_ENABLED = process.env.NEXT_PUBLIC_TALLOW_FIPS_MODE === 'true';
 
 // Counter-based nonce managers for each encryption algorithm
 // These prevent nonce reuse attacks that random nonces are vulnerable to
 let aesGcmNonceManager: NonceManager = new NonceManager();
 let chaCha20NonceManager: NonceManager = new NonceManager();
+
+function assertChaChaAllowed(): void {
+    if (!FIPS_MODE_ENABLED) {
+        return;
+    }
+
+    throw new Error('ChaCha20-Poly1305 is disabled when FIPS mode is enabled. Use AES-GCM.');
+}
+
+export function isFipsModeEnabled(): boolean {
+    return FIPS_MODE_ENABLED;
+}
 
 /**
  * Generate a random encryption key
@@ -232,6 +259,8 @@ export async function encryptChaCha(
     data: ArrayBuffer,
     key: Uint8Array
 ): Promise<{ ciphertext: Uint8Array; nonce: Uint8Array }> {
+    assertChaChaAllowed();
+
     if (key.length !== CHACHA_KEY_LENGTH) {
         throw new Error(`ChaCha20 key must be ${CHACHA_KEY_LENGTH} bytes`);
     }
@@ -257,6 +286,8 @@ export async function decryptChaCha(
     key: Uint8Array,
     nonce: Uint8Array
 ): Promise<Uint8Array> {
+    assertChaChaAllowed();
+
     if (key.length !== CHACHA_KEY_LENGTH) {
         throw new Error(`ChaCha20 key must be ${CHACHA_KEY_LENGTH} bytes`);
     }
@@ -281,6 +312,8 @@ export async function decryptChaCha(
  * Generate a random ChaCha20 key
  */
 export function generateChaChaKey(): Uint8Array {
+    assertChaChaAllowed();
+
     const key = new Uint8Array(CHACHA_KEY_LENGTH);
     crypto.getRandomValues(key);
     return key;
@@ -428,6 +461,124 @@ export async function deriveKeyFromPassword(
     return { key, salt: saltBuffer };
 }
 
+// ---------------------------------------------------------------------------
+// Sentinel-based chunk encryption (recommended for new code)
+//
+// These functions use the SymmetricSentinel which supports all three ciphers
+// (AES-256-GCM, ChaCha20-Poly1305, AEGIS-256), manages directional counter
+// nonces, and binds each chunk's index as associated data to prevent
+// reordering/splicing attacks.
+// ---------------------------------------------------------------------------
+
+/** Options for sentinel-based file chunk encryption. */
+export interface SentinelEncryptOptions {
+  /** Override the auto-selected cipher. */
+  cipher?: SymmetricCipherAlgorithm;
+  /** Direction for nonce counter ('sender' or 'receiver'). Default: 'sender'. */
+  direction?: NonceDirection;
+  /** Progress callback (0-100). */
+  onProgress?: (progress: number) => void;
+  /** Chunk size in bytes. Default: 64KB. */
+  chunkSize?: number;
+}
+
+/**
+ * Encrypt a file using SymmetricSentinel with chunk-index AAD.
+ *
+ * Each chunk's zero-based index is encoded as big-endian uint32 and passed as
+ * associated data, binding the chunk to its position in the file. This prevents
+ * an attacker from reordering, duplicating, or dropping chunks.
+ *
+ * @param file    The file to encrypt.
+ * @param rawKey  A 32-byte raw symmetric key (Uint8Array).
+ * @param options Cipher, direction, progress callback, chunk size.
+ * @returns       Array of encrypted chunks (each carries its own nonce and tag).
+ */
+export async function encryptFileChunksWithSentinel(
+  file: File,
+  rawKey: Uint8Array,
+  options: SentinelEncryptOptions = {}
+): Promise<SymmetricEncryptedChunk[]> {
+  const chunkSize = options.chunkSize ?? 64 * 1024;
+  const direction = options.direction ?? 'sender';
+  const cipher = options.cipher ?? selectSymmetricCipher();
+  const sentinel = new SymmetricSentinel(cipher);
+
+  const totalChunks = Math.ceil(file.size / chunkSize);
+  const results: SymmetricEncryptedChunk[] = [];
+
+  for (let i = 0; i < totalChunks; i++) {
+    const offset = i * chunkSize;
+    const blob = file.slice(offset, offset + chunkSize);
+    const plaintext = new Uint8Array(await blob.arrayBuffer());
+
+    // Encode chunk index as 4-byte big-endian associated data.
+    const aad = new Uint8Array(4);
+    new DataView(aad.buffer).setUint32(0, i, false);
+
+    const encrypted = await sentinel.encryptChunk(plaintext, rawKey, {
+      direction,
+      associatedData: aad,
+    });
+
+    results.push(encrypted);
+    options.onProgress?.(((i + 1) / totalChunks) * 100);
+  }
+
+  return results;
+}
+
+/**
+ * Decrypt an array of sentinel-encrypted chunks back to plaintext buffers.
+ *
+ * Verifies the chunk-index AAD for each chunk. If any chunk fails authentication
+ * (wrong tag, wrong index, tampered data), the function throws immediately.
+ *
+ * @param chunks  Array of encrypted chunks from encryptFileChunksWithSentinel.
+ * @param rawKey  The same 32-byte raw symmetric key used for encryption.
+ * @param options Progress callback.
+ * @returns       Array of decrypted ArrayBuffers in order.
+ */
+export async function decryptFileChunksWithSentinel(
+  chunks: SymmetricEncryptedChunk[],
+  rawKey: Uint8Array,
+  options: { onProgress?: (progress: number) => void } = {}
+): Promise<ArrayBuffer[]> {
+  const results: ArrayBuffer[] = [];
+  const total = chunks.length;
+
+  for (let i = 0; i < total; i++) {
+    const chunk = chunks[i];
+    if (!chunk) continue;
+
+    // Reconstruct the chunk-index AAD.
+    const aad = new Uint8Array(4);
+    new DataView(aad.buffer).setUint32(0, i, false);
+
+    // Create a fresh sentinel per chunk for decryption (stateless for decrypt).
+    const sentinel = new SymmetricSentinel(chunk.cipher);
+    const plaintext = await sentinel.decryptChunk(chunk, rawKey, {
+      associatedData: aad,
+    });
+
+    results.push(plaintext.buffer.slice(
+      plaintext.byteOffset,
+      plaintext.byteOffset + plaintext.byteLength
+    ) as ArrayBuffer);
+
+    options.onProgress?.(((i + 1) / total) * 100);
+  }
+
+  return results;
+}
+
+// Re-export sentinel types for convenience.
+export type {
+  SymmetricEncryptedChunk,
+  SymmetricCipherAlgorithm,
+  NonceDirection,
+};
+
 export default {
     generateKey,
     generateKeyPair,
@@ -446,8 +597,12 @@ export default {
     generateSecureCode,
     deriveKeyFromPassword,
     // Nonce management functions for key rotation
+    isFipsModeEnabled,
     resetAesGcmNonceManager,
     resetChaCha20NonceManager,
     resetAllNonceManagers,
     getNonceStatus,
+    // Sentinel-based chunk API
+    encryptFileChunksWithSentinel,
+    decryptFileChunksWithSentinel,
 };

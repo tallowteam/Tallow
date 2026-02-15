@@ -4,13 +4,9 @@
  */
 
 import { WorkerBridge } from './worker-bridge';
-import { createIPCProtocol, IPCProtocol } from './ipc-protocol';
-import { createWorkerPool, WorkerPool } from './worker-pool';
+import { createIPCProtocol } from './ipc-protocol';
+import { createWorkerPool } from './worker-pool';
 import {
-  SharedProgress,
-  SharedCancellation,
-  SharedCounter,
-  SharedFlag,
   isSharedArrayBufferAvailable,
   createProgressTracker,
   createCancellationToken,
@@ -119,10 +115,9 @@ export async function example4_cancellation() {
   }
 
   try {
-    const signal = cancellation.toAbortSignal();
+    cancellation.toAbortSignal();
 
     const hash = await WorkerBridge.crypto.hashFile(data, {
-      signal,
       onProgress: (progress) => {
         console.log(`Progress: ${progress.progress}%`);
 
@@ -506,6 +501,7 @@ export async function example13_fileTransfer() {
     }
   );
   console.log(`   Created ${chunks.length} chunks`);
+  console.log(`   Chunk size: ${metadata.chunkSize} bytes`);
 
   // Simulate transfer...
   console.log('\n5. Simulating transfer...');

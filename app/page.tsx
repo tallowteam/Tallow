@@ -110,7 +110,7 @@ export default function LandingPage() {
                   </div>
                   <div className={styles.transferFooter}>
                     <span className={styles.transferSpeed}>12.4 MB/s</span>
-                    <span className={styles.encryptionBadge}>AES-256-GCM</span>
+                    <span className={styles.encryptionBadge}>Encrypted</span>
                   </div>
                 </div>
               </div>
@@ -126,7 +126,7 @@ export default function LandingPage() {
         <div className={styles.marqueeTrack}>
           {[1, 2, 3].map((i) => (
             <span key={i} className={styles.marqueeContent}>
-              &nbsp;&nbsp;AES ENCRYPTED&nbsp;&nbsp;·&nbsp;&nbsp;ZERO KNOWLEDGE&nbsp;&nbsp;·&nbsp;&nbsp;OPEN SOURCE&nbsp;&nbsp;·&nbsp;&nbsp;POST-QUANTUM SAFE&nbsp;&nbsp;·&nbsp;&nbsp;NO FILE LIMITS&nbsp;&nbsp;·&nbsp;&nbsp;WEBRTC P2P&nbsp;&nbsp;·&nbsp;&nbsp;
+              &nbsp;&nbsp;ENCRYPTED&nbsp;&nbsp;·&nbsp;&nbsp;ZERO KNOWLEDGE&nbsp;&nbsp;·&nbsp;&nbsp;OPEN SOURCE&nbsp;&nbsp;·&nbsp;&nbsp;QUANTUM-SAFE&nbsp;&nbsp;·&nbsp;&nbsp;NO FILE LIMITS&nbsp;&nbsp;·&nbsp;&nbsp;DIRECT P2P&nbsp;&nbsp;·&nbsp;&nbsp;
             </span>
           ))}
         </div>
@@ -140,8 +140,8 @@ export default function LandingPage() {
           <span className={styles.featureLabel}>01 — TRANSFER</span>
           <h2 className={styles.featureHeading}>Lightning-fast peer-to-peer.</h2>
           <p className={styles.featureParagraph}>
-            Send files directly between devices at full network speed. No
-            upload limits, no cloud storage, no waiting. Your data travels the
+            Send files directly between devices at full local network speed.
+            No upload limits, no cloud storage bottlenecks, no waiting. Your data travels the
             shortest path possible, encrypted every step of the way.
           </p>
           <Link href="/features" className={styles.featureLink}>
@@ -152,7 +152,7 @@ export default function LandingPage() {
           <div className={styles.featureCard}>
             <div className={styles.statsPanel}>
               <div className={styles.statsPanelHeader}>
-                <span className={styles.statsPanelTitle}>DIRECT P2P</span>
+                <span className={styles.statsPanelTitle}>PEER-TO-PEER</span>
                 <span className={styles.statsPanelBadge}>ACTIVE</span>
               </div>
               <div className={styles.statsPanelRow}>
@@ -169,11 +169,11 @@ export default function LandingPage() {
               </div>
               <div className={styles.statsPanelRow}>
                 <span className={styles.statsPanelLabel}>Integrity</span>
-                <span className={`${styles.statsPanelValue} ${styles.valueGreen}`}>BLAKE3 Verified</span>
+                <span className={`${styles.statsPanelValue} ${styles.valueGreen}`}>Verified</span>
               </div>
               <div className={styles.statsPanelRow}>
                 <span className={styles.statsPanelLabel}>Encryption</span>
-                <span className={`${styles.statsPanelValue} ${styles.valueAccent}`}>ML-KEM-768</span>
+                <span className={`${styles.statsPanelValue} ${styles.valueAccent}`}>Quantum-Safe</span>
               </div>
             </div>
           </div>

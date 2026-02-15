@@ -93,7 +93,7 @@ export default function HowItWorksPage() {
           <h2 className={styles.sectionTitle}>Send files anywhere in the world</h2>
           <p className={styles.sectionDescription}>
             Transfer files across different networks using room codes, QR codes, or shareable links.
-            Direct P2P connection established automatically.
+            Peer-to-peer connection established automatically.
           </p>
         </div>
 
@@ -123,7 +123,7 @@ export default function HowItWorksPage() {
             <div className={styles.stepContent}>
               <h3 className={styles.stepTitle}>Connect</h3>
               <p className={styles.stepDescription}>
-                The recipient enters the code. A direct P2P tunnel is established through NAT traversal.
+                The recipient enters the code. A peer-to-peer tunnel is established through NAT traversal.
               </p>
             </div>
           </div>
@@ -176,7 +176,7 @@ export default function HowItWorksPage() {
             <div className={styles.stepContent}>
               <h3 className={styles.stepTitle}>One-Tap Send</h3>
               <p className={styles.stepDescription}>
-                Select a friend, drop files, and send. No codes needed. Direct P2P connection every time.
+                Select a friend, drop files, and send. No codes needed. Peer-to-peer connection every time.
               </p>
             </div>
           </div>

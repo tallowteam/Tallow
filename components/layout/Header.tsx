@@ -8,7 +8,7 @@ import styles from './header.module.css';
 const navLinks = [
   { href: '/features', label: 'FEATURES' },
   { href: '/how-it-works', label: 'HOW IT WORKS' },
-  { href: '/docs', label: 'HELP' },
+  { href: '/docs', label: 'DOCS' },
   { href: '/about', label: 'ABOUT' },
 ];
 
@@ -39,6 +39,22 @@ export function Header() {
     } else if (!mobileMenuOpen) {
       hamburgerRef.current?.focus();
     }
+  }, [mobileMenuOpen]);
+
+  // Keyboard close for modal-style mobile menu
+  useEffect(() => {
+    if (!mobileMenuOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [mobileMenuOpen]);
 
   // Close menu on route change

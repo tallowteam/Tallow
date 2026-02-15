@@ -66,7 +66,7 @@ const MAX_BLOCK_SIZE = 128 * 1024; // 128KB blocks
  * @returns true if data has Zstd magic number
  */
 export function isZstdCompressed(data: Uint8Array): boolean {
-  if (data.length < 4) return false;
+  if (data.length < 4) {return false;}
 
   const magic =
     (data[0] ?? 0) |
@@ -85,7 +85,7 @@ export function isZstdCompressed(data: Uint8Array): boolean {
  * @returns Hash value
  */
 function hash3(data: Uint8Array, pos: number): number {
-  if (pos + 2 >= data.length) return 0;
+  if (pos + 2 >= data.length) {return 0;}
 
   const value =
     (data[pos] ?? 0) |

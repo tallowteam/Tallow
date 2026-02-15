@@ -30,7 +30,7 @@ async function scrollToTop(page) {
 async function getMainTextContent(page) {
   try {
     return page.evaluate('document.querySelector("main") ? document.querySelector("main").textContent.trim() : ""');
-  } catch (e) {
+  } catch {
     return '';
   }
 }
@@ -165,16 +165,16 @@ async function hasElement(page, selector) {
       console.log('Main: ' + (pageResult.hasMain ? 'YES' : 'MISSING'));
       console.log('Sidebar: ' + (pageResult.hasSidebar ? 'YES' : 'N/A'));
 
-      if (!pageResult.hasHeader) pageResult.issues.push('Missing <header> element');
-      if (!pageResult.hasFooter) pageResult.issues.push('Missing <footer> element');
-      if (!pageResult.hasMain) pageResult.issues.push('Missing <main> element');
+      if (!pageResult.hasHeader) {pageResult.issues.push('Missing <header> element');}
+      if (!pageResult.hasFooter) {pageResult.issues.push('Missing <footer> element');}
+      if (!pageResult.hasMain) {pageResult.issues.push('Missing <main> element');}
 
       // Headings
       const headings = await getHeadings(page);
       pageResult.headings = headings;
       console.log('\nHeadings (' + headings.length + '):');
       headings.forEach(function(h) {
-        var visibility = h.visible ? '' : ' [HIDDEN]';
+        const visibility = h.visible ? '' : ' [HIDDEN]';
         console.log('  ' + h.tag + ': ' + h.text + visibility);
       });
 
@@ -183,12 +183,12 @@ async function hasElement(page, selector) {
       }
 
       // Check for error elements
-      var errorTexts = await getErrorTexts(page);
+      const errorTexts = await getErrorTexts(page);
       if (errorTexts.length > 0) {
         pageResult.errors = errorTexts;
         console.log('\nError elements found:');
         errorTexts.forEach(function(e) { console.log('  - ' + e); });
-        var is404 = errorTexts.some(function(t) { return t.includes('404') || t.toLowerCase().includes('not found'); });
+        const is404 = errorTexts.some(function(t) { return t.includes('404') || t.toLowerCase().includes('not found'); });
         if (is404) {
           pageResult.is404 = true;
           pageResult.issues.push('Page shows 404/not-found error');
@@ -196,7 +196,7 @@ async function hasElement(page, selector) {
       }
 
       // Check for empty main content
-      var mainText = await getMainTextContent(page);
+      const mainText = await getMainTextContent(page);
       if (mainText.length < 20) {
         pageResult.issues.push('Main content appears empty or very short (' + mainText.length + ' chars)');
       }
@@ -204,7 +204,7 @@ async function hasElement(page, selector) {
       console.log('First 300 chars: ' + mainText.substring(0, 300).replace(/\s+/g, ' '));
 
       // Check for broken images
-      var brokenImages = await countBrokenImages(page);
+      const brokenImages = await countBrokenImages(page);
       if (brokenImages.length > 0) {
         pageResult.issues.push('Broken images: ' + brokenImages.join(', '));
         console.log('\nBroken images: ' + brokenImages.join(', '));
@@ -212,26 +212,26 @@ async function hasElement(page, selector) {
 
       // Docs main page specific checks
       if (p.name === 'verify-docs') {
-        var cardCount = await countElements(page, '[class*="card"], [class*="Card"], [class*="feature"]');
-        var codeCount = await countElements(page, 'pre, code, [class*="code"]');
+        const cardCount = await countElements(page, '[class*="card"], [class*="Card"], [class*="feature"]');
+        const codeCount = await countElements(page, 'pre, code, [class*="code"]');
         console.log('\nDocs main page specific checks:');
         console.log('  Feature cards/sections: ' + cardCount);
         console.log('  Code blocks: ' + codeCount);
-        if (cardCount === 0) pageResult.issues.push('No feature cards found on docs main page');
+        if (cardCount === 0) {pageResult.issues.push('No feature cards found on docs main page');}
       }
 
       // Links
-      var links = await getLinks(page);
+      const links = await getLinks(page);
       console.log('\nLinks in main (' + links.length + '):');
       links.slice(0, 10).forEach(function(l) { console.log('  ' + l.text + ' -> ' + l.href); });
 
       // Accessibility snapshot
       try {
-        var a11y = await page.accessibility.snapshot();
+        const a11y = await page.accessibility.snapshot();
         if (a11y) {
-          var countNodes = function(node) {
-            var count = 1;
-            if (node.children) node.children.forEach(function(c) { count += countNodes(c); });
+          const countNodes = function(node) {
+            let count = 1;
+            if (node.children) {node.children.forEach(function(c) { count += countNodes(c); });}
             return count;
           };
           console.log('\nAccessibility tree nodes: ' + countNodes(a11y));
@@ -255,7 +255,7 @@ async function hasElement(page, selector) {
           path: SCREENSHOT_DIR + '/' + p.name + '.png',
           fullPage: false,
         });
-      } catch (e) {}
+      } catch {}
     }
 
     results.push(pageResult);
@@ -269,9 +269,9 @@ async function hasElement(page, selector) {
   console.log('SUMMARY OF ALL DOCS PAGES');
   console.log('='.repeat(70) + '\n');
 
-  var totalIssues = 0;
+  let totalIssues = 0;
   results.forEach(function(r) {
-    var icon = r.issues.length === 0 ? '[PASS]' : '[FAIL]';
+    const icon = r.issues.length === 0 ? '[PASS]' : '[FAIL]';
     console.log(icon + ' ' + r.name + ' (' + r.url + ')');
     console.log('     HTTP ' + r.status + ' | Header:' + r.hasHeader + ' Footer:' + r.hasFooter + ' Main:' + r.hasMain + ' Sidebar:' + r.hasSidebar);
     if (r.issues.length > 0) {

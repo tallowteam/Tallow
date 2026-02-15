@@ -1,0 +1,50 @@
+{
+  "timestamp": "2026-02-13T13:57:09.788Z",
+  "checks": [
+    {
+      "name": "Onboarding policy, implementation, tests, and workflows exist",
+      "pass": true,
+      "details": [
+        "all required onboarding files are present"
+      ]
+    },
+    {
+      "name": "Onboarding hook defines progressive guided targets and skip/dismiss actions",
+      "pass": true,
+      "details": [
+        "all required tokens found"
+      ]
+    },
+    {
+      "name": "Onboarding coach exposes guided and skippable controls",
+      "pass": true,
+      "details": [
+        "all required tokens found"
+      ]
+    },
+    {
+      "name": "Transfer page integrates onboarding coach callbacks",
+      "pass": true,
+      "details": [
+        "all required tokens found"
+      ]
+    },
+    {
+      "name": "Onboarding is covered by unit and e2e tests",
+      "pass": true,
+      "details": [
+        "unit and e2e onboarding coverage tokens found"
+      ]
+    },
+    {
+      "name": "Onboarding gate is wired in package scripts and workflows",
+      "pass": true,
+      "details": [
+        "verify:onboarding:guide: node scripts/verify-onboard-guide.js",
+        ".github/workflows/ci.yml runs onboarding verifier",
+        ".github/workflows/release.yml runs onboarding verifier"
+      ]
+    }
+  ],
+  "passed": true
+}

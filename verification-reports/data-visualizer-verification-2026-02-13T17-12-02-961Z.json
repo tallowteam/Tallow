@@ -1,0 +1,57 @@
+{
+  "timestamp": "2026-02-13T17:12:02.955Z",
+  "checks": [
+    {
+      "name": "Data visualizer policy, chart primitives, and workflows exist",
+      "pass": true,
+      "details": [
+        "all required data visualizer files are present"
+      ]
+    },
+    {
+      "name": "Chart containers expose accessibility semantics",
+      "pass": true,
+      "details": [
+        "SVG roles, labels, and metadata are present for chart containers"
+      ]
+    },
+    {
+      "name": "Chart data points carry assistive labels",
+      "pass": true,
+      "details": [
+        "line/bar/donut/current-point elements expose readable labels"
+      ]
+    },
+    {
+      "name": "Real-time chart rendering uses memoization and reduced-motion controls",
+      "pass": true,
+      "details": [
+        "memoized chart transforms and reduced-motion handling are in place"
+      ]
+    },
+    {
+      "name": "Color-blind-safe chart palette is centralized and reused",
+      "pass": true,
+      "details": [
+        "COLOR_BLIND_SAFE_PALETTE size: 8"
+      ]
+    },
+    {
+      "name": "Transfer telemetry components expose visible and screen-reader status",
+      "pass": true,
+      "details": [
+        "signal quality and transfer-rate status text is available for visual and assistive users"
+      ]
+    },
+    {
+      "name": "Data visualizer gate is wired in package scripts and workflows",
+      "pass": true,
+      "details": [
+        "verify:data:visualizer: node scripts/verify-data-visualizer.js",
+        ".github/workflows/ci.yml runs data visualizer verification",
+        ".github/workflows/release.yml runs data visualizer verification"
+      ]
+    }
+  ],
+  "passed": true
+}

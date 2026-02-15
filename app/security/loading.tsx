@@ -1,75 +1,139 @@
+import styles from './loading.module.css';
+
 export default function SecurityLoading() {
+  const overviewCards = Array.from({ length: 3 }, (_, i) => i);
+  const journeySteps = Array.from({ length: 5 }, (_, i) => i);
+  const specRows = Array.from({ length: 6 }, (_, i) => i);
+  const threatCards = Array.from({ length: 6 }, (_, i) => i);
+  const faqItems = Array.from({ length: 5 }, (_, i) => i);
+
   return (
     <div
-      style={{
-        minHeight: '100vh',
-        background: 'var(--bg, #030306)',
-        padding: 'clamp(120px, 18vw, 200px) clamp(16px, 4vw, 24px) 4rem',
-      }}
+      className={styles.page}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
     >
+      <span className={styles.srOnly}>Loading security page...</span>
+
+      {/* Hero */}
       <div
-        style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '1.5rem',
-        }}
+        className={styles.streamStage}
+        data-stream-stage="1"
+        aria-hidden="true"
       >
-        <div
-          style={{
-            width: '160px',
-            height: '14px',
-            borderRadius: '60px',
-            background: 'linear-gradient(90deg, rgba(24,24,42,0.4) 0%, rgba(36,36,58,0.6) 40%, rgba(24,24,42,0.4) 80%)',
-            backgroundSize: '200% 100%',
-            animation: 'shimmer 1.8s ease-in-out infinite',
-          }}
-        />
-        <div
-          style={{
-            width: 'min(550px, 75vw)',
-            height: '48px',
-            borderRadius: '8px',
-            background: 'linear-gradient(90deg, rgba(24,24,42,0.4) 0%, rgba(36,36,58,0.6) 40%, rgba(24,24,42,0.4) 80%)',
-            backgroundSize: '200% 100%',
-            animation: 'shimmer 1.8s ease-in-out infinite',
-          }}
-        />
-        <div
-          style={{
-            width: 'min(420px, 60vw)',
-            height: '16px',
-            borderRadius: '8px',
-            background: 'linear-gradient(90deg, rgba(24,24,42,0.4) 0%, rgba(36,36,58,0.6) 40%, rgba(24,24,42,0.4) 80%)',
-            backgroundSize: '200% 100%',
-            animation: 'shimmer 1.8s ease-in-out infinite',
-          }}
-        />
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-            gap: '1.5rem',
-            width: '100%',
-            marginTop: '3rem',
-          }}
-        >
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              style={{
-                height: '240px',
-                borderRadius: '16px',
-                background: 'rgba(12, 12, 22, 0.55)',
-                border: '1px solid rgba(99, 102, 241, 0.08)',
-              }}
-            />
-          ))}
+        <div className={styles.hero}>
+          <div className={`${styles.skeleton} ${styles.heroLabel}`} />
+          <div className={`${styles.skeleton} ${styles.heroTitle}`} />
+          <div className={`${styles.skeleton} ${styles.heroSubtitle}`} />
         </div>
       </div>
-      <style>{`@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }`}</style>
+
+      {/* Overview cards */}
+      <div
+        className={styles.streamStage}
+        data-stream-stage="2"
+        aria-hidden="true"
+      >
+        <div className={styles.overviewSection}>
+          <div className={styles.overviewGrid}>
+            {overviewCards.map((i) => (
+              <div key={i} className={styles.overviewCard}>
+                <div className={`${styles.skeleton} ${styles.overviewIcon}`} />
+                <div className={`${styles.skeleton} ${styles.overviewTitle}`} />
+                <div className={`${styles.skeleton} ${styles.overviewDesc}`} />
+                <div className={`${styles.skeleton} ${styles.overviewDescShort}`} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Encryption Journey steps */}
+      <div
+        className={styles.streamStage}
+        data-stream-stage="3"
+        aria-hidden="true"
+      >
+        <div className={styles.journeySection}>
+          <div className={styles.sectionHeader}>
+            <div className={`${styles.skeleton} ${styles.sectionTitle}`} />
+            <div className={`${styles.skeleton} ${styles.sectionSubtitle}`} />
+          </div>
+          <div className={styles.stepsGrid}>
+            {journeySteps.map((i) => (
+              <div key={i} className={styles.stepCard}>
+                <div className={`${styles.skeleton} ${styles.stepNumber}`} />
+                <div className={styles.stepContent}>
+                  <div className={`${styles.skeleton} ${styles.stepTitle}`} />
+                  <div className={`${styles.skeleton} ${styles.stepDesc}`} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Specs + Threats */}
+      <div
+        className={styles.streamStage}
+        data-stream-stage="4"
+        aria-hidden="true"
+      >
+        <div className={styles.specsSection}>
+          <div className={styles.sectionHeader}>
+            <div className={`${styles.skeleton} ${styles.sectionTitle}`} />
+            <div className={`${styles.skeleton} ${styles.sectionSubtitle}`} />
+          </div>
+          <div className={styles.specsCard}>
+            {specRows.map((i) => (
+              <div key={i} className={styles.specRow}>
+                <div className={`${styles.skeleton} ${styles.specLabel}`} />
+                <div className={`${styles.skeleton} ${styles.specValue}`} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className={styles.threatSection}>
+          <div className={styles.sectionHeader}>
+            <div className={`${styles.skeleton} ${styles.sectionTitle}`} />
+            <div className={`${styles.skeleton} ${styles.sectionSubtitle}`} />
+          </div>
+          <div className={styles.threatGrid}>
+            {threatCards.map((i) => (
+              <div key={i} className={styles.threatCard}>
+                <div className={`${styles.skeleton} ${styles.threatCheck}`} />
+                <div className={`${styles.skeleton} ${styles.threatTitle}`} />
+                <div className={`${styles.skeleton} ${styles.threatDesc}`} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* FAQ */}
+      <div
+        className={styles.streamStage}
+        data-stream-stage="5"
+        aria-hidden="true"
+      >
+        <div className={styles.faqSection}>
+          <div className={styles.sectionHeader}>
+            <div className={`${styles.skeleton} ${styles.sectionTitle}`} />
+            <div className={`${styles.skeleton} ${styles.sectionSubtitle}`} />
+          </div>
+          <div className={styles.faqList}>
+            {faqItems.map((i) => (
+              <div key={i} className={styles.faqItem}>
+                <div className={`${styles.skeleton} ${styles.faqQuestion}`} />
+                <div className={`${styles.skeleton} ${styles.faqAnswer}`} />
+                <div className={`${styles.skeleton} ${styles.faqAnswerShort}`} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -73,6 +73,37 @@ export {
   createScopedNonceManager,
 } from './nonce-manager';
 
+// Symmetric Cipher Selection + Sentinel
+export {
+  CIPHER_SELECTION_PRIORITY,
+  CIPHER_NONCE_SIZES,
+  CIPHER_TAG_SIZES,
+  CIPHER_KEY_SIZES,
+  isCipherAllowedInFips,
+  selectSymmetricCipher,
+  getSupportedCiphers,
+  negotiateCipher,
+  isValidCipherAlgorithm,
+  type SymmetricCipherAlgorithm,
+  type CipherSelectionOptions,
+} from './cipher-selection';
+
+export {
+  SymmetricNonceCounter,
+  SymmetricSentinel,
+  symmetricSentinel,
+  buildDirectionalNonce,
+  type SymmetricEncryptedChunk,
+  type NonceDirection,
+  type EncryptChunkOptions,
+  type DecryptChunkOptions,
+  SYMMETRIC_NONCE_BYTES,
+  AEGIS_NONCE_BYTES,
+  SYMMETRIC_AUTH_TAG_BYTES,
+  SYMMETRIC_DIRECTION_SENDER,
+  SYMMETRIC_DIRECTION_RECEIVER,
+} from './symmetric';
+
 // Digital Signatures
 export {
   getOrGenerateSigningKey,
@@ -135,7 +166,6 @@ export {
 // SLH-DSA Signatures (NIST standardized)
 export {
   slhDsa,
-  generateKeyPair as generateSLHDSAKeyPair,
   sign as signWithSLHDSA,
   verify as verifyWithSLHDSA,
   type SLHDSAKeyPair,
@@ -214,6 +244,89 @@ export {
   type PrekeyStore,
 } from './signed-prekeys';
 
+// AGENT 011 - SIGNATURE-AUTHORITY: Unified Signatures
+export {
+  signatures,
+  generateEd25519KeyPair,
+  ed25519Sign,
+  ed25519Verify,
+  generateMLDSAKeyPair,
+  mldsaSign,
+  mldsaVerify,
+  generateSLHDSAKeyPair,
+  slhdsaSign,
+  slhdsaVerify,
+  generateHybridKeyPair,
+  hybridSign,
+  hybridVerify,
+  signData,
+  signDataHybrid,
+  verifyData,
+  constantTimeEqual,
+  computeFingerprint,
+  computeHybridFingerprint,
+  selectAlgorithm,
+  SIGNATURE_ALGORITHM_ED25519,
+  SIGNATURE_ALGORITHM_ML_DSA_65,
+  SIGNATURE_ALGORITHM_SLH_DSA,
+  SIGNATURE_ALGORITHM_HYBRID,
+  ED25519_SIGNATURE_SIZE,
+  ED25519_PUBLIC_KEY_SIZE,
+  ED25519_PRIVATE_KEY_SIZE,
+  ML_DSA_65_SIGNATURE_SIZE,
+  ML_DSA_65_PUBLIC_KEY_SIZE,
+  ML_DSA_65_SECRET_KEY_SIZE,
+  SLH_DSA_SIGNATURE_SIZE,
+  SLH_DSA_PUBLIC_KEY_SIZE,
+  SLH_DSA_SECRET_KEY_SIZE,
+  type Ed25519KeyPair,
+  type MLDSAKeyPair,
+  type SLHDSAKeyPair as SignatureSLHDSAKeyPair,
+  type HybridKeyPair as SignatureHybridKeyPair,
+  type UnifiedSignature,
+  type HybridSignature,
+  type SignatureAlgorithm,
+  type Ed25519PublicKey,
+  type Ed25519PrivateKey,
+  type MLDSAPublicKey,
+  type MLDSASecretKey,
+  type SLHDSAPublicKey,
+  type SLHDSASecretKey,
+} from './signatures';
+
+// AGENT 011 - SIGNATURE-AUTHORITY: Prekey Bundles
+export {
+  prekeys,
+  generatePrekeyIdentity,
+  generateSignedPrekey as generateSignedPrekeyRecord,
+  verifySignedPrekeyEd25519,
+  verifySignedPrekeyMLDSA,
+  verifySignedPrekeyHybrid,
+  verifySignedPrekeySLHDSA,
+  signPrekeyWithSLHDSA,
+  shouldRotatePrekey,
+  rotateSignedPrekey,
+  generateOneTimePrekeys as generateOneTimePrekeyRecords,
+  consumeOneTimePrekey,
+  replenishOneTimePrekeys,
+  issueRevocationCertificate,
+  verifyRevocationCertificate,
+  isKeyRevoked,
+  buildPrekeyBundle,
+  verifyPrekeyBundle,
+  initializePrekeyStoreState,
+  PREKEY_ROTATION_INTERVAL_MS,
+  MAX_ONE_TIME_PREKEYS,
+  ONE_TIME_PREKEY_REPLENISH_THRESHOLD,
+  type PrekeyIdentity,
+  type SignedPrekeyRecord,
+  type OneTimePrekeyRecord,
+  type RevocationCertificate,
+  type PrekeyBundle as PrekeyBundleV2,
+  type PrekeyStoreState,
+  type RevocationReason,
+} from './prekeys';
+
 // Crypto Loader (manages WASM initialization)
 export {
   loadPQCCrypto,
@@ -230,6 +343,19 @@ export {
   cryptoWorker,
 } from './crypto-worker-client';
 
+// AGENT 017 - MEMORY-WARDEN: Secure buffer management and key zeroing
+export {
+  SecureBuffer,
+  zeroMemory,
+  zeroMemoryAll,
+  destroyAllKeys,
+  getSecureBufferStats,
+  createSecureBuffer,
+  encryptForStorage,
+  decryptFromStorage,
+  deriveStorageKey,
+} from './secure-buffer';
+
 // PQC Preloading
 export {
   preloadAllPQC,
@@ -239,3 +365,40 @@ export {
   getPreloadStatus,
   type PreloadStatus,
 } from './preload-pqc';
+
+// HASH-ORACLE: Hashing facade + domain separation registry
+export {
+  hash as hashOracleHash,
+  hashHex as hashOracleHex,
+  keyedHash as hashOracleKeyedHash,
+  constantTimeEqual as hashOracleConstantTimeEqual,
+  deriveKey as hashOracleDeriveKey,
+  createHasher as hashOracleCreateHasher,
+  hashChunkToHex,
+  verifyChunkHash,
+  DOMAIN_HYBRID_KEX,
+  DOMAIN_ROOT_KEY,
+  DOMAIN_CHAIN_KEY,
+  DOMAIN_MESSAGE_KEY,
+  DOMAIN_NONCE_SEED,
+  DOMAIN_STORAGE_KEY,
+  DOMAIN_SEPARATION_REGISTRY,
+  type DomainSeparationContext,
+} from './hashing';
+
+// HASH-ORACLE: Merkle tree integrity verification
+export {
+  buildMerkleTree,
+  buildMerkleTreeFromHashes,
+  generateProof,
+  verifyProof,
+  verifyChunk,
+  hashChunk,
+  createFileIntegrityManifest,
+  verifyFileIntegrity,
+  type MerkleNode,
+  type MerkleTree,
+  type MerkleProof,
+  type ChunkIntegrity,
+  type FileIntegrityManifest,
+} from './integrity';

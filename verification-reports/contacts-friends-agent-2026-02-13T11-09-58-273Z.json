@@ -1,0 +1,34 @@
+{
+  "timestamp": "2026-02-13T11:09:58.269Z",
+  "checks": [
+    {
+      "name": "Contacts/friends baseline files exist",
+      "pass": true,
+      "details": [
+        "policy, friends/settings stores, and workflows found"
+      ]
+    },
+    {
+      "name": "Trust, favorites auto-connect, block-drop, and guest mode controls are implemented",
+      "pass": true,
+      "details": [
+        "friends store enforces SAS/guest trust paths and immediate block disconnect behavior"
+      ]
+    },
+    {
+      "name": "Contacts/friends trust policy is documented and actionable",
+      "pass": true,
+      "details": [
+        "policy documents SAS, auto-connect, block-drop, and guest-token controls"
+      ]
+    },
+    {
+      "name": "CI/release workflows enforce contacts/friends verification",
+      "pass": true,
+      "details": [
+        "contacts/friends gate is wired in CI and release workflows"
+      ]
+    }
+  ],
+  "passed": true
+}

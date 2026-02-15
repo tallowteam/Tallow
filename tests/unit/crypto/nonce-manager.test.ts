@@ -96,8 +96,6 @@ describe('NonceManager', () => {
     });
 
     it('should handle large counter values', () => {
-      const manager = new NonceManager();
-
       // Skip to a large counter value
       const largeValue = 2n ** 32n; // 4 billion
       const restoredManager = NonceManager.fromState(
@@ -131,8 +129,6 @@ describe('NonceManager', () => {
     });
 
     it('should detect near capacity threshold', () => {
-      const manager = new NonceManager();
-
       // Set counter near capacity threshold (2^60)
       const nearCapacityManager = NonceManager.fromState(
         new Uint8Array([1, 2, 3, 4]),
@@ -195,7 +191,7 @@ describe('NonceManager', () => {
       expect(restoredManager.getCounter()).toBe(state.counter);
 
       // Next nonce should continue from saved counter
-      const nonce = restoredManager.getNextNonce();
+      restoredManager.getNextNonce();
       expect(restoredManager.getCounter()).toBe(state.counter + 1n);
     });
 
@@ -423,10 +419,10 @@ describe('NonceManager', () => {
       const manager2 = new NonceManager();
 
       const nonce1a = manager1.getNextNonce();
-      const nonce1b = manager1.getNextNonce();
+      manager1.getNextNonce();
 
       const nonce2a = manager2.getNextNonce();
-      const nonce2b = manager2.getNextNonce();
+      manager2.getNextNonce();
 
       // Prefixes should be different (session isolation)
       expect(nonce1a.slice(0, 4)).not.toEqual(nonce2a.slice(0, 4));

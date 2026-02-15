@@ -117,27 +117,39 @@ export {
   type WebTransportStats,
   type WebTransportStreamOptions,
   type DatagramOptions,
+  type FileTransferHeader,
 } from './webtransport';
 
 // ============================================================================
-// Transport Protocol Selection
+// Transport Protocol Selection & Negotiation
 // ============================================================================
 
 export {
   selectBestTransport,
   detectBrowserSupport,
   isTransportSupported,
+  isExperimentalProtocolAvailable,
   getTransportCapabilities,
+  createTransportOffer,
+  processTransportOffer,
+  attemptWithFallback,
+  assessTransportQuality,
   selectForFileTransfer,
   selectForRealtime,
   selectForChat,
   selectForSignaling,
   selectForPrivacy,
   type TransportProtocol,
+  type ExperimentalProtocol,
   type TransportOptions,
   type BrowserSupport,
   type TransportCapabilities,
   type TransportSelectionResult,
+  type TransportNegotiationMessage,
+  type NegotiationResult,
+  type TransportQuality,
+  type QuicRawConfig,
+  type MptcpConfig,
 } from './transport-selector';
 
 // ============================================================================

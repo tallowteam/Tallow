@@ -17,6 +17,34 @@ export {
   type StripResult,
 } from './metadata-stripper';
 
+// AGENT 016 - Metadata Eraser (full sanitization pipeline)
+export {
+  eraseMetadata,
+  eraseMetadataBatch,
+  restoreFile,
+  encryptFilename,
+  decryptFilename,
+  generateFilenameKey,
+  padToNearestPowerOf2,
+  removePadding,
+  stripPdfMetadata,
+  stripOfficeXmlMetadata,
+  isDocumentType,
+  normalizeTimestamp,
+  DOCUMENT_METADATA_TYPES,
+  type FilenameEncryptionResult,
+  type SanitizedFile,
+  type MetadataEraserOptions,
+} from './metadata-eraser';
+
+// AGENT 016 - Filename Encryption (canonical module)
+export {
+  generateTransferFilename,
+  deriveFilenameKey,
+  isValidTransferFilename,
+  type EncryptedFilename,
+} from './filename-encryption';
+
 // Privacy Settings
 export {
   getPrivacySettings,

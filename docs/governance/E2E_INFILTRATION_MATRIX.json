@@ -1,0 +1,60 @@
+{
+  "version": "2026-02-13",
+  "owner": "AGENT 077 - E2E-INFILTRATOR",
+  "minimumScenarioCount": 400,
+  "requiredProjects": [
+    "chromium",
+    "firefox",
+    "webkit",
+    "mobile-chrome",
+    "mobile-safari"
+  ],
+  "flowCoverage": [
+    {
+      "phase": "connect",
+      "file": "tests/e2e/transfer-page.spec.ts",
+      "marker": "should switch modes from sidebar"
+    },
+    {
+      "phase": "send",
+      "file": "tests/e2e/transfer-page.spec.ts",
+      "marker": "should only show send action after device selection"
+    },
+    {
+      "phase": "encrypt",
+      "file": "tests/e2e/transfer-page.spec.ts",
+      "marker": "should show trust strip algorithm and connection controls"
+    },
+    {
+      "phase": "receive",
+      "file": "tests/e2e/transfer-management.spec.ts",
+      "marker": "scheduled transfer execution transitions to completed history entry"
+    },
+    {
+      "phase": "verify",
+      "file": "tests/e2e/transfer-page.spec.ts",
+      "marker": "should complete SAS verification step in trust strip"
+    }
+  ],
+  "networkProfiles": [
+    {
+      "profile": "offline",
+      "file": "tests/e2e/network-resilience.spec.ts",
+      "marker": "network profile: offline keeps transfer workspace interactive"
+    },
+    {
+      "profile": "3g",
+      "file": "tests/e2e/network-resilience.spec.ts",
+      "marker": "network profile: 3g-like latency preserves transfer mode transitions"
+    },
+    {
+      "profile": "flaky",
+      "file": "tests/e2e/network-resilience.spec.ts",
+      "marker": "network profile: flaky requests recover without crashing transfer UI"
+    }
+  ],
+  "matrixEvidenceSource": {
+    "file": "REMAINING_IMPLEMENTATION_CHECKLIST.md",
+    "contains": "Re-ran full cross-project Playwright matrix on 2026-02-12: `npm run test:e2e -- --reporter=line` => `1017 passed`, `34 skipped`, `2 flaky`, `0 failed`"
+  }
+}

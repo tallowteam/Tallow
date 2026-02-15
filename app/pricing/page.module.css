@@ -46,17 +46,78 @@
   margin-bottom: clamp(80px, 12vw, 120px);
 }
 
-.pricingCard {
+.planGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(18px, 2vw, 24px);
+}
+
+@media (min-width: 768px) {
+  .planGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .planGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.planCard {
   background: var(--glass);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-xl);
   backdrop-filter: blur(20px);
-  padding: clamp(40px, 7vw, 64px) clamp(24px, 5vw, 64px);
-  max-width: min(720px, 90vw);
-  margin: 0 auto;
+  padding: clamp(24px, 3vw, 32px);
   animation: revealScale 1s var(--ease) both;
   animation-timeline: view();
   animation-range: entry 0% entry 30%;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.planCardPopular {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.2);
+}
+
+.planHeader {
+  margin-bottom: clamp(16px, 2vw, 20px);
+  padding-bottom: clamp(14px, 1.7vw, 18px);
+  border-bottom: 1px solid var(--border);
+}
+
+.planName {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 2vw + 0.7rem, 1.8rem);
+  font-weight: 500;
+  line-height: 1.2;
+  margin: 0 0 8px;
+  color: var(--text);
+}
+
+.planDescription {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--text-2);
+  margin: 0 0 14px;
+  min-height: 40px;
+}
+
+.planPrice {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3vw + 0.8rem, 2.8rem);
+  line-height: 1;
+  color: var(--text);
+}
+
+.planPriceSuffix {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--text-2);
+  margin-left: 6px;
 }
 
 .priceWrapper {
@@ -85,7 +146,8 @@
   display: flex;
   flex-direction: column;
   gap: clamp(16px, 2.5vw, 20px);
-  margin-bottom: clamp(40px, 6vw, 48px);
+  margin-bottom: clamp(18px, 2vw, 24px);
+  flex: 1;
 }
 
 .feature {
@@ -121,6 +183,22 @@
   transition: all 0.2s var(--ease);
   text-decoration: none;
   min-height: 44px;
+}
+
+.limitations {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--text-2);
+  margin: 0 0 14px;
+}
+
+.billingNote {
+  margin: clamp(18px, 2.4vw, 28px) auto 0;
+  text-align: center;
+  max-width: 960px;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--text-2);
 }
 
 .ctaButton svg {

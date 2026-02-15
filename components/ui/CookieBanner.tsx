@@ -34,7 +34,7 @@ interface CookieBannerProps {
 export function CookieBanner({
   privacyUrl = '/privacy',
   message,
-  showDecline = false,
+  showDecline = true,
 }: CookieBannerProps) {
   const [visible, setVisible] = useState(false);
   const [mounted, setMounted] = useState(false);

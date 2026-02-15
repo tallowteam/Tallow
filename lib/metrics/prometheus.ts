@@ -20,15 +20,6 @@
 export type Labels = Record<string, string | number>;
 
 /**
- * Metric value with optional labels
- */
-interface MetricValue {
-  value: number;
-  labels?: Labels;
-  timestamp?: number;
-}
-
-/**
  * Counter - increment-only metric
  * Used for counting events (e.g., requests, errors, transfers)
  */
@@ -38,7 +29,7 @@ export class Counter {
   constructor(
     private name: string,
     private help: string,
-    private labelNames: string[] = []
+    _labelNames: string[] = []
   ) {}
 
   /**
@@ -124,7 +115,7 @@ export class Gauge {
   constructor(
     private name: string,
     private help: string,
-    private labelNames: string[] = []
+    _labelNames: string[] = []
   ) {}
 
   /**
@@ -220,7 +211,7 @@ export class Histogram {
     private name: string,
     private help: string,
     buckets: number[] = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
-    private labelNames: string[] = []
+    _labelNames: string[] = []
   ) {
     // Ensure buckets are sorted and include +Inf
     this.buckets = [...buckets].sort((a, b) => a - b);
@@ -345,7 +336,7 @@ export class Summary {
     private name: string,
     private help: string,
     private percentiles: number[] = [0.5, 0.9, 0.99],
-    private labelNames: string[] = []
+    _labelNames: string[] = []
   ) {}
 
   /**
@@ -380,10 +371,10 @@ export class Summary {
    * Calculate percentile from sorted array
    */
   private calculatePercentile(sorted: number[], percentile: number): number {
-    if (sorted.length === 0) return 0;
+    if (sorted.length === 0) {return 0;}
 
     const index = Math.ceil(sorted.length * percentile) - 1;
-    return sorted[Math.max(0, index)];
+    return sorted[Math.max(0, index)] ?? 0;
   }
 
   /**

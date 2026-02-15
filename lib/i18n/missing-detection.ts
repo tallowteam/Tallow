@@ -77,7 +77,7 @@ export function detectExtraTranslations(
  * Get comprehensive missing keys report for a locale
  */
 export function getMissingKeysReport(
-  locale: Locale,
+  _locale: Locale,
   translations: Partial<TranslationKeys>,
   reference: TranslationKeys
 ): {
@@ -86,13 +86,13 @@ export function getMissingKeysReport(
   coverage: number;
 } {
   const missing = detectMissingTranslations(
-    translations as Record<string, unknown>,
-    reference as Record<string, unknown>
+    translations as unknown as Record<string, unknown>,
+    reference as unknown as Record<string, unknown>
   );
 
   const extra = detectExtraTranslations(
-    translations as Record<string, unknown>,
-    reference as Record<string, unknown>
+    translations as unknown as Record<string, unknown>,
+    reference as unknown as Record<string, unknown>
   );
 
   const totalKeys = Object.keys(reference).length;

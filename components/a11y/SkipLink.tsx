@@ -17,19 +17,35 @@ export interface SkipLinkProps {
 export function SkipLink({ targetId = 'main-content', label = 'Skip to main content' }: SkipLinkProps) {
   const [isFocused, setIsFocused] = useState(false);
 
-  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    const target = document.getElementById(targetId);
-    if (target) {
-      e.preventDefault();
-      target.focus();
-      target.scrollIntoView({ behavior: 'smooth' });
+  const focusTarget = () => {
+    const target = document.getElementById(targetId) as HTMLElement | null;
+    if (!target) {
+      return;
     }
+
+    if (!target.hasAttribute('tabindex')) {
+      target.setAttribute('tabindex', '-1');
+    }
+
+    // Keep hash and focus behavior explicit for consistent cross-browser skip-link behavior.
+    if (window.location.hash !== `#${targetId}`) {
+      window.history.replaceState(null, '', `#${targetId}`);
+    }
+
+    target.focus({ preventScroll: true });
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    focusTarget();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLAnchorElement>) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      handleClick(e as any);
-      setIsFocused(false);
+    // Enter already triggers click on anchors. Handle Space explicitly.
+    if (e.key === ' ' || e.key === 'Spacebar') {
+      e.preventDefault();
+      focusTarget();
     }
   };
 

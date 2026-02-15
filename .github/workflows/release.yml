@@ -78,6 +78,19 @@ jobs:
             ### Changes
             ${{ steps.changelog.outputs.changelog }}
 
+            ### Platform Readiness
+            | Platform | Readiness |
+            | --- | --- |
+            | Web | L3 |
+            | PWA | L2 |
+            | Browser Extension | L1 |
+            | iOS | L0 |
+            | Android | L0 |
+            | Desktop | L1 |
+            | CLI | L1 |
+
+            Reference: `docs/platform/RELEASE_READINESS_LEVELS.md` and `docs/release/RELEASE_NOTES_TEMPLATE.md`
+
             ### Installation
 
             #### Docker
@@ -104,11 +117,1033 @@ jobs:
           prerelease: false
 
   # ============================================================================
+  # Verify Mandatory Security Signoffs
+  # ============================================================================
+  verify-security-signoffs:
+    name: Verify Security Signoffs
+    needs: [create-release]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate release security signoffs
+        run: node scripts/verify-release-signoffs.js ${{ needs.create-release.outputs.version }}
+
+      - name: Verify crypto test vector discipline
+        run: npm run verify:crypto:test-vectors
+
+      - name: Verify PQC keysmith policy
+        run: npm run verify:pqc:keysmith
+
+      - name: Verify ratchet master policy
+        run: npm run verify:ratchet:master
+
+      - name: Verify symmetric sentinel policy
+        run: npm run verify:symmetric:sentinel
+
+      - name: Verify hash oracle policy
+        run: npm run verify:hash:oracle
+
+      - name: Verify password fortress policy
+        run: npm run verify:password:fortress
+
+      - name: Verify signature authority policy
+        run: npm run verify:signature:authority
+
+      - name: Verify SAS verifier policy
+        run: npm run verify:sas:verifier
+
+      - name: Verify timing phantom policy
+        run: npm run verify:timing:phantom
+
+      - name: Verify traffic ghost policy
+        run: npm run verify:traffic:ghost
+
+      - name: Verify onion weaver policy
+        run: npm run verify:onion:weaver
+
+      - name: Verify metadata eraser policy
+        run: npm run verify:metadata:eraser
+
+      - name: Verify memory warden policy
+        run: npm run verify:memory:warden
+
+      - name: Verify WebAuthn gatekeeper policy
+        run: npm run verify:webauthn:gatekeeper
+
+      - name: Verify WebRTC conduit policy
+        run: npm run verify:webrtc:conduit
+
+      - name: Verify ICE breaker policy
+        run: npm run verify:ice:breaker
+
+      - name: Verify signal router policy
+        run: npm run verify:signal:router
+
+      - name: Verify relay sentinel policy
+        run: npm run verify:relay:sentinel
+
+      - name: Verify transport engineer policy
+        run: npm run verify:transport:engineer
+
+      - name: Verify discovery hunter policy
+        run: npm run verify:discovery:hunter
+
+      - name: Verify bandwidth analyst policy
+        run: npm run verify:bandwidth:analyst
+
+      - name: Verify firewall piercer policy
+        run: npm run verify:firewall:piercer
+
+      - name: Verify sync coordinator policy
+        run: npm run verify:sync:coordinator
+
+      - name: Verify flow navigator policy
+        run: npm run verify:flow:navigator
+
+      - name: Verify notification herald policy
+        run: npm run verify:notification:herald
+
+      - name: Verify CLI operator policy
+        run: npm run verify:cli:operator
+
+      - name: Verify PWA engineer policy
+        run: npm run verify:pwa:engineer
+
+      - name: Verify QRCode linker policy
+        run: npm run verify:qrcode:linker
+
+      - name: Verify clipboard agent policy
+        run: npm run verify:clipboard:agent
+
+      - name: Verify filesystem agent policy
+        run: npm run verify:filesystem:agent
+
+      - name: Verify component forger policy
+        run: npm run verify:component:forger
+
+      - name: Verify modal master policy
+        run: npm run verify:modal:master
+
+      - name: Verify radix surgeon policy
+        run: npm run verify:radix:surgeon
+
+      - name: Verify error diplomat policy
+        run: npm run verify:error:diplomat
+
+      - name: Verify loading illusionist policy
+        run: npm run verify:loading:illusionist
+
+      - name: Verify icon armorer policy
+        run: npm run verify:icon:armorer
+
+      - name: Verify motion choreographer policy
+        run: npm run verify:motion:choreographer
+
+      - name: Verify table tactician policy
+        run: npm run verify:table:tactician
+
+      - name: Verify theme alchemist policy
+        run: npm run verify:theme:alchemist
+
+      - name: Verify visual regression watcher policy
+        run: npm run verify:visual:regression
+
+      - name: Verify onboarding guide policy
+        run: npm run verify:onboarding:guide
+
+      - name: Verify guided empty-state policy
+        run: npm run verify:empty-states:artist
+
+      - name: Verify Next.js strategist policy
+        run: npm run verify:nextjs:strategist
+
+      - name: Verify state architect policy
+        run: npm run verify:state:architect
+
+      - name: Verify TypeScript enforcer policy
+        run: npm run verify:typescript:enforcer
+
+      - name: Verify hook engineer policy
+        run: npm run verify:hook:engineer
+
+      - name: Verify unit test sniper policy
+        run: npm run verify:unit:test-sniper
+
+      - name: Verify performance hawk policy
+        run: npm run verify:performance:hawk
+
+      - name: Verify i18n diplomat policy
+        run: npm run verify:i18n:diplomat
+
+      - name: Verify data visualizer policy
+        run: npm run verify:data:visualizer
+
+      - name: Verify wasm alchemist policy
+        run: npm run verify:wasm:alchemist
+
+      - name: Verify compression specialist policy
+        run: npm run verify:compression:specialist
+
+      - name: Run official crypto vector suites
+        run: npm run test:crypto -- tests/unit/crypto/blake3.test.ts tests/unit/crypto/sha3.test.ts
+
+  # ============================================================================
+  # Chaos Readiness Verification
+  # ============================================================================
+  chaos-readiness:
+    name: Chaos Readiness Verification
+    needs: [create-release, verify-security-signoffs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run chaos readiness suite
+        run: npm run verify:chaos
+
+      - name: Upload chaos readiness report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-chaos-readiness-report
+          path: reports/chaos-readiness-*.*
+          retention-days: 30
+
+  # ============================================================================
+  # Zero-Knowledge Release Verification
+  # ============================================================================
+  zero-knowledge-verification:
+    name: Zero-Knowledge Verification
+    needs: [create-release, verify-security-signoffs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify zero-knowledge release invariants
+        run: npm run verify:zero-knowledge -- ${{ needs.create-release.outputs.version }}
+
+      - name: Upload zero-knowledge report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-zero-knowledge-report
+          path: reports/zero-knowledge-release-*.*
+          retention-days: 30
+
+  # ============================================================================
+  # FIPS Compliance Verification
+  # ============================================================================
+  fips-compliance:
+    name: FIPS Compliance Verification
+    needs: [create-release, verify-security-signoffs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify FIPS compliance controls
+        run: npm run verify:fips:compliance -- ${{ needs.create-release.outputs.version }}
+
+      - name: Upload FIPS compliance report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-fips-compliance-report
+          path: reports/fips-compliance-*.*
+          retention-days: 30
+
+  # ============================================================================
+  # Checklist Ownership Verification
+  # ============================================================================
+  checklist-ownership:
+    name: Checklist Ownership Verification
+    needs: [create-release, verify-security-signoffs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify checklist ownership and evidence mapping
+        run: npm run verify:checklist:ownership
+
+      - name: Upload checklist ownership report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-checklist-ownership-report
+          path: |
+            reports/checklist-ownership-*.*
+            docs/governance/CHECKLIST_ITEM_OWNERSHIP_INDEX.*
+          retention-days: 30
+
+  # ============================================================================
+  # E2E Infiltration Verification
+  # ============================================================================
+  e2e-infiltration:
+    name: E2E Infiltration Verification
+    needs: [create-release, verify-security-signoffs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify E2E infiltration coverage matrix
+        run: npm run verify:e2e:infiltration
+
+      - name: Upload E2E infiltration report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-e2e-infiltration-report
+          path: reports/e2e-infiltration-*.*
+          retention-days: 30
+
+  # ============================================================================
+  # CI/CD Pipeline Discipline Verification
+  # ============================================================================
+  cicd-pipeline:
+    name: CI/CD Pipeline Discipline Verification
+    needs: [create-release, verify-security-signoffs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify CI/CD pipeline automation policy
+        run: npm run verify:cicd:pipeline
+
+      - name: Upload CI/CD pipeline report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-cicd-pipeline-report
+          path: reports/cicd-pipeline-*.*
+          retention-days: 30
+
+  # ============================================================================
+  # Docker Commander Verification
+  # ============================================================================
+  docker-commander:
+    name: Docker Commander Verification
+    needs: [create-release, verify-security-signoffs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify Docker commander policy
+        run: npm run verify:docker:commander
+
+      - name: Upload Docker commander report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-docker-commander-report
+          path: reports/docker-commander-*.*
+          retention-days: 30
+
+  # ============================================================================
+  # Cloudflare Operator Verification
+  # ============================================================================
+  cloudflare-operator:
+    name: Cloudflare Operator Verification
+    needs: [create-release, verify-security-signoffs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify Cloudflare operator policy
+        run: npm run verify:cloudflare:operator
+
+      - name: Upload Cloudflare operator report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-cloudflare-operator-report
+          path: reports/cloudflare-operator-*.*
+          retention-days: 30
+
+  # ============================================================================
+  # Incident Readiness Verification
+  # ============================================================================
+  incident-readiness:
+    name: Incident Readiness Verification
+    needs: [create-release, verify-security-signoffs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify incident readiness policy
+        run: npm run verify:incident:readiness
+
+      - name: Upload incident readiness report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-incident-readiness-report
+          path: reports/incident-readiness-*.*
+          retention-days: 30
+
+  # ============================================================================
+  # Pricing Architecture Verification
+  # ============================================================================
+  pricing-architecture:
+    name: Pricing Architecture Verification
+    needs: [create-release, verify-security-signoffs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify pricing architecture policy
+        run: npm run verify:pricing:architecture
+
+      - name: Upload pricing architecture report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-pricing-architecture-report
+          path: reports/pricing-architecture-*.*
+          retention-days: 30
+
+  # ============================================================================
+  # Email Courier Verification
+  # ============================================================================
+  email-courier:
+    name: Email Courier Verification
+    needs: [create-release, verify-security-signoffs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify email courier policy
+        run: npm run verify:email:courier
+
+      - name: Upload email courier report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-email-courier-report
+          path: reports/email-courier-*.*
+          retention-days: 30
+
+  # ============================================================================
+  # Analytics Privacy Verification
+  # ============================================================================
+  analytics-privacy:
+    name: Analytics Privacy Verification
+    needs: [create-release, verify-security-signoffs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify analytics privacy policy
+        run: npm run verify:analytics:privacy
+
+      - name: Upload analytics privacy report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-analytics-privacy-report
+          path: reports/analytics-privacy-*.*
+          retention-days: 30
+
+  # ============================================================================
+  # Marketing Operative Verification
+  # ============================================================================
+  marketing-operative:
+    name: Marketing Operative Verification
+    needs: [create-release, verify-security-signoffs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify marketing operative policy
+        run: npm run verify:marketing:operative
+
+      - name: Upload marketing operative report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-marketing-operative-report
+          path: reports/marketing-operative-*.*
+          retention-days: 30
+
+  # ============================================================================
+  # Documentation Scribe Verification
+  # ============================================================================
+  documentation-scribe:
+    name: Documentation Scribe Verification
+    needs: [create-release, verify-security-signoffs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify documentation scribe policy
+        run: npm run verify:documentation:scribe
+
+      - name: Upload documentation scribe report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-documentation-scribe-report
+          path: reports/documentation-scribe-*.*
+          retention-days: 30
+
+  # ============================================================================
+  # Automation Engineer Verification
+  # ============================================================================
+  automation-engineer:
+    name: Automation Engineer Verification
+    needs: [create-release, verify-security-signoffs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify automation engineer policy
+        run: npm run verify:automation:engineer
+
+      - name: Upload automation engineer report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-automation-engineer-report
+          path: reports/automation-engineer-*.*
+          retention-days: 30
+
+  # ============================================================================
+  # Room System Architect Verification
+  # ============================================================================
+  room-system-architect:
+    name: Room System Architect Verification
+    needs: [create-release, verify-security-signoffs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify room system architect policy
+        run: npm run verify:room-system:architect
+
+      - name: Upload room system architect report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-room-system-architect-report
+          path: reports/room-system-architect-*.*
+          retention-days: 30
+
+  # ============================================================================
+  # Contacts/Friends Agent Verification
+  # ============================================================================
+  contacts-friends-agent:
+    name: Contacts Friends Agent Verification
+    needs: [create-release, verify-security-signoffs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify contacts/friends trust policy
+        run: npm run verify:contacts:friends
+
+      - name: Upload contacts/friends report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-contacts-friends-agent-report
+          path: reports/contacts-friends-agent-*.*
+          retention-days: 30
+
+  # ============================================================================
+  # Ralph Wiggum Verification
+  # ============================================================================
+  ralph-wiggum:
+    name: Ralph Wiggum Verification
+    needs: [create-release, verify-security-signoffs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify Ralph Wiggum orchestration policy
+        run: npm run verify:ralph:wiggum
+
+      - name: Upload Ralph Wiggum report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-ralph-wiggum-report
+          path: reports/ralph-wiggum-*.*
+          retention-days: 30
+
+  # ============================================================================
+  # Design Token Drift Verification
+  # ============================================================================
+  design-token-drift:
+    name: Design Token Drift Verification
+    needs: [create-release, verify-security-signoffs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify design token drift baseline
+        run: npm run verify:design:tokens
+
+      - name: Upload design token drift report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-design-token-drift-report
+          path: reports/design-token-drift-*.*
+          retention-days: 30
+
+  # ============================================================================
+  # Form Policy Verification
+  # ============================================================================
+  form-policy:
+    name: Form Policy Verification
+    needs: [create-release, verify-security-signoffs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify governed form policy
+        run: npm run verify:forms:policy
+
+      - name: Upload form policy report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-form-policy-report
+          path: reports/form-policy-*.*
+          retention-days: 30
+
+  # ============================================================================
+  # Branch Protection Policy Verification
+  # ============================================================================
+  branch-protection:
+    name: Branch Protection Policy Verification
+    needs: [create-release, verify-security-signoffs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify branch protection policy
+        run: npm run verify:branch-protection
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload branch protection report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-branch-protection-report
+          path: reports/branch-protection-*.*
+          retention-days: 30
+
+  # ============================================================================
+  # Accessibility Floor Verification
+  # ============================================================================
+  accessibility-floor:
+    name: Accessibility Floor Verification
+    needs: [create-release, verify-security-signoffs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify accessibility floor
+        run: npm run verify:accessibility:floor
+
+      - name: Upload accessibility floor report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-accessibility-floor-report
+          path: reports/accessibility-floor-*.*
+          retention-days: 30
+
+  # ============================================================================
+  # Compliance Documentation Auto-Generation
+  # ============================================================================
+  compliance-documentation:
+    name: Compliance Documentation Verification
+    needs: [create-release, verify-security-signoffs, chaos-readiness, zero-knowledge-verification, fips-compliance, checklist-ownership, e2e-infiltration, cicd-pipeline, docker-commander, cloudflare-operator, incident-readiness, pricing-architecture, email-courier, analytics-privacy, marketing-operative, documentation-scribe, automation-engineer, room-system-architect, contacts-friends-agent, ralph-wiggum, design-token-drift, form-policy, branch-protection, accessibility-floor]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate compliance documentation bundle
+        run: npm run verify:compliance:docs -- ${{ needs.create-release.outputs.version }}
+
+      - name: Upload compliance documentation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-compliance-documentation
+          path: |
+            reports/compliance-documentation-*.*
+            docs/compliance/COMPLIANCE_AUTOGEN_*.md
+          retention-days: 30
+
+  # ============================================================================
+  # Stability Discipline Verification
+  # ============================================================================
+  stability-discipline:
+    name: Stability Discipline Verification
+    needs: [create-release, verify-security-signoffs, chaos-readiness, zero-knowledge-verification, fips-compliance, checklist-ownership, e2e-infiltration, cicd-pipeline, docker-commander, cloudflare-operator, incident-readiness, pricing-architecture, email-courier, analytics-privacy, marketing-operative, documentation-scribe, automation-engineer, room-system-architect, contacts-friends-agent, ralph-wiggum, design-token-drift, form-policy, branch-protection, accessibility-floor, compliance-documentation]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify stability discipline policy and sequencing
+        run: npm run verify:stability:discipline
+
+      - name: Upload stability discipline report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-stability-discipline-report
+          path: reports/stability-discipline-*.*
+          retention-days: 30
+
+  # ============================================================================
+  # Release Security Artifacts (Dependency Audit + SBOM)
+  # ============================================================================
+  security-artifacts:
+    name: Release Security Artifacts
+    needs: [create-release, verify-security-signoffs, chaos-readiness, zero-knowledge-verification, fips-compliance, checklist-ownership, pricing-architecture, email-courier, analytics-privacy, marketing-operative, documentation-scribe, automation-engineer, room-system-architect, contacts-friends-agent, ralph-wiggum, docker-commander, cloudflare-operator, design-token-drift, form-policy, branch-protection, accessibility-floor, compliance-documentation, stability-discipline]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify dependency justification policy
+        run: npm run verify:dependencies:justification
+
+      - name: Run dependency audit
+        run: npm audit --audit-level=moderate --json > npm-audit-release.json
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          output-file: sbom-release.spdx.json
+          format: spdx-json
+
+      - name: Upload security artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-security-artifacts
+          path: |
+            npm-audit-release.json
+            sbom-release.spdx.json
+          retention-days: 30
+
+      - name: Upload npm audit report to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./npm-audit-release.json
+          asset_name: npm-audit-release-${{ needs.create-release.outputs.version }}.json
+          asset_content_type: application/json
+
+      - name: Upload SBOM to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./sbom-release.spdx.json
+          asset_name: sbom-release-${{ needs.create-release.outputs.version }}.spdx.json
+          asset_content_type: application/spdx+json
+
+  # ============================================================================
   # Build and Push Release Images
   # ============================================================================
   build-release-images:
     name: Build Release Images
-    needs: [create-release]
+    needs: [create-release, verify-security-signoffs, chaos-readiness, zero-knowledge-verification, fips-compliance, checklist-ownership, pricing-architecture, email-courier, analytics-privacy, marketing-operative, documentation-scribe, automation-engineer, room-system-architect, contacts-friends-agent, ralph-wiggum, docker-commander, cloudflare-operator, design-token-drift, form-policy, branch-protection, accessibility-floor, compliance-documentation, stability-discipline]
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -166,7 +1201,7 @@ jobs:
   # ============================================================================
   package-helm:
     name: Package Helm Chart
-    needs: [create-release]
+    needs: [create-release, verify-security-signoffs, chaos-readiness, zero-knowledge-verification, fips-compliance, checklist-ownership, pricing-architecture, email-courier, analytics-privacy, marketing-operative, documentation-scribe, automation-engineer, room-system-architect, contacts-friends-agent, ralph-wiggum, docker-commander, cloudflare-operator, design-token-drift, form-policy, branch-protection, accessibility-floor, compliance-documentation, stability-discipline]
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -206,7 +1241,7 @@ jobs:
   # ============================================================================
   update-version:
     name: Update Package Version
-    needs: [create-release]
+    needs: [create-release, verify-security-signoffs, chaos-readiness, zero-knowledge-verification, fips-compliance, checklist-ownership, pricing-architecture, email-courier, analytics-privacy, marketing-operative, documentation-scribe, automation-engineer, room-system-architect, contacts-friends-agent, ralph-wiggum, docker-commander, cloudflare-operator, design-token-drift, form-policy, branch-protection, accessibility-floor, compliance-documentation, stability-discipline]
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -236,11 +1271,46 @@ jobs:
           git push
 
   # ============================================================================
+  # Deploy Tagged Release to Production
+  # ============================================================================
+  deploy-release:
+    name: Deploy Tagged Release
+    needs: [create-release, verify-security-signoffs, chaos-readiness, zero-knowledge-verification, fips-compliance, checklist-ownership, pricing-architecture, email-courier, analytics-privacy, marketing-operative, documentation-scribe, automation-engineer, room-system-architect, contacts-friends-agent, ralph-wiggum, docker-commander, cloudflare-operator, design-token-drift, form-policy, branch-protection, accessibility-floor, compliance-documentation, stability-discipline, build-release-images, package-helm, security-artifacts]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    environment:
+      name: production
+      url: https://tallow.manisahome.com
+
+    steps:
+      - name: Deploy release via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.NAS_HOST }}
+          username: ${{ secrets.NAS_USERNAME }}
+          key: ${{ secrets.NAS_SSH_KEY }}
+          port: ${{ secrets.NAS_SSH_PORT || 22 }}
+          script: |
+            cd /volume1/docker/tallow
+            git fetch --tags --force
+            git checkout ${{ needs.create-release.outputs.version }}
+            docker compose pull
+            docker compose up -d --build
+            docker compose ps
+
+      - name: Release health check
+        run: |
+          sleep 30
+          curl -f https://tallow.manisahome.com/api/health || exit 1
+
+  # ============================================================================
   # Notify Release
   # ============================================================================
   notify-release:
     name: Notify Release
-    needs: [create-release, build-release-images, package-helm]
+    needs: [create-release, verify-security-signoffs, chaos-readiness, zero-knowledge-verification, fips-compliance, checklist-ownership, pricing-architecture, email-courier, analytics-privacy, marketing-operative, documentation-scribe, automation-engineer, room-system-architect, contacts-friends-agent, ralph-wiggum, docker-commander, cloudflare-operator, design-token-drift, form-policy, branch-protection, accessibility-floor, compliance-documentation, stability-discipline, build-release-images, package-helm, security-artifacts, deploy-release]
     runs-on: ubuntu-latest
 
     steps:

@@ -1,0 +1,85 @@
+{
+  "release": "v0.1.0",
+  "signoffs": [
+    {
+      "approver": "002",
+      "name": "CIPHER",
+      "status": "approved",
+      "signedAt": "2026-02-10T20:00:00.000Z",
+      "evidence": "reports/security/crypto-signoff-v0.1.0.md",
+      "notes": "Crypto policy and invariants verified."
+    },
+    {
+      "approver": "003",
+      "name": "SPECTRE",
+      "status": "approved",
+      "signedAt": "2026-02-13T18:40:00.000Z",
+      "evidence": "reports/security/infra-signoff-v0.1.0.md",
+      "notes": "Infrastructure and platform release gates verified."
+    },
+    {
+      "approver": "004",
+      "name": "ARCHITECT",
+      "status": "approved",
+      "signedAt": "2026-02-13T18:45:00.000Z",
+      "evidence": "reports/security/ux-signoff-v0.1.0.md",
+      "notes": "UX/design quality gates verified."
+    },
+    {
+      "approver": "050",
+      "name": "DC-ECHO",
+      "status": "approved",
+      "signedAt": "2026-02-13T18:50:00.000Z",
+      "evidence": "reports/security/frontend-directorate-signoff-v0.1.0.md",
+      "notes": "Frontend architecture/state/performance baseline verified."
+    },
+    {
+      "approver": "043",
+      "name": "DC-DELTA",
+      "status": "approved",
+      "signedAt": "2026-02-13T21:10:00.000Z",
+      "evidence": "reports/security/ux-ops-directorate-signoff-v0.1.0.md",
+      "notes": "UX-OPS flow/copy/onboarding baseline verified."
+    },
+    {
+      "approver": "019",
+      "name": "CRYPTO-AUDITOR",
+      "status": "approved",
+      "signedAt": "2026-02-10T20:05:00.000Z",
+      "evidence": "reports/security/red-team-v0.1.0.md",
+      "notes": "Red-team closure recorded for this release window."
+    },
+    {
+      "approver": "078",
+      "name": "SECURITY-PENETRATOR",
+      "status": "approved",
+      "signedAt": "2026-02-10T20:10:00.000Z",
+      "evidence": "reports/security/owasp-validation-v0.1.0.md",
+      "notes": "OWASP and privacy-leak checks completed."
+    },
+    {
+      "approver": "075",
+      "name": "DC-GOLF",
+      "status": "approved",
+      "signedAt": "2026-02-10T20:15:00.000Z",
+      "evidence": "reports/security/qa-directorate-signoff-v0.1.0.md",
+      "notes": "QA gates reviewed and accepted."
+    },
+    {
+      "approver": "086",
+      "name": "DC-HOTEL",
+      "status": "approved",
+      "signedAt": "2026-02-10T20:20:00.000Z",
+      "evidence": "reports/security/ops-directorate-signoff-v0.1.0.md",
+      "notes": "Ops readiness and monitoring evidence accepted."
+    },
+    {
+      "approver": "001",
+      "name": "RAMSAD",
+      "status": "approved",
+      "signedAt": "2026-02-10T20:25:00.000Z",
+      "evidence": "reports/security/final-release-approval-v0.1.0.md",
+      "notes": "Final release approval issued."
+    }
+  ]
+}

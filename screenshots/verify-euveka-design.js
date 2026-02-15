@@ -23,8 +23,8 @@ async function verifyPages() {
     const consoleErrors = [];
     const consoleWarnings = [];
     page.on('console', msg => {
-      if (msg.type() === 'error') consoleErrors.push(msg.text());
-      if (msg.type() === 'warning') consoleWarnings.push(msg.text());
+      if (msg.type() === 'error') {consoleErrors.push(msg.text());}
+      if (msg.type() === 'warning') {consoleWarnings.push(msg.text());}
     });
 
     // Collect page errors
@@ -180,22 +180,19 @@ async function verifyPages() {
       // Check page structure via accessibility tree snapshot
       const snapshot = await page.evaluate(() => {
         const walk = (el, depth = 0) => {
-          if (depth > 2) return '';
+          if (depth > 2) {return '';}
           const tag = el.tagName?.toLowerCase();
-          if (!tag || ['script', 'style', 'noscript', 'svg', 'path'].includes(tag)) return '';
+          if (!tag || ['script', 'style', 'noscript', 'svg', 'path'].includes(tag)) {return '';}
 
           const role = el.getAttribute('role') || '';
           const ariaLabel = el.getAttribute('aria-label') || '';
           const id = el.id ? `#${el.id}` : '';
-          const classes = el.className && typeof el.className === 'string' ?
-            '.' + el.className.split(' ').filter(c => c && !c.includes('_')).slice(0, 2).join('.') : '';
-
           let info = `${'  '.repeat(depth)}<${tag}${id}${role ? ` role="${role}"` : ''}${ariaLabel ? ` aria-label="${ariaLabel}"` : ''}>`;
 
           // Only get direct text for leaf-ish elements
           if (['h1','h2','h3','h4','p','button','a','span','label'].includes(tag)) {
             const text = el.textContent?.trim()?.substring(0, 60);
-            if (text) info += ` ${text}`;
+            if (text) {info += ` ${text}`;}
           }
 
           let result = info + '\n';

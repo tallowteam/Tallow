@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-02-13T16:07:11.506Z",
+  "checks": [
+    {
+      "name": "Next.js strategy policy, middleware, package, and workflows exist",
+      "pass": true,
+      "details": [
+        "all required Next.js strategist files are present"
+      ]
+    },
+    {
+      "name": "Every page route defines loading.tsx and error.tsx",
+      "pass": true,
+      "details": [
+        "route segments checked: 23",
+        "all page routes include loading/error boundaries"
+      ]
+    },
+    {
+      "name": "Static docs guide routes remain Server Components",
+      "pass": true,
+      "details": [
+        "docs guide routes are server-default"
+      ]
+    },
+    {
+      "name": "Client directives are constrained to files with client-only behavior",
+      "pass": true,
+      "details": [
+        "all use client page routes include client-only markers"
+      ]
+    },
+    {
+      "name": "Middleware enforces admin-route authentication and request tracing",
+      "pass": true,
+      "details": [
+        "admin auth gate + request tracing headers detected in middleware"
+      ]
+    },
+    {
+      "name": "Next.js strategist gate is wired in package scripts and workflows",
+      "pass": true,
+      "details": [
+        "verify:nextjs:strategist: node scripts/verify-nextjs-strategist.js",
+        ".github/workflows/ci.yml runs Next.js strategist verification",
+        ".github/workflows/release.yml runs Next.js strategist verification"
+      ]
+    }
+  ],
+  "passed": true
+}

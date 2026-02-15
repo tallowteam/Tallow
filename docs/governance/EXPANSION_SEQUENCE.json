@@ -1,0 +1,80 @@
+{
+  "version": "2026-02-11",
+  "baselineGates": [
+    "type-check",
+    "lint",
+    "test:unit",
+    "security:check",
+    "verify:chaos",
+    "verify:zero-knowledge"
+  ],
+  "categories": [
+    {
+      "id": "core-secure-transfer",
+      "name": "Core Secure Transfer",
+      "owner": "DC-BRAVO (020)",
+      "priority": 0,
+      "requiresBaselineGreen": true,
+      "prerequisites": [
+        "type-check",
+        "lint",
+        "test:unit",
+        "security:check"
+      ],
+      "successCriteria": [
+        "P2P + fallback transfer paths pass unit and e2e suites",
+        "No critical/high security blockers",
+        "Resumable transfer integrity remains stable"
+      ],
+      "evidenceFormat": [
+        "reports/vitest-latest.json",
+        "reports/RELIABILITY_MATRIX_*.md",
+        "reports/security/*.md"
+      ]
+    },
+    {
+      "id": "ux-and-accessibility-hardening",
+      "name": "UX + Accessibility Hardening",
+      "owner": "DC-DELTA (043)",
+      "priority": 1,
+      "requiresBaselineGreen": true,
+      "prerequisites": [
+        "core-secure-transfer",
+        "verify:routes:boundaries",
+        "test:e2e accessibility suite"
+      ],
+      "successCriteria": [
+        "Route boundary checks pass",
+        "Accessibility suite blocks regressions",
+        "Trust-state indicators remain visible in transfer lifecycle"
+      ],
+      "evidenceFormat": [
+        "reports/route-boundaries-*.md",
+        "playwright-report/",
+        "tests/unit/components/*.test.tsx"
+      ]
+    },
+    {
+      "id": "expansion-checklist-batches",
+      "name": "Expansion Checklist Batches",
+      "owner": "DC-ECHO (050)",
+      "priority": 2,
+      "requiresBaselineGreen": true,
+      "prerequisites": [
+        "ux-and-accessibility-hardening",
+        "verify:chaos",
+        "verify:zero-knowledge"
+      ],
+      "successCriteria": [
+        "Each expansion checklist item references measurable acceptance criteria",
+        "Each item references evidence artifact path",
+        "No expansion batch lands while baseline gates are red"
+      ],
+      "evidenceFormat": [
+        "REMAINING_IMPLEMENTATION_CHECKLIST.md",
+        "reports/chaos-readiness-*.json",
+        "reports/zero-knowledge-release-*.json"
+      ]
+    }
+  ]
+}

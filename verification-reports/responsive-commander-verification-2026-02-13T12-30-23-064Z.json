@@ -1,0 +1,45 @@
+{
+  "timestamp": "2026-02-13T12:30:23.062Z",
+  "checks": [
+    {
+      "name": "Responsive policy and core E2E specs exist",
+      "pass": true,
+      "details": [
+        "policy and required responsive/transfer E2E specs are present"
+      ]
+    },
+    {
+      "name": "Responsive E2E spec enforces 320px and 44px thresholds",
+      "pass": true,
+      "details": [
+        "minimum 320px viewport coverage token found",
+        "44px touch-target assertions found: 3"
+      ]
+    },
+    {
+      "name": "Transfer E2E coverage includes keyboard mode activation (no hover-only path)",
+      "pass": true,
+      "details": [
+        "keyboard activation test exists in tests/e2e/transfer-page.spec.ts"
+      ]
+    },
+    {
+      "name": "Responsive commander run artifact exists and passes",
+      "pass": true,
+      "details": [
+        "latest artifact: reports/responsive-commander-2026-02-13T12-16-55.json",
+        "stats: expected=24, skipped=0, unexpected=0, flaky=0"
+      ]
+    },
+    {
+      "name": "Mobile project coverage remains enforced by infiltration matrix",
+      "pass": true,
+      "details": [
+        "latest infiltration artifact: reports/e2e-infiltration-2026-02-13T12-27-09-142Z.json",
+        "required browser/device project check passed",
+        "matrix summary parsed: passed=1017, failed=0"
+      ]
+    }
+  ],
+  "passed": true
+}

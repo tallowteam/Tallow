@@ -12,7 +12,7 @@
  * - Transfer count tracking
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { useFriendsStore } from '@/lib/stores/friends-store';
 import type { Friend, PendingRequest, PairingSession } from '@/lib/stores/friends-store';
 import type { Platform } from '@/lib/types';

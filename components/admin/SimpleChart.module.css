@@ -134,6 +134,19 @@
   opacity: 0;
 }
 
+/* Reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  .animatePath,
+  .animateDot,
+  .animateBar,
+  .animateDonut {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* Responsive */
 
 @media (max-width: 640px) {

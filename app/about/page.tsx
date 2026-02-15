@@ -55,7 +55,7 @@ export default function AboutPage() {
       <section className={styles.values}>
         <div className={styles.valuesGrid}>
           <div className={styles.valueCard}>
-            <h3 className={styles.valueTitle}>Privacy First</h3>
+            <h3 className={styles.valueTitle}>Privacy by Design</h3>
             <p className={styles.valueDescription}>
               Your data belongs to you. Period.
             </p>

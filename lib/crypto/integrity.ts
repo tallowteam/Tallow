@@ -1,16 +1,24 @@
 /**
  * Merkle Tree Integrity Verification
- * Agent 009 — HASH-ORACLE
+ * Agent 009 -- HASH-ORACLE
  *
  * Builds Merkle trees from file chunks for integrity verification.
- * Uses BLAKE3 (via SubtleCrypto SHA-256 fallback) for hashing.
+ * Uses BLAKE3 for all hashing (Agent 009 mandate: BLAKE3 preferred).
  *
  * Features:
- * - Per-chunk hash verification
+ * - Per-chunk BLAKE3 hash verification
  * - Efficient partial retransmission (only re-send failed chunks)
  * - Streaming tree construction (process chunks as they arrive)
  * - Proof generation for individual chunk verification
+ * - Full-file root hash verification on transfer completion
  */
+
+import {
+  hash as blake3Hash,
+  hashChunkToHex,
+  verifyChunkHash,
+  constantTimeEqual,
+} from './hashing';
 
 // ============================================================================
 // TYPES
@@ -45,16 +53,26 @@ export interface ChunkIntegrity {
   verified: boolean;
 }
 
-// ============================================================================
-// HASHING
-// ============================================================================
-
-async function hashData(data: Uint8Array): Promise<Uint8Array> {
-  const buffer = await crypto.subtle.digest('SHA-256', data);
-  return new Uint8Array(buffer);
+export interface FileIntegrityManifest {
+  /** Merkle root hash (hex) -- transmitted before file transfer begins. */
+  rootHash: string;
+  /** Per-chunk BLAKE3 hashes (hex) in index order. */
+  chunkHashes: string[];
+  /** Total number of chunks. */
+  totalChunks: number;
+  /** Original file size in bytes. */
+  fileSize: number;
 }
 
-async function hashPair(left: Uint8Array, right: Uint8Array): Promise<Uint8Array> {
+// ============================================================================
+// HASHING (BLAKE3)
+// ============================================================================
+
+function hashData(data: Uint8Array): Uint8Array {
+  return blake3Hash(data);
+}
+
+function hashPair(left: Uint8Array, right: Uint8Array): Uint8Array {
   const combined = new Uint8Array(left.length + right.length);
   combined.set(left, 0);
   combined.set(right, left.length);
@@ -71,19 +89,18 @@ function toHex(bytes: Uint8Array): string {
 
 /**
  * Build a Merkle tree from an array of chunk data.
+ * Every chunk is hashed -- no skipping, no sampling.
  */
-export async function buildMerkleTree(chunks: Uint8Array[]): Promise<MerkleTree> {
+export function buildMerkleTree(chunks: Uint8Array[]): MerkleTree {
   if (chunks.length === 0) {
     throw new Error('Cannot build Merkle tree from zero chunks');
   }
 
-  // Hash all leaf nodes
-  const leaves: MerkleNode[] = await Promise.all(
-    chunks.map(async (chunk, i) => ({
-      hash: await hashData(chunk),
-      chunkIndex: i,
-    }))
-  );
+  // Hash all leaf nodes (every chunk hashed -- Agent 009 mandate)
+  const leaves: MerkleNode[] = chunks.map((chunk, i) => ({
+    hash: hashData(chunk),
+    chunkIndex: i,
+  }));
 
   // Build tree bottom-up
   let currentLevel = leaves;
@@ -97,9 +114,9 @@ export async function buildMerkleTree(chunks: Uint8Array[]): Promise<MerkleTree>
       const right = currentLevel[i + 1] ?? left; // Duplicate last node if odd
 
       nextLevel.push({
-        hash: await hashPair(left.hash, right.hash),
+        hash: hashPair(left.hash, right.hash),
         left,
-        right: currentLevel[i + 1] ? right : undefined,
+        ...(currentLevel[i + 1] ? { right } : {}),
       });
     }
 
@@ -120,7 +137,7 @@ export async function buildMerkleTree(chunks: Uint8Array[]): Promise<MerkleTree>
 /**
  * Build a Merkle tree from pre-computed chunk hashes (hex strings).
  */
-export async function buildMerkleTreeFromHashes(hashes: string[]): Promise<MerkleTree> {
+export function buildMerkleTreeFromHashes(hashes: string[]): MerkleTree {
   if (hashes.length === 0) {
     throw new Error('Cannot build Merkle tree from zero hashes');
   }
@@ -141,9 +158,9 @@ export async function buildMerkleTreeFromHashes(hashes: string[]): Promise<Merkl
       const right = currentLevel[i + 1] ?? left;
 
       nextLevel.push({
-        hash: await hashPair(left.hash, right.hash),
+        hash: hashPair(left.hash, right.hash),
         left,
-        right: currentLevel[i + 1] ? right : undefined,
+        ...(currentLevel[i + 1] ? { right } : {}),
       });
     }
 
@@ -162,6 +179,76 @@ export async function buildMerkleTreeFromHashes(hashes: string[]): Promise<Merkl
 }
 
 // ============================================================================
+// FILE INTEGRITY MANIFEST
+// ============================================================================
+
+/**
+ * Create a file integrity manifest from raw chunk data.
+ * The sender computes this BEFORE transfer and transmits the rootHash first.
+ */
+export function createFileIntegrityManifest(
+  chunks: Uint8Array[],
+  fileSize: number,
+): FileIntegrityManifest {
+  const chunkHashes = chunks.map(chunk => hashChunkToHex(chunk));
+  const tree = buildMerkleTreeFromHashes(chunkHashes);
+
+  return {
+    rootHash: tree.rootHash,
+    chunkHashes,
+    totalChunks: chunks.length,
+    fileSize,
+  };
+}
+
+/**
+ * Verify a complete file transfer against a previously received manifest.
+ * This is the "full file hash verified on completion" gate.
+ *
+ * Returns an object with:
+ * - `valid`: true if root hash matches
+ * - `corruptedChunks`: indices of chunks whose hashes do not match
+ */
+export function verifyFileIntegrity(
+  receivedChunks: Uint8Array[],
+  manifest: FileIntegrityManifest,
+): { valid: boolean; corruptedChunks: number[] } {
+  if (receivedChunks.length !== manifest.totalChunks) {
+    return {
+      valid: false,
+      corruptedChunks: [],
+    };
+  }
+
+  const corruptedChunks: number[] = [];
+
+  // Check every chunk hash
+  for (let i = 0; i < receivedChunks.length; i++) {
+    const chunk = receivedChunks[i]!;
+    const expectedHex = manifest.chunkHashes[i]!;
+    if (!verifyChunkHash(chunk, expectedHex)) {
+      corruptedChunks.push(i);
+    }
+  }
+
+  if (corruptedChunks.length > 0) {
+    return { valid: false, corruptedChunks };
+  }
+
+  // Rebuild Merkle tree from received chunk hashes and verify root
+  const receivedHashes = receivedChunks.map(chunk => hashChunkToHex(chunk));
+  const tree = buildMerkleTreeFromHashes(receivedHashes);
+
+  const enc = new TextEncoder();
+  const rootMatch = constantTimeEqual(
+    enc.encode(tree.rootHash),
+    enc.encode(manifest.rootHash),
+  );
+
+  return { valid: rootMatch, corruptedChunks: rootMatch ? [] : [] };
+}
+
+// ============================================================================
 // PROOF GENERATION & VERIFICATION
 // ============================================================================
 
@@ -169,23 +256,23 @@ export async function buildMerkleTreeFromHashes(hashes: string[]): Promise<Merkl
  * Generate a Merkle proof for a specific chunk index.
  */
 export function generateProof(tree: MerkleTree, chunkIndex: number): MerkleProof | null {
-  if (chunkIndex < 0 || chunkIndex >= tree.leafCount) {return null;}
+  if (chunkIndex < 0 || chunkIndex >= tree.leafCount) { return null; }
 
   const siblings: MerkleProof['siblings'] = [];
 
-  function findPath(node: MerkleNode, target: number, depth: number): boolean {
+  function findPath(node: MerkleNode, target: number): boolean {
     if (node.chunkIndex === target && !node.left && !node.right) {
       return true;
     }
 
-    if (node.left && findPath(node.left, target, depth + 1)) {
+    if (node.left && findPath(node.left, target)) {
       if (node.right) {
         siblings.push({ hash: node.right.hash, position: 'right' });
       }
       return true;
     }
 
-    if (node.right && findPath(node.right, target, depth + 1)) {
+    if (node.right && findPath(node.right, target)) {
       if (node.left) {
         siblings.push({ hash: node.left.hash, position: 'left' });
       }
@@ -195,25 +282,25 @@ export function generateProof(tree: MerkleTree, chunkIndex: number): MerkleProof
     return false;
   }
 
-  const found = findPath(tree.root, chunkIndex, 0);
-  if (!found) {return null;}
+  const found = findPath(tree.root, chunkIndex);
+  if (!found) { return null; }
 
   // Find the leaf hash
   function findLeaf(node: MerkleNode): Uint8Array | null {
-    if (node.chunkIndex === chunkIndex) {return node.hash;}
+    if (node.chunkIndex === chunkIndex) { return node.hash; }
     if (node.left) {
       const result = findLeaf(node.left);
-      if (result) {return result;}
+      if (result) { return result; }
     }
     if (node.right) {
       const result = findLeaf(node.right);
-      if (result) {return result;}
+      if (result) { return result; }
     }
     return null;
   }
 
   const chunkHash = findLeaf(tree.root);
-  if (!chunkHash) {return null;}
+  if (!chunkHash) { return null; }
 
   return {
     chunkIndex,
@@ -225,36 +312,42 @@ export function generateProof(tree: MerkleTree, chunkIndex: number): MerkleProof
 
 /**
  * Verify a Merkle proof against the expected root hash.
+ *
+ * SECURITY: Uses constant-time comparison to prevent timing oracle attacks.
+ * An attacker who can measure verification time must not learn anything
+ * about how many bytes of the root hash matched.
  */
-export async function verifyProof(proof: MerkleProof): Promise<boolean> {
+export function verifyProof(proof: MerkleProof): boolean {
   let currentHash = proof.chunkHash;
 
   for (const sibling of proof.siblings) {
     if (sibling.position === 'right') {
-      currentHash = await hashPair(currentHash, sibling.hash);
+      currentHash = hashPair(currentHash, sibling.hash);
     } else {
-      currentHash = await hashPair(sibling.hash, currentHash);
+      currentHash = hashPair(sibling.hash, currentHash);
     }
   }
 
-  return toHex(currentHash) === proof.rootHash;
+  const enc = new TextEncoder();
+  return constantTimeEqual(
+    enc.encode(toHex(currentHash)),
+    enc.encode(proof.rootHash),
+  );
 }
 
 /**
  * Verify a single chunk against its expected hash.
  */
-export async function verifyChunk(
+export function verifyChunk(
   chunkData: Uint8Array,
-  expectedHash: string
-): Promise<boolean> {
-  const actualHash = await hashData(chunkData);
-  return toHex(actualHash) === expectedHash;
+  expectedHash: string,
+): boolean {
+  return verifyChunkHash(chunkData, expectedHash);
 }
 
 /**
  * Hash a single chunk and return hex string.
  */
-export async function hashChunk(chunkData: Uint8Array): Promise<string> {
-  const hash = await hashData(chunkData);
-  return toHex(hash);
+export function hashChunk(chunkData: Uint8Array): string {
+  return hashChunkToHex(chunkData);
 }

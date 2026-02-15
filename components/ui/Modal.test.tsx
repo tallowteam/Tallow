@@ -1,14 +1,36 @@
 /**
  * Modal Component Tests
  * Comprehensive test suite for Modal and ConfirmDialog components
+ * Covers: unique IDs (useId), modal stacking, scroll lock, focus trap, accessibility
  */
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { Modal, ModalHeader, ModalBody, ModalFooter } from './Modal';
+import {
+  Modal,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  getModalStackDepth,
+  __resetModalStack,
+} from './Modal';
 import { ConfirmDialog, DeleteIcon, WarningIcon, InfoIcon, SuccessIcon } from './ConfirmDialog';
+
+// Mock FocusTrap and announce
+vi.mock('@/lib/utils/accessibility', () => ({
+  FocusTrap: class FocusTrap {
+    activate() {}
+    deactivate() {}
+  },
+  KeyboardKeys: {
+    ESCAPE: 'Escape',
+    ENTER: 'Enter',
+    TAB: 'Tab',
+  },
+  announce: vi.fn(),
+}));
 
 describe('Modal', () => {
   const defaultProps = {
@@ -19,6 +41,11 @@ describe('Modal', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    __resetModalStack();
+  });
+
+  afterEach(() => {
+    __resetModalStack();
   });
 
   describe('Rendering', () => {
@@ -49,35 +76,132 @@ describe('Modal', () => {
     });
   });
 
+  describe('Unique IDs (useId)', () => {
+    it('generates unique title IDs per modal instance', () => {
+      render(
+        <>
+          <Modal open onClose={vi.fn()} title="Modal A">
+            <div>A</div>
+          </Modal>
+          <Modal open onClose={vi.fn()} title="Modal B">
+            <div>B</div>
+          </Modal>
+        </>
+      );
+
+      const dialogs = screen.getAllByRole('dialog');
+      expect(dialogs).toHaveLength(2);
+
+      const idA = dialogs[0]!.getAttribute('aria-labelledby');
+      const idB = dialogs[1]!.getAttribute('aria-labelledby');
+
+      // Both should have aria-labelledby set
+      expect(idA).toBeTruthy();
+      expect(idB).toBeTruthy();
+
+      // IDs must be different
+      expect(idA).not.toBe(idB);
+
+      // Each ID should point to an actual element in the document
+      const titleA = document.getElementById(idA!);
+      const titleB = document.getElementById(idB!);
+      expect(titleA).toBeInTheDocument();
+      expect(titleB).toBeInTheDocument();
+      expect(titleA!.textContent).toBe('Modal A');
+      expect(titleB!.textContent).toBe('Modal B');
+    });
+
+    it('does not set aria-labelledby when no title is provided', () => {
+      render(<Modal {...defaultProps} />);
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).not.toHaveAttribute('aria-labelledby');
+    });
+
+    it('associates title with a unique aria-labelledby', () => {
+      render(<Modal {...defaultProps} title="Unique Title" />);
+      const dialog = screen.getByRole('dialog');
+      const labelledBy = dialog.getAttribute('aria-labelledby');
+      expect(labelledBy).toBeTruthy();
+      expect(labelledBy).toMatch(/^modal.*-title$/);
+
+      const titleEl = document.getElementById(labelledBy!);
+      expect(titleEl).toBeInTheDocument();
+      expect(titleEl!.textContent).toBe('Unique Title');
+    });
+
+    it('supports aria-describedby with unique description ID', () => {
+      render(
+        <Modal {...defaultProps} title="Title" description="Descriptive text">
+          <div>Content</div>
+        </Modal>
+      );
+      const dialog = screen.getByRole('dialog');
+      const describedBy = dialog.getAttribute('aria-describedby');
+      expect(describedBy).toBeTruthy();
+      expect(describedBy).toMatch(/^modal.*-desc$/);
+
+      const descEl = document.getElementById(describedBy!);
+      expect(descEl).toBeInTheDocument();
+      expect(descEl!.textContent).toBe('Descriptive text');
+    });
+
+    it('does not set aria-describedby when no description is provided', () => {
+      render(<Modal {...defaultProps} title="Title" />);
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).not.toHaveAttribute('aria-describedby');
+    });
+
+    it('has no duplicate IDs when multiple titled modals are rendered', () => {
+      render(
+        <>
+          <Modal open onClose={vi.fn()} title="First">
+            <div>1</div>
+          </Modal>
+          <Modal open onClose={vi.fn()} title="Second">
+            <div>2</div>
+          </Modal>
+          <Modal open onClose={vi.fn()} title="Third">
+            <div>3</div>
+          </Modal>
+        </>
+      );
+
+      const dialogs = screen.getAllByRole('dialog');
+      const ids = dialogs.map((d) => d.getAttribute('aria-labelledby')).filter(Boolean);
+      const uniqueIds = new Set(ids);
+      expect(uniqueIds.size).toBe(ids.length);
+    });
+  });
+
   describe('Size Variants', () => {
     it('applies small size class', () => {
       render(<Modal {...defaultProps} size="sm" />);
       const modal = screen.getByRole('dialog');
-      expect(modal).toHaveClass('sm');
+      expect(modal.className).toMatch(/\bsm\b|_sm_/);
     });
 
     it('applies medium size class by default', () => {
       render(<Modal {...defaultProps} />);
       const modal = screen.getByRole('dialog');
-      expect(modal).toHaveClass('md');
+      expect(modal.className).toMatch(/\bmd\b|_md_/);
     });
 
     it('applies large size class', () => {
       render(<Modal {...defaultProps} size="lg" />);
       const modal = screen.getByRole('dialog');
-      expect(modal).toHaveClass('lg');
+      expect(modal.className).toMatch(/\blg\b|_lg_/);
     });
 
     it('applies xl size class', () => {
       render(<Modal {...defaultProps} size="xl" />);
       const modal = screen.getByRole('dialog');
-      expect(modal).toHaveClass('xl');
+      expect(modal.className).toMatch(/\bxl\b|_xl_/);
     });
 
     it('applies full size class', () => {
       render(<Modal {...defaultProps} size="full" />);
       const modal = screen.getByRole('dialog');
-      expect(modal).toHaveClass('full');
+      expect(modal.className).toMatch(/\bfull\b|_full_/);
     });
   });
 
@@ -139,12 +263,214 @@ describe('Modal', () => {
       render(<Modal {...defaultProps} onClose={onClose} animationDuration={100} />);
 
       const closeButton = screen.getByLabelText('Close modal');
-      await userEvent.click(closeButton);
-      await userEvent.click(closeButton);
-      await userEvent.click(closeButton);
+      fireEvent.click(closeButton);
+      fireEvent.click(closeButton);
+      fireEvent.click(closeButton);
 
       // Should only call once during animation period
       expect(onClose).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('Modal Stacking', () => {
+    it('tracks open modals in the stack', () => {
+      render(
+        <>
+          <Modal open onClose={vi.fn()}>
+            <div>Modal 1</div>
+          </Modal>
+          <Modal open onClose={vi.fn()}>
+            <div>Modal 2</div>
+          </Modal>
+        </>
+      );
+
+      expect(getModalStackDepth()).toBe(2);
+    });
+
+    it('removes modal from stack when it closes', () => {
+      const { rerender } = render(
+        <>
+          <Modal open onClose={vi.fn()}>
+            <div>Modal 1</div>
+          </Modal>
+          <Modal open onClose={vi.fn()}>
+            <div>Modal 2</div>
+          </Modal>
+        </>
+      );
+
+      expect(getModalStackDepth()).toBe(2);
+
+      rerender(
+        <>
+          <Modal open onClose={vi.fn()}>
+            <div>Modal 1</div>
+          </Modal>
+          <Modal open={false} onClose={vi.fn()}>
+            <div>Modal 2</div>
+          </Modal>
+        </>
+      );
+
+      expect(getModalStackDepth()).toBe(1);
+    });
+
+    it('Escape key only closes the topmost modal', async () => {
+      const onClose1 = vi.fn();
+      const onClose2 = vi.fn();
+
+      render(
+        <>
+          <Modal open onClose={onClose1} closeOnEscape>
+            <div>Modal 1</div>
+          </Modal>
+          <Modal open onClose={onClose2} closeOnEscape>
+            <div>Modal 2</div>
+          </Modal>
+        </>
+      );
+
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      await waitFor(() => {
+        // Only the topmost (Modal 2) should be closed
+        expect(onClose2).toHaveBeenCalledTimes(1);
+        expect(onClose1).not.toHaveBeenCalled();
+      });
+    });
+
+    it('stack depth returns to zero when all modals close', () => {
+      const { unmount } = render(
+        <Modal open onClose={vi.fn()}>
+          <div>Only Modal</div>
+        </Modal>
+      );
+
+      expect(getModalStackDepth()).toBe(1);
+      unmount();
+      // Stack cleanup happens in effect cleanup
+      expect(getModalStackDepth()).toBe(0);
+    });
+
+    it('assigns data-modal-id attribute for identification', () => {
+      render(
+        <Modal open onClose={vi.fn()}>
+          <div>Content</div>
+        </Modal>
+      );
+
+      const backdrop = screen.getByRole('dialog').parentElement;
+      expect(backdrop).toHaveAttribute('data-modal-id');
+      const id = backdrop!.getAttribute('data-modal-id');
+      expect(id).toMatch(/^modal/);
+    });
+
+    it('stacked modals have unique data-modal-id values', () => {
+      render(
+        <>
+          <Modal open onClose={vi.fn()}>
+            <div>Modal 1</div>
+          </Modal>
+          <Modal open onClose={vi.fn()}>
+            <div>Modal 2</div>
+          </Modal>
+        </>
+      );
+
+      const dialogs = screen.getAllByRole('dialog');
+      const ids = dialogs.map((d) => d.parentElement!.getAttribute('data-modal-id'));
+      expect(new Set(ids).size).toBe(2);
+    });
+  });
+
+  describe('Scroll Lock with Stacking', () => {
+    it('locks body scroll when first modal opens', () => {
+      render(
+        <Modal open onClose={vi.fn()}>
+          <div>Content</div>
+        </Modal>
+      );
+
+      expect(document.body.style.position).toBe('fixed');
+    });
+
+    it('keeps body locked when second modal opens on top of first', () => {
+      render(
+        <>
+          <Modal open onClose={vi.fn()}>
+            <div>Modal 1</div>
+          </Modal>
+          <Modal open onClose={vi.fn()}>
+            <div>Modal 2</div>
+          </Modal>
+        </>
+      );
+
+      expect(document.body.style.position).toBe('fixed');
+    });
+
+    it('stays locked when one of two modals closes', () => {
+      const { rerender } = render(
+        <>
+          <Modal open onClose={vi.fn()}>
+            <div>Modal 1</div>
+          </Modal>
+          <Modal open onClose={vi.fn()}>
+            <div>Modal 2</div>
+          </Modal>
+        </>
+      );
+
+      rerender(
+        <>
+          <Modal open onClose={vi.fn()}>
+            <div>Modal 1</div>
+          </Modal>
+          <Modal open={false} onClose={vi.fn()}>
+            <div>Modal 2</div>
+          </Modal>
+        </>
+      );
+
+      // Body should STILL be locked because Modal 1 is still open
+      expect(document.body.style.position).toBe('fixed');
+    });
+
+    it('unlocks body when ALL modals close', () => {
+      const { rerender } = render(
+        <>
+          <Modal open onClose={vi.fn()}>
+            <div>Modal 1</div>
+          </Modal>
+          <Modal open onClose={vi.fn()}>
+            <div>Modal 2</div>
+          </Modal>
+        </>
+      );
+
+      rerender(
+        <>
+          <Modal open={false} onClose={vi.fn()}>
+            <div>Modal 1</div>
+          </Modal>
+          <Modal open={false} onClose={vi.fn()}>
+            <div>Modal 2</div>
+          </Modal>
+        </>
+      );
+
+      expect(document.body.style.position).toBe('');
+    });
+
+    it('does not lock scroll when preventScroll is false', () => {
+      render(
+        <Modal open onClose={vi.fn()} preventScroll={false}>
+          <div>Content</div>
+        </Modal>
+      );
+
+      expect(document.body.style.position).toBe('');
     });
   });
 
@@ -160,11 +486,14 @@ describe('Modal', () => {
       expect(dialog).toHaveAttribute('aria-modal', 'true');
     });
 
-    it('associates title with aria-labelledby when title is provided', () => {
+    it('associates title with a unique aria-labelledby when title is provided', () => {
       render(<Modal {...defaultProps} title="Test Title" />);
       const dialog = screen.getByRole('dialog');
-      expect(dialog).toHaveAttribute('aria-labelledby', 'modal-title');
-      expect(screen.getByText('Test Title')).toHaveAttribute('id', 'modal-title');
+      const labelledBy = dialog.getAttribute('aria-labelledby');
+      expect(labelledBy).toBeTruthy();
+
+      const titleEl = screen.getByText('Test Title');
+      expect(titleEl).toHaveAttribute('id', labelledBy);
     });
 
     it('close button has aria-label', () => {
@@ -187,6 +516,20 @@ describe('Modal', () => {
       // Focus should be within modal
       const dialog = screen.getByRole('dialog');
       expect(dialog).toBeInTheDocument();
+    });
+
+    it('announces modal title to screen readers on open', async () => {
+      const { announce } = await import('@/lib/utils/accessibility');
+      render(
+        <Modal open onClose={vi.fn()} title="Announced Title">
+          <div>Content</div>
+        </Modal>
+      );
+
+      expect(announce).toHaveBeenCalledWith(
+        'Dialog opened: Announced Title',
+        'assertive'
+      );
     });
   });
 
@@ -274,6 +617,11 @@ describe('ConfirmDialog', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    __resetModalStack();
+  });
+
+  afterEach(() => {
+    __resetModalStack();
   });
 
   describe('Rendering', () => {
@@ -363,8 +711,8 @@ describe('ConfirmDialog', () => {
     it('disables buttons when loading', () => {
       render(<ConfirmDialog {...defaultProps} loading />);
 
-      const confirmButton = screen.getByText('Confirm');
-      const cancelButton = screen.getByText('Cancel');
+      const confirmButton = screen.getByRole('button', { name: /confirm/i });
+      const cancelButton = screen.getByRole('button', { name: 'Cancel' });
 
       expect(confirmButton).toBeDisabled();
       expect(cancelButton).toBeDisabled();
@@ -437,19 +785,19 @@ describe('ConfirmDialog', () => {
     it('applies small size by default', () => {
       render(<ConfirmDialog {...defaultProps} />);
       const dialog = screen.getByRole('dialog');
-      expect(dialog).toHaveClass('sm');
+      expect(dialog.className).toMatch(/\bsm\b|_sm_/);
     });
 
     it('applies medium size', () => {
       render(<ConfirmDialog {...defaultProps} size="md" />);
       const dialog = screen.getByRole('dialog');
-      expect(dialog).toHaveClass('md');
+      expect(dialog.className).toMatch(/\bmd\b|_md_/);
     });
 
     it('applies large size', () => {
       render(<ConfirmDialog {...defaultProps} size="lg" />);
       const dialog = screen.getByRole('dialog');
-      expect(dialog).toHaveClass('lg');
+      expect(dialog.className).toMatch(/\blg\b|_lg_/);
     });
   });
 
@@ -472,6 +820,14 @@ describe('ConfirmDialog', () => {
 });
 
 describe('Integration Tests', () => {
+  beforeEach(() => {
+    __resetModalStack();
+  });
+
+  afterEach(() => {
+    __resetModalStack();
+  });
+
   it('Modal and ConfirmDialog can be used together (sequentially)', async () => {
     const { rerender } = render(
       <Modal open onClose={vi.fn()}>
@@ -491,7 +847,7 @@ describe('Integration Tests', () => {
       />
     );
 
-    expect(screen.getByText('Confirm')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Confirm' })).toBeInTheDocument();
   });
 
   it('maintains accessibility when switching between modals', async () => {
@@ -510,5 +866,25 @@ describe('Integration Tests', () => {
     );
 
     expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true');
+  });
+
+  it('stacked modals each get their own unique aria-labelledby', () => {
+    render(
+      <>
+        <Modal open onClose={vi.fn()} title="Base Modal">
+          <div>Base</div>
+        </Modal>
+        <Modal open onClose={vi.fn()} title="Overlay Modal">
+          <div>Overlay</div>
+        </Modal>
+      </>
+    );
+
+    const dialogs = screen.getAllByRole('dialog');
+    const ids = dialogs.map((d) => d.getAttribute('aria-labelledby'));
+
+    // All IDs are present and unique
+    expect(ids.every(Boolean)).toBe(true);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });

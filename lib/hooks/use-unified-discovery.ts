@@ -36,7 +36,7 @@
  * ```
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   getUnifiedDiscovery,
   type UnifiedDevice,
@@ -120,8 +120,29 @@ const DEFAULT_OPTIONS: Required<UseUnifiedDiscoveryOptions> = {
 export function useUnifiedDiscovery(
   options: UseUnifiedDiscoveryOptions = {}
 ): UseUnifiedDiscoveryResult {
-  const opts = { ...DEFAULT_OPTIONS, ...options };
-  const discoveryRef = useRef(getUnifiedDiscovery(opts));
+  const opts = useMemo(
+    () => ({ ...DEFAULT_OPTIONS, ...options }),
+    [
+      options.enableMdns,
+      options.enableSignaling,
+      options.preferMdns,
+      options.daemonUrl,
+      options.autoAdvertise,
+      options.autoStart,
+      options.sourceFilter,
+      options.capabilityFilter?.supportsPQC,
+      options.capabilityFilter?.supportsGroupTransfer,
+    ]
+  );
+
+  const discoveryRef = useRef<ReturnType<typeof getUnifiedDiscovery> | null>(null);
+  if (!discoveryRef.current) {
+    discoveryRef.current = getUnifiedDiscovery(opts);
+  }
+
+  const sourceFilter = opts.sourceFilter;
+  const requirePQC = opts.capabilityFilter?.supportsPQC === true;
+  const requireGroupTransfer = opts.capabilityFilter?.supportsGroupTransfer === true;
 
   // State
   const [devices, setDevices] = useState<UnifiedDevice[]>([]);
@@ -140,36 +161,35 @@ export function useUnifiedDiscovery(
       let filtered = allDevices;
 
       // Filter by source
-      if (opts.sourceFilter) {
+      if (sourceFilter) {
         filtered = filtered.filter((d) => {
-          if (opts.sourceFilter === 'mdns') {return d.hasMdns;}
-          if (opts.sourceFilter === 'signaling') {return d.hasSignaling;}
-          if (opts.sourceFilter === 'both') {return d.hasMdns && d.hasSignaling;}
+          if (sourceFilter === 'mdns') {return d.hasMdns;}
+          if (sourceFilter === 'signaling') {return d.hasSignaling;}
+          if (sourceFilter === 'both') {return d.hasMdns && d.hasSignaling;}
           return true;
         });
       }
 
       // Filter by capabilities
-      if (opts.capabilityFilter) {
+      if (requirePQC || requireGroupTransfer) {
         filtered = filtered.filter((d) => {
           if (!d.capabilities) {return false;}
-          const cap = opts.capabilityFilter!;
-          if (cap.supportsPQC && !d.capabilities.supportsPQC) {return false;}
-          if (cap.supportsGroupTransfer && !d.capabilities.supportsGroupTransfer) {return false;}
+          if (requirePQC && !d.capabilities.supportsPQC) {return false;}
+          if (requireGroupTransfer && !d.capabilities.supportsGroupTransfer) {return false;}
           return true;
         });
       }
 
       return filtered;
     },
-    [opts.sourceFilter, opts.capabilityFilter]
+    [sourceFilter, requirePQC, requireGroupTransfer]
   );
 
   /**
    * Update status from discovery manager
    */
   const updateStatus = useCallback(() => {
-    const discovery = discoveryRef.current;
+    const discovery = discoveryRef.current!;
     const status = discovery.getStatus();
 
     setIsDiscovering(status.started);
@@ -185,7 +205,7 @@ export function useUnifiedDiscovery(
   const startDiscovery = useCallback(async () => {
     try {
       setError(null);
-      await discoveryRef.current.start();
+      await discoveryRef.current!.start();
       updateStatus();
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));
@@ -196,7 +216,7 @@ export function useUnifiedDiscovery(
    * Stop discovery
    */
   const stopDiscovery = useCallback(() => {
-    discoveryRef.current.stop();
+    discoveryRef.current!.stop();
     setIsDiscovering(false);
     setDevices([]);
   }, []);
@@ -207,7 +227,7 @@ export function useUnifiedDiscovery(
   const refresh = useCallback(async () => {
     try {
       setError(null);
-      await discoveryRef.current.refresh();
+      await discoveryRef.current!.refresh();
       updateStatus();
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));
@@ -219,7 +239,7 @@ export function useUnifiedDiscovery(
    */
   const getBestConnectionMethod = useCallback(
     (deviceId: string): 'direct' | 'signaling' | null => {
-      return discoveryRef.current.getBestConnectionMethod(deviceId);
+      return discoveryRef.current!.getBestConnectionMethod(deviceId);
     },
     []
   );
@@ -228,26 +248,26 @@ export function useUnifiedDiscovery(
    * Get device by ID
    */
   const getDevice = useCallback((deviceId: string): UnifiedDevice | undefined => {
-    return discoveryRef.current.getDevice(deviceId);
+    return discoveryRef.current!.getDevice(deviceId);
   }, []);
 
   /**
    * Advertise this device
    */
   const advertise = useCallback(() => {
-    discoveryRef.current.advertise();
+    discoveryRef.current!.advertise();
   }, []);
 
   /**
    * Stop advertising
    */
   const stopAdvertising = useCallback(() => {
-    discoveryRef.current.stopAdvertising();
+    discoveryRef.current!.stopAdvertising();
   }, []);
 
   // Subscribe to device changes
   useEffect(() => {
-    const discovery = discoveryRef.current;
+    const discovery = discoveryRef.current!;
 
     const unsubscribe = discovery.onDevicesChanged((allDevices) => {
       setDevices(filterDevices(allDevices));

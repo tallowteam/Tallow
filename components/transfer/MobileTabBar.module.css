@@ -1,0 +1,163 @@
+.tabBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  display: none;
+  align-items: center;
+  justify-content: space-around;
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--glass-border);
+  padding: 0 8px 8px;
+  z-index: 50;
+  box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabBar {
+    transition: none;
+  }
+}
+
+/* Show only on mobile */
+@media (max-width: 768px) {
+  .tabBar {
+    display: flex;
+  }
+}
+
+/* Ensure content doesn't go under tab bar on mobile */
+@media (max-width: 768px) {
+  :global(body) {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex: 1;
+  max-width: 80px;
+  padding: 8px 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab {
+    transition: none;
+  }
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  border-radius: var(--radius-md);
+}
+
+.tab.active {
+  color: var(--accent);
+}
+
+.iconWrapper {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab svg {
+  width: 24px;
+  height: 24px;
+  transition: transform 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab svg {
+    transition: none;
+  }
+}
+
+.tab:active svg {
+  transform: scale(0.92);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab:active svg {
+    transform: none;
+  }
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  text-align: center;
+}
+
+/* Badge for active transfers */
+.badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  border: 2px solid var(--glass);
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge {
+    animation: none;
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+/* iOS-style safe area support */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .tabBar {
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Ensure tab bar is always on top of content */
+.tabBar::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--glass)
+  );
+  pointer-events: none;
+}

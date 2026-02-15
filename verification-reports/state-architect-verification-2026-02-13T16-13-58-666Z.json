@@ -1,0 +1,64 @@
+{
+  "timestamp": "2026-02-13T16:13:58.663Z",
+  "checks": [
+    {
+      "name": "State policy, React Query integration files, and workflows exist",
+      "pass": true,
+      "details": [
+        "all required state architect files are present"
+      ]
+    },
+    {
+      "name": "React Query dependency is declared for server state",
+      "pass": true,
+      "details": [
+        "@tanstack/react-query: ^5.90.21"
+      ]
+    },
+    {
+      "name": "Root layout wires QueryClientProvider through QueryProvider",
+      "pass": true,
+      "details": [
+        "query provider is created and wrapped at root layout"
+      ]
+    },
+    {
+      "name": "Server state is consumed through React Query hooks in production UI",
+      "pass": true,
+      "details": [
+        "React Query hook + admin page usage verified"
+      ]
+    },
+    {
+      "name": "Composite Zustand subscriptions use shallow selector equality",
+      "pass": true,
+      "details": [
+        "transfer and settings pages use shallow selector objects"
+      ]
+    },
+    {
+      "name": "Client state remains centralized in Zustand stores",
+      "pass": true,
+      "details": [
+        "zustand store files validated: 6"
+      ]
+    },
+    {
+      "name": "High-risk secrets are not stored in Zustand store files",
+      "pass": true,
+      "details": [
+        "no forbidden secret markers detected in lib/stores"
+      ]
+    },
+    {
+      "name": "State architect gate is wired in package scripts and workflows",
+      "pass": true,
+      "details": [
+        "verify:state:architect: node scripts/verify-state-architect.js",
+        ".github/workflows/ci.yml runs state architect verification",
+        ".github/workflows/release.yml runs state architect verification"
+      ]
+    }
+  ],
+  "passed": true
+}

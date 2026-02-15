@@ -18,7 +18,7 @@ export interface SubscriptionState {
   plan: PlanTier;
   customerId?: string;
   subscriptionId?: string;
-  status?: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid';
+  status?: SubscriptionInfo['status'];
   currentPeriodEnd?: Date;
   cancelAtPeriodEnd?: boolean;
 
@@ -36,7 +36,7 @@ export interface SubscriptionState {
   isCheckingSubscription: boolean;
 
   // Error State
-  error?: string;
+  error: string | undefined;
 }
 
 export interface SubscriptionActions {
@@ -51,7 +51,7 @@ export interface SubscriptionActions {
 
   // Subscription Checks
   checkSubscription: () => Promise<void>;
-  hasFeature: (feature: keyof typeof getPlan) => boolean;
+  hasFeature: (feature: keyof ReturnType<typeof getPlan>['features']) => boolean;
 
   // Loading & Error States
   setLoading: (loading: boolean) => void;
@@ -75,6 +75,7 @@ const DEFAULT_STATE: SubscriptionState = {
   lastTransferReset: new Date(),
   isLoading: false,
   isCheckingSubscription: false,
+  error: undefined,
 };
 
 // ============================================================================
@@ -204,7 +205,7 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
           }
         },
 
-        hasFeature: (feature: keyof typeof getPlan) => {
+        hasFeature: (feature: keyof ReturnType<typeof getPlan>['features']) => {
           const state = get();
           const planConfig = getPlan(state.plan);
           const value = planConfig.features[feature];
@@ -251,14 +252,17 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
         // Merge strategy for hydration
         merge: (persistedState, currentState) => {
           const persisted = persistedState as Partial<SubscriptionState>;
+          const hydratedCurrentPeriodEnd = persisted.currentPeriodEnd
+            ? new Date(persisted.currentPeriodEnd)
+            : undefined;
 
           return {
             ...currentState,
             ...persisted,
             // Convert date strings back to Date objects
-            currentPeriodEnd: persisted.currentPeriodEnd
-              ? new Date(persisted.currentPeriodEnd)
-              : undefined,
+            ...(hydratedCurrentPeriodEnd
+              ? { currentPeriodEnd: hydratedCurrentPeriodEnd }
+              : {}),
             lastTransferReset: persisted.lastTransferReset
               ? new Date(persisted.lastTransferReset)
               : new Date(),

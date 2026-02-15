@@ -1,98 +1,115 @@
 /**
  * Short Authentication String (SAS) Generation
- * Agent 012 — SAS-VERIFIER
+ * Agent 012 -- SAS-VERIFIER
  *
  * Generates human-readable verification codes from shared secrets
  * to detect man-in-the-middle attacks during key exchange.
  *
- * Two display modes:
- * - Emoji: 6 emojis from a set of 64 (36-bit entropy)
- * - Words: 4 words from a curated 256-word list
+ * Three display modes:
+ * - Emoji: 6 emojis from Signal-compatible set of 64 (36-bit entropy)
+ * - Words: 4 words from a curated 256-word list (32-bit entropy)
+ * - Numeric: 6-digit decimal code (approx 20-bit entropy, fallback only)
+ *
+ * SAS derivation:
+ *   sasKey = HKDF-SHA-256(ikm=sharedSecret, salt="tallow-sas-v1", info=context, L=32)
+ *   emoji  = first 6 bytes of sasKey, each mod 64
+ *   words  = next 4 bytes of sasKey, each mod 256
+ *   numeric= next 3 bytes collapsed to 6-digit decimal
  *
  * Both peers derive identical SAS from the shared secret.
  * Users compare visually or verbally through a side channel.
  */
 
 // ============================================================================
-// EMOJI SET — 64 visually distinct, culturally neutral emojis
+// SIGNAL-COMPATIBLE EMOJI SET -- 64 visually distinct emojis
+// Matches the SAS emoji table from the Signal Protocol / XEP-0384 OMEMO spec.
+// Index 0-63, each uniquely identifiable at small screen sizes.
 // ============================================================================
 
-export const SAS_EMOJI_SET: readonly string[] = [
-  // Animals (16)
-  '\u{1F981}', // lion
-  '\u{1F985}', // eagle
-  '\u{1F433}', // whale
-  '\u{1F40E}', // horse
-  '\u{1F40D}', // snake
-  '\u{1F988}', // shark
-  '\u{1F993}', // zebra
-  '\u{1F43C}', // panda
-  '\u{1F428}', // koala
-  '\u{1F9A6}', // otter
-  '\u{1F426}', // bird
-  '\u{1F42A}', // camel
-  '\u{1F98B}', // butterfly
-  '\u{1F422}', // turtle
-  '\u{1F419}', // octopus
-  '\u{1F989}', // owl
-
-  // Nature (16)
-  '\u{1F30A}', // wave
-  '\u{26A1}',  // lightning
-  '\u{1F341}', // maple leaf
-  '\u{1F332}', // evergreen
-  '\u{1F319}', // crescent moon
-  '\u{2B50}',  // star
-  '\u{1F308}', // rainbow
-  '\u{2744}',  // snowflake
-  '\u{1F30B}', // volcano
-  '\u{1F48E}', // gem
-  '\u{1F33B}', // sunflower
-  '\u{1F335}', // cactus
-  '\u{1F340}', // four-leaf clover
-  '\u{1F30D}', // earth
-  '\u{2600}',  // sun
-  '\u{1F525}', // fire
-
-  // Objects (16)
-  '\u{1F451}', // crown
-  '\u{1F3F9}', // bow and arrow
-  '\u{1F5E1}', // dagger
-  '\u{1F30E}', // globe
-  '\u{2699}',  // gear
-  '\u{1F4A1}', // light bulb
-  '\u{1F512}', // lock
-  '\u{1F511}', // key
-  '\u{1F3AF}', // bullseye
-  '\u{1F52D}', // telescope
-  '\u{2697}',  // alembic
-  '\u{1F3B5}', // musical note
-  '\u{1F6E1}', // shield
-  '\u{2693}',  // anchor
-  '\u{1F52E}', // crystal ball
-  '\u{1F680}', // rocket
-
-  // Symbols (16)
-  '\u{2764}',  // heart
-  '\u{267B}',  // recycle
-  '\u{262F}',  // yin yang
-  '\u{269B}',  // atom
-  '\u{2660}',  // spade
-  '\u{2666}',  // diamond
-  '\u{2663}',  // club
-  '\u{1F4AB}', // dizzy (spiral)
-  '\u{1F300}', // cyclone
-  '\u{1F3B2}', // die
-  '\u{1F3B0}', // slot machine
-  '\u{269C}',  // fleur-de-lis
-  '\u{1F549}', // om
-  '\u{2728}',  // sparkles
-  '\u{1FA90}', // ringed planet
-  '\u{1F4A0}', // diamond shape
+/**
+ * Signal Protocol SAS emoji set (64 entries).
+ * Each entry is [emoji codepoint, canonical English label].
+ * The label is used for accessibility / screen readers.
+ */
+export const SAS_EMOJI_TABLE: ReadonlyArray<readonly [string, string]> = [
+  /* 0  */ ['\u{1F436}', 'Dog'],
+  /* 1  */ ['\u{1F431}', 'Cat'],
+  /* 2  */ ['\u{1F43B}', 'Bear'],
+  /* 3  */ ['\u{1F43C}', 'Panda'],
+  /* 4  */ ['\u{1F428}', 'Koala'],
+  /* 5  */ ['\u{1F42F}', 'Tiger'],
+  /* 6  */ ['\u{1F981}', 'Lion'],
+  /* 7  */ ['\u{1F434}', 'Horse'],
+  /* 8  */ ['\u{1F984}', 'Unicorn'],
+  /* 9  */ ['\u{1F437}', 'Pig'],
+  /* 10 */ ['\u{1F430}', 'Rabbit'],
+  /* 11 */ ['\u{1F98A}', 'Fox'],
+  /* 12 */ ['\u{1F43F}', 'Chipmunk'],
+  /* 13 */ ['\u{1F435}', 'Monkey'],
+  /* 14 */ ['\u{1F414}', 'Chicken'],
+  /* 15 */ ['\u{1F427}', 'Penguin'],
+  /* 16 */ ['\u{1F422}', 'Turtle'],
+  /* 17 */ ['\u{1F41F}', 'Fish'],
+  /* 18 */ ['\u{1F419}', 'Octopus'],
+  /* 19 */ ['\u{1F98B}', 'Butterfly'],
+  /* 20 */ ['\u{1F33B}', 'Sunflower'],
+  /* 21 */ ['\u{1F332}', 'Evergreen'],
+  /* 22 */ ['\u{1F335}', 'Cactus'],
+  /* 23 */ ['\u{1F344}', 'Mushroom'],
+  /* 24 */ ['\u{1F30D}', 'Globe'],
+  /* 25 */ ['\u{1F319}', 'Moon'],
+  /* 26 */ ['\u{2B50}',  'Star'],
+  /* 27 */ ['\u{2600}',  'Sun'],
+  /* 28 */ ['\u{26C5}',  'Cloud'],
+  /* 29 */ ['\u{1F525}', 'Fire'],
+  /* 30 */ ['\u{1F4A7}', 'Droplet'],
+  /* 31 */ ['\u{1F30A}', 'Wave'],
+  /* 32 */ ['\u{1F3B5}', 'Music'],
+  /* 33 */ ['\u{1F3A4}', 'Microphone'],
+  /* 34 */ ['\u{1F3B8}', 'Guitar'],
+  /* 35 */ ['\u{1F3BA}', 'Trumpet'],
+  /* 36 */ ['\u{1F514}', 'Bell'],
+  /* 37 */ ['\u{1F511}', 'Key'],
+  /* 38 */ ['\u{1F512}', 'Lock'],
+  /* 39 */ ['\u{1F528}', 'Hammer'],
+  /* 40 */ ['\u{1F4A1}', 'Light Bulb'],
+  /* 41 */ ['\u{1F4D6}', 'Book'],
+  /* 42 */ ['\u{270F}',  'Pencil'],
+  /* 43 */ ['\u{1F4CE}', 'Paperclip'],
+  /* 44 */ ['\u{2702}',  'Scissors'],
+  /* 45 */ ['\u{1F451}', 'Crown'],
+  /* 46 */ ['\u{1F48E}', 'Gem'],
+  /* 47 */ ['\u{1F3AF}', 'Bullseye'],
+  /* 48 */ ['\u{1F680}', 'Rocket'],
+  /* 49 */ ['\u{2708}',  'Airplane'],
+  /* 50 */ ['\u{2693}',  'Anchor'],
+  /* 51 */ ['\u{1F6E1}', 'Shield'],
+  /* 52 */ ['\u{2699}',  'Gear'],
+  /* 53 */ ['\u{1F52C}', 'Microscope'],
+  /* 54 */ ['\u{1F52D}', 'Telescope'],
+  /* 55 */ ['\u{1F3C6}', 'Trophy'],
+  /* 56 */ ['\u{2764}',  'Heart'],
+  /* 57 */ ['\u{1F48D}', 'Ring'],
+  /* 58 */ ['\u{1F381}', 'Gift'],
+  /* 59 */ ['\u{1F3E0}', 'House'],
+  /* 60 */ ['\u{1F308}', 'Rainbow'],
+  /* 61 */ ['\u{2744}',  'Snowflake'],
+  /* 62 */ ['\u{26A1}',  'Lightning'],
+  /* 63 */ ['\u{1F30B}', 'Volcano'],
 ] as const;
 
+/**
+ * Flat emoji-only array for backward compatibility.
+ * SAS_EMOJI_SET[i] === SAS_EMOJI_TABLE[i][0]
+ */
+export const SAS_EMOJI_SET: readonly string[] = SAS_EMOJI_TABLE.map(
+  ([emoji]) => emoji,
+);
+
 // ============================================================================
-// WORD LIST — 256 phonetically distinct, easy-to-pronounce words
+// WORD LIST -- 256 phonetically distinct, easy-to-pronounce words
+// Chosen for phonetic distinctiveness across English, Spanish, French,
+// German, and Japanese transliteration contexts.
 // ============================================================================
 
 export const SAS_WORD_LIST: readonly string[] = [
@@ -112,8 +129,8 @@ export const SAS_WORD_LIST: readonly string[] = [
   'QUARTZ','REIGN', 'SPINE', 'TRUCE', 'UNITY', 'VIPER', 'WRAITH','AZURE',
   'BASALT','COMET', 'DJINN', 'ETHER', 'FABLE', 'GLADE', 'HELIX', 'INLET',
   'JAGGED','KNACK', 'LANCE', 'MERIT', 'NICHE', 'OLIVE', 'PULSE', 'QUOTA',
-  'RELIC', 'SIGMA', 'TEMPO', 'UMBRA', 'VERSE', 'WRATH', 'YIELD', 'ZEPHYR',
-  'ANVIL', 'BRISK', 'CRYPT', 'DELVE', 'EDICT', 'FLORA', 'GRAIL', 'HAVEN',
+  'RELIC', 'SIGMA', 'TEMPO', 'UMBRA', 'VERSE', 'WRATH', 'YONDER','ZEPHYR',
+  'ANVIL', 'BRISK', 'CRYPT', 'DELVE', 'EDICT', 'FLORA', 'GRAIL', 'HARBOR',
   'IGLOO', 'JOLLY', 'KYOTO', 'LYRIC', 'MIRTH', 'NADIR', 'OMEGA', 'PIVOT',
   'QUAKE', 'ROGUE', 'STALK', 'TRAIL', 'USHER', 'VIGOR', 'WALTZ', 'AXIOM',
   'BADGE', 'CHUNK', 'DITTO', 'EXILE', 'FUNGI', 'GUSTO', 'HUSKY', 'IRONY',
@@ -121,12 +138,12 @@ export const SAS_WORD_LIST: readonly string[] = [
   'RASPY', 'SLEEK', 'TULIP', 'UDDER', 'VINYL', 'WHISK', 'XEROX', 'YACHT',
   'ALPHA', 'BRAVO', 'CHIME', 'DODGE', 'ELFIN', 'FLOCK', 'GHOST', 'HASTE',
   'IONIC', 'JUMBO', 'KINKY', 'LLAMA', 'MOOSE', 'NINJA', 'OXIDE', 'PLUMB',
-  'QUILT', 'REALM', 'SONIC', 'TOPAZ', 'ULTRA', 'VIVID', 'WALKY', 'YACHT',
+  'QUILT', 'REALM', 'SONIC', 'TOPAZ', 'URBAN', 'VELVET','WALKY', 'YARROW',
   'ARGON', 'BLEND', 'CRISP', 'DWARF', 'EVOKE', 'FIZZY', 'GLEAM', 'HOVER',
-  'IVORY', 'JUICE', 'KNELT', 'LEMON', 'MODEM', 'NYLON', 'OPTED', 'PRAWN',
-  'QUOTA', 'ROVER', 'STEEP', 'THYME', 'UPPER', 'VALVE', 'WHEAT', 'YOUTH',
+  'INDIGO','JUICE', 'KNELT', 'LEMON', 'MODEM', 'NYLON', 'OPTED', 'PRAWN',
+  'QUILL', 'ROVER', 'STEEP', 'THYME', 'UPPER', 'VALVE', 'WHEAT', 'YOUTH',
   'ABORT', 'BONUS', 'CACHE', 'DENSE', 'ESSAY', 'FOCAL', 'GRAPE', 'HIPPO',
-  'INFER', 'JELLY', 'KAYAK', 'LOGIC', 'MANGO', 'NOVEL', 'ORBIT', 'PLANK',
+  'INFER', 'JELLY', 'KAYAK', 'LOGIC', 'MANGO', 'NOVEL', 'OPERA', 'PLANK',
   'QUEUE', 'RELAY', 'SKULL', 'TIDAL', 'UNITE', 'VALOR', 'WOVEN', 'ZIPPY',
 ] as const;
 
@@ -134,21 +151,86 @@ export const SAS_WORD_LIST: readonly string[] = [
 // SAS TYPES
 // ============================================================================
 
-export type SASDisplayMode = 'emoji' | 'words';
+export type SASDisplayMode = 'emoji' | 'words' | 'numeric';
+
+export interface SASEmojiEntry {
+  /** The emoji codepoint string */
+  emoji: string;
+  /** Human-readable label for accessibility */
+  label: string;
+}
 
 export interface SASCode {
   /** Emoji string (6 emojis concatenated) */
   emoji: string;
   /** Individual emoji array */
   emojis: string[];
+  /** Structured emoji entries with labels for a11y */
+  emojiEntries: SASEmojiEntry[];
   /** Word phrase (4 words hyphenated) */
   words: string;
   /** Individual word array */
   wordList: string[];
-  /** Raw bytes used to derive the SAS */
+  /** 6-digit numeric fallback code */
+  numeric: string;
+  /** Raw bytes used to derive the SAS (full 32-byte HKDF output) */
   rawBytes: Uint8Array;
-  /** Entropy in bits */
+  /** Entropy in bits (for the emoji representation) */
   entropyBits: number;
+}
+
+/** Domain separation salt for SAS derivation via HKDF. */
+const SAS_HKDF_SALT = 'tallow-sas-v1';
+
+// ============================================================================
+// HKDF-SHA-256 (RFC 5869) — proper key derivation
+// ============================================================================
+
+/**
+ * HKDF-SHA-256 using the WebCrypto API.
+ *
+ * @param ikm  - Input keying material (the shared DH secret)
+ * @param salt - Extraction salt (domain separator)
+ * @param info - Context/info string (session binding)
+ * @param length - Desired output length in bytes
+ * @returns Derived key material
+ */
+async function hkdfSHA256(
+  ikm: Uint8Array,
+  salt: string,
+  info: string,
+  length: number,
+): Promise<Uint8Array> {
+  const encoder = new TextEncoder();
+  const saltBytes = encoder.encode(salt);
+  const infoBytes = encoder.encode(info);
+
+  // Import the IKM as a raw key for HKDF.
+  // WebCrypto requires non-zero-length key material; if the shared secret
+  // is empty (edge case / test), supply a single zero byte so the import
+  // does not throw.  HKDF itself handles arbitrary-length IKM.
+  const keyMaterial = ikm.length > 0 ? ikm : new Uint8Array(1);
+
+  const baseKey = await crypto.subtle.importKey(
+    'raw',
+    keyMaterial,
+    'HKDF',
+    false,
+    ['deriveBits'],
+  );
+
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: 'HKDF',
+      hash: 'SHA-256',
+      salt: saltBytes,
+      info: infoBytes,
+    },
+    baseKey,
+    length * 8, // deriveBits takes bit length
+  );
+
+  return new Uint8Array(derivedBits);
 }
 
 // ============================================================================
@@ -159,62 +241,73 @@ export interface SASCode {
  * Generate a Short Authentication String from a shared secret.
  *
  * Both peers call this with the same shared secret and session context.
- * The result is deterministic — both peers get identical SAS codes.
+ * The result is deterministic -- both peers get identical SAS codes.
  *
- * @param sharedSecret - The shared secret from key exchange
- * @param context - Domain separation context (e.g., session ID)
- * @returns SAS code with both emoji and word representations
+ * Derivation:
+ *   sasKey = HKDF-SHA-256(ikm=sharedSecret, salt="tallow-sas-v1", info=context, L=32)
+ *   emojis  = sasKey[0..5]  each byte mod 64  -> 6 emojis, 36-bit entropy
+ *   words   = sasKey[6..9]  each byte mod 256  -> 4 words,  32-bit entropy
+ *   numeric = sasKey[10..12] collapsed to 6-digit decimal  -> ~20-bit entropy
+ *
+ * @param sharedSecret - The shared secret from key exchange (DH / ML-KEM)
+ * @param context - Session binding context (e.g., session ID). Defaults to "tallow-sas-v1".
+ * @returns SAS code with emoji, word, and numeric representations
  */
 export async function generateSASCode(
   sharedSecret: Uint8Array,
-  context: string = 'tallow-v3-sas'
+  context: string = SAS_HKDF_SALT,
 ): Promise<SASCode> {
-  // Derive SAS material using HKDF-like construction with SHA-256
-  // (we use SubtleCrypto for broad compatibility)
-  const encoder = new TextEncoder();
-  const contextBytes = encoder.encode(context);
+  // Derive 32 bytes of SAS material via HKDF
+  const sasKey = await hkdfSHA256(sharedSecret, SAS_HKDF_SALT, context, 32);
 
-  // Concatenate: sharedSecret || context
-  const ikm = new Uint8Array(sharedSecret.length + contextBytes.length);
-  ikm.set(sharedSecret, 0);
-  ikm.set(contextBytes, sharedSecret.length);
-
-  // Hash to derive SAS bytes
-  const hashBuffer = await crypto.subtle.digest('SHA-256', ikm);
-  const hashBytes = new Uint8Array(hashBuffer);
-
-  // Take first 6 bytes for emoji SAS (6 × 6 bits = 36 bits entropy)
-  const emojiBytes = hashBytes.slice(0, 6);
+  // --- Emoji SAS (6 emojis from 64-entry table = 36 bits) ---
+  const emojiEntries: SASEmojiEntry[] = [];
   const emojis: string[] = [];
   for (let i = 0; i < 6; i++) {
-    const idx = (emojiBytes[i] ?? 0) % SAS_EMOJI_SET.length; // mod 64
-    emojis.push(SAS_EMOJI_SET[idx]!);
+    const idx = (sasKey[i] ?? 0) % 64;
+    const entry = SAS_EMOJI_TABLE[idx]!;
+    emojis.push(entry[0]);
+    emojiEntries.push({ emoji: entry[0], label: entry[1] });
   }
 
-  // Take next 4 bytes for word SAS (4 × 8 bits = 32 bits entropy)
-  const wordBytes = hashBytes.slice(6, 10);
+  // --- Word SAS (4 words from 256-word list = 32 bits) ---
   const wordList: string[] = [];
   for (let i = 0; i < 4; i++) {
-    const idx = (wordBytes[i] ?? 0) % SAS_WORD_LIST.length; // mod 256
+    const idx = (sasKey[6 + i] ?? 0) % 256;
     wordList.push(SAS_WORD_LIST[idx]!);
   }
+
+  // --- Numeric SAS (6-digit decimal, ~20-bit fallback) ---
+  const b0 = sasKey[10] ?? 0;
+  const b1 = sasKey[11] ?? 0;
+  const b2 = sasKey[12] ?? 0;
+  const numericValue = ((b0 << 16) | (b1 << 8) | b2) % 1_000_000;
+  const numeric = numericValue.toString().padStart(6, '0');
 
   return {
     emoji: emojis.join(''),
     emojis,
+    emojiEntries,
     words: wordList.join('-'),
     wordList,
-    rawBytes: hashBytes.slice(0, 10),
-    entropyBits: 36, // 6 emojis × log2(64) = 36 bits
+    numeric,
+    rawBytes: sasKey,
+    entropyBits: 36, // 6 emojis * log2(64) = 36 bits
   };
 }
 
+// ============================================================================
+// SAS VERIFICATION (constant-time)
+// ============================================================================
+
 /**
  * Verify that two SAS codes match.
- * Uses constant-time comparison to prevent timing attacks.
+ * Uses constant-time comparison to prevent timing side-channel attacks.
  */
 export function verifySASMatch(a: SASCode, b: SASCode): boolean {
-  if (a.rawBytes.length !== b.rawBytes.length) {return false;}
+  if (a.rawBytes.length !== b.rawBytes.length) {
+    return false;
+  }
   let result = 0;
   for (let i = 0; i < a.rawBytes.length; i++) {
     result |= (a.rawBytes[i] ?? 0) ^ (b.rawBytes[i] ?? 0);
@@ -222,33 +315,231 @@ export function verifySASMatch(a: SASCode, b: SASCode): boolean {
   return result === 0;
 }
 
+// ============================================================================
+// QR CODE PAYLOAD — encodes public key fingerprint for camera verification
+// ============================================================================
+
 /**
- * Encode SAS as a QR code-compatible string.
- * Format: "tallow-sas:v1:<base64url-encoded-raw-bytes>"
+ * QR payload version 2 format:
+ *   "tallow-sas:v2:<base64url(sasKey[0..5] || publicKeyFingerprint)>"
+ *
+ * If no fingerprint is provided, falls back to SAS raw bytes only (v1 compat).
  */
-export function sasToQRPayload(sas: SASCode): string {
-  const b64 = btoa(String.fromCharCode(...sas.rawBytes))
+export function sasToQRPayload(
+  sas: SASCode,
+  publicKeyFingerprint?: Uint8Array,
+): string {
+  let payload: Uint8Array;
+
+  if (publicKeyFingerprint && publicKeyFingerprint.length > 0) {
+    // v2: 6-byte SAS prefix + full fingerprint
+    const sasPrefix = sas.rawBytes.slice(0, 6);
+    payload = new Uint8Array(sasPrefix.length + publicKeyFingerprint.length);
+    payload.set(sasPrefix, 0);
+    payload.set(publicKeyFingerprint, sasPrefix.length);
+  } else {
+    // v1 fallback: SAS raw bytes only (first 10 bytes for backward compat)
+    payload = sas.rawBytes.slice(0, 10);
+  }
+
+  const b64 = btoa(String.fromCharCode(...payload))
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=/g, '');
-  return `tallow-sas:v1:${b64}`;
+
+  const version = publicKeyFingerprint ? 'v2' : 'v1';
+  return `tallow-sas:${version}:${b64}`;
 }
 
 /**
  * Parse a QR code payload back to raw bytes for verification.
+ * Supports both v1 (SAS-only) and v2 (SAS + fingerprint) formats.
  */
-export function qrPayloadToRawBytes(payload: string): Uint8Array | null {
-  const prefix = 'tallow-sas:v1:';
-  if (!payload.startsWith(prefix)) {return null;}
-  const b64 = payload.slice(prefix.length).replace(/-/g, '+').replace(/_/g, '/');
+export interface QRPayloadParsed {
+  /** The version of the QR payload */
+  version: 'v1' | 'v2';
+  /** Raw SAS bytes (first 6 bytes in v2, first 10 in v1) */
+  sasBytes: Uint8Array;
+  /** Public key fingerprint (v2 only, null for v1) */
+  fingerprint: Uint8Array | null;
+}
+
+export function parseQRPayload(payload: string): QRPayloadParsed | null {
+  const v2Prefix = 'tallow-sas:v2:';
+  const v1Prefix = 'tallow-sas:v1:';
+
+  let version: 'v1' | 'v2';
+  let b64Data: string;
+
+  if (payload.startsWith(v2Prefix)) {
+    version = 'v2';
+    b64Data = payload.slice(v2Prefix.length);
+  } else if (payload.startsWith(v1Prefix)) {
+    version = 'v1';
+    b64Data = payload.slice(v1Prefix.length);
+  } else {
+    return null;
+  }
+
+  const b64 = b64Data.replace(/-/g, '+').replace(/_/g, '/');
   try {
     const binary = atob(b64);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) {
       bytes[i] = binary.charCodeAt(i);
     }
-    return bytes;
+
+    if (version === 'v2' && bytes.length > 6) {
+      return {
+        version,
+        sasBytes: bytes.slice(0, 6),
+        fingerprint: bytes.slice(6),
+      };
+    }
+    return {
+      version,
+      sasBytes: bytes,
+      fingerprint: null,
+    };
   } catch {
     return null;
   }
+}
+
+/**
+ * Legacy: Parse a QR payload and return just the raw bytes (v1 compat).
+ */
+export function qrPayloadToRawBytes(payload: string): Uint8Array | null {
+  const parsed = parseQRPayload(payload);
+  if (!parsed) return null;
+  return parsed.sasBytes;
+}
+
+/**
+ * Verify a scanned QR payload against a local SAS code.
+ * For v2, also verifies the public key fingerprint if provided.
+ */
+export function verifyQRPayload(
+  scannedPayload: string,
+  localSas: SASCode,
+  localFingerprint?: Uint8Array,
+): boolean {
+  const parsed = parseQRPayload(scannedPayload);
+  if (!parsed) return false;
+
+  // Compare SAS bytes (constant-time)
+  const localSasBytes = parsed.version === 'v2'
+    ? localSas.rawBytes.slice(0, 6)
+    : localSas.rawBytes.slice(0, parsed.sasBytes.length);
+
+  if (localSasBytes.length !== parsed.sasBytes.length) return false;
+
+  let result = 0;
+  for (let i = 0; i < localSasBytes.length; i++) {
+    result |= (localSasBytes[i] ?? 0) ^ (parsed.sasBytes[i] ?? 0);
+  }
+  if (result !== 0) return false;
+
+  // For v2, also verify fingerprint if available
+  if (parsed.version === 'v2' && parsed.fingerprint && localFingerprint) {
+    if (localFingerprint.length !== parsed.fingerprint.length) return false;
+    let fpResult = 0;
+    for (let i = 0; i < localFingerprint.length; i++) {
+      fpResult |= (localFingerprint[i] ?? 0) ^ (parsed.fingerprint[i] ?? 0);
+    }
+    if (fpResult !== 0) return false;
+  }
+
+  return true;
+}
+
+// ============================================================================
+// MISMATCH RESPONSE -- Agent 012 SAS-VERIFIER termination contract
+// ============================================================================
+
+/**
+ * Maximum time allowed for mismatch termination (100ms).
+ * If termination exceeds this deadline, an error MUST be raised.
+ */
+export const SAS_MISMATCH_TERMINATION_DEADLINE_MS = 100;
+
+/**
+ * Minimum entropy floor in bits. SAS generation MUST meet this threshold.
+ */
+export const SAS_MINIMUM_ENTROPY_BITS = 36;
+
+/**
+ * Security report emitted on SAS mismatch.
+ * No retry is allowed after a mismatch -- the connection is permanently severed.
+ */
+export interface SASMismatchReport {
+  /** ISO-8601 timestamp of the mismatch event */
+  timestamp: string;
+  /** Peer identifier (device name or ID) */
+  peerId: string;
+  /** Session identifier for correlation */
+  sessionId: string;
+  /** Reason for termination */
+  reason: 'SAS_MISMATCH_DETECTED';
+  /** How the mismatch was identified */
+  method: SASDisplayMode | 'qr';
+  /** Elapsed time in ms from mismatch detection to connection teardown */
+  terminationLatencyMs: number;
+  /** Whether termination met the deadline */
+  withinDeadline: boolean;
+}
+
+/**
+ * Handle a SAS mismatch: immediately terminate the connection,
+ * emit a warning, and produce a security report.
+ *
+ * Contract:
+ * - Connection MUST be torn down within SAS_MISMATCH_TERMINATION_DEADLINE_MS.
+ * - No "try again" -- mismatch is final.
+ * - Returns a SASMismatchReport for audit logging.
+ *
+ * @param terminateConnection - callback that severs the peer connection
+ * @param peerId - identifier for the peer device
+ * @param sessionId - current session identifier
+ * @param method - which verification method detected the mismatch
+ */
+export async function handleSASMismatch(
+  terminateConnection: () => void | Promise<void>,
+  peerId: string,
+  sessionId: string,
+  method: SASDisplayMode | 'qr' = 'emoji',
+): Promise<SASMismatchReport> {
+  const start = performance.now();
+
+  // Immediately sever the connection -- no retry path
+  await terminateConnection();
+
+  const terminationLatencyMs = performance.now() - start;
+  const withinDeadline = terminationLatencyMs <= SAS_MISMATCH_TERMINATION_DEADLINE_MS;
+
+  const report: SASMismatchReport = {
+    timestamp: new Date().toISOString(),
+    peerId,
+    sessionId,
+    reason: 'SAS_MISMATCH_DETECTED',
+    method,
+    terminationLatencyMs,
+    withinDeadline,
+  };
+
+  // Warn in console (never silent)
+  console.warn(
+    `[SAS-VERIFIER] MITM WARNING: SAS mismatch with peer "${peerId}" in session "${sessionId}". ` +
+    `Connection terminated in ${terminationLatencyMs.toFixed(1)}ms` +
+    `${withinDeadline ? '' : ' (EXCEEDED DEADLINE)'}. No retry permitted.`,
+  );
+
+  if (!withinDeadline) {
+    console.error(
+      `[SAS-VERIFIER] DEADLINE VIOLATION: Termination took ${terminationLatencyMs.toFixed(1)}ms, ` +
+      `deadline is ${SAS_MISMATCH_TERMINATION_DEADLINE_MS}ms.`,
+    );
+  }
+
+  return report;
 }

@@ -597,7 +597,7 @@ export interface SecurityEvent {
   severity: 'info' | 'warning' | 'error';
   deviceId: string;
   roomCode?: string;
-  details: any;
+  details: unknown;
   timestamp: number;
 }
 

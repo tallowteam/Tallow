@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { StatsCard } from '@/components/admin/StatsCard';
+import { focusFieldById, invalidFieldMessage, requiredFieldMessage } from '@/lib/forms/form-policy';
+import { useFeatureFlagsQuery } from '@/lib/hooks/use-feature-flags-query';
 import dynamic from 'next/dynamic';
 
 const SimpleChart = dynamic(
@@ -37,6 +39,11 @@ export default function AdminPage() {
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('7d');
   const [stats, setStats] = useState(UsageTracker.getStats(timeRange));
   const [refreshKey, setRefreshKey] = useState(0);
+  const {
+    data: featureFlagsResponse,
+    isFetching: isFeatureFlagsFetching,
+    refetch: refetchFeatureFlags,
+  } = useFeatureFlagsQuery();
 
   // Mock active connections (in real app, this would come from connection manager)
   const [activeConnections] = useState<Connection[]>([
@@ -82,17 +89,25 @@ export default function AdminPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    const normalizedPassword = password.trim();
+
+    if (!normalizedPassword) {
+      setError(requiredFieldMessage('Admin password'));
+      focusFieldById('admin-password');
+      return;
+    }
 
     // Check against environment variable (in real app)
     const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin123';
 
-    if (password === adminPassword) {
+    if (normalizedPassword === adminPassword) {
       setIsAuthenticated(true);
       sessionStorage.setItem('admin-authenticated', 'true');
       setError('');
     } else {
-      setError('Invalid password');
+      setError(invalidFieldMessage('Admin password', 'Use the dashboard credential configured for this environment.'));
       setPassword('');
+      focusFieldById('admin-password');
     }
   };
 
@@ -102,8 +117,17 @@ export default function AdminPage() {
     setPassword('');
   };
 
+  const enabledFeatureFlagCount = useMemo(() => {
+    if (!featureFlagsResponse) {
+      return 0;
+    }
+
+    return Object.values(featureFlagsResponse.flags).filter(Boolean).length;
+  }, [featureFlagsResponse]);
+
   const handleRefresh = () => {
     setRefreshKey((prev) => prev + 1);
+    void refetchFeatureFlags();
   };
 
   const formatBytes = (bytes: number): string => {
@@ -144,9 +168,16 @@ export default function AdminPage() {
                 <form onSubmit={handleLogin} className={styles.loginForm}>
                   <div className={styles.passwordWrapper}>
                     <Input
+                      id="admin-password"
+                      label="Admin Password"
                       type={showPassword ? 'text' : 'password'}
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (error) {
+                          setError('');
+                        }
+                      }}
                       placeholder="Enter admin password"
                       error={error}
                       autoFocus
@@ -160,7 +191,6 @@ export default function AdminPage() {
                       {showPassword ? <EyeOff /> : <Eye />}
                     </button>
                   </div>
-                  {error && <p className={styles.error}>{error}</p>}
                   <Button type="submit" fullWidth>
                     Access Dashboard
                   </Button>
@@ -272,7 +302,8 @@ export default function AdminPage() {
                     value: d.count,
                   }))}
                   height={250}
-                  color="#5e5ce6"
+                  color="#0072B2"
+                  ariaLabel="Transfer volume over time"
                 />
               </CardContent>
             </Card>
@@ -290,6 +321,7 @@ export default function AdminPage() {
                     value: d.percentage,
                   }))}
                   height={250}
+                  ariaLabel="File type distribution chart"
                 />
               </CardContent>
             </Card>
@@ -307,7 +339,8 @@ export default function AdminPage() {
                     value: d.count,
                   }))}
                   height={250}
-                  color="#22c55e"
+                  color="#009E73"
+                  ariaLabel="Connection method totals"
                 />
               </CardContent>
             </Card>
@@ -325,7 +358,8 @@ export default function AdminPage() {
                     value: d.total > 0 ? (d.errors / d.total) * 100 : 0,
                   }))}
                   height={250}
-                  color="#ef4444"
+                  color="#D55E00"
+                  ariaLabel="Error rate trend over time"
                 />
               </CardContent>
             </Card>
@@ -410,6 +444,30 @@ export default function AdminPage() {
                     </div>
                     <div className={styles.healthValue}>
                       <Badge variant="success">{activeConnections.length}/100</Badge>
+                    </div>
+                  </div>
+
+                  <div className={styles.healthItem}>
+                    <div className={styles.healthLabel}>
+                      <Server className={styles.healthIcon} />
+                      <span>Flag Source</span>
+                    </div>
+                    <div className={styles.healthValue}>
+                      <Badge variant="secondary">
+                        {featureFlagsResponse?.source ?? (isFeatureFlagsFetching ? 'loading' : 'unknown')}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className={styles.healthItem}>
+                    <div className={styles.healthLabel}>
+                      <Lock className={styles.healthIcon} />
+                      <span>Flags Enabled</span>
+                    </div>
+                    <div className={styles.healthValue}>
+                      <Badge variant="success">
+                        {featureFlagsResponse ? `${enabledFeatureFlagCount}` : '--'}
+                      </Badge>
                     </div>
                   </div>
                 </div>

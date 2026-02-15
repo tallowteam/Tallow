@@ -1,0 +1,6 @@
+
+> tallow@0.1.0 verify:chaos
+> node scripts/verify-chaos-readiness.js
+
+[verify-chaos-readiness] Missing Vitest CLI at C:\Users\aamir\Documents\Apps\Tallow\node_modules\vitest\vitest.mjs. Run npm install first.
+[verify-chaos-readiness] Missing JSON output: C:\Users\aamir\Documents\Apps\Tallow\reports\chaos-readiness-2026-02-11T17-44-09-917Z.json

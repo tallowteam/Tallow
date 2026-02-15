@@ -5,6 +5,8 @@
  * and latency measurements.
  */
 
+export {};
+
 // Message types for communication
 interface NetworkWorkerMessage {
     type: 'check-connectivity' | 'resolve-ice' | 'bandwidth-test' | 'latency-check';
@@ -59,7 +61,7 @@ async function checkConnectivity(url: string, timeout: number = 5000): Promise<{
             statusCode: response.status,
             responseTime
         };
-    } catch (error) {
+    } catch {
         clearTimeout(timeoutId);
         const responseTime = performance.now() - startTime;
 

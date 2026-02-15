@@ -1,0 +1,199 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - link "Skip to main content" [ref=e2]:
+    - /url: "#main-content"
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - link "Tallow" [ref=e6]:
+          - /url: /
+        - text: QUANTUM-SAFE TRANSFER
+      - navigation "Main navigation" [ref=e7]:
+        - list [ref=e8]:
+          - listitem [ref=e9]:
+            - link "FEATURES" [ref=e10]:
+              - /url: /features
+          - listitem [ref=e11]:
+            - link "HOW IT WORKS" [ref=e12]:
+              - /url: /how-it-works
+          - listitem [ref=e13]:
+            - link "HELP" [ref=e14]:
+              - /url: /docs
+          - listitem [ref=e15]:
+            - link "ABOUT" [ref=e16]:
+              - /url: /about
+        - link "OPEN APP" [ref=e17]:
+          - /url: /transfer
+      - button "Toggle menu" [ref=e18]
+  - main [ref=e19]:
+    - generic [ref=e20]:
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - generic [ref=e24]: QUANTUM-SAFE FILE TRANSFER
+          - heading "Your files.Your rules." [level=1] [ref=e25]
+          - paragraph [ref=e26]: Transfer files directly between devices with military-grade encryption. No servers, no compromises, no limits. Just secure, peer-to-peer file sharing built for the quantum era.
+          - generic [ref=e27]:
+            - link "Start Transferring" [ref=e28]:
+              - /url: /transfer
+            - link "Learn More" [ref=e29]:
+              - /url: /security
+        - generic [ref=e31]:
+          - generic [ref=e33]: tallow.app
+          - generic [ref=e34]:
+            - generic [ref=e35]:
+              - img [ref=e36]
+              - text: Drop files here to transfer
+            - generic [ref=e39]:
+              - generic [ref=e41]:
+                - generic [ref=e42]: MacBook Pro
+                - generic [ref=e43]: Ready
+              - generic [ref=e45]:
+                - generic [ref=e46]: iPhone 15
+                - generic [ref=e47]: Nearby
+              - generic [ref=e49]:
+                - generic [ref=e50]: iPad Air
+                - generic [ref=e51]: Available
+            - generic [ref=e52]:
+              - generic [ref=e53]: photos-album.zip14.2 MB
+              - generic [ref=e54]: 12.4 MB/sAES-256-GCM
+      - generic [ref=e56]: AES ENCRYPTED · ZERO KNOWLEDGE · OPEN SOURCE · POST-QUANTUM SAFE · NO FILE LIMITS · WEBRTC P2P · AES ENCRYPTED · ZERO KNOWLEDGE · OPEN SOURCE · POST-QUANTUM SAFE · NO FILE LIMITS · WEBRTC P2P · AES ENCRYPTED · ZERO KNOWLEDGE · OPEN SOURCE · POST-QUANTUM SAFE · NO FILE LIMITS · WEBRTC P2P ·
+      - generic [ref=e57]:
+        - generic [ref=e58]:
+          - text: 01 — TRANSFER
+          - heading "Lightning-fast peer-to-peer." [level=2] [ref=e59]
+          - paragraph [ref=e60]: Send files directly between devices at full network speed. No upload limits, no cloud storage, no waiting. Your data travels the shortest path possible, encrypted every step of the way.
+          - link "See how it works →" [ref=e61]:
+            - /url: /features
+        - generic [ref=e64]:
+          - generic [ref=e65]: DIRECT P2PACTIVE
+          - generic [ref=e66]: Transfer Speed4.2 MB/s
+          - generic [ref=e67]: Latency<1ms
+          - generic [ref=e68]: PrivacyEnd-to-End
+          - generic [ref=e69]: IntegrityBLAKE3 Verified
+          - generic [ref=e70]: EncryptionML-KEM-768
+      - generic [ref=e71]:
+        - generic [ref=e72]:
+          - text: 02 — SECURITY
+          - heading "Future-proof encryption." [level=2] [ref=e73]
+          - paragraph [ref=e74]: Built on NIST-standardized post-quantum cryptography. Your files are protected against both current and future threats, including quantum computers. Military-grade security that doesn’t compromise speed.
+          - link "Read the whitepaper →" [ref=e75]:
+            - /url: /security
+        - table "Tallow vs competitors comparison" [ref=e78]:
+          - row "FeatureTallowOthers" [ref=e79]:
+            - columnheader "Feature" [ref=e80]
+            - columnheader "Tallow" [ref=e81]
+            - columnheader "Others" [ref=e82]
+          - row "Encryption StandardML-KEM-768AES-128" [ref=e83]:
+            - rowheader "Encryption Standard" [ref=e84]
+            - cell "ML-KEM-768" [ref=e85]
+            - cell "AES-128" [ref=e86]
+          - row "Quantum SafeYesNo" [ref=e87]:
+            - rowheader "Quantum Safe" [ref=e88]
+            - cell "Yes" [ref=e89]
+            - cell "No" [ref=e90]
+          - row "Key ExchangeML-KEM-768RSA-2048" [ref=e91]:
+            - rowheader "Key Exchange" [ref=e92]
+            - cell "ML-KEM-768" [ref=e93]
+            - cell "RSA-2048" [ref=e94]
+          - row "Max File SizeNone2 GB" [ref=e95]:
+            - rowheader "Max File Size" [ref=e96]
+            - cell "None" [ref=e97]
+            - cell "2 GB" [ref=e98]
+          - row "Open Source✓—" [ref=e99]:
+            - rowheader "Open Source" [ref=e100]
+            - cell "✓" [ref=e101]
+            - cell "—" [ref=e102]
+      - generic [ref=e103]:
+        - generic [ref=e104]:
+          - text: 03 — PLATFORM
+          - heading "Works everywhere." [level=2] [ref=e105]
+          - paragraph [ref=e106]: Native experience across all your devices. Transfer seamlessly between desktop, mobile, and web — with the same security and performance guarantees everywhere.
+          - link "View all platforms →" [ref=e107]:
+            - /url: /features
+        - generic [ref=e110]:
+          - generic [ref=e111]:
+            - generic [ref=e112]:
+              - img [ref=e114]
+              - text: macOS
+            - generic [ref=e117]:
+              - img [ref=e119]
+              - text: Windows
+            - generic [ref=e124]:
+              - img [ref=e126]
+              - text: Linux
+          - generic [ref=e129]:
+            - generic [ref=e130]:
+              - img [ref=e132]
+              - text: iOS
+            - generic [ref=e134]:
+              - img [ref=e136]
+              - text: Android
+      - blockquote [ref=e140]: “Privacy isn’t a feature. It’s a fundamental right.”
+      - generic [ref=e142]:
+        - generic [ref=e143]:
+          - generic [ref=e144]: "256"
+          - generic [ref=e145]: BIT ENCRYPTION
+        - generic [ref=e146]:
+          - generic [ref=e147]: "0"
+          - generic [ref=e148]: SERVERS TOUCHED
+        - generic [ref=e149]:
+          - generic [ref=e150]: P2P
+          - generic [ref=e151]: DIRECT CONNECTION
+        - generic [ref=e152]:
+          - generic [ref=e153]: ∞
+          - generic [ref=e154]: FILE SIZE LIMIT
+      - generic [ref=e156]:
+        - heading "Ready to send without compromise?" [level=2] [ref=e158]
+        - generic [ref=e159]:
+          - paragraph [ref=e160]: Join thousands of users who trust Tallow for secure, private file transfers. No signup required, no credit card needed. Start transferring files in seconds.
+          - link "Get Started — It’s Free" [ref=e161]:
+            - /url: /transfer
+  - contentinfo [ref=e162]:
+    - generic [ref=e163]:
+      - generic [ref=e164]:
+        - generic [ref=e165]:
+          - heading "Tallow" [level=2] [ref=e166]
+          - paragraph [ref=e167]: Quantum-safe file transfer built on peer-to-peer technology. Private, secure, and built for the future.
+          - link "View Tallow on GitHub" [ref=e168]:
+            - /url: https://github.com/tallowteam/Tallow
+            - img [ref=e169]
+            - text: GitHub
+        - generic [ref=e171]:
+          - heading "Product" [level=3] [ref=e172]
+          - navigation "Product" [ref=e173]:
+            - link "Features" [ref=e174]:
+              - /url: /features
+            - link "Security" [ref=e175]:
+              - /url: /security
+            - link "Pricing" [ref=e176]:
+              - /url: /pricing
+            - link "How It Works" [ref=e177]:
+              - /url: /how-it-works
+        - generic [ref=e178]:
+          - heading "Resources" [level=3] [ref=e179]
+          - navigation "Resources" [ref=e180]:
+            - link "Documentation" [ref=e181]:
+              - /url: /docs
+            - link "API Reference" [ref=e182]:
+              - /url: /docs/api
+            - link "Security Guide" [ref=e183]:
+              - /url: /docs/guides/security
+            - link "Getting Started" [ref=e184]:
+              - /url: /docs/guides
+        - generic [ref=e185]:
+          - heading "Legal" [level=3] [ref=e186]
+          - navigation "Legal" [ref=e187]:
+            - link "Privacy Policy" [ref=e188]:
+              - /url: /privacy
+            - link "Terms of Service" [ref=e189]:
+              - /url: /terms
+            - link "Security" [ref=e190]:
+              - /url: /security
+            - link "About" [ref=e191]:
+              - /url: /about
+      - generic [ref=e192]:
+        - paragraph [ref=e193]: © 2026 Tallow Foundation. All rights reserved.
+        - paragraph [ref=e194]: Built with privacy in mind.
+```

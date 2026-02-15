@@ -187,7 +187,7 @@ export function isCompressible(mimeType: string | null): boolean {
  * @returns Human-readable description
  */
 export function getFileTypeDescription(mimeType: string | null): string {
-  if (!mimeType) return 'Unknown';
+  if (!mimeType) {return 'Unknown';}
 
   const descriptions: Record<string, string> = {
     'image/jpeg': 'JPEG Image',

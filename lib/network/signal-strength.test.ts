@@ -15,7 +15,6 @@ import {
   calculateJitter,
   smoothRTT,
   getProximityDescription,
-  type SignalLevel,
 } from './signal-strength';
 import type { Device } from '../types';
 
@@ -147,9 +146,9 @@ describe('sortDevicesByProximity', () => {
 
     const sorted = sortDevicesByProximity(devices, rttMap);
 
-    expect(sorted[0].id).toBe('device-2'); // 20ms
-    expect(sorted[1].id).toBe('device-3'); // 50ms
-    expect(sorted[2].id).toBe('device-1'); // 100ms
+    expect(sorted[0]!.id).toBe('device-2'); // 20ms
+    expect(sorted[1]!.id).toBe('device-3'); // 50ms
+    expect(sorted[2]!.id).toBe('device-1'); // 100ms
   });
 
   it('should prioritize favorites when RTT is equal', () => {
@@ -165,8 +164,8 @@ describe('sortDevicesByProximity', () => {
 
     const sorted = sortDevicesByProximity(devices, rttMap);
 
-    expect(sorted[0].id).toBe('device-2'); // Favorite
-    expect(sorted[1].id).toBe('device-1');
+    expect(sorted[0]!.id).toBe('device-2'); // Favorite
+    expect(sorted[1]!.id).toBe('device-1');
   });
 
   it('should prioritize online devices when RTT and favorite are equal', () => {
@@ -182,8 +181,8 @@ describe('sortDevicesByProximity', () => {
 
     const sorted = sortDevicesByProximity(devices, rttMap);
 
-    expect(sorted[0].id).toBe('device-2'); // Online
-    expect(sorted[1].id).toBe('device-1');
+    expect(sorted[0]!.id).toBe('device-2'); // Online
+    expect(sorted[1]!.id).toBe('device-1');
   });
 
   it('should sort alphabetically when all other factors are equal', () => {
@@ -199,8 +198,8 @@ describe('sortDevicesByProximity', () => {
 
     const sorted = sortDevicesByProximity(devices, rttMap);
 
-    expect(sorted[0].name).toBe('Alpha');
-    expect(sorted[1].name).toBe('Zebra');
+    expect(sorted[0]!.name).toBe('Alpha');
+    expect(sorted[1]!.name).toBe('Zebra');
   });
 
   it('should place devices without RTT at the end', () => {
@@ -218,9 +217,9 @@ describe('sortDevicesByProximity', () => {
 
     const sorted = sortDevicesByProximity(devices, rttMap);
 
-    expect(sorted[0].id).toBe('device-3'); // 30ms
-    expect(sorted[1].id).toBe('device-1'); // 50ms
-    expect(sorted[2].id).toBe('device-2'); // No RTT (Infinity)
+    expect(sorted[0]!.id).toBe('device-3'); // 30ms
+    expect(sorted[1]!.id).toBe('device-1'); // 50ms
+    expect(sorted[2]!.id).toBe('device-2'); // No RTT (Infinity)
   });
 
   it('should not mutate original array', () => {
@@ -270,13 +269,13 @@ describe('groupDevicesByProximity', () => {
     const groups = groupDevicesByProximity(devices, rttMap);
 
     expect(groups.nearby).toHaveLength(1);
-    expect(groups.nearby[0].id).toBe('device-1');
+    expect(groups.nearby[0]!.id).toBe('device-1');
 
     expect(groups.local).toHaveLength(1);
-    expect(groups.local[0].id).toBe('device-2');
+    expect(groups.local[0]!.id).toBe('device-2');
 
     expect(groups.remote).toHaveLength(1);
-    expect(groups.remote[0].id).toBe('device-3');
+    expect(groups.remote[0]!.id).toBe('device-3');
   });
 
   it('should place devices without RTT in remote group', () => {
@@ -294,7 +293,7 @@ describe('groupDevicesByProximity', () => {
 
     expect(groups.nearby).toHaveLength(1);
     expect(groups.remote).toHaveLength(1);
-    expect(groups.remote[0].id).toBe('device-2');
+    expect(groups.remote[0]!.id).toBe('device-2');
   });
 });
 

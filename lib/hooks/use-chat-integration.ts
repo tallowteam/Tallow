@@ -56,6 +56,9 @@ export function useChatIntegration({
       return;
     }
 
+    let isDisposed = false;
+    let managerInstance: ChatManager | null = null;
+
     initializingRef.current = true;
     setIsReady(false);
     setError(null);
@@ -70,9 +73,15 @@ export function useChatIntegration({
           currentUserId,
           currentUserName
         );
+        managerInstance = manager;
 
         // Initialize with data channel and session keys
         await manager.initialize(dataChannel, sessionKeys, _peerUserId, _peerUserName);
+
+        if (isDisposed) {
+          manager.destroy();
+          return;
+        }
 
         // Subscribe to new message events for unread count
         manager.addEventListener('chat-event', (event: unknown) => {
@@ -90,6 +99,10 @@ export function useChatIntegration({
         setIsReady(true);
         secureLog.log('[useChatIntegration] Chat manager ready');
       } catch (err) {
+        if (isDisposed) {
+          return;
+        }
+
         const error = err instanceof Error ? err : new Error(String(err));
         secureLog.error('[useChatIntegration] Failed to initialize chat:', error);
         setError(error);
@@ -101,14 +114,17 @@ export function useChatIntegration({
 
     initializeChat();
 
-    // Cleanup on unmount - use manager ref to avoid stale closure
+    // Cleanup on dependency change or unmount.
     return () => {
-      setChatManager((currentManager) => {
-        if (currentManager) {
-          currentManager.destroy();
-        }
-        return null;
-      });
+      isDisposed = true;
+
+      if (managerInstance) {
+        managerInstance.destroy();
+      }
+
+      setChatManager(currentManager => (
+        currentManager === managerInstance ? null : currentManager
+      ));
     };
   }, [enabled, dataChannel, sessionKeys, sessionId, currentUserId, currentUserName, _peerUserId, _peerUserName]);
 

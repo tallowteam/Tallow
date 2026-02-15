@@ -283,7 +283,7 @@ export function recordMemoryUsage(
  * const duration = stopTimer();
  * recordEncryption('aes-gcm', 'encrypt', duration);
  */
-export function startTimer(metric?: string): () => number {
+export function startTimer(_metric?: string): () => number {
   const start = performance.now();
 
   return (): number => {

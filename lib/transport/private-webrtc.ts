@@ -121,7 +121,7 @@ export class PrivateTransport {
 
     constructor(config: PrivateTransportConfig = {}) {
         this.config = {
-            turnServer: config.turnServer,
+            ...(config.turnServer ? { turnServer: config.turnServer } : {}),
             forceRelay: config.forceRelay ?? FORCE_RELAY,
             allowDirect: config.allowDirect ?? ALLOW_DIRECT,
             logCandidates: config.logCandidates ?? true,

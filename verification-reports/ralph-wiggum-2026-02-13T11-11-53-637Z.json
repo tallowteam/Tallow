@@ -1,0 +1,49 @@
+{
+  "timestamp": "2026-02-13T11:11:53.635Z",
+  "checks": [
+    {
+      "name": "Ralph orchestrator baseline files exist",
+      "pass": true,
+      "details": [
+        "policy, orchestrator script, and workflow files found"
+      ]
+    },
+    {
+      "name": "Overnight loop, circuit breaker, progress cadence, and DONE output are implemented",
+      "pass": true,
+      "details": [
+        "orchestrator encodes overnight run loop semantics with progress and circuit breaker controls"
+      ]
+    },
+    {
+      "name": "Crypto modifications are blocked without CIPHER sign-off",
+      "pass": true,
+      "details": [
+        "orchestrator enforces CIPHER sign-off check for crypto-modifying tasks"
+      ]
+    },
+    {
+      "name": "Sign-off artifacts include CIPHER approver",
+      "pass": true,
+      "details": [
+        "release-signoffs/v0.1.0.json => cipher-approved",
+        "release-signoffs/TEMPLATE.json => cipher-approved"
+      ]
+    },
+    {
+      "name": "Ralph policy is documented and actionable",
+      "pass": true,
+      "details": [
+        "policy captures runtime constraints and verifier command"
+      ]
+    },
+    {
+      "name": "CI/release workflows enforce Ralph verifier gate",
+      "pass": true,
+      "details": [
+        "Ralph gate is wired in CI and release workflows"
+      ]
+    }
+  ],
+  "passed": true
+}

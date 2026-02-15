@@ -40,6 +40,7 @@ export { useEmailTransfer } from './use-email-transfer';
 
 // Feature flags (named exports)
 export { useFeatureFlag } from './use-feature-flag';
+export { useFeatureFlagsQuery, type FeatureFlagsResponse, type FeatureFlags } from './use-feature-flags-query';
 
 // NAT detection (has both named + default)
 export { useNATDetection } from './use-nat-detection';
@@ -81,8 +82,11 @@ export { usePerformance } from './use-performance';
 // NAT optimized connection (has both named + default)
 export { useNATOptimizedConnection } from './use-nat-optimized-connection';
 
-// Intersection observer (named export)
-export { useIntersectionObserver } from './use-intersection-observer';
+// Intersection observer and motion hooks (named exports)
+export { useIntersectionObserver, useReducedMotion, useMotionDuration, useEssentialMotionDuration } from './use-intersection-observer';
+
+// Scroll reveal fallback (named export)
+export { useScrollReveal } from './use-scroll-reveal';
 
 // Keyboard shortcut (named export)
 export { useKeyboardShortcut } from './use-keyboard-shortcut';
@@ -119,3 +123,6 @@ export { useGuestMode } from './use-guest-mode';
 
 // File request (has both named + default)
 export { useFileRequest } from './use-file-request';
+
+// Voice commands (named export)
+export { useVoiceCommands } from './use-voice-commands';

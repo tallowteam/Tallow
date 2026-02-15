@@ -6,8 +6,11 @@
  * Handles state transitions, persistence, error recovery, and
  * resumable transfer support.
  *
- * States: idle → connecting → negotiating → transferring → verifying → complete
- *         Any state can transition to → paused, failed, cancelled
+ * States: idle -> preparing -> connecting -> negotiating -> transferring
+ *              -> verifying -> complete
+ *         Any active state can transition to -> paused, failed, cancelled
+ *         paused -> resuming -> transferring (reconnect path)
+ *         failed -> connecting (retry path, guarded by retryCount)
  */
 
 // ============================================================================
@@ -16,6 +19,7 @@
 
 export type TransferState =
   | 'idle'
+  | 'preparing'
   | 'connecting'
   | 'negotiating'
   | 'encrypting'
@@ -30,6 +34,7 @@ export type TransferState =
 
 export type TransferEvent =
   | 'START'
+  | 'PREPARED'
   | 'CONNECTED'
   | 'NEGOTIATED'
   | 'ENCRYPTED'
@@ -104,8 +109,13 @@ export type StateChangeListener = (
 // ============================================================================
 
 const TRANSITIONS: StateTransition[] = [
-  // Normal flow
-  { from: 'idle', event: 'START', to: 'connecting' },
+  // Normal flow: idle -> preparing -> connecting -> negotiating -> transferring
+  { from: 'idle', event: 'START', to: 'preparing' },
+  { from: 'preparing', event: 'PREPARED', to: 'connecting' },
+
+  // Legacy shortcut: idle -> connecting (for backwards compatibility)
+  { from: 'idle', event: 'CONNECTED', to: 'negotiating' },
+
   { from: 'connecting', event: 'CONNECTED', to: 'negotiating' },
   { from: 'negotiating', event: 'NEGOTIATED', to: 'encrypting' },
   { from: 'encrypting', event: 'ENCRYPTED', to: 'transferring' },
@@ -113,7 +123,7 @@ const TRANSITIONS: StateTransition[] = [
   { from: 'verifying', event: 'VERIFIED', to: 'decrypting' },
   { from: 'decrypting', event: 'DECRYPTED', to: 'complete' },
 
-  // Shortcut for receive (no encrypt step)
+  // Shortcut for receive (no encrypt step needed)
   { from: 'negotiating', event: 'NEGOTIATED', to: 'transferring',
     guard: (ctx) => ctx.direction === 'receive' },
 
@@ -121,17 +131,21 @@ const TRANSITIONS: StateTransition[] = [
   { from: 'verifying', event: 'VERIFIED', to: 'complete',
     guard: (ctx) => ctx.direction === 'send' },
 
-  // Pause/Resume from any active state
+  // Pause from any active state
+  { from: 'preparing', event: 'PAUSE', to: 'paused' },
   { from: 'connecting', event: 'PAUSE', to: 'paused' },
   { from: 'negotiating', event: 'PAUSE', to: 'paused' },
   { from: 'encrypting', event: 'PAUSE', to: 'paused' },
   { from: 'transferring', event: 'PAUSE', to: 'paused' },
   { from: 'verifying', event: 'PAUSE', to: 'paused' },
   { from: 'decrypting', event: 'PAUSE', to: 'paused' },
+
+  // Resume from paused
   { from: 'paused', event: 'RESUME', to: 'resuming' },
   { from: 'resuming', event: 'CONNECTED', to: 'transferring' },
 
-  // Cancel from any state
+  // Cancel from any non-terminal state
+  { from: 'preparing', event: 'CANCEL', to: 'cancelled' },
   { from: 'connecting', event: 'CANCEL', to: 'cancelled' },
   { from: 'negotiating', event: 'CANCEL', to: 'cancelled' },
   { from: 'encrypting', event: 'CANCEL', to: 'cancelled' },
@@ -143,6 +157,7 @@ const TRANSITIONS: StateTransition[] = [
   { from: 'failed', event: 'CANCEL', to: 'cancelled' },
 
   // Error from any active state
+  { from: 'preparing', event: 'ERROR', to: 'failed' },
   { from: 'connecting', event: 'ERROR', to: 'failed' },
   { from: 'negotiating', event: 'ERROR', to: 'failed' },
   { from: 'encrypting', event: 'ERROR', to: 'failed' },
@@ -151,7 +166,7 @@ const TRANSITIONS: StateTransition[] = [
   { from: 'decrypting', event: 'ERROR', to: 'failed' },
   { from: 'resuming', event: 'ERROR', to: 'failed' },
 
-  // Retry from failed (with retry guard)
+  // Retry from failed (guarded by retry count)
   { from: 'failed', event: 'RETRY', to: 'connecting',
     guard: (ctx) => ctx.retryCount < ctx.maxRetries },
 

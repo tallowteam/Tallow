@@ -59,7 +59,9 @@ describe('Toast Component', () => {
   });
 
   afterEach(() => {
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
     vi.useRealTimers();
   });
 
@@ -99,7 +101,7 @@ describe('Toast Component', () => {
       const handleClose = vi.fn();
 
       variants.forEach((variant) => {
-        const { container } = render(
+        const { unmount } = render(
           <Toast
             id={`test-${variant}`}
             message={`${variant} message`}
@@ -108,8 +110,9 @@ describe('Toast Component', () => {
           />
         );
 
-        const toast = container.querySelector(`.${variant}`);
-        expect(toast).toBeInTheDocument();
+        const toast = screen.getByRole('status');
+        expect(toast.className).toMatch(new RegExp(`\\b${variant}\\b|_${variant}_`));
+        unmount();
       });
     });
   });
@@ -270,7 +273,9 @@ describe('ToastProvider', () => {
   });
 
   afterEach(() => {
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
     vi.useRealTimers();
   });
 
@@ -457,7 +462,7 @@ describe('ToastProvider', () => {
         );
 
         const toastContainer = container.querySelector(`[aria-label="Notifications"]`);
-        expect(toastContainer).toHaveClass(position);
+        expect(toastContainer?.className).toMatch(new RegExp(`\\b${position}\\b|_${position}_`));
       });
     });
   });

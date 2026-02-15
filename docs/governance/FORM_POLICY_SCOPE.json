@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "files": [
+    {
+      "path": "app/admin/page.tsx",
+      "rules": [
+        "imports-form-policy",
+        "no-alert",
+        "has-label",
+        "has-error-channel",
+        "has-focus-management"
+      ]
+    },
+    {
+      "path": "components/transfer/BatchRuleEditor.tsx",
+      "rules": [
+        "imports-form-policy",
+        "no-alert",
+        "has-label",
+        "has-error-channel",
+        "has-focus-management"
+      ]
+    },
+    {
+      "path": "components/transfer/ProjectBrowser.tsx",
+      "rules": [
+        "imports-form-policy",
+        "no-alert",
+        "has-label",
+        "has-error-channel",
+        "has-focus-management"
+      ]
+    }
+  ]
+}

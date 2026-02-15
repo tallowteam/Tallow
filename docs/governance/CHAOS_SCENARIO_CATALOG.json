@@ -1,0 +1,66 @@
+{
+  "version": "2026-02-13",
+  "owner": "AGENT 083 - CHAOS-ENGINEER",
+  "scenarios": [
+    {
+      "id": "firewall-detect-classification",
+      "title": "Firewall classification handles restrictive and permissive paths",
+      "testFile": "tests/unit/network/firewall-detection.test.ts",
+      "testMarker": "should detect firewall type"
+    },
+    {
+      "id": "firewall-redetection-cache",
+      "title": "Firewall detection cache and redetection behavior",
+      "testFile": "tests/unit/network/firewall-detection.test.ts",
+      "testMarker": "should detect when redetection is needed"
+    },
+    {
+      "id": "nat-detection-symmetric",
+      "title": "NAT detection correctly identifies symmetric NAT",
+      "testFile": "tests/unit/network/nat-detection.test.ts",
+      "testMarker": "detects SYMMETRIC NAT"
+    },
+    {
+      "id": "nat-strategy-turn-only",
+      "title": "NAT strategy falls back to TURN for blocked/symmetric combinations",
+      "testFile": "tests/unit/network/nat-detection.test.ts",
+      "testMarker": "recommends TURN only for blocked NATs"
+    },
+    {
+      "id": "nat-ordering-offer-path",
+      "title": "Offer path blocks until NAT detection completes",
+      "testFile": "tests/unit/network/data-channel-nat-ordering.test.ts",
+      "testMarker": "waits for NAT detection before creating an offer connection"
+    },
+    {
+      "id": "nat-ordering-answer-path",
+      "title": "Answer path blocks until NAT detection completes",
+      "testFile": "tests/unit/network/data-channel-nat-ordering.test.ts",
+      "testMarker": "waits for NAT detection before accepting and answering a connection"
+    },
+    {
+      "id": "resumable-missing-chunks",
+      "title": "Resumable transfer requests only missing chunks after reconnect",
+      "testFile": "tests/unit/transfer/resumable-transfer.test.ts",
+      "testMarker": "restores from last confirmed chunk by requesting only missing chunks"
+    },
+    {
+      "id": "transfer-state-persistence",
+      "title": "Transfer state persists and restores resume metadata",
+      "testFile": "tests/unit/storage/transfer-state.test.ts",
+      "testMarker": "persists progress and restores missing chunks after reconnect"
+    },
+    {
+      "id": "sync-offline-queue-replay",
+      "title": "Sync queue replays deferred messages after reconnection",
+      "testFile": "tests/unit/sync/sync-engine.test.ts",
+      "testMarker": "replays queue on reconnection"
+    },
+    {
+      "id": "incident-critical-lifecycle",
+      "title": "Critical incident escalation and lifecycle handling",
+      "testFile": "tests/unit/security/incident-response-drill.test.ts",
+      "testMarker": "simulates a critical key-compromise incident through full lifecycle"
+    }
+  ]
+}

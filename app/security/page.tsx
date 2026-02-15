@@ -67,12 +67,11 @@ export default function SecurityPage() {
     ],
   };
 
+  const faqSchemaJson = JSON.stringify(faqSchema);
+
   return (
     <main className={styles.main}>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
-      />
+      <script type="application/ld+json">{faqSchemaJson}</script>
       {/* Hero */}
       <section className={styles.hero}>
         <div className={styles.heroContainer}>
@@ -307,7 +306,7 @@ export default function SecurityPage() {
       </section>
 
       {/* FAQ */}
-      <section className={styles.faq}>
+      <section className={styles.faq} id="faq">
         <div className={styles.faqContainer}>
           <h2 className={styles.sectionTitle}>Security FAQ</h2>
           <p className={styles.sectionSubtitle}>

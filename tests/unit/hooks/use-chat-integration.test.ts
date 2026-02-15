@@ -18,7 +18,9 @@ const mockChatManager = {
 };
 
 vi.mock('@/lib/chat/chat-manager', () => ({
-  ChatManager: vi.fn().mockImplementation(() => mockChatManager),
+  ChatManager: vi.fn(function MockChatManager() {
+    return mockChatManager;
+  }),
 }));
 
 vi.mock('@/lib/utils/secure-logger', () => ({
@@ -182,7 +184,7 @@ describe('useChatIntegration', () => {
       );
 
       await waitFor(() => {
-        expect(result.current.error).toBeDefined();
+        expect(result.current.error).not.toBeNull();
       });
 
       expect(result.current.error?.message).toBe('Init failed');

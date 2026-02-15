@@ -247,6 +247,34 @@ export function useBrowserExtensionAPIEnabled(): boolean {
 }
 
 /**
+ * Check if share sheet integrations are enabled
+ */
+export function useShareSheetIntegrationsEnabled(): boolean {
+  return useFeatureFlag('share_sheet_integrations');
+}
+
+/**
+ * Check if NFC pairing is enabled
+ */
+export function useNFCPairingEnabled(): boolean {
+  return useFeatureFlag('nfc_pairing');
+}
+
+/**
+ * Check if QR linking is enabled
+ */
+export function useQRLinkingEnabled(): boolean {
+  return useFeatureFlag('qr_linking');
+}
+
+/**
+ * Check if clipboard sharing is enabled
+ */
+export function useClipboardSharingEnabled(): boolean {
+  return useFeatureFlag('clipboard_sharing');
+}
+
+/**
  * Check if advanced compression is enabled
  */
 export function useAdvancedCompressionEnabled(): boolean {

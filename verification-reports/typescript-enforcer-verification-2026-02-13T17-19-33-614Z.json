@@ -1,0 +1,60 @@
+{
+  "timestamp": "2026-02-13T17:19:33.612Z",
+  "checks": [
+    {
+      "name": "TypeScript enforcer policy, key type file, and workflows exist",
+      "pass": true,
+      "details": [
+        "all required TypeScript enforcer files are present"
+      ]
+    },
+    {
+      "name": "TypeScript strict compiler flags are enabled",
+      "pass": true,
+      "details": [
+        "strict=true",
+        "noImplicitAny=true",
+        "strictNullChecks=true",
+        "noUncheckedIndexedAccess=true"
+      ]
+    },
+    {
+      "name": "Runtime code has no TypeScript suppression directives",
+      "pass": true,
+      "details": [
+        "no @ts-ignore/@ts-expect-error markers in app/components/lib"
+      ]
+    },
+    {
+      "name": "Security-critical paths avoid `as any` and `: any`",
+      "pass": true,
+      "details": [
+        "no `as any` or `: any` markers in critical API/crypto/hook paths"
+      ]
+    },
+    {
+      "name": "API routes that parse JSON perform input validation checks",
+      "pass": true,
+      "details": [
+        "all JSON body routes expose schema or structural validation checks"
+      ]
+    },
+    {
+      "name": "Branded key types exist and are consumed in handshake code",
+      "pass": true,
+      "details": [
+        "PublicKey/PrivateKey/SharedSecret brands are defined and used"
+      ]
+    },
+    {
+      "name": "TypeScript enforcer gate is wired in package scripts and workflows",
+      "pass": true,
+      "details": [
+        "verify:typescript:enforcer: node scripts/verify-typescript-enforcer.js",
+        ".github/workflows/ci.yml runs TypeScript enforcer verification",
+        ".github/workflows/release.yml runs TypeScript enforcer verification"
+      ]
+    }
+  ],
+  "passed": true
+}

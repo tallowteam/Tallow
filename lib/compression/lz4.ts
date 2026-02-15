@@ -37,7 +37,7 @@ const MAX_DISTANCE = 65535; // Maximum offset distance (16-bit)
  * @returns true if data has LZ4 magic number
  */
 export function isLZ4Compressed(data: Uint8Array): boolean {
-  if (data.length < 4) return false;
+  if (data.length < 4) {return false;}
 
   const magic =
     (data[0] ?? 0) | ((data[1] ?? 0) << 8) | ((data[2] ?? 0) << 16) | ((data[3] ?? 0) << 24);

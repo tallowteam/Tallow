@@ -108,7 +108,7 @@ export function example5_RegisterDataChannel(
 /**
  * Example React hook for idle monitoring
  */
-export function useIdleMonitoring(enabled: boolean, timeoutMs: number = 5 * 60 * 1000) {
+export function useIdleMonitoring(_enabled: boolean, _timeoutMs: number = 5 * 60 * 1000) {
   // In a real React component:
   // useEffect(() => {
   //   if (enabled) {

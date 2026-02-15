@@ -4,13 +4,11 @@
  * and secure memory wiping.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import EphemeralKeyManager, {
-  SessionKeyPair,
   RatchetState,
-  MessageKey
 } from '@/lib/crypto/key-management';
-import { pqCrypto, HybridPublicKey } from '@/lib/crypto/pqc-crypto';
+import { pqCrypto } from '@/lib/crypto/pqc-crypto';
 
 describe('EphemeralKeyManager', () => {
   let keyManager: EphemeralKeyManager;
@@ -281,8 +279,10 @@ describe('EphemeralKeyManager', () => {
       it('should handle out-of-order message keys', async () => {
         const sessionId = 'test-session';
         const sharedSecret = pqCrypto.randomBytes(32);
+        const peerKeyPair = await pqCrypto.generateHybridKeypair();
+        const peerPublicKey = pqCrypto.getPublicKey(peerKeyPair);
 
-        await keyManager.initializeRatchet(sessionId, sharedSecret, false);
+        await keyManager.initializeRatchet(sessionId, sharedSecret, false, peerPublicKey);
 
         // Skip to message 5
         const key5 = keyManager.getReceiveKey(sessionId, 5);
@@ -385,7 +385,6 @@ describe('EphemeralKeyManager', () => {
       keyManager.destroySession(sessionId);
 
       // Verify ratchet state is gone
-      const key = keyManager.getNextSendKey(sessionId);
       expect(() => keyManager.getNextSendKey(sessionId)).toThrow();
     });
 

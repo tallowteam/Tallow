@@ -22,7 +22,7 @@
 }
 
 .button:focus-visible {
-  outline: 2px solid var(--accent, #6366f1);
+  outline: 3px solid var(--border-focus, var(--accent, #6366f1));
   outline-offset: 2px;
 }
 
@@ -178,7 +178,7 @@
 }
 
 .loading .label,
-.loading .icon {
+.loading .iconSlot {
   visibility: hidden;
 }
 
@@ -191,24 +191,24 @@
   align-items: center;
 }
 
-.icon {
+.iconSlot {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-.icon svg {
+.iconSlot svg {
   width: 16px;
   height: 16px;
 }
 
-.sm .icon svg {
+.sm .iconSlot svg {
   width: 14px;
   height: 14px;
 }
 
-.lg .icon svg {
+.lg .iconSlot svg {
   width: 18px;
   height: 18px;
 }

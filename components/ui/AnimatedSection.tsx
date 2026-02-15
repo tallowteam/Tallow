@@ -76,6 +76,17 @@ export interface AnimatedSectionProps {
   style?: CSSProperties;
 }
 
+type AnimationStyleVars = CSSProperties & {
+  '--animation-duration'?: string;
+  '--animation-easing'?: string;
+  '--animation-delay'?: string;
+};
+
+type StaggerStyleVars = CSSProperties & {
+  '--stagger-index'?: number;
+  '--stagger-delay'?: string;
+};
+
 /**
  * AnimatedSection - Euveka-level scroll reveal animations
  *
@@ -139,9 +150,8 @@ export function AnimatedSection({
   const visibilityClass = isVisible ? (styles.visible ?? '') : (styles.hidden ?? '');
 
   // CSS custom properties for animation timing
-  const customProperties: CSSProperties = {
+  const customProperties: AnimationStyleVars = {
     ...style,
-    // @ts-ignore - CSS custom properties
     '--animation-duration': `${duration}s`,
     '--animation-easing': easing,
     '--animation-delay': delay > 0 ? `${delay}ms` : '0ms',
@@ -150,23 +160,23 @@ export function AnimatedSection({
   // Handle staggered children
   const processedChildren = staggerChildren && !prefersReducedMotion && animation !== 'none'
     ? Children.map(children, (child, index) => {
-        if (!isValidElement(child)) return child;
+        if (!isValidElement<{ style?: CSSProperties; className?: string }>(child)) {
+          return child;
+        }
 
         // Add stagger index to child as CSS custom property
-        const staggerStyle: CSSProperties = {
-          // @ts-ignore - CSS custom properties
+        const staggerStyle: StaggerStyleVars = {
           '--stagger-index': index,
           '--stagger-delay': `${staggerDelay}ms`,
         };
 
-        const childProps = child.props as Record<string, unknown>;
+        const childProps = child.props;
         return cloneElement(child, {
-          // @ts-ignore - merging styles and className
           style: {
             ...staggerStyle,
-            ...((childProps.style as CSSProperties) || {}),
+            ...(childProps.style || {}),
           },
-          className: `${styles.staggerChild ?? ''} ${(childProps.className as string) || ''}`,
+          className: `${styles.staggerChild ?? ''} ${childProps.className || ''}`,
         });
       })
     : children;

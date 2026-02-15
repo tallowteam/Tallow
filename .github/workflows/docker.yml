@@ -269,14 +269,30 @@ jobs:
         run: |
           echo "## Docker Image Size Analysis" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Image | Size | Layers |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | Size (MB) | Layers | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-----------|--------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          MAX_SIZE_MB=500
+          FAIL=0
 
           for image in tallow-web:size tallow-signaling:size; do
-            SIZE=$(docker images $image --format "{{.Size}}")
+            SIZE_BYTES=$(docker image inspect $image --format '{{.Size}}')
+            SIZE_MB=$(( (SIZE_BYTES + 1048575) / 1048576 ))
             LAYERS=$(docker history $image --format "{{.ID}}" | wc -l)
-            echo "| $image | $SIZE | $LAYERS |" >> $GITHUB_STEP_SUMMARY
+            STATUS="PASS"
+
+            if [ "$SIZE_MB" -gt "$MAX_SIZE_MB" ]; then
+              STATUS="FAIL"
+              FAIL=1
+              echo "Image exceeds 500MB budget: $image (${SIZE_MB}MB)"
+            fi
+
+            echo "| $image | ${SIZE_MB}MB | $LAYERS | $STATUS |" >> $GITHUB_STEP_SUMMARY
           done
+
+          if [ "$FAIL" -ne 0 ]; then
+            exit 1
+          fi
 
       - name: Install dive
         run: |

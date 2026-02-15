@@ -99,7 +99,8 @@ export default function PrivacyPage() {
                 <strong>IP addresses</strong> — connections are peer-to-peer
               </li>
               <li>
-                <strong>Usage analytics</strong> — no tracking, no telemetry
+                <strong>Mandatory usage analytics</strong> — none; analytics are
+                optional and off by default
               </li>
             </ul>
           </div>
@@ -163,8 +164,12 @@ export default function PrivacyPage() {
           <div className={styles.content}>
             <ul className={styles.list}>
               <li>
-                Tallow does not integrate with any analytics, advertising, or
-                tracking services
+                Tallow does not use advertising trackers, cross-site profiling,
+                or tracking pixels
+              </li>
+              <li>
+                Optional privacy-safe analytics may be enabled only with explicit
+                user consent
               </li>
               <li>
                 STUN/TURN servers are used for NAT traversal in Internet P2P

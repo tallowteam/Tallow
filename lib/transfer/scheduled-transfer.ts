@@ -12,6 +12,7 @@ import { useTransferStore } from '../stores/transfer-store';
 import TransferManager from './transfer-manager';
 import { Device, FileInfo } from '../types';
 import secureLog from '../utils/secure-logger';
+import secureStorage from '../storage/secure-storage';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -49,12 +50,30 @@ export interface ScheduledTransfer {
 // ============================================================================
 
 const STORAGE_KEY = 'tallow-scheduled-transfers';
+const REAUTH_SESSION_KEY = 'tallow-scheduled-transfer-reauth';
+const REAUTH_WINDOW_MS = 10 * 60 * 1000;
+
+function canUseStorage(): boolean {
+  return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+}
+
+function parseScheduledTransfers(payload: string): ScheduledTransfer[] {
+  const parsed = JSON.parse(payload);
+  return Array.isArray(parsed) ? parsed : [];
+}
 
 function loadScheduledTransfers(): ScheduledTransfer[] {
+  if (!canUseStorage()) {
+    return [];
+  }
+
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return [];
-    return JSON.parse(stored);
+    if (!stored) {return [];}
+    if (stored.startsWith('enc:')) {
+      return [];
+    }
+    return parseScheduledTransfers(stored);
   } catch (error) {
     secureLog.error('Failed to load scheduled transfers', { error });
     return [];
@@ -62,8 +81,16 @@ function loadScheduledTransfers(): ScheduledTransfer[] {
 }
 
 function saveScheduledTransfers(transfers: ScheduledTransfer[]): void {
+  if (!canUseStorage()) {
+    return;
+  }
+
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(transfers));
+    const serialized = JSON.stringify(transfers);
+    localStorage.setItem(STORAGE_KEY, serialized);
+    void secureStorage.setItem(STORAGE_KEY, serialized).catch((error) => {
+      secureLog.error('Failed to encrypt scheduled transfers at rest', { error });
+    });
   } catch (error) {
     secureLog.error('Failed to save scheduled transfers', { error });
   }
@@ -74,8 +101,9 @@ function saveScheduledTransfers(transfers: ScheduledTransfer[]): void {
 // ============================================================================
 
 let scheduledTransfers: ScheduledTransfer[] = loadScheduledTransfers();
-let timers: Map<string, NodeJS.Timeout | number> = new Map();
-let listeners: Set<() => void> = new Set();
+const timers: Map<string, NodeJS.Timeout | number> = new Map();
+const listeners: Set<() => void> = new Set();
+let reauthTimestamp: number | null = null;
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -83,6 +111,64 @@ let listeners: Set<() => void> = new Set();
 
 function notifyListeners(): void {
   listeners.forEach(listener => listener());
+}
+
+function readSessionReauthTimestamp(): number | null {
+  if (typeof window === 'undefined' || typeof sessionStorage === 'undefined') {
+    return reauthTimestamp;
+  }
+
+  const raw = sessionStorage.getItem(REAUTH_SESSION_KEY);
+  if (!raw) {
+    return reauthTimestamp;
+  }
+
+  const parsed = Number(raw);
+  if (Number.isNaN(parsed)) {
+    return reauthTimestamp;
+  }
+
+  reauthTimestamp = parsed;
+  return reauthTimestamp;
+}
+
+function hasFreshScheduledTransferReauth(now = Date.now()): boolean {
+  const lastReauth = readSessionReauthTimestamp();
+  if (!lastReauth) {
+    return false;
+  }
+  return now - lastReauth <= REAUTH_WINDOW_MS;
+}
+
+function rescheduleActiveTimers(): void {
+  timers.forEach((timer) => clearTimeout(timer));
+  timers.clear();
+
+  scheduledTransfers.forEach((scheduled) => {
+    if (scheduled.status === 'scheduled') {
+      scheduleTimer(scheduled);
+    }
+  });
+}
+
+function mergeScheduledTransfers(hydrated: ScheduledTransfer[]): ScheduledTransfer[] {
+  if (scheduledTransfers.length === 0) {
+    return hydrated;
+  }
+
+  // Prefer live in-memory entries when IDs collide to avoid startup hydration
+  // overwriting schedules created during the same runtime session.
+  const mergedById = new Map<string, ScheduledTransfer>();
+
+  hydrated.forEach((transfer) => {
+    mergedById.set(transfer.id, transfer);
+  });
+
+  scheduledTransfers.forEach((transfer) => {
+    mergedById.set(transfer.id, transfer);
+  });
+
+  return Array.from(mergedById.values());
 }
 
 function fileToFileInfo(file: File): FileInfo {
@@ -104,7 +190,7 @@ function isDeviceAvailable(deviceId: string): boolean {
 }
 
 function calculateNextRun(scheduledTime: number, repeat: RepeatType): number | null {
-  if (repeat === 'once') return null;
+  if (repeat === 'once') {return null;}
 
   const now = Date.now();
   const dayMs = 24 * 60 * 60 * 1000;
@@ -127,6 +213,15 @@ function calculateNextRun(scheduledTime: number, repeat: RepeatType): number | n
 
 async function executeTransfer(scheduled: ScheduledTransfer): Promise<boolean> {
   secureLog.log('[ScheduledTransfer] Executing scheduled transfer', { id: scheduled.id });
+
+  if (!hasFreshScheduledTransferReauth()) {
+    scheduled.status = 'failed';
+    scheduled.error = 'Re-authentication required before scheduled transfer execution';
+    scheduled.lastAttempt = Date.now();
+    saveScheduledTransfers(scheduledTransfers);
+    notifyListeners();
+    return false;
+  }
 
   // Check if device is available
   if (!isDeviceAvailable(scheduled.deviceId)) {
@@ -293,6 +388,7 @@ export function scheduleTransfer(options: ScheduledTransferOptions): string {
     error: null,
   };
 
+  reauthenticateScheduledTransfers();
   scheduledTransfers.push(scheduled);
   saveScheduledTransfers(scheduledTransfers);
 
@@ -315,9 +411,10 @@ export function scheduleTransfer(options: ScheduledTransferOptions): string {
  */
 export function cancelScheduled(scheduleId: string): boolean {
   const index = scheduledTransfers.findIndex(s => s.id === scheduleId);
-  if (index === -1) return false;
+  if (index === -1) {return false;}
 
   const scheduled = scheduledTransfers[index];
+  if (!scheduled) {return false;}
   scheduled.status = 'cancelled';
 
   // Clear timer
@@ -354,10 +451,11 @@ export function getScheduledTransfer(id: string): ScheduledTransfer | null {
  */
 export function deleteScheduled(scheduleId: string): boolean {
   const index = scheduledTransfers.findIndex(s => s.id === scheduleId);
-  if (index === -1) return false;
+  if (index === -1) {return false;}
 
   // Cancel first if still scheduled
   const scheduled = scheduledTransfers[index];
+  if (!scheduled) {return false;}
   if (scheduled.status === 'scheduled' || scheduled.status === 'running') {
     cancelScheduled(scheduleId);
   }
@@ -425,6 +523,60 @@ export function initializeScheduledTransfers(): void {
   notifyListeners();
 }
 
+async function hydrateScheduledTransfersFromSecureStorage(): Promise<void> {
+  if (!canUseStorage()) {
+    return;
+  }
+
+  try {
+    const stored = await secureStorage.getItem(STORAGE_KEY);
+    if (!stored) {
+      return;
+    }
+
+    const hydrated = parseScheduledTransfers(stored);
+    if (!Array.isArray(hydrated)) {
+      return;
+    }
+
+    scheduledTransfers = mergeScheduledTransfers(hydrated);
+    initializeScheduledTransfers();
+    rescheduleActiveTimers();
+  } catch (error) {
+    secureLog.error('Failed to hydrate encrypted scheduled transfers', { error });
+  }
+}
+
+export function reauthenticateScheduledTransfers(timestamp = Date.now()): void {
+  reauthTimestamp = timestamp;
+
+  if (typeof window === 'undefined' || typeof sessionStorage === 'undefined') {
+    return;
+  }
+
+  try {
+    sessionStorage.setItem(REAUTH_SESSION_KEY, String(timestamp));
+  } catch (error) {
+    secureLog.error('Failed to persist scheduled-transfer reauth timestamp', { error });
+  }
+}
+
+export function getScheduledTransferReauthStatus(): {
+  reauthenticatedAt: number | null;
+  windowMs: number;
+  expiresAt: number | null;
+  valid: boolean;
+} {
+  const reauthenticatedAt = readSessionReauthTimestamp();
+  const expiresAt = reauthenticatedAt ? reauthenticatedAt + REAUTH_WINDOW_MS : null;
+  return {
+    reauthenticatedAt,
+    windowMs: REAUTH_WINDOW_MS,
+    expiresAt,
+    valid: hasFreshScheduledTransferReauth(),
+  };
+}
+
 /**
  * Clean up all timers (call on app shutdown)
  */
@@ -437,4 +589,5 @@ export function cleanupScheduledTransfers(): void {
 // Initialize on module load
 if (typeof window !== 'undefined') {
   initializeScheduledTransfers();
+  void hydrateScheduledTransfersFromSecureStorage();
 }

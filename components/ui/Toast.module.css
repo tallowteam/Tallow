@@ -1,4 +1,5 @@
 /* Toast Component - Tallow 3.0 Cineglass Magazine Design */
+/* All colors reference design tokens from globals.css */
 
 .toast {
   position: relative;
@@ -15,12 +16,12 @@
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   overflow: hidden;
-  animation: slideIn 200ms ease;
+  animation: toastSlideIn 200ms ease forwards;
   transition: all 0.2s ease;
 }
 
-/* Animations */
-@keyframes slideIn {
+/* Entry Animation - slide in from right */
+@keyframes toastSlideIn {
   from {
     transform: translateX(100%);
     opacity: 0;
@@ -31,19 +32,20 @@
   }
 }
 
-@keyframes slideOut {
+/* Exit Animation - fade out with slight scale */
+@keyframes toastFadeOut {
   from {
     transform: translateX(0) scale(1);
     opacity: 1;
   }
   to {
-    transform: translateX(100%) scale(0.95);
+    transform: translateX(40%) scale(0.95);
     opacity: 0;
   }
 }
 
 .toast.exiting {
-  animation: slideOut 200ms ease;
+  animation: toastFadeOut 200ms ease forwards;
 }
 
 /* Icon Container */
@@ -175,43 +177,51 @@
   opacity: 0.5;
 }
 
-/* Variant Styles - Left accent bar */
+/* ============================
+   Variant Styles
+   Using design tokens: --success, --error, --warning, --accent (info/indigo)
+   ============================ */
+
+/* Success - green */
 .success {
-  border-left: 3px solid #22c55e;
+  border-left: 3px solid var(--success, #22c55e);
 }
 
 .success .iconContainer {
-  color: #22c55e;
+  color: var(--success, #22c55e);
 }
 
 .success .progressBar {
-  background: #22c55e;
+  background: var(--success, #22c55e);
 }
 
+/* Error - red */
 .error {
-  border-left: 3px solid #ef4444;
+  border-left: 3px solid var(--error, #ef4444);
 }
 
 .error .iconContainer {
-  color: #ef4444;
+  color: var(--error, #ef4444);
 }
 
 .error .progressBar {
-  background: #ef4444;
+  background: var(--error, #ef4444);
 }
 
+/* Warning - amber */
 .warning {
-  border-left: 3px solid #eab308;
+  border-left: 3px solid var(--warning, #f59e0b);
 }
 
 .warning .iconContainer {
-  color: #eab308;
+  color: var(--warning, #f59e0b);
 }
 
 .warning .progressBar {
-  background: #eab308;
+  background: var(--warning, #f59e0b);
 }
 
+/* Info - indigo (accent) */
 .info {
   border-left: 3px solid var(--accent, #6366f1);
 }

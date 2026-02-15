@@ -1,0 +1,55 @@
+name: Dependency Weekly Scan
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  dependency-weekly-scan:
+    name: Dependency Weekly Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify dependency justification policy coverage
+        run: npm run verify:dependencies:justification
+
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate --json > npm-audit-weekly.json
+
+      - name: Run security check
+        run: npm run security:check
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          output-file: sbom-weekly.spdx.json
+          format: spdx-json
+
+      - name: Upload weekly dependency artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-weekly-artifacts
+          path: |
+            npm-audit-weekly.json
+            sbom-weekly.spdx.json
+            reports/dependency-justifications-*.*
+          retention-days: 30

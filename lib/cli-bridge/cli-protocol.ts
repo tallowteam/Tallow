@@ -344,9 +344,6 @@ export class ChunkCodec {
 export class CLIRelayClient {
   private ws: WebSocket | null = null;
   private roomId: string = '';
-  // Reserved for message buffering in future chunked message support
-  // @ts-expect-error Reserved for future use
-  private messageBuffer: Uint8Array[] = [];
   private onMessage: ((type: MessageType, payload: Uint8Array) => void) | null = null;
   private onConnect: (() => void) | null = null;
   private onDisconnect: (() => void) | null = null;

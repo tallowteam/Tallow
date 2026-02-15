@@ -5,6 +5,14 @@ import styles from './Toast.module.css';
 
 export type ToastVariant = 'success' | 'error' | 'warning' | 'info';
 
+/** Default auto-dismiss durations per variant (in ms). */
+export const TOAST_DURATIONS: Record<ToastVariant, number> = {
+  success: 3000,
+  info: 5000,
+  warning: 8000,
+  error: Infinity, // errors require manual close
+};
+
 export interface ToastPreview {
   type: 'image' | 'file' | 'transfer';
   src?: string;
@@ -28,6 +36,8 @@ export interface ToastProps {
   action?: ToastAction;
   actions?: ToastAction[];
   preview?: ToastPreview;
+  /** Timestamp when the toast was created (epoch ms). */
+  createdAt?: number;
 }
 
 const ToastIcon = ({ variant }: { variant: ToastVariant }) => {
@@ -210,7 +220,9 @@ const ToastPreviewComponent = ({ preview }: { preview: ToastPreview }) => {
 };
 
 export const Toast = forwardRef<HTMLDivElement, ToastProps>(
-  ({ id, title, message, variant = 'info', duration = 5000, onClose, action, actions, preview }, ref) => {
+  ({ id, title, message, variant = 'info', duration, onClose, action, actions, preview }, ref) => {
+    // Resolve duration: explicit prop wins, otherwise use variant default
+    const effectiveDuration = duration !== undefined ? duration : TOAST_DURATIONS[variant];
     const [isExiting, setIsExiting] = useState(false);
     const [progress, setProgress] = useState(100);
 
@@ -218,27 +230,31 @@ export const Toast = forwardRef<HTMLDivElement, ToastProps>(
     const actionButtons = actions || (action ? [action] : []);
     const hasRichContent = !!preview;
 
+    // Use role="alert" for errors (assertive), role="status" for everything else (polite)
+    const isError = variant === 'error';
+    const ariaRole = isError ? 'alert' : 'status';
+    const ariaLive = isError ? 'assertive' : 'polite';
+
     useEffect(() => {
-      if (!duration || duration === Infinity) {return;}
+      if (!effectiveDuration || effectiveDuration === Infinity) { return; }
 
       const startTime = Date.now();
       const interval = setInterval(() => {
         const elapsed = Date.now() - startTime;
-        const remaining = Math.max(0, 100 - (elapsed / duration) * 100);
+        const remaining = Math.max(0, 100 - (elapsed / effectiveDuration) * 100);
         setProgress(remaining);
       }, 16); // ~60fps
 
       const timer = setTimeout(() => {
         handleClose();
-      }, duration);
+      }, effectiveDuration);
 
       return () => {
         clearTimeout(timer);
         clearInterval(interval);
       };
       // handleClose is stable and defined inline
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [duration, id, onClose]);
+    }, [effectiveDuration, id, onClose]);
 
     const handleClose = () => {
       setIsExiting(true);
@@ -255,8 +271,8 @@ export const Toast = forwardRef<HTMLDivElement, ToastProps>(
     return (
       <div
         ref={ref}
-        role="status"
-        aria-live="polite"
+        role={ariaRole}
+        aria-live={ariaLive}
         aria-atomic="true"
         className={`${styles.toast} ${styles[variant]} ${isExiting ? styles.exiting : ''} ${hasRichContent ? styles.richToast : ''}`}
         data-toast-id={id}
@@ -304,7 +320,7 @@ export const Toast = forwardRef<HTMLDivElement, ToastProps>(
         </button>
 
         {/* Progress Bar */}
-        {duration && duration !== Infinity && (
+        {effectiveDuration && effectiveDuration !== Infinity && (
           <div
             className={styles.progressBar}
             style={{ width: `${progress}%` }}

@@ -1,0 +1,1 @@
+process.on('message',m=>{if(m==='ping'){process.send('pong');setTimeout(()=>process.exit(0),10);}});

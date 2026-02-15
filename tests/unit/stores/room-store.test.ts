@@ -12,7 +12,6 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useRoomStore } from '@/lib/stores/room-store';
-import type { RoomConnectionStatus } from '@/lib/stores/room-store';
 import type { RoomMember, TransferRoom } from '@/lib/rooms/transfer-room-manager';
 
 describe('RoomStore', () => {

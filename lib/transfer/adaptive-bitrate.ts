@@ -8,6 +8,34 @@
 
 import secureLog from '@/lib/utils/secure-logger';
 
+// ============================================================================
+// BANDWIDTH TARGETS (AGENT 021 - WEBRTC-CONDUIT)
+// These are governance-enforced throughput targets. Do not lower without
+// updating docs/governance/WEBRTC_CONDUIT_POLICY.md.
+// ============================================================================
+
+/** Target throughput for LAN transfers: 100 MB/s (bytes per second) */
+export const BANDWIDTH_TARGET_LAN = 100 * 1024 * 1024;
+
+/** Target throughput for internet transfers: 10 MB/s (bytes per second) */
+export const BANDWIDTH_TARGET_INTERNET = 10 * 1024 * 1024;
+
+/** Target throughput for LAN Gigabit Ethernet: 62 MB/s (bytes per second) */
+export const BANDWIDTH_TARGET_LAN_GIGABIT = 62 * 1024 * 1024;
+
+/** Target throughput for LAN WiFi 6: 25 MB/s (bytes per second) */
+export const BANDWIDTH_TARGET_LAN_WIFI6 = 25 * 1024 * 1024;
+
+// ============================================================================
+// BACKPRESSURE THRESHOLDS (AGENT 021 - WEBRTC-CONDUIT)
+// ============================================================================
+
+/** High water mark: pause sending when buffer exceeds this (16 MB) */
+export const BACKPRESSURE_HIGH_WATER_MARK = 16 * 1024 * 1024;
+
+/** Low water mark: resume sending when buffer drains below this (4 MB) */
+export const BACKPRESSURE_LOW_WATER_MARK = 4 * 1024 * 1024;
+
 // Chunk size options (bytes)
 const CHUNK_SIZES = {
     TINY: 16 * 1024,     // 16KB - for very poor connections
@@ -476,4 +504,10 @@ export default {
     measureRTT,
     getBufferLevel,
     CHUNK_SIZES,
+    BANDWIDTH_TARGET_LAN,
+    BANDWIDTH_TARGET_INTERNET,
+    BANDWIDTH_TARGET_LAN_GIGABIT,
+    BANDWIDTH_TARGET_LAN_WIFI6,
+    BACKPRESSURE_HIGH_WATER_MARK,
+    BACKPRESSURE_LOW_WATER_MARK,
 };

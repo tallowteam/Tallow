@@ -5,7 +5,7 @@
  * CRITICAL: Uses .getState() for non-reactive access to store data.
  */
 
-import { useFriendsStore, type Friend } from '@/lib/stores/friends-store';
+import { useFriendsStore, type Friend } from '../stores/friends-store';
 import type { Platform } from '@/lib/types';
 
 // ============================================================================
@@ -49,6 +49,17 @@ export interface ImportResult {
   skipped: number;
   errors: string[];
   duplicates: string[];
+}
+
+function getSafeBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    const origin = window.location?.origin;
+    if (origin && /^https?:\/\//.test(origin)) {
+      return origin;
+    }
+  }
+
+  return 'https://tallow.app';
 }
 
 // ============================================================================
@@ -312,7 +323,7 @@ export function generateShareableLink(contactId: string): string | null {
   const base64 = btoa(jsonString);
 
   // Create shareable URL (assuming app is hosted at a domain)
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://tallow.app';
+  const baseUrl = getSafeBaseUrl();
   return `${baseUrl}/add-contact?data=${encodeURIComponent(base64)}`;
 }
 
@@ -321,7 +332,7 @@ export function generateShareableLink(contactId: string): string | null {
  */
 export function parseShareableLink(url: string): ExportedContact | null {
   try {
-    const urlObj = new URL(url);
+    const urlObj = new URL(url, getSafeBaseUrl());
     const data = urlObj.searchParams.get('data');
 
     if (!data) {

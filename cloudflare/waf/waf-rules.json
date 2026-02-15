@@ -1,0 +1,28 @@
+{
+  "zone": "tallow.manisahome.com",
+  "waf": {
+    "enabled": true,
+    "managedRuleset": "cloudflare-managed",
+    "actionMode": "block-critical-challenge-medium"
+  },
+  "rules": [
+    {
+      "id": "block-known-bad-ips",
+      "enabled": true,
+      "action": "block",
+      "expression": "(cf.threat_score ge 20)"
+    },
+    {
+      "id": "challenge-suspicious-bots",
+      "enabled": true,
+      "action": "managed_challenge",
+      "expression": "(cf.bot_management.score lt 30)"
+    },
+    {
+      "id": "rate-limit-api-abuse",
+      "enabled": true,
+      "action": "block",
+      "expression": "(http.request.uri.path contains \"/api/\") and (rate(1m) > 120)"
+    }
+  ]
+}

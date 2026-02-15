@@ -110,7 +110,6 @@ abstract class BaseWorkerBridge {
   protected protocol: IPCProtocol;
   protected pool: WorkerPool | null = null;
   protected workerType: WorkerType;
-  private static instances = new Map<WorkerType, BaseWorkerBridge>();
 
   constructor(workerType: WorkerType) {
     this.workerType = workerType;
@@ -143,19 +142,6 @@ abstract class BaseWorkerBridge {
   }
 
   /**
-   * Get singleton instance
-   */
-  protected static getInstance<T extends BaseWorkerBridge>(
-    this: new (workerType: WorkerType) => T,
-    workerType: WorkerType
-  ): T {
-    if (!BaseWorkerBridge.instances.has(workerType)) {
-      BaseWorkerBridge.instances.set(workerType, new this(workerType));
-    }
-    return BaseWorkerBridge.instances.get(workerType) as T;
-  }
-
-  /**
    * Execute operation in worker or fallback to main thread
    */
   protected async execute<TRequest, TResponse>(
@@ -171,11 +157,15 @@ abstract class BaseWorkerBridge {
     // Use worker pool if available
     if (this.pool) {
       try {
+        const messageOptions = options?.timeout !== undefined
+          ? { timeout: options.timeout }
+          : undefined;
+
         const message = this.protocol.createMessage(
           type,
           this.workerType,
           payload,
-          { timeout: options?.timeout }
+          messageOptions
         );
 
         // Execute via worker pool
@@ -219,12 +209,17 @@ abstract class BaseWorkerBridge {
  * Crypto Worker Bridge
  */
 class CryptoWorkerBridge extends BaseWorkerBridge {
+  private static instance: CryptoWorkerBridge | null = null;
+
   private constructor() {
     super('crypto');
   }
 
   public static getInstance(): CryptoWorkerBridge {
-    return super.getInstance.call(this, 'crypto');
+    if (!CryptoWorkerBridge.instance) {
+      CryptoWorkerBridge.instance = new CryptoWorkerBridge();
+    }
+    return CryptoWorkerBridge.instance;
   }
 
   /**
@@ -333,12 +328,17 @@ class CryptoWorkerBridge extends BaseWorkerBridge {
  * File Worker Bridge
  */
 class FileWorkerBridge extends BaseWorkerBridge {
+  private static instance: FileWorkerBridge | null = null;
+
   private constructor() {
     super('file');
   }
 
   public static getInstance(): FileWorkerBridge {
-    return super.getInstance.call(this, 'file');
+    if (!FileWorkerBridge.instance) {
+      FileWorkerBridge.instance = new FileWorkerBridge();
+    }
+    return FileWorkerBridge.instance;
   }
 
   /**
@@ -432,7 +432,11 @@ class FileWorkerBridge extends BaseWorkerBridge {
 
         let offset = 0;
         for (let i = 0; i < chunks.length; i++) {
-          const chunk = new Uint8Array(chunks[i]);
+          const chunkData = chunks[i];
+          if (!chunkData) {
+            continue;
+          }
+          const chunk = new Uint8Array(chunkData);
           merged.set(chunk, offset);
           offset += chunk.byteLength;
 
@@ -506,12 +510,17 @@ class FileWorkerBridge extends BaseWorkerBridge {
  * Network Worker Bridge
  */
 class NetworkWorkerBridge extends BaseWorkerBridge {
+  private static instance: NetworkWorkerBridge | null = null;
+
   private constructor() {
     super('network');
   }
 
   public static getInstance(): NetworkWorkerBridge {
-    return super.getInstance.call(this, 'network');
+    if (!NetworkWorkerBridge.instance) {
+      NetworkWorkerBridge.instance = new NetworkWorkerBridge();
+    }
+    return NetworkWorkerBridge.instance;
   }
 
   /**
@@ -655,12 +664,17 @@ class NetworkWorkerBridge extends BaseWorkerBridge {
  * Compression Worker Bridge
  */
 class CompressionWorkerBridge extends BaseWorkerBridge {
+  private static instance: CompressionWorkerBridge | null = null;
+
   private constructor() {
     super('compression');
   }
 
   public static getInstance(): CompressionWorkerBridge {
-    return super.getInstance.call(this, 'compression');
+    if (!CompressionWorkerBridge.instance) {
+      CompressionWorkerBridge.instance = new CompressionWorkerBridge();
+    }
+    return CompressionWorkerBridge.instance;
   }
 
   /**
@@ -818,3 +832,9 @@ export const getCryptoWorker = () => WorkerBridge.crypto;
 export const getFileWorker = () => WorkerBridge.file;
 export const getNetworkWorker = () => WorkerBridge.network;
 export const getCompressionWorker = () => WorkerBridge.compression;
+
+// Backward-compatible aliases used by legacy imports.
+export const cryptoWorker = getCryptoWorker;
+export const fileWorker = getFileWorker;
+export const networkWorker = getNetworkWorker;
+export const compressionWorker = getCompressionWorker;

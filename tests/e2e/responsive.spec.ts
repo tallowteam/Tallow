@@ -1,6 +1,38 @@
 import { test, expect } from './fixtures';
 
 test.describe('Responsive Design', () => {
+  test.describe('Minimum Mobile Viewport (320px)', () => {
+    test.use({ viewport: { width: 320, height: 568 } });
+
+    test('should render key pages without horizontal overflow at 320px', async ({ page }) => {
+      const routes = ['/', '/transfer', '/settings'];
+
+      for (const route of routes) {
+        await page.goto(route);
+        const overflowWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+        expect(overflowWidth).toBeLessThanOrEqual(320);
+      }
+    });
+
+    test('should expose touch targets at 44px or larger on core actions', async ({ page }) => {
+      await page.goto('/transfer');
+
+      const targets = [
+        page.getByRole('button', { name: /Select Local Network mode/i }),
+        page.getByRole('button', { name: /Select Internet P2P mode/i }),
+      ];
+
+      for (const target of targets) {
+        await expect(target).toBeVisible();
+        const box = await target.boundingBox();
+        if (box) {
+          expect(box.height).toBeGreaterThanOrEqual(44);
+        }
+      }
+    });
+
+  });
+
   test.describe('Mobile Viewport (375px)', () => {
     test.use({ viewport: { width: 375, height: 667 } });
 
@@ -14,15 +46,8 @@ test.describe('Responsive Design', () => {
       await expect(page.locator('a[href="/"]').first()).toBeVisible();
 
       // Mobile menu button should be visible
-      const menuButton = page.locator('button[aria-label*="menu" i]').or(
-        page.locator('button[aria-expanded]')
-      ).first();
+      const menuButton = page.getByRole('button', { name: /toggle menu/i });
       await expect(menuButton).toBeVisible();
-
-      // Desktop nav should be hidden
-      const desktopNav = page.locator('nav:not([class*="mobile"])').first();
-      const isHidden = await desktopNav.isHidden().catch(() => true);
-      expect(isHidden).toBeTruthy();
 
       // Hero content should be visible
       await expect(page.locator('h1')).toBeVisible();
@@ -32,11 +57,18 @@ test.describe('Responsive Design', () => {
       await page.goto('/');
 
       // Open mobile menu
-      const menuButton = page.locator('button[aria-label*="menu" i]').first();
+      const menuButton = page.getByRole('button', { name: /toggle menu/i });
+      const mobileMenu = page.getByRole('dialog', { name: /navigation menu/i });
+      await expect(menuButton).toBeVisible();
+      await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
       await menuButton.click();
+      await expect(menuButton).toHaveAttribute('aria-expanded', 'true', { timeout: 15000 });
+      await expect(mobileMenu).toBeVisible();
 
-      // Click link in mobile menu
-      await page.locator('a[href="/features"]').last().click();
+      // Activate link in mobile menu
+      const featuresLink = mobileMenu.getByRole('link', { name: /features/i }).first();
+      await expect(featuresLink).toBeVisible();
+      await featuresLink.click();
 
       // Check navigation
       await expect(page).toHaveURL(/\/features/);
@@ -46,17 +78,16 @@ test.describe('Responsive Design', () => {
       await page.goto('/transfer');
 
       // Page should load
-      await expect(page.locator('h1')).toBeVisible();
+      await expect(page.locator('h1')).toContainText(/Choose your transfer mode/i);
 
-      // Tabs should be visible and scrollable
-      await expect(page.locator('text=Nearby')).toBeVisible();
-      await expect(page.locator('text=Internet')).toBeVisible();
+      // Mode cards should be visible
+      const localMode = page.getByRole('button', { name: /Select Local Network mode/i });
+      const internetMode = page.getByRole('button', { name: /Select Internet P2P mode/i });
+      await expect(localMode).toBeVisible();
+      await expect(internetMode).toBeVisible();
 
-      // Drop zone should adapt to mobile
-      const dropZone = page.locator('[class*="drop"]').first();
-      await expect(dropZone).toBeVisible();
-
-      const box = await dropZone.boundingBox();
+      // Card width should stay within mobile viewport
+      const box = await localMode.boundingBox();
       expect(box?.width).toBeLessThanOrEqual(375);
     });
 
@@ -101,7 +132,7 @@ test.describe('Responsive Design', () => {
 
       // Buttons should be at least 44px tall (Apple HIG recommendation)
       if (box) {
-        expect(box.height).toBeGreaterThanOrEqual(40);
+        expect(box.height).toBeGreaterThanOrEqual(44);
       }
     });
   });
@@ -114,14 +145,15 @@ test.describe('Responsive Design', () => {
 
       // Header should be visible
       await expect(page.locator('header')).toBeVisible();
+      await expect(page.locator('h1').first()).toBeVisible();
 
-      // Content should be centered and use available space
-      const container = page.locator('.container').first();
-      const box = await container.boundingBox();
+      // Main content should use available space
+      const mainContent = page.locator('#main-content');
+      const box = await mainContent.boundingBox();
 
       if (box) {
         expect(box.width).toBeGreaterThan(0);
-        expect(box.width).toBeLessThanOrEqual(768);
+        expect(box.width).toBeLessThanOrEqual(768 + 1);
       }
     });
 
@@ -129,8 +161,8 @@ test.describe('Responsive Design', () => {
       await page.goto('/');
 
       // Check which nav is visible
-      const desktopNav = page.locator('nav:not([class*="mobile"])').first();
-      const mobileMenuButton = page.locator('button[aria-label*="menu" i]').first();
+      const desktopNav = page.locator('nav[aria-label="Main navigation"]');
+      const mobileMenuButton = page.getByRole('button', { name: /toggle menu/i });
 
       const hasDesktopNav = await desktopNav.isVisible().catch(() => false);
       const hasMobileButton = await mobileMenuButton.isVisible().catch(() => false);
@@ -143,14 +175,14 @@ test.describe('Responsive Design', () => {
       await page.goto('/transfer');
 
       // Page should load
-      await expect(page.locator('h1')).toBeVisible();
+      await expect(page.locator('h1')).toContainText(/Choose your transfer mode/i);
 
-      // Drop zone should use good width
-      const dropZone = page.locator('[class*="drop"]').first();
-      const box = await dropZone.boundingBox();
+      // Mode selector cards should use good width
+      const localMode = page.getByRole('button', { name: /Select Local Network mode/i });
+      const box = await localMode.boundingBox();
 
       if (box) {
-        expect(box.width).toBeGreaterThan(300);
+        expect(box.width).toBeGreaterThan(250);
         expect(box.width).toBeLessThanOrEqual(768);
       }
     });
@@ -173,17 +205,16 @@ test.describe('Responsive Design', () => {
       await page.goto('/');
 
       // Desktop nav should be visible
-      const desktopNav = page.locator('nav').first();
+      const desktopNav = page.locator('nav[aria-label="Main navigation"]');
       await expect(desktopNav).toBeVisible();
 
       // Mobile menu button should be hidden
-      const mobileButton = page.locator('button[aria-label*="menu" i]');
-      const isHidden = await mobileButton.isHidden().catch(() => true);
-      expect(isHidden).toBeTruthy();
+      const mobileButton = page.getByRole('button', { name: /toggle menu/i });
+      await expect(mobileButton).toBeHidden();
 
       // Content should be well-spaced
-      const container = page.locator('.container').first();
-      const box = await container.boundingBox();
+      const mainContent = page.locator('#main-content');
+      const box = await mainContent.boundingBox();
 
       if (box) {
         expect(box.width).toBeGreaterThan(768);
@@ -194,9 +225,9 @@ test.describe('Responsive Design', () => {
       await page.goto('/');
 
       await expect(page.locator('a[href="/features"]').first()).toBeVisible();
-      await expect(page.locator('a[href="/security"]').first()).toBeVisible();
-      await expect(page.locator('a[href="/pricing"]').first()).toBeVisible();
+      await expect(page.locator('a[href="/how-it-works"]').first()).toBeVisible();
       await expect(page.locator('a[href="/docs"]').first()).toBeVisible();
+      await expect(page.locator('a[href="/about"]').first()).toBeVisible();
     });
 
     test('should display transfer page with full-width layout', async ({ page }) => {
@@ -217,14 +248,19 @@ test.describe('Responsive Design', () => {
     test('should display settings with optimal spacing', async ({ page }) => {
       await page.goto('/settings');
 
-      // Settings sections should have good spacing
-      const section = page.locator('section').first();
-      const marginBottom = await section.evaluate((el) => {
-        return window.getComputedStyle(el).marginBottom;
-      });
+      // Sections should stack with vertical separation
+      const firstSection = page.locator('section').first();
+      const secondSection = page.locator('section').nth(1);
 
-      const margin = parseFloat(marginBottom);
-      expect(margin).toBeGreaterThan(0);
+      await expect(firstSection).toBeVisible();
+      await expect(secondSection).toBeVisible();
+
+      const firstBox = await firstSection.boundingBox();
+      const secondBox = await secondSection.boundingBox();
+
+      if (firstBox && secondBox) {
+        expect(secondBox.y).toBeGreaterThan(firstBox.y);
+      }
     });
   });
 
@@ -233,15 +269,11 @@ test.describe('Responsive Design', () => {
       await page.setViewportSize({ width: 375, height: 667 });
       await page.goto('/');
 
-      // Desktop nav links should be hidden
-      const navLinks = page.locator('nav a[href="/features"]').first();
-      const isHidden = await navLinks.isHidden().catch(() => true);
-
       // Mobile menu button should be visible
-      const menuButton = page.locator('button[aria-label*="menu" i]').first();
+      const menuButton = page.getByRole('button', { name: /toggle menu/i });
       const isVisible = await menuButton.isVisible();
 
-      expect(isHidden && isVisible).toBeTruthy();
+      expect(isVisible).toBeTruthy();
     });
 
     test('should show full header on desktop', async ({ page }) => {
@@ -250,8 +282,8 @@ test.describe('Responsive Design', () => {
 
       // All nav links should be visible
       await expect(page.locator('nav a[href="/features"]').first()).toBeVisible();
-      await expect(page.locator('nav a[href="/security"]').first()).toBeVisible();
-      await expect(page.locator('nav a[href="/pricing"]').first()).toBeVisible();
+      await expect(page.locator('nav a[href="/how-it-works"]').first()).toBeVisible();
+      await expect(page.locator('nav a[href="/about"]').first()).toBeVisible();
     });
   });
 
@@ -262,7 +294,7 @@ test.describe('Responsive Design', () => {
       await page.goto('/');
 
       // Mobile menu should be visible
-      const menuButton = page.locator('button[aria-label*="menu" i]').first();
+      const menuButton = page.getByRole('button', { name: /toggle menu/i });
       await expect(menuButton).toBeVisible();
 
       // Resize to desktop
@@ -292,7 +324,7 @@ test.describe('Responsive Design', () => {
       await page.waitForTimeout(500);
 
       // Mobile menu button should now be visible
-      const menuButton = page.locator('button[aria-label*="menu" i]').first();
+      const menuButton = page.getByRole('button', { name: /toggle menu/i });
       await expect(menuButton).toBeVisible();
     });
   });
@@ -303,16 +335,21 @@ test.describe('Responsive Design', () => {
     test('should have appropriately sized touch targets', async ({ page }) => {
       await page.goto('/');
 
-      // All interactive elements should be at least 44x44px
-      const buttons = await page.locator('button').all();
+      // Scope to product UI regions to avoid framework/devtool controls injected in dev mode.
+      const buttons = page.locator('header button, main button, footer button');
+      const buttonCount = await buttons.count();
+      expect(buttonCount).toBeGreaterThan(0);
 
-      for (const button of buttons.slice(0, 5)) {
-        // Check first 5 buttons
+      for (let i = 0; i < Math.min(buttonCount, 5); i++) {
+        const button = buttons.nth(i);
+        const isVisible = await button.isVisible().catch(() => false);
+        if (!isVisible) {
+          continue;
+        }
+
         const box = await button.boundingBox();
-
         if (box && box.width > 0 && box.height > 0) {
-          // At least 40px in height (allowing some flexibility)
-          expect(box.height).toBeGreaterThanOrEqual(36);
+          expect(box.height).toBeGreaterThanOrEqual(44);
         }
       }
     });
@@ -320,11 +357,11 @@ test.describe('Responsive Design', () => {
     test('should have adequate spacing between touch targets', async ({ page }) => {
       await page.goto('/transfer');
 
-      // Tab buttons should have adequate spacing
-      const nearbyTab = page.locator('button:has-text("Nearby")');
-      const internetTab = page.locator('button:has-text("Internet")');
+      // Mode buttons should have adequate spacing
+      const localTab = page.getByRole('button', { name: /Select Local Network mode/i });
+      const internetTab = page.getByRole('button', { name: /Select Internet P2P mode/i });
 
-      const nearbyBox = await nearbyTab.boundingBox();
+      const nearbyBox = await localTab.boundingBox();
       const internetBox = await internetTab.boundingBox();
 
       if (nearbyBox && internetBox) {

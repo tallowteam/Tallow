@@ -30,7 +30,7 @@ export function getTextDirection(locale: Locale): 'ltr' | 'rtl' {
  * This should be called when the locale changes
  */
 export function applyTextDirection(locale: Locale): void {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {return;}
 
   const direction = getTextDirection(locale);
   document.documentElement.setAttribute('dir', direction);
@@ -60,10 +60,10 @@ export function getLogicalValue(
  * Mirror CSS transform for RTL
  */
 export function mirrorTransform(transform: string, locale: Locale): string {
-  if (!isRTL(locale)) return transform;
+  if (!isRTL(locale)) {return transform;}
 
   // Flip scaleX values
-  return transform.replace(/scaleX\((-?\d+(?:\.\d+)?)\)/, (match, value) => {
+  return transform.replace(/scaleX\((-?\d+(?:\.\d+)?)\)/, (_match, value) => {
     return `scaleX(${-parseFloat(value)})`;
   });
 }

@@ -9,8 +9,6 @@ import {
   pqCrypto,
   HybridKeyPair,
   HybridPublicKey,
-  HybridCiphertext,
-  EncryptedData
 } from '@/lib/crypto/pqc-crypto';
 
 describe('PQCryptoService', () => {
@@ -60,13 +58,11 @@ describe('PQCryptoService', () => {
   describe('Key Encapsulation/Decapsulation', () => {
     let aliceKeyPair: HybridKeyPair;
     let bobKeyPair: HybridKeyPair;
-    let alicePublicKey: HybridPublicKey;
     let bobPublicKey: HybridPublicKey;
 
     beforeEach(async () => {
       aliceKeyPair = await pqCrypto.generateHybridKeypair();
       bobKeyPair = await pqCrypto.generateHybridKeypair();
-      alicePublicKey = pqCrypto.getPublicKey(aliceKeyPair);
       bobPublicKey = pqCrypto.getPublicKey(bobKeyPair);
     });
 
@@ -113,10 +109,8 @@ describe('PQCryptoService', () => {
       const { ciphertext } = await pqCrypto.encapsulate(bobPublicKey);
 
       // Alice tries to decapsulate with her own keys (should fail)
-      const result = await pqCrypto.decapsulate(ciphertext, aliceKeyPair);
-
-      // Should return different shared secret or null (depending on mock behavior)
-      expect(result).toBeDefined();
+      await expect(pqCrypto.decapsulate(ciphertext, aliceKeyPair))
+        .rejects.toThrow(/decapsulation failed|ciphertext may not match/i);
     });
 
     it('should validate Kyber public key length', async () => {
@@ -423,15 +417,15 @@ describe('PQCryptoService', () => {
     });
   });
 
-  describe('HMAC', () => {
-    it('should compute HMAC-SHA-256', async () => {
+  describe('BLAKE3 Keyed Hash (MAC)', () => {
+    it('should compute BLAKE3 keyed hash', async () => {
       const key = pqCrypto.randomBytes(32);
       const data = new TextEncoder().encode('message');
 
       const mac = await pqCrypto.mac(key, data);
 
       expect(mac).toBeInstanceOf(Uint8Array);
-      expect(mac.length).toBe(32); // HMAC-SHA-256 output
+      expect(mac.length).toBe(32); // BLAKE3 keyed hash output
     });
 
     it('should produce same MAC for same key and data', async () => {

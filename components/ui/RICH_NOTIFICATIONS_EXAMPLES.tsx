@@ -6,12 +6,12 @@
 import { useToast } from '@/components/ui/ToastProvider';
 import { notificationManager } from '@/lib/utils/notification-manager';
 
+type ToastApi = ReturnType<typeof useToast>;
+
 // ============================================
 // Example 1: Image Preview Notification
 // ============================================
-export function showImagePreviewExample() {
-  const toast = useToast();
-
+export function showImagePreviewExample(toast: ToastApi) {
   toast.addToast({
     title: 'Image Received',
     message: 'vacation-photo.jpg',
@@ -43,9 +43,7 @@ export function showImagePreviewExample() {
 // ============================================
 // Example 2: File Preview Notification
 // ============================================
-export function showFilePreviewExample() {
-  const toast = useToast();
-
+export function showFilePreviewExample(toast: ToastApi) {
   toast.addToast({
     title: 'File Ready',
     message: 'Document is ready to transfer',
@@ -78,9 +76,7 @@ export function showFilePreviewExample() {
 // ============================================
 // Example 3: Transfer Progress Notification
 // ============================================
-export function showTransferProgressExample() {
-  const toast = useToast();
-
+export function showTransferProgressExample(toast: ToastApi) {
   let progress = 0;
   const toastId = toast.addToast({
     title: 'Transferring',
@@ -123,14 +119,13 @@ export function showTransferProgressExample() {
 // Example 4: Incoming Transfer Request
 // ============================================
 export function showIncomingTransferRequest(
+  toast: ToastApi,
   deviceName: string,
   fileName: string,
   fileSize: string,
   onAccept: () => void,
   onReject: () => void
 ) {
-  const toast = useToast();
-
   toast.addToast({
     title: 'Incoming Transfer Request',
     message: `${deviceName} wants to send you a file`,
@@ -163,9 +158,7 @@ export function showIncomingTransferRequest(
 // ============================================
 // Example 5: Multiple Images Received
 // ============================================
-export function showMultipleImagesExample(images: Array<{ name: string; size: string; url: string }>) {
-  const toast = useToast();
-
+export function showMultipleImagesExample(toast: ToastApi, images: Array<{ name: string; size: string; url: string }>) {
   images.forEach((image, index) => {
     setTimeout(() => {
       toast.success(`Received: ${image.name}`, {
@@ -190,9 +183,7 @@ export function showMultipleImagesExample(images: Array<{ name: string; size: st
 // ============================================
 // Example 6: Transfer Error with Retry
 // ============================================
-export function showTransferErrorExample(fileName: string, onRetry: () => void) {
-  const toast = useToast();
-
+export function showTransferErrorExample(toast: ToastApi, fileName: string, onRetry: () => void) {
   toast.error('Transfer failed: Connection lost', {
     duration: 10000,
     preview: {
@@ -269,9 +260,9 @@ export function preloadImage(url: string): Promise<void> {
 // Example 10: Complete File Transfer Flow
 // ============================================
 export async function completeFileTransferFlow(
+  toast: ToastApi,
   file: { name: string; size: number; data: Blob; thumbnail?: string }
 ) {
-  const toast = useToast();
   const formattedSize = formatFileSize(file.size);
 
   // Step 1: Announce incoming file
@@ -362,9 +353,7 @@ export async function completeFileTransferFlow(
 // ============================================
 // Example 11: Batch File Upload
 // ============================================
-export function showBatchUploadProgress(files: Array<{ name: string; size: number }>) {
-  const toast = useToast();
-
+export function showBatchUploadProgress(toast: ToastApi, files: Array<{ name: string; size: number }>) {
   const totalSize = formatFileSize(files.reduce((sum, f) => sum + f.size, 0));
 
   toast.addToast({
@@ -384,12 +373,11 @@ export function showBatchUploadProgress(files: Array<{ name: string; size: numbe
 // Example 12: Connection Status with Preview
 // ============================================
 export function showConnectionStatus(
+  toast: ToastApi,
   deviceName: string,
   status: 'connecting' | 'connected' | 'disconnected',
   deviceIcon?: string
 ) {
-  const toast = useToast();
-
   const variants = {
     connecting: 'info' as const,
     connected: 'success' as const,

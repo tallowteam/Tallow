@@ -8,6 +8,8 @@
 import { create } from 'zustand';
 import { devtools, subscribeWithSelector, persist, createJSONStorage } from 'zustand/middleware';
 import { safeStorage } from './storage';
+import { useDeviceStore } from './device-store';
+import { useSettingsStore } from './settings-store';
 import type { Platform } from '../types';
 
 // ============================================================================
@@ -46,6 +48,8 @@ export interface Friend {
   transferCount: number;
   /** Last transfer timestamp */
   lastTransferAt: number | null;
+  /** Timestamp of latest SAS verification */
+  sasVerifiedAt?: number | null;
 }
 
 /**
@@ -91,6 +95,7 @@ export interface FriendsStoreState {
   friends: Friend[];
   pendingRequests: PendingRequest[];
   blockedIds: string[];
+  guestTransferTokens: Record<string, string>;
 
   // Current pairing session
   currentPairingSession: PairingSession | null;
@@ -110,6 +115,7 @@ export interface FriendsStoreState {
   // Actions - Friend Status
   setFriendOnline: (id: string, isOnline: boolean) => void;
   setFriendTrusted: (id: string, isTrusted: boolean) => void;
+  markFriendSASVerified: (id: string) => void;
   updateFriendLastSeen: (id: string) => void;
   incrementTransferCount: (id: string) => void;
 
@@ -124,6 +130,10 @@ export interface FriendsStoreState {
   blockFriend: (id: string) => void;
   unblockFriend: (id: string) => void;
   isBlocked: (id: string) => boolean;
+  issueGuestTransferToken: (id: string) => string | null;
+  consumeGuestTransferToken: (id: string, token: string) => boolean;
+  canTransferToFriend: (id: string, token?: string) => { allowed: boolean; reason: string | null; path: 'trusted' | 'guest' | 'blocked' };
+  autoConnectFavorite: () => Friend | null;
 
   // Actions - Pairing
   generatePairingCode: () => PairingSession;
@@ -195,6 +205,11 @@ function isExpired(expiresAt: number): boolean {
   return Date.now() > expiresAt;
 }
 
+function createGuestToken(): string {
+  const random = crypto.getRandomValues(new Uint8Array(10));
+  return `guest_${Date.now()}_${Array.from(random).map((value) => value.toString(36)).join('').slice(0, 18)}`;
+}
+
 // ============================================================================
 // STORE IMPLEMENTATION
 // ============================================================================
@@ -208,6 +223,7 @@ export const useFriendsStore = create<FriendsStoreState>()(
           friends: [],
           pendingRequests: [],
           blockedIds: [],
+          guestTransferTokens: {},
           currentPairingSession: null,
           isLoading: false,
           isInitialized: false,
@@ -234,6 +250,7 @@ export const useFriendsStore = create<FriendsStoreState>()(
               isOnline: false,
               lastSeen: Date.now(),
               isTrusted: false,
+              sasVerifiedAt: null,
               avatar: null,
               addedAt: Date.now(),
               notes: null,
@@ -325,6 +342,24 @@ export const useFriendsStore = create<FriendsStoreState>()(
               return { friends: newFriends };
             }),
 
+          markFriendSASVerified: (id) =>
+            set((state) => {
+              const index = state.friends.findIndex((f) => f.id === id);
+              if (index < 0) {return state;}
+
+              const newFriends = [...state.friends];
+              const existing = newFriends[index];
+              if (!existing) {return state;}
+
+              newFriends[index] = {
+                ...existing,
+                isTrusted: true,
+                sasVerifiedAt: Date.now(),
+              };
+
+              return { friends: newFriends };
+            }),
+
           updateFriendLastSeen: (id) =>
             set((state) => {
               const index = state.friends.findIndex((f) => f.id === id);
@@ -393,6 +428,7 @@ export const useFriendsStore = create<FriendsStoreState>()(
               isOnline: true,
               lastSeen: Date.now(),
               isTrusted: false,
+              sasVerifiedAt: null,
               avatar: null,
               addedAt: Date.now(),
               notes: null,
@@ -423,13 +459,19 @@ export const useFriendsStore = create<FriendsStoreState>()(
             })),
 
           // Block List
-          blockFriend: (id) =>
+          blockFriend: (id) => {
+            const connection = useDeviceStore.getState().connection;
+            if (connection.peerId === id) {
+              useDeviceStore.getState().disconnect();
+            }
+
             set((state) => ({
               blockedIds: state.blockedIds.includes(id)
                 ? state.blockedIds
                 : [...state.blockedIds, id],
               friends: state.friends.filter((f) => f.id !== id),
-            })),
+            }));
+          },
 
           unblockFriend: (id) =>
             set((state) => ({
@@ -437,6 +479,83 @@ export const useFriendsStore = create<FriendsStoreState>()(
             })),
 
           isBlocked: (id) => get().blockedIds.includes(id),
+
+          issueGuestTransferToken: (id) => {
+            const state = get();
+            if (state.blockedIds.includes(id)) {
+              return null;
+            }
+
+            if (!useSettingsStore.getState().guestMode) {
+              return null;
+            }
+
+            const token = createGuestToken();
+            set((prev) => ({
+              guestTransferTokens: {
+                ...prev.guestTransferTokens,
+                [id]: token,
+              },
+            }));
+            return token;
+          },
+
+          consumeGuestTransferToken: (id, token) => {
+            const state = get();
+            const expected = state.guestTransferTokens[id];
+            if (!expected || expected !== token) {
+              return false;
+            }
+
+            set((prev) => {
+              const next = { ...prev.guestTransferTokens };
+              delete next[id];
+              return { guestTransferTokens: next };
+            });
+            return true;
+          },
+
+          canTransferToFriend: (id, token) => {
+            const state = get();
+            if (state.blockedIds.includes(id)) {
+              return { allowed: false, reason: 'Friend is blocked', path: 'blocked' as const };
+            }
+
+            const friend = state.friends.find((f) => f.id === id);
+            if (!friend) {
+              return { allowed: false, reason: 'Friend not found', path: 'blocked' as const };
+            }
+
+            if (friend.isTrusted && !!friend.sasVerifiedAt) {
+              return { allowed: true, reason: null, path: 'trusted' as const };
+            }
+
+            if (token && useSettingsStore.getState().guestMode && state.guestTransferTokens[id] === token) {
+              return { allowed: true, reason: null, path: 'guest' as const };
+            }
+
+            return {
+              allowed: false,
+              reason: 'SAS verification required or provide a valid one-time guest token',
+              path: 'blocked' as const,
+            };
+          },
+
+          autoConnectFavorite: () => {
+            const state = get();
+            const candidate = state.friends.find(
+              (friend) => friend.isTrusted && !!friend.sasVerifiedAt && friend.isOnline && !state.blockedIds.includes(friend.id)
+            );
+
+            if (!candidate) {
+              return null;
+            }
+
+            const deviceStore = useDeviceStore.getState();
+            deviceStore.startConnecting(candidate.id, candidate.name);
+            deviceStore.setConnected('p2p');
+            return candidate;
+          },
 
           // Pairing
           generatePairingCode: () => {

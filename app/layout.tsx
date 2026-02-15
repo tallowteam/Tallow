@@ -3,6 +3,10 @@ import localFont from 'next/font/local';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ThemeProvider } from '@/components/theme/theme-provider';
+import { ThemeScript } from '@/components/theme/theme-script';
+import { QueryProvider } from '@/components/theme/query-provider';
+import { SkipLink } from '@/components/a11y/SkipLink';
+import { PerformanceInit } from '@/lib/performance/PerformanceInit';
 import './globals.css';
 
 // Font Configuration — self-hosted, no external dependencies
@@ -18,6 +22,7 @@ const playfairDisplay = localFont({
     },
   ],
   display: 'swap',
+  preload: false,
   variable: '--font-playfair',
 });
 
@@ -30,6 +35,7 @@ const inter = localFont({
 const jetbrainsMono = localFont({
   src: '../public/fonts/jetbrains-mono/jetbrains-mono-latin.woff2',
   display: 'swap',
+  preload: false,
   variable: '--font-jetbrains',
 });
 
@@ -118,6 +124,30 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const softwareApplicationSchema = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'Tallow',
+    applicationCategory: 'UtilitiesApplication',
+    operatingSystem: 'Web, macOS, Windows, Linux, iOS, Android',
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+    },
+    description:
+      'Post-quantum encrypted peer-to-peer file transfer. Send files directly between devices with zero-knowledge security.',
+    url: 'https://tallow.app',
+  });
+
+  const organizationSchema = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'Tallow',
+    url: 'https://tallow.app',
+    logo: 'https://tallow.app/icon.svg',
+  });
+
   return (
     <html
       lang="en"
@@ -125,46 +155,23 @@ export default function RootLayout({
       data-theme="dark"
       className={`${playfairDisplay.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
+      <head>
+        <ThemeScript />
+      </head>
       <body className={inter.className}>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'SoftwareApplication',
-              name: 'Tallow',
-              applicationCategory: 'UtilitiesApplication',
-              operatingSystem: 'Web, macOS, Windows, Linux, iOS, Android',
-              offers: {
-                '@type': 'Offer',
-                price: '0',
-                priceCurrency: 'USD',
-              },
-              description: 'Post-quantum encrypted peer-to-peer file transfer. Send files directly between devices with zero-knowledge security.',
-              url: 'https://tallow.app',
-            }),
-          }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'Organization',
-              name: 'Tallow',
-              url: 'https://tallow.app',
-              logo: 'https://tallow.app/icon.svg',
-            }),
-          }}
-        />
-        <ThemeProvider>
-          <a href="#main-content" className="skip-link">
-            Skip to main content
-          </a>
-          <Header />
-          <div id="main-content">{children}</div>
-          <Footer />
-        </ThemeProvider>
+        <script type="application/ld+json">{softwareApplicationSchema}</script>
+        <script type="application/ld+json">{organizationSchema}</script>
+        <QueryProvider>
+          <ThemeProvider>
+            <PerformanceInit />
+            <SkipLink />
+            <Header />
+            <main id="main-content" tabIndex={-1}>
+              {children}
+            </main>
+            <Footer />
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   );

@@ -33,7 +33,7 @@ async function run() {
   page.on('console', msg => {
     if (msg.type() === 'error') {
       const url = page.url();
-      if (!errors[url]) errors[url] = [];
+      if (!errors[url]) {errors[url] = [];}
       errors[url].push(msg.text());
     }
   });

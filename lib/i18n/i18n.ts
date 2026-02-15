@@ -5,47 +5,31 @@
  * Each language file exports a default object with consistent key structure.
  */
 
-import en from './locales/en';
-import fr from './locales/fr';
-import de from './locales/de';
-import pt from './locales/pt';
-import it from './locales/it';
+import locales, { LOCALE_CODES, LOCALE_METADATA, type LocaleCode } from './locales';
 
 /**
  * Supported language codes and their configuration
  */
-export const LANGUAGES = {
-  en: {
-    code: 'en',
-    name: 'English',
-    nativeName: 'English',
-    direction: 'ltr',
+type LanguageConfig = {
+  code: LocaleCode;
+  name: string;
+  nativeName: string;
+  direction: 'ltr' | 'rtl';
+};
+
+export const LANGUAGES: Record<LocaleCode, LanguageConfig> = LOCALE_CODES.reduce(
+  (accumulator, code) => {
+    const metadata = LOCALE_METADATA[code];
+    accumulator[code] = {
+      code,
+      name: metadata.name,
+      nativeName: metadata.nativeName,
+      direction: metadata.dir,
+    };
+    return accumulator;
   },
-  fr: {
-    code: 'fr',
-    name: 'French',
-    nativeName: 'Français',
-    direction: 'ltr',
-  },
-  de: {
-    code: 'de',
-    name: 'German',
-    nativeName: 'Deutsch',
-    direction: 'ltr',
-  },
-  pt: {
-    code: 'pt',
-    name: 'Portuguese (Brazil)',
-    nativeName: 'Português (Brasil)',
-    direction: 'ltr',
-  },
-  it: {
-    code: 'it',
-    name: 'Italian',
-    nativeName: 'Italiano',
-    direction: 'ltr',
-  },
-} as const;
+  {} as Record<LocaleCode, LanguageConfig>
+);
 
 /**
  * Default language for the application
@@ -55,18 +39,12 @@ export const DEFAULT_LANGUAGE = 'en' as const;
 /**
  * Language code type
  */
-export type LanguageCode = keyof typeof LANGUAGES;
+export type LanguageCode = LocaleCode;
 
 /**
  * Translation messages for each language
  */
-export const messages = {
-  en,
-  fr,
-  de,
-  pt,
-  it,
-} as const;
+export const messages = locales;
 
 /**
  * Get translations for a specific language
@@ -79,6 +57,15 @@ export function getTranslations(language: LanguageCode | string) {
 }
 
 /**
+ * Validate language code
+ * @param language - Language code to validate
+ * @returns true if valid, false otherwise
+ */
+export function isValidLanguage(language: string): language is LanguageCode {
+  return LOCALE_CODES.includes(language as LanguageCode);
+}
+
+/**
  * Detect user's preferred language
  * @returns Language code based on browser settings
  */
@@ -87,10 +74,26 @@ export function detectLanguage(): LanguageCode {
     return DEFAULT_LANGUAGE;
   }
 
-  const browserLanguage = navigator.language?.split('-')[0] || DEFAULT_LANGUAGE;
-  return (browserLanguage as LanguageCode) in LANGUAGES
-    ? (browserLanguage as LanguageCode)
-    : DEFAULT_LANGUAGE;
+  const browserLanguage = navigator.language || DEFAULT_LANGUAGE;
+
+  if (isValidLanguage(browserLanguage)) {
+    return browserLanguage;
+  }
+
+  const normalizedBrowserLanguage = browserLanguage.toLowerCase();
+  const exactMatch = LOCALE_CODES.find(
+    (code) => code.toLowerCase() === normalizedBrowserLanguage
+  );
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  const baseLanguage = normalizedBrowserLanguage.split('-')[0];
+  const baseMatch = LOCALE_CODES.find((code) =>
+    code.toLowerCase().startsWith(baseLanguage)
+  );
+
+  return baseMatch || DEFAULT_LANGUAGE;
 }
 
 /**
@@ -98,10 +101,14 @@ export function detectLanguage(): LanguageCode {
  * @returns Stored language code or null
  */
 export function getStoredLanguage(): LanguageCode | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') {return null;}
 
   const stored = localStorage.getItem('tallow-language');
-  return (stored as LanguageCode) in LANGUAGES ? (stored as LanguageCode) : null;
+  if (!stored) {
+    return null;
+  }
+
+  return isValidLanguage(stored) ? stored : null;
 }
 
 /**
@@ -121,21 +128,12 @@ export function setStoredLanguage(language: LanguageCode): void {
  */
 export function getEffectiveLanguage(): LanguageCode {
   const stored = getStoredLanguage();
-  if (stored) return stored;
+  if (stored) {return stored;}
 
   const detected = detectLanguage();
-  if (detected in LANGUAGES) return detected;
+  if (detected in LANGUAGES) {return detected;}
 
   return DEFAULT_LANGUAGE;
-}
-
-/**
- * Validate language code
- * @param language - Language code to validate
- * @returns true if valid, false otherwise
- */
-export function isValidLanguage(language: string): language is LanguageCode {
-  return language in LANGUAGES;
 }
 
 /**

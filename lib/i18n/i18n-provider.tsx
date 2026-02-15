@@ -120,7 +120,7 @@ interface I18nProviderProps {
  * Detect browser language preference
  */
 function detectBrowserLocale(): Locale {
-  if (typeof window === 'undefined') return DEFAULT_LOCALE;
+  if (typeof window === 'undefined') {return DEFAULT_LOCALE;}
 
   const browserLang = navigator.language || (navigator as any).userLanguage;
 
@@ -128,12 +128,12 @@ function detectBrowserLocale(): Locale {
   const exactMatch = SUPPORTED_LOCALES.find(
     l => l.code === browserLang || l.code === browserLang.toLowerCase()
   );
-  if (exactMatch) return exactMatch.code;
+  if (exactMatch) {return exactMatch.code;}
 
   // Try language code only (e.g., 'en' from 'en-US')
   const langCode = browserLang.split('-')[0];
   const langMatch = SUPPORTED_LOCALES.find(l => l.code.startsWith(langCode));
-  if (langMatch) return langMatch.code;
+  if (langMatch) {return langMatch.code;}
 
   return DEFAULT_LOCALE;
 }
@@ -207,7 +207,7 @@ export function I18nProvider({ children, defaultLocale }: I18nProviderProps) {
    */
   const setLocale = useCallback(
     (newLocale: Locale) => {
-      if (newLocale === locale) return;
+      if (newLocale === locale) {return;}
 
       setLocaleState(newLocale);
 

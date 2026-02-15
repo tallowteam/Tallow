@@ -23,7 +23,7 @@ async function main() {
     let maxBottom = 0;
     cards.forEach(c => {
       const rect = c.getBoundingClientRect();
-      if (rect.bottom > maxBottom) maxBottom = rect.bottom + window.scrollY;
+      if (rect.bottom > maxBottom) {maxBottom = rect.bottom + window.scrollY;}
     });
     return maxBottom;
   });

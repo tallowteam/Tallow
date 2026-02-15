@@ -100,7 +100,7 @@ export class VoiceRecorder {
    * Get supported audio MIME types
    */
   static getSupportedTypes(): string[] {
-    if (typeof MediaRecorder === 'undefined') return [];
+    if (typeof MediaRecorder === 'undefined') {return [];}
 
     const types = [
       'audio/webm;codecs=opus',
@@ -341,7 +341,7 @@ export class VoiceRecorder {
    * Set up audio analysis for level monitoring
    */
   private setupAudioAnalysis(): void {
-    if (!this.audioStream) return;
+    if (!this.audioStream) {return;}
 
     try {
       // Create AudioContext
@@ -364,13 +364,13 @@ export class VoiceRecorder {
    * Start monitoring audio level
    */
   private startAudioLevelMonitoring(): void {
-    if (!this.analyser) return;
+    if (!this.analyser) {return;}
 
     const bufferLength = this.analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
 
     this.audioLevelInterval = setInterval(() => {
-      if (!this.analyser) return;
+      if (!this.analyser) {return;}
 
       // Get time domain data (waveform)
       this.analyser.getByteTimeDomainData(dataArray);
@@ -378,7 +378,7 @@ export class VoiceRecorder {
       // Calculate RMS (Root Mean Square) for audio level
       let sum = 0;
       for (let i = 0; i < bufferLength; i++) {
-        const normalized = (dataArray[i] - 128) / 128; // Normalize to -1 to 1
+        const normalized = ((dataArray[i] ?? 128) - 128) / 128; // Normalize to -1 to 1
         sum += normalized * normalized;
       }
       const rms = Math.sqrt(sum / bufferLength);
@@ -417,14 +417,14 @@ export class VoiceRecorder {
       return preferred;
     }
 
-    return types[0];
+    return types[0] ?? 'audio/webm';
   }
 
   /**
    * Get recording duration
    */
   private getDuration(): number {
-    if (!this.startTime) return 0;
+    if (!this.startTime) {return 0;}
 
     const now = Date.now();
     const elapsed = now - this.startTime;

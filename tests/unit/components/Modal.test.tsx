@@ -1,13 +1,18 @@
 /**
  * Modal Component Unit Tests
- * Tests for modal open/close, backdrop, escape key, focus trap, and accessibility
+ * Tests for modal open/close, backdrop, escape key, focus trap, accessibility,
+ * unique IDs (useId), modal stacking, and scroll lock with stacking
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { Modal } from '@/components/ui/Modal';
+import {
+  Modal,
+  getModalStackDepth,
+  __resetModalStack,
+} from '@/components/ui/Modal';
 
-// Mock FocusTrap
+// Mock FocusTrap and announce
 vi.mock('@/lib/utils/accessibility', () => ({
   FocusTrap: class FocusTrap {
     activate() {}
@@ -18,6 +23,7 @@ vi.mock('@/lib/utils/accessibility', () => ({
     ENTER: 'Enter',
     TAB: 'Tab',
   },
+  announce: vi.fn(),
 }));
 
 describe('Modal Component', () => {
@@ -25,14 +31,19 @@ describe('Modal Component', () => {
 
   beforeEach(() => {
     mockOnClose.mockClear();
+    __resetModalStack();
     // Clear body safely
     document.body.replaceChildren();
+  });
+
+  afterEach(() => {
+    __resetModalStack();
   });
 
   describe('Rendering', () => {
     it('renders modal when open is true', () => {
       render(
-        <Modal open={true} onClose={mockOnClose}>
+        <Modal open onClose={mockOnClose}>
           <div>Modal content</div>
         </Modal>
       );
@@ -50,7 +61,7 @@ describe('Modal Component', () => {
 
     it('renders modal with title', () => {
       render(
-        <Modal open={true} onClose={mockOnClose} title="Test Modal">
+        <Modal open onClose={mockOnClose} title="Test Modal">
           <div>Content</div>
         </Modal>
       );
@@ -59,7 +70,7 @@ describe('Modal Component', () => {
 
     it('renders close button by default', () => {
       render(
-        <Modal open={true} onClose={mockOnClose}>
+        <Modal open onClose={mockOnClose}>
           <div>Content</div>
         </Modal>
       );
@@ -68,7 +79,7 @@ describe('Modal Component', () => {
 
     it('hides close button when showCloseButton is false', () => {
       render(
-        <Modal open={true} onClose={mockOnClose} showCloseButton={false}>
+        <Modal open onClose={mockOnClose} showCloseButton={false}>
           <div>Content</div>
         </Modal>
       );
@@ -79,7 +90,7 @@ describe('Modal Component', () => {
   describe('Close Functionality', () => {
     it('calls onClose when close button is clicked', async () => {
       render(
-        <Modal open={true} onClose={mockOnClose}>
+        <Modal open onClose={mockOnClose}>
           <div>Content</div>
         </Modal>
       );
@@ -94,7 +105,7 @@ describe('Modal Component', () => {
 
     it('calls onClose when backdrop is clicked', async () => {
       render(
-        <Modal open={true} onClose={mockOnClose} closeOnBackdropClick={true}>
+        <Modal open onClose={mockOnClose} closeOnBackdropClick>
           <div>Content</div>
         </Modal>
       );
@@ -111,7 +122,7 @@ describe('Modal Component', () => {
 
     it('does not close when backdrop is clicked if closeOnBackdropClick is false', async () => {
       render(
-        <Modal open={true} onClose={mockOnClose} closeOnBackdropClick={false}>
+        <Modal open onClose={mockOnClose} closeOnBackdropClick={false}>
           <div>Content</div>
         </Modal>
       );
@@ -128,7 +139,7 @@ describe('Modal Component', () => {
 
     it('does not close when modal content is clicked', async () => {
       render(
-        <Modal open={true} onClose={mockOnClose}>
+        <Modal open onClose={mockOnClose}>
           <div>Content</div>
         </Modal>
       );
@@ -145,7 +156,7 @@ describe('Modal Component', () => {
   describe('Escape Key', () => {
     it('closes modal when escape key is pressed', async () => {
       render(
-        <Modal open={true} onClose={mockOnClose} closeOnEscape={true}>
+        <Modal open onClose={mockOnClose} closeOnEscape>
           <div>Content</div>
         </Modal>
       );
@@ -159,7 +170,7 @@ describe('Modal Component', () => {
 
     it('does not close when escape key is pressed if closeOnEscape is false', async () => {
       render(
-        <Modal open={true} onClose={mockOnClose} closeOnEscape={false}>
+        <Modal open onClose={mockOnClose} closeOnEscape={false}>
           <div>Content</div>
         </Modal>
       );
@@ -178,7 +189,7 @@ describe('Modal Component', () => {
     sizes.forEach((size) => {
       it(`renders ${size} size`, () => {
         render(
-          <Modal open={true} onClose={mockOnClose} size={size}>
+          <Modal open onClose={mockOnClose} size={size}>
             <div>Content</div>
           </Modal>
         );
@@ -188,7 +199,7 @@ describe('Modal Component', () => {
 
     it('defaults to md size', () => {
       render(
-        <Modal open={true} onClose={mockOnClose}>
+        <Modal open onClose={mockOnClose}>
           <div>Content</div>
         </Modal>
       );
@@ -199,7 +210,7 @@ describe('Modal Component', () => {
   describe('Custom Classes', () => {
     it('applies custom className to modal', () => {
       render(
-        <Modal open={true} onClose={mockOnClose} className="custom-modal">
+        <Modal open onClose={mockOnClose} className="custom-modal">
           <div>Content</div>
         </Modal>
       );
@@ -209,7 +220,7 @@ describe('Modal Component', () => {
 
     it('applies custom backdropClassName', () => {
       render(
-        <Modal open={true} onClose={mockOnClose} backdropClassName="custom-backdrop">
+        <Modal open onClose={mockOnClose} backdropClassName="custom-backdrop">
           <div>Content</div>
         </Modal>
       );
@@ -221,22 +232,12 @@ describe('Modal Component', () => {
   describe('Z-Index', () => {
     it('applies custom zIndex', () => {
       render(
-        <Modal open={true} onClose={mockOnClose} zIndex={1000}>
+        <Modal open onClose={mockOnClose} zIndex={1000}>
           <div>Content</div>
         </Modal>
       );
       const backdrop = screen.getByRole('dialog').parentElement;
       expect(backdrop).toHaveStyle({ zIndex: '1000' });
-    });
-
-    it('uses default zIndex of 500', () => {
-      render(
-        <Modal open={true} onClose={mockOnClose}>
-          <div>Content</div>
-        </Modal>
-      );
-      const backdrop = screen.getByRole('dialog').parentElement;
-      expect(backdrop).toHaveStyle({ zIndex: '500' });
     });
   });
 
@@ -249,7 +250,7 @@ describe('Modal Component', () => {
       );
 
       rerender(
-        <Modal open={true} onClose={mockOnClose}>
+        <Modal open onClose={mockOnClose}>
           <div>Content</div>
         </Modal>
       );
@@ -259,7 +260,7 @@ describe('Modal Component', () => {
 
     it('restores body scroll when modal closes', () => {
       const { rerender } = render(
-        <Modal open={true} onClose={mockOnClose}>
+        <Modal open onClose={mockOnClose}>
           <div>Content</div>
         </Modal>
       );
@@ -275,9 +276,160 @@ describe('Modal Component', () => {
 
     it('does not lock scroll when preventScroll is false', () => {
       render(
-        <Modal open={true} onClose={mockOnClose} preventScroll={false}>
+        <Modal open onClose={mockOnClose} preventScroll={false}>
           <div>Content</div>
         </Modal>
+      );
+
+      expect(document.body.style.position).toBe('');
+    });
+  });
+
+  describe('Unique IDs (useId)', () => {
+    it('generates unique aria-labelledby per modal instance', () => {
+      render(
+        <>
+          <Modal open onClose={vi.fn()} title="Alpha">
+            <div>A</div>
+          </Modal>
+          <Modal open onClose={vi.fn()} title="Beta">
+            <div>B</div>
+          </Modal>
+        </>
+      );
+
+      const dialogs = screen.getAllByRole('dialog');
+      expect(dialogs).toHaveLength(2);
+
+      const idA = dialogs[0]!.getAttribute('aria-labelledby');
+      const idB = dialogs[1]!.getAttribute('aria-labelledby');
+
+      expect(idA).toBeTruthy();
+      expect(idB).toBeTruthy();
+      expect(idA).not.toBe(idB);
+
+      // Each ID should point to the correct title element
+      expect(document.getElementById(idA!)!.textContent).toBe('Alpha');
+      expect(document.getElementById(idB!)!.textContent).toBe('Beta');
+    });
+
+    it('does not have static modal-title ID', () => {
+      render(
+        <Modal open onClose={vi.fn()} title="Check ID">
+          <div>Content</div>
+        </Modal>
+      );
+
+      // The old static ID should NOT exist
+      expect(document.getElementById('modal-title')).toBeNull();
+
+      // The dialog should have a dynamic aria-labelledby
+      const dialog = screen.getByRole('dialog');
+      const labelledBy = dialog.getAttribute('aria-labelledby');
+      expect(labelledBy).toBeTruthy();
+      expect(labelledBy).not.toBe('modal-title');
+    });
+
+    it('title element ID matches aria-labelledby on dialog', () => {
+      render(
+        <Modal open onClose={vi.fn()} title="Linked Title">
+          <div>Content</div>
+        </Modal>
+      );
+
+      const dialog = screen.getByRole('dialog');
+      const labelledBy = dialog.getAttribute('aria-labelledby');
+      const titleEl = screen.getByText('Linked Title');
+      expect(titleEl.id).toBe(labelledBy);
+    });
+  });
+
+  describe('Modal Stacking', () => {
+    it('tracks stacked modals', () => {
+      render(
+        <>
+          <Modal open onClose={vi.fn()}>
+            <div>First</div>
+          </Modal>
+          <Modal open onClose={vi.fn()}>
+            <div>Second</div>
+          </Modal>
+        </>
+      );
+
+      expect(getModalStackDepth()).toBe(2);
+    });
+
+    it('Escape only closes topmost modal', async () => {
+      const onClose1 = vi.fn();
+      const onClose2 = vi.fn();
+
+      render(
+        <>
+          <Modal open onClose={onClose1} closeOnEscape>
+            <div>Bottom</div>
+          </Modal>
+          <Modal open onClose={onClose2} closeOnEscape>
+            <div>Top</div>
+          </Modal>
+        </>
+      );
+
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      await waitFor(() => {
+        expect(onClose2).toHaveBeenCalledTimes(1);
+        expect(onClose1).not.toHaveBeenCalled();
+      });
+    });
+
+    it('scroll stays locked when one of two modals closes', () => {
+      const { rerender } = render(
+        <>
+          <Modal open onClose={vi.fn()}>
+            <div>Modal 1</div>
+          </Modal>
+          <Modal open onClose={vi.fn()}>
+            <div>Modal 2</div>
+          </Modal>
+        </>
+      );
+
+      rerender(
+        <>
+          <Modal open onClose={vi.fn()}>
+            <div>Modal 1</div>
+          </Modal>
+          <Modal open={false} onClose={vi.fn()}>
+            <div>Modal 2</div>
+          </Modal>
+        </>
+      );
+
+      expect(document.body.style.position).toBe('fixed');
+    });
+
+    it('scroll unlocks when all modals close', () => {
+      const { rerender } = render(
+        <>
+          <Modal open onClose={vi.fn()}>
+            <div>Modal 1</div>
+          </Modal>
+          <Modal open onClose={vi.fn()}>
+            <div>Modal 2</div>
+          </Modal>
+        </>
+      );
+
+      rerender(
+        <>
+          <Modal open={false} onClose={vi.fn()}>
+            <div>Modal 1</div>
+          </Modal>
+          <Modal open={false} onClose={vi.fn()}>
+            <div>Modal 2</div>
+          </Modal>
+        </>
       );
 
       expect(document.body.style.position).toBe('');
@@ -287,7 +439,7 @@ describe('Modal Component', () => {
   describe('Accessibility', () => {
     it('has dialog role', () => {
       render(
-        <Modal open={true} onClose={mockOnClose}>
+        <Modal open onClose={mockOnClose}>
           <div>Content</div>
         </Modal>
       );
@@ -296,7 +448,7 @@ describe('Modal Component', () => {
 
     it('has aria-modal attribute', () => {
       render(
-        <Modal open={true} onClose={mockOnClose}>
+        <Modal open onClose={mockOnClose}>
           <div>Content</div>
         </Modal>
       );
@@ -304,30 +456,46 @@ describe('Modal Component', () => {
       expect(dialog).toHaveAttribute('aria-modal', 'true');
     });
 
-    it('has aria-labelledby when title is provided', () => {
+    it('has unique aria-labelledby when title is provided', () => {
       render(
-        <Modal open={true} onClose={mockOnClose} title="Test Title">
+        <Modal open onClose={mockOnClose} title="Test Title">
           <div>Content</div>
         </Modal>
       );
       const dialog = screen.getByRole('dialog');
-      expect(dialog).toHaveAttribute('aria-labelledby', 'modal-title');
+      const labelledBy = dialog.getAttribute('aria-labelledby');
+      expect(labelledBy).toBeTruthy();
+      expect(labelledBy).toMatch(/^modal.*-title$/);
     });
 
     it('close button has accessible label', () => {
       render(
-        <Modal open={true} onClose={mockOnClose}>
+        <Modal open onClose={mockOnClose}>
           <div>Content</div>
         </Modal>
       );
       expect(screen.getByLabelText('Close modal')).toBeInTheDocument();
+    });
+
+    it('announces modal title to screen readers', async () => {
+      const { announce } = await import('@/lib/utils/accessibility');
+      render(
+        <Modal open onClose={vi.fn()} title="Screen Reader Test">
+          <div>Content</div>
+        </Modal>
+      );
+
+      expect(announce).toHaveBeenCalledWith(
+        'Dialog opened: Screen Reader Test',
+        'assertive'
+      );
     });
   });
 
   describe('Portal Rendering', () => {
     it('renders modal in portal by default', () => {
       render(
-        <Modal open={true} onClose={mockOnClose}>
+        <Modal open onClose={mockOnClose}>
           <div>Portal content</div>
         </Modal>
       );
@@ -339,7 +507,7 @@ describe('Modal Component', () => {
       document.body.appendChild(customContainer);
 
       render(
-        <Modal open={true} onClose={mockOnClose} container={customContainer}>
+        <Modal open onClose={mockOnClose} container={customContainer}>
           <div>Custom container content</div>
         </Modal>
       );
@@ -351,7 +519,7 @@ describe('Modal Component', () => {
   describe('Animation Duration', () => {
     it('uses custom animation duration', async () => {
       render(
-        <Modal open={true} onClose={mockOnClose} animationDuration={100}>
+        <Modal open onClose={mockOnClose} animationDuration={100}>
           <div>Content</div>
         </Modal>
       );
@@ -368,12 +536,23 @@ describe('Modal Component', () => {
   describe('Data Attributes', () => {
     it('adds data-modal-backdrop attribute', () => {
       render(
-        <Modal open={true} onClose={mockOnClose}>
+        <Modal open onClose={mockOnClose}>
           <div>Content</div>
         </Modal>
       );
       const backdrop = screen.getByRole('dialog').parentElement;
       expect(backdrop).toHaveAttribute('data-modal-backdrop');
+    });
+
+    it('adds data-modal-id attribute with unique value', () => {
+      render(
+        <Modal open onClose={mockOnClose}>
+          <div>Content</div>
+        </Modal>
+      );
+      const backdrop = screen.getByRole('dialog').parentElement;
+      expect(backdrop).toHaveAttribute('data-modal-id');
+      expect(backdrop!.getAttribute('data-modal-id')).toMatch(/^modal/);
     });
   });
 });

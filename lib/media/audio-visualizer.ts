@@ -94,8 +94,6 @@ export async function getWaveformData(
   audioBlob: Blob,
   options: WaveformOptions = {}
 ): Promise<WaveformData> {
-  const { sampleCount = DEFAULT_SAMPLE_COUNT, channel = -1 } = options;
-
   try {
     const arrayBuffer = await audioBlob.arrayBuffer();
     const audioContext = new OfflineAudioContext(1, 44100, 44100);
@@ -137,7 +135,7 @@ function extractPeaks(
     // Find max absolute amplitude in this segment
     let peak = 0;
     for (let j = start; j < end; j++) {
-      const amplitude = Math.abs(channelData[j]);
+      const amplitude = Math.abs(channelData[j] ?? 0);
       if (amplitude > peak) {
         peak = amplitude;
       }
@@ -166,7 +164,7 @@ function getChannelData(audioBuffer: AudioBuffer, channel: number): Float32Array
   for (let ch = 0; ch < channelCount; ch++) {
     const channelData = audioBuffer.getChannelData(ch);
     for (let i = 0; i < length; i++) {
-      averaged[i] += channelData[i] / channelCount;
+      averaged[i] = (averaged[i] ?? 0) + (channelData[i] ?? 0) / channelCount;
     }
   }
 
@@ -177,7 +175,7 @@ function getChannelData(audioBuffer: AudioBuffer, channel: number): Float32Array
  * Smooth waveform using moving average
  */
 function smoothWaveform(peaks: number[], windowSize: number): number[] {
-  if (windowSize <= 1) return peaks;
+  if (windowSize <= 1) {return peaks;}
 
   const smoothed: number[] = [];
   const halfWindow = Math.floor(windowSize / 2);
@@ -189,7 +187,7 @@ function smoothWaveform(peaks: number[], windowSize: number): number[] {
     for (let j = -halfWindow; j <= halfWindow; j++) {
       const index = i + j;
       if (index >= 0 && index < peaks.length) {
-        sum += peaks[index];
+        sum += peaks[index] ?? 0;
         count++;
       }
     }
@@ -219,7 +217,7 @@ export function createWaveformPath(
   height: number,
   mirror = true
 ): string {
-  if (peaks.length === 0) return '';
+  if (peaks.length === 0) {return '';}
 
   const step = width / peaks.length;
   const midHeight = height / 2;
@@ -229,7 +227,7 @@ export function createWaveformPath(
   // Top half
   for (let i = 0; i < peaks.length; i++) {
     const x = i * step;
-    const y = midHeight - peaks[i] * midHeight;
+    const y = midHeight - (peaks[i] ?? 0) * midHeight;
     path += `L ${x} ${y} `;
   }
 
@@ -237,7 +235,7 @@ export function createWaveformPath(
   if (mirror) {
     for (let i = peaks.length - 1; i >= 0; i--) {
       const x = i * step;
-      const y = midHeight + peaks[i] * midHeight;
+      const y = midHeight + (peaks[i] ?? 0) * midHeight;
       path += `L ${x} ${y} `;
     }
   } else {
@@ -279,7 +277,7 @@ export function createWaveformBars(
 export function processAudioLevel(
   level: number,
   sensitivity = 1.0,
-  smoothing = 0.8
+  _smoothing = 0.8
 ): number {
   // Apply sensitivity multiplier
   const adjusted = level * sensitivity;

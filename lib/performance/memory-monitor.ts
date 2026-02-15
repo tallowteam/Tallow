@@ -59,7 +59,7 @@ export interface MemoryStats {
 // ============================================================================
 
 let memoryLimit: number | null = null;
-let memoryHistory: number[] = [];
+const memoryHistory: number[] = [];
 const MAX_HISTORY = 20;
 
 /**
@@ -129,7 +129,7 @@ export function getMemoryUsage(): MemoryUsage | null {
  */
 export function isMemoryPressured(): boolean {
   const memory = getMemoryUsage();
-  if (!memory || !memory.supported) return false;
+  if (!memory || !memory.supported) {return false;}
 
   // Pressured if using > 80% of heap
   return memory.usagePercent > 0.8;
@@ -339,7 +339,7 @@ export async function performMemoryCleanup(
   if (forceGC && typeof globalThis !== 'undefined' && 'gc' in globalThis) {
     try {
       (globalThis as { gc: () => void }).gc();
-    } catch (error) {
+    } catch {
       // GC not available
     }
   }
@@ -391,12 +391,12 @@ export async function autoCleanup(): Promise<void> {
  * Analyzes memory growth trend over time
  */
 export function detectMemoryLeak(): boolean {
-  if (memoryHistory.length < 10) return false;
+  if (memoryHistory.length < 10) {return false;}
 
   // Calculate trend: is memory consistently growing?
   let growthCount = 0;
   for (let i = 1; i < memoryHistory.length; i++) {
-    if (memoryHistory[i] > memoryHistory[i - 1]) {
+    if ((memoryHistory[i] ?? 0) > (memoryHistory[i - 1] ?? 0)) {
       growthCount++;
     }
   }
@@ -410,17 +410,20 @@ export function detectMemoryLeak(): boolean {
  * Get memory trend
  */
 export function getMemoryTrend(): 'increasing' | 'stable' | 'decreasing' {
-  if (memoryHistory.length < 5) return 'stable';
+  if (memoryHistory.length < 5) {return 'stable';}
 
   const recent = memoryHistory.slice(-5);
   const avg = recent.reduce((sum, val) => sum + val, 0) / recent.length;
   const first = recent[0];
   const last = recent[recent.length - 1];
+  if (first === undefined || last === undefined) {
+    return 'stable';
+  }
 
   const change = (last - first) / avg;
 
-  if (change > 0.1) return 'increasing';
-  if (change < -0.1) return 'decreasing';
+  if (change > 0.1) {return 'increasing';}
+  if (change < -0.1) {return 'decreasing';}
   return 'stable';
 }
 
@@ -563,7 +566,7 @@ export function logMemoryStatus(): void {
  * Format bytes to human-readable string
  */
 function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
+  if (bytes === 0) {return '0 B';}
 
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];

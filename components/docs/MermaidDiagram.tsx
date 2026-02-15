@@ -32,7 +32,6 @@ export function MermaidDiagram({
         setError(null);
 
         // Import mermaid dynamically
-        // @ts-expect-error mermaid is an optional peer dependency
         const mermaidModule = await import('mermaid');
         const mermaid = mermaidModule.default;
 
@@ -45,7 +44,7 @@ export function MermaidDiagram({
           flowchart: {
             htmlLabels: true,
             useMaxWidth: true,
-            padding: '16',
+            padding: 16,
           },
           sequence: {
             useMaxWidth: true,

@@ -102,7 +102,7 @@ export function generateVisualCodeSVG(
   // Grid cells
   for (let y = 0; y < gridSize; y++) {
     for (let x = 0; x < gridSize; x++) {
-      const color = grid[y][x];
+      const color = grid[y]?.[x] ?? '#000000';
       const cx = padding + x * cellSize + cellSize / 2;
       const cy = padding + y * cellSize + cellSize / 2;
       const radius = cellSize * 0.4;
@@ -187,7 +187,7 @@ export function generateEnhancedVisualCode(
         continue;
       }
 
-      const color = grid[y][x];
+      const color = grid[y]?.[x] ?? '#000000';
       const cx = padding + x * cellSize + cellSize / 2;
       const cy = padding + y * cellSize + cellSize / 2;
       const radius = cellSize * 0.35;

@@ -100,6 +100,7 @@ export async function detectBarcodesManual(
 
     // Get image data
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    void imageData;
 
     // TODO: Implement QR decoding logic here
     // For now, this is a placeholder that returns empty results

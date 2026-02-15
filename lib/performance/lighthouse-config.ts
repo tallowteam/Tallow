@@ -148,7 +148,7 @@ export const RELAXED_LIGHTHOUSE_TARGETS: LighthouseTargets = {
 // CORE WEB VITALS TRACKING
 // ============================================================================
 
-let metricsCache: CoreWebVitalsMetrics = {};
+const metricsCache: CoreWebVitalsMetrics = {};
 let observers: PerformanceObserver[] = [];
 
 /**
@@ -287,7 +287,7 @@ async function collectMetrics(): Promise<void> {
  * Calculate derived metrics (TTI, TBT, SI)
  */
 function calculateDerivedMetrics(): void {
-  if (typeof performance === 'undefined') return;
+  if (typeof performance === 'undefined') {return;}
 
   // Time to Interactive (TTI) - approximate using navigation timing
   const navEntries = performance.getEntriesByType(
@@ -295,7 +295,9 @@ function calculateDerivedMetrics(): void {
   ) as PerformanceNavigationTiming[];
   if (navEntries.length > 0) {
     const nav = navEntries[0];
-    metricsCache.tti = nav.domInteractive - nav.fetchStart;
+    if (nav) {
+      metricsCache.tti = nav.domInteractive - nav.fetchStart;
+    }
   }
 
   // Total Blocking Time (TBT) - sum of long task durations
@@ -373,7 +375,7 @@ function calculatePerformanceScore(
 
   // Weighted average
   const totalWeight = weights.reduce((sum, w) => sum + w, 0);
-  const weightedSum = scores.reduce((sum, score, i) => sum + score * weights[i], 0);
+  const weightedSum = scores.reduce((sum, score, i) => sum + score * (weights[i] ?? 0), 0);
 
   return totalWeight > 0 ? Math.round(weightedSum / totalWeight) : 0;
 }
@@ -406,9 +408,9 @@ function getMetricScore(
 function getPerformanceRating(
   score: number
 ): 'excellent' | 'good' | 'needs-improvement' | 'poor' {
-  if (score >= 95) return 'excellent';
-  if (score >= 90) return 'good';
-  if (score >= 50) return 'needs-improvement';
+  if (score >= 95) {return 'excellent';}
+  if (score >= 90) {return 'good';}
+  if (score >= 50) {return 'needs-improvement';}
   return 'poor';
 }
 
@@ -525,9 +527,9 @@ function getSeverity(
   const poorThreshold = target * (1 + poorMultiplier);
   const criticalThreshold = poorThreshold * 1.5;
 
-  if (value > criticalThreshold) return 'critical';
-  if (value > poorThreshold) return 'high';
-  if (value > target * 1.2) return 'medium';
+  if (value > criticalThreshold) {return 'critical';}
+  if (value > poorThreshold) {return 'high';}
+  if (value > target * 1.2) {return 'medium';}
   return 'low';
 }
 
@@ -539,7 +541,7 @@ function getSeverity(
  * Generate performance optimization opportunities
  */
 function generateOpportunities(
-  metrics: CoreWebVitalsMetrics,
+  _metrics: CoreWebVitalsMetrics,
   issues: PerformanceIssue[]
 ): PerformanceOpportunity[] {
   const opportunities: PerformanceOpportunity[] = [];
@@ -631,7 +633,7 @@ function collectDiagnostics(): PerformanceDiagnostics {
     mainThreadWork: 0,
   };
 
-  if (typeof performance === 'undefined') return diagnostics;
+  if (typeof performance === 'undefined') {return diagnostics;}
 
   // Get LCP element
   const lcpEntries = performance.getEntriesByType('largest-contentful-paint');
@@ -670,10 +672,10 @@ function collectDiagnostics(): PerformanceDiagnostics {
  * Get CSS selector for element
  */
 function getElementSelector(element: Element): string {
-  if (element.id) return `#${element.id}`;
+  if (element.id) {return `#${element.id}`;}
   if (element.className) {
     const classes = element.className.split(' ').filter(Boolean);
-    if (classes.length > 0) return `.${classes[0]}`;
+    if (classes.length > 0) {return `.${classes[0]}`;}
   }
   return element.tagName.toLowerCase();
 }

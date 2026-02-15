@@ -21,39 +21,49 @@ const sections: SidebarSection[] = [
     links: [
       { title: 'Introduction', href: '/docs' },
       { title: 'Quick Start', href: '/docs/guides/getting-started' },
-      { title: 'Installation', href: '/docs/guides' },
+      { title: 'Help Center', href: '/docs/help' },
     ],
   },
   {
-    title: 'API',
+    title: 'Transfer Guides',
     links: [
-      { title: 'REST API', href: '/docs/api' },
-      { title: 'WebSocket Events', href: '/docs/api' },
-      { title: 'Authentication', href: '/docs/api' },
+      { title: 'Local Network Transfer', href: '/docs/guides/local-transfer' },
+      { title: 'Internet P2P Transfer', href: '/docs/guides/internet-transfer' },
+      { title: 'Room System', href: '/docs/guides/rooms' },
+      { title: 'Friends & Contacts', href: '/docs/guides/friends' },
     ],
   },
   {
-    title: 'Architecture',
+    title: 'Features',
     links: [
-      { title: 'System Overview', href: '/docs/architecture' },
-      { title: 'Crypto Design', href: '/docs/architecture' },
-      { title: 'Transfer Flow', href: '/docs/architecture' },
+      { title: 'Advanced Features', href: '/docs/guides/advanced-features' },
+      { title: 'Keyboard Shortcuts', href: '/docs/guides/keyboard-shortcuts' },
+      { title: 'Settings', href: '/docs/guides/settings' },
+      { title: 'CLI Tool', href: '/docs/guides/cli' },
     ],
   },
   {
-    title: 'Guides',
+    title: 'Security & Privacy',
     links: [
-      { title: 'File Transfer', href: '/docs/guides' },
-      { title: 'Security Best Practices', href: '/docs/guides' },
-      { title: 'Deployment', href: '/docs/guides' },
+      { title: 'Security Guide', href: '/docs/guides/security' },
+      { title: 'Privacy Features', href: '/docs/guides/privacy' },
     ],
   },
   {
-    title: 'Hooks & Components',
+    title: 'Platform',
     links: [
+      { title: 'Mobile App', href: '/docs/guides/mobile' },
+      { title: 'Self-Hosting', href: '/docs/guides/self-hosting' },
+      { title: 'Troubleshooting', href: '/docs/guides/troubleshooting' },
+    ],
+  },
+  {
+    title: 'Developer',
+    links: [
+      { title: 'API Reference', href: '/docs/api' },
+      { title: 'Architecture', href: '/docs/architecture' },
       { title: 'React Hooks', href: '/docs/hooks' },
-      { title: 'UI Components', href: '/docs/hooks' },
-      { title: 'Utilities', href: '/docs/hooks' },
+      { title: 'Playground', href: '/docs/playground' },
     ],
   },
 ];

@@ -33,12 +33,6 @@ const ContactSchema = z.object({
   notes: z.string().max(500).optional(),
 });
 
-const _ContactListSchema = z.object({
-  contacts: z.array(ContactSchema),
-  /** Encrypted blob for server-side backup (optional) */
-  encryptedPayload: z.string().optional(),
-});
-
 const DeleteContactSchema = z.object({
   deviceId: z.string().min(1, 'Device ID is required'),
 });

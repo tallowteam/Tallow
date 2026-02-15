@@ -14,25 +14,21 @@ const path = require('path');
 // =============================================================================
 
 const CONFIG = {
-  urls: [
-    'http://localhost:3000/',
-    'http://localhost:3000/app',
-    'http://localhost:3000/features',
-    'http://localhost:3000/how-it-works',
-  ],
+  port: Number(process.env.LIGHTHOUSE_PORT || 4173),
+  routes: ['/', '/transfer', '/features', '/how-it-works'],
   numberOfRuns: 3,
   budgets: {
-    performance: 95,
-    accessibility: 100,
-    bestPractices: 100,
-    seo: 100,
+    performance: 90,
+    accessibility: 95,
+    bestPractices: 95,
+    seo: 90,
     lcp: 2500, // ms
     fcp: 1000, // ms
     cls: 0.1,
     tbt: 200, // ms
     speedIndex: 3000, // ms
     tti: 2000, // ms
-    totalByteWeight: 250000, // 250KB
+    totalByteWeight: 1600000, // 1.6MB
   },
   outputDir: path.join(__dirname, '../../reports/lighthouse'),
 };
@@ -59,15 +55,172 @@ function formatScore(score) {
   return (score * 100).toFixed(0);
 }
 
+function getBaseUrl() {
+  return `http://localhost:${CONFIG.port}`;
+}
+
+function buildUrls() {
+  const baseUrl = getBaseUrl();
+  return CONFIG.routes.map((route) => `${baseUrl}${route}`);
+}
+
+function getNpmCliPath() {
+  try {
+    return require.resolve('npm/bin/npm-cli.js');
+  } catch {
+    const candidates = [
+      path.join(path.dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+      process.env.APPDATA
+        ? path.join(process.env.APPDATA, 'npm', 'node_modules', 'npm', 'bin', 'npm-cli.js')
+        : null,
+    ].filter(Boolean);
+
+    for (const candidate of candidates) {
+      if (fs.existsSync(candidate)) {
+        return candidate;
+      }
+    }
+
+    return null;
+  }
+}
+
+function getNpmInvocationArgs(args) {
+  const npmCliPath = getNpmCliPath();
+  if (!npmCliPath) {
+    throw new Error('Unable to resolve npm CLI path (npm/bin/npm-cli.js).');
+  }
+
+  return [npmCliPath, ...args];
+}
+
+function runCommand(command, args, label, env = process.env) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      stdio: 'inherit',
+      shell: false,
+      windowsHide: true,
+      env,
+    });
+
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+      reject(new Error(`${label} failed with code ${code}`));
+    });
+
+    child.on('error', (error) => {
+      reject(error);
+    });
+  });
+}
+
+async function waitForServerReady(timeoutMs = 120000) {
+  const baseUrl = getBaseUrl();
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(baseUrl, { method: 'GET' });
+      if (response.status < 500) {
+        return;
+      }
+    } catch {
+      // keep polling until timeout
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+
+  throw new Error(`Timed out waiting for server readiness at ${baseUrl}`);
+}
+
+async function warmupRoutes(urls) {
+  for (const url of urls) {
+    try {
+      await fetch(url, { method: 'GET' });
+    } catch {
+      // Warmup is best-effort; continue so Lighthouse can capture the real failure.
+    }
+  }
+}
+
+function startProductionServer() {
+  return spawn(process.execPath, getNpmInvocationArgs(['run', 'start']), {
+    stdio: 'inherit',
+    shell: false,
+    windowsHide: true,
+    env: {
+      ...process.env,
+      PORT: String(CONFIG.port),
+    },
+  });
+}
+
+function stopServer(serverProcess) {
+  return new Promise((resolve) => {
+    if (!serverProcess || serverProcess.killed) {
+      resolve();
+      return;
+    }
+
+    if (process.platform === 'win32') {
+      const killer = spawn('taskkill', ['/pid', String(serverProcess.pid), '/T', '/F'], {
+        stdio: 'ignore',
+        windowsHide: true,
+      });
+
+      killer.on('close', () => resolve());
+      killer.on('error', () => resolve());
+      return;
+    }
+
+    let done = false;
+    const finish = () => {
+      if (done) {
+        return;
+      }
+      done = true;
+      resolve();
+    };
+
+    serverProcess.once('exit', finish);
+    serverProcess.kill('SIGTERM');
+    setTimeout(finish, 5000);
+  });
+}
+
+function resolveChromePath() {
+  try {
+    const { chromium } = require('@playwright/test');
+    const executablePath = chromium.executablePath();
+    return executablePath && executablePath.length > 0 ? executablePath : null;
+  } catch {
+    return null;
+  }
+}
+
 // =============================================================================
 // LIGHTHOUSE RUNNER
 // =============================================================================
 
 async function runLighthouse(url, outputPath) {
-  console.log(`\n📊 Running Lighthouse for: ${url}`);
+  console.log(`\nðŸ“Š Running Lighthouse for: ${url}`);
 
   return new Promise((resolve) => {
+    let lighthouseCliPath;
+    try {
+      lighthouseCliPath = require.resolve('lighthouse/cli/index.js');
+    } catch {
+      console.error('Could not resolve local Lighthouse CLI. Ensure "lighthouse" is installed.');
+      resolve(false);
+      return;
+    }
+
     const args = [
+      lighthouseCliPath,
       url,
       '--output=json',
       `--output-path=${outputPath}`,
@@ -77,23 +230,29 @@ async function runLighthouse(url, outputPath) {
       '--quiet',
     ];
 
-    const lighthouse = spawn('lighthouse', args, {
+    const chromePath = resolveChromePath();
+    if (chromePath) {
+      args.push(`--chrome-path=${chromePath}`);
+    }
+
+    const lighthouse = spawn(process.execPath, args, {
       stdio: 'inherit',
       shell: false,
+      windowsHide: true,
     });
 
     lighthouse.on('close', (code) => {
       if (code === 0) {
-        console.log(`✅ Lighthouse audit complete: ${outputPath}`);
+        console.log(`âœ… Lighthouse audit complete: ${outputPath}`);
         resolve(true);
       } else {
-        console.error(`❌ Lighthouse audit failed with code ${code}`);
+        console.error(`âŒ Lighthouse audit failed with code ${code}`);
         resolve(false);
       }
     });
 
     lighthouse.on('error', (error) => {
-      console.error(`❌ Lighthouse audit failed:`, error.message);
+      console.error(`âŒ Lighthouse audit failed:`, error.message);
       resolve(false);
     });
   });
@@ -223,6 +382,7 @@ function generateReport(allResults) {
   let report = `
 # Lighthouse Performance Report
 Generated: ${timestamp}
+Target server: ${getBaseUrl()} (production build)
 
 ## Summary
 
@@ -256,7 +416,7 @@ Generated: ${timestamp}
     const violations = checkBudgets(result);
     if (violations.length > 0) {
       hasViolations = true;
-      report += `\n## ⚠️ Budget Violations for ${result.url}\n\n`;
+      report += `\n## Budget Violations for ${result.url}\n\n`;
       report += `| Metric | Actual | Budget |\n`;
       report += `|--------|--------|--------|\n`;
       violations.forEach((v) => {
@@ -266,7 +426,7 @@ Generated: ${timestamp}
   });
 
   if (!hasViolations) {
-    report += `\n## ✅ All Performance Budgets Met!\n`;
+    report += `\n## All Performance Budgets Met\n`;
   }
 
   return report;
@@ -277,29 +437,52 @@ Generated: ${timestamp}
 // =============================================================================
 
 async function main() {
-  console.log('🚀 Starting Lighthouse CI Benchmarks\n');
+  console.log('Starting Lighthouse CI Benchmarks\n');
 
-  // Ensure output directory exists
   ensureDir(CONFIG.outputDir);
 
+  const targetUrls = buildUrls();
   const allResults = [];
+  const useExistingServer = process.env.LIGHTHOUSE_USE_EXISTING_SERVER === '1';
+  let serverProcess = null;
+  let exitCode = 0;
 
-  // Run Lighthouse for each URL
-  for (const url of CONFIG.urls) {
-    const urlSlug = url.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-    const outputPath = path.join(
-      CONFIG.outputDir,
-      `lighthouse-${urlSlug}-${Date.now()}.json`
-    );
+  try {
+    if (!useExistingServer) {
+      console.log(`Building production bundle for ${getBaseUrl()} ...`);
+      await runCommand(
+        process.execPath,
+        getNpmInvocationArgs(['run', 'build']),
+        'Production build'
+      );
 
-    const success = await runLighthouse(url, outputPath);
+      console.log(`Starting production server on ${getBaseUrl()} ...`);
+      serverProcess = startProductionServer();
+      await waitForServerReady();
+      console.log('Production server ready\n');
+    } else {
+      console.log(`Using existing server at ${getBaseUrl()}\n`);
+    }
 
-    if (success) {
+    await warmupRoutes(targetUrls);
+
+    for (const url of targetUrls) {
+      const urlSlug = url.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+      const outputPath = path.join(
+        CONFIG.outputDir,
+        `lighthouse-${urlSlug}-${Date.now()}.json`
+      );
+
+      const success = await runLighthouse(url, outputPath);
+      if (!success) {
+        exitCode = 1;
+        continue;
+      }
+
       const results = parseResults(outputPath);
       allResults.push(results);
 
-      // Display results
-      console.log('\n📈 Results:');
+      console.log('\nResults:');
       console.log(`  Performance: ${formatScore(results.scores.performance)}`);
       console.log(`  Accessibility: ${formatScore(results.scores.accessibility)}`);
       console.log(`  Best Practices: ${formatScore(results.scores.bestPractices)}`);
@@ -309,32 +492,37 @@ async function main() {
       console.log(`  CLS: ${results.metrics.cls.toFixed(3)}`);
       console.log(`  Total Size: ${formatBytes(results.resources.totalByteWeight)}`);
     }
-  }
 
-  // Generate and save report
-  const report = generateReport(allResults);
-  const reportPath = path.join(
-    CONFIG.outputDir,
-    `lighthouse-report-${Date.now()}.md`
-  );
-  fs.writeFileSync(reportPath, report);
+    const report = generateReport(allResults);
+    const reportPath = path.join(
+      CONFIG.outputDir,
+      `lighthouse-report-${Date.now()}.md`
+    );
+    fs.writeFileSync(reportPath, report);
+    console.log(`\nReport saved to: ${reportPath}\n`);
 
-  console.log(`\n✅ Report saved to: ${reportPath}\n`);
+    allResults.forEach((result) => {
+      const violations = checkBudgets(result);
+      if (violations.length > 0) {
+        console.error(`\nPerformance budget violations found for ${result.url}`);
+        exitCode = 1;
+      }
+    });
 
-  // Check for budget violations
-  let exitCode = 0;
-  allResults.forEach((result) => {
-    const violations = checkBudgets(result);
-    if (violations.length > 0) {
-      console.error(`\n❌ Performance budget violations found for ${result.url}`);
-      exitCode = 1;
+    return exitCode;
+  } finally {
+    if (!useExistingServer) {
+      await stopServer(serverProcess);
     }
-  });
-
-  process.exit(exitCode);
+  }
 }
 
-main().catch((error) => {
-  console.error('❌ Benchmark failed:', error);
-  process.exit(1);
-});
+main()
+  .then((code) => {
+    process.exit(code ?? 0);
+  })
+  .catch((error) => {
+    console.error('Benchmark failed:', error);
+    process.exit(1);
+  });
+

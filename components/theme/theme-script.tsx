@@ -5,7 +5,14 @@ export function ThemeScript() {
     (function() {
       function getTheme() {
         const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark' || savedTheme === 'light' || savedTheme === 'high-contrast') {
+        if (
+          savedTheme === 'dark' ||
+          savedTheme === 'light' ||
+          savedTheme === 'forest' ||
+          savedTheme === 'ocean' ||
+          savedTheme === 'high-contrast' ||
+          savedTheme === 'colorblind'
+        ) {
           return savedTheme;
         }
         return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -18,9 +25,6 @@ export function ThemeScript() {
   `;
 
   return (
-    <script
-      dangerouslySetInnerHTML={{ __html: script }}
-      suppressHydrationWarning
-    />
+    <script suppressHydrationWarning>{script}</script>
   );
 }

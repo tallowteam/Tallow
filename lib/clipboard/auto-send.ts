@@ -127,16 +127,18 @@ async function handleFilePaste(
       return;
     }
 
-    // Check if confirmation is required
-    if (config.confirmBeforeSend && callbacks.onConfirmationRequired) {
-      const confirmed = await callbacks.onConfirmationRequired(
-        validFiles,
-        config.targetDeviceId
-      );
+    // Clipboard sends require explicit per-send consent.
+    if (!callbacks.onConfirmationRequired) {
+      return;
+    }
 
-      if (!confirmed) {
-        return;
-      }
+    const confirmed = await callbacks.onConfirmationRequired(
+      validFiles,
+      config.targetDeviceId
+    );
+
+    if (!confirmed) {
+      return;
     }
 
     // Send files
@@ -170,16 +172,18 @@ async function handleImagePaste(
       type: blob.type || 'image/png',
     });
 
-    // Check if confirmation is required
-    if (config.confirmBeforeSend && callbacks.onConfirmationRequired) {
-      const confirmed = await callbacks.onConfirmationRequired(
-        [file],
-        config.targetDeviceId
-      );
+    // Clipboard sends require explicit per-send consent.
+    if (!callbacks.onConfirmationRequired) {
+      return;
+    }
 
-      if (!confirmed) {
-        return;
-      }
+    const confirmed = await callbacks.onConfirmationRequired(
+      [file],
+      config.targetDeviceId
+    );
+
+    if (!confirmed) {
+      return;
     }
 
     // Send image
@@ -220,16 +224,18 @@ async function handleTextPaste(
       throw new Error(`Text size exceeds maximum (${formatBytes(config.maxFileSize)})`);
     }
 
-    // Check if confirmation is required
-    if (config.confirmBeforeSend && callbacks.onConfirmationRequired) {
-      const confirmed = await callbacks.onConfirmationRequired(
-        [file],
-        config.targetDeviceId
-      );
+    // Clipboard sends require explicit per-send consent.
+    if (!callbacks.onConfirmationRequired) {
+      return;
+    }
 
-      if (!confirmed) {
-        return;
-      }
+    const confirmed = await callbacks.onConfirmationRequired(
+      [file],
+      config.targetDeviceId
+    );
+
+    if (!confirmed) {
+      return;
     }
 
     // Send text

@@ -3,7 +3,7 @@
  * Tests performance monitoring and metrics collection
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import {
   usePerformance,
@@ -15,23 +15,32 @@ import {
 import type { PerformanceMetric } from '@/lib/performance/monitoring';
 
 // Mock performance monitoring functions
-const mockMarkStart = vi.fn();
-const mockMarkEnd = vi.fn(() => 100);
-const mockMeasure = vi.fn(async (name: string, fn: () => any) => {
-  const result = await fn();
-  return { result, duration: 100 };
-});
-const mockInitCoreWebVitals = vi.fn();
-const mockOnMetric = vi.fn(() => vi.fn()); // Returns unsubscribe function
-const mockObserveLongTasks = vi.fn(() => vi.fn()); // Returns unsubscribe function
+const performanceMocks = vi.hoisted(() => ({
+  markStart: vi.fn(),
+  markEnd: vi.fn(() => 100),
+  measure: vi.fn(async (name: string, fn: () => any) => {
+    const result = await fn();
+    return { result, duration: 100 };
+  }),
+  initCoreWebVitals: vi.fn(),
+  onMetric: vi.fn(() => vi.fn()), // Returns unsubscribe function
+  observeLongTasks: vi.fn(() => vi.fn()), // Returns unsubscribe function
+}));
+
+const mockMarkStart = performanceMocks.markStart;
+const mockMarkEnd = performanceMocks.markEnd;
+const mockMeasure = performanceMocks.measure;
+const mockInitCoreWebVitals = performanceMocks.initCoreWebVitals;
+const mockOnMetric = performanceMocks.onMetric;
+const mockObserveLongTasks = performanceMocks.observeLongTasks;
 
 vi.mock('@/lib/performance/monitoring', () => ({
-  markStart: mockMarkStart,
-  markEnd: mockMarkEnd,
-  measure: mockMeasure,
-  initCoreWebVitals: mockInitCoreWebVitals,
-  onMetric: mockOnMetric,
-  observeLongTasks: mockObserveLongTasks,
+  markStart: performanceMocks.markStart,
+  markEnd: performanceMocks.markEnd,
+  measure: performanceMocks.measure,
+  initCoreWebVitals: performanceMocks.initCoreWebVitals,
+  onMetric: performanceMocks.onMetric,
+  observeLongTasks: performanceMocks.observeLongTasks,
 }));
 
 // Mock performance API
@@ -308,19 +317,24 @@ describe('useRenderTime', () => {
     const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const originalEnv = process.env.NODE_ENV;
 
-    process.env.NODE_ENV = 'development';
+    try {
+      process.env.NODE_ENV = 'development';
 
-    mockPerformanceNow
-      .mockReturnValueOnce(1000)
-      .mockReturnValueOnce(1020); // 20ms render (> 16ms)
+      // useRenderTime reads performance.now() three times:
+      // initial ref, render assignment, and effect measurement.
+      mockPerformanceNow
+        .mockReturnValueOnce(900)
+        .mockReturnValueOnce(1000)
+        .mockReturnValueOnce(1025); // 25ms render (> 16ms)
 
-    renderHook(() => useRenderTime('SlowComponent'));
+      renderHook(() => useRenderTime('SlowComponent'));
 
-    // Warning should be called in development
-    expect(consoleWarn).toHaveBeenCalled();
-
-    process.env.NODE_ENV = originalEnv;
-    consoleWarn.mockRestore();
+      // Warning should be called in development
+      expect(consoleWarn).toHaveBeenCalled();
+    } finally {
+      process.env.NODE_ENV = originalEnv;
+      consoleWarn.mockRestore();
+    }
   });
 });
 
@@ -356,14 +370,24 @@ describe('useAsyncTiming', () => {
   it('should set loading state during operation', async () => {
     const { result } = renderHook(() => useAsyncTiming());
 
-    const promise = act(async () => {
-      return result.current.time('test-op', async () => {
-        expect(result.current.isLoading).toBe(true);
-        return 'result';
-      });
+    let resolveOperation: ((value: string) => void) | null = null;
+    const operation = new Promise<string>((resolve) => {
+      resolveOperation = resolve;
     });
 
-    await promise;
+    let timedPromise: Promise<string> | null = null;
+    act(() => {
+      timedPromise = result.current.time('test-op', async () => operation);
+    });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(true);
+    });
+
+    await act(async () => {
+      resolveOperation?.('result');
+      await timedPromise;
+    });
 
     expect(result.current.isLoading).toBe(false);
   });
@@ -371,16 +395,18 @@ describe('useAsyncTiming', () => {
   it('should handle errors', async () => {
     const { result } = renderHook(() => useAsyncTiming());
 
-    await expect(
-      act(async () => {
-        return result.current.time('test-op', async () => {
+    await act(async () => {
+      await expect(
+        result.current.time('test-op', async () => {
           throw new Error('Test error');
-        });
-      })
-    ).rejects.toThrow('Test error');
+        })
+      ).rejects.toThrow('Test error');
+    });
 
-    expect(result.current.error).toBeDefined();
-    expect(result.current.error?.message).toBe('Test error');
+    await waitFor(() => {
+      expect(result.current.error).toBeDefined();
+      expect(result.current.error?.message).toBe('Test error');
+    });
     expect(result.current.isLoading).toBe(false);
   });
 
@@ -388,13 +414,13 @@ describe('useAsyncTiming', () => {
     const { result } = renderHook(() => useAsyncTiming());
 
     // First operation fails
-    await expect(
-      act(async () => {
-        return result.current.time('test-op-1', async () => {
+    await act(async () => {
+      await expect(
+        result.current.time('test-op-1', async () => {
           throw new Error('First error');
-        });
-      })
-    ).rejects.toThrow();
+        })
+      ).rejects.toThrow();
+    });
 
     expect(result.current.error).toBeDefined();
 
@@ -483,14 +509,17 @@ describe('useIntersectionLoad', () => {
     mockDisconnect = vi.fn();
     observerCallback = null;
 
-    global.IntersectionObserver = vi.fn().mockImplementation((callback) => {
-      observerCallback = callback;
-      return {
-        observe: mockObserve,
-        disconnect: mockDisconnect,
-        unobserve: vi.fn(),
-      };
-    }) as any;
+    class IntersectionObserverMock {
+      observe = mockObserve;
+      disconnect = mockDisconnect;
+      unobserve = vi.fn();
+
+      constructor(callback: IntersectionObserverCallback) {
+        observerCallback = callback;
+      }
+    }
+
+    global.IntersectionObserver = IntersectionObserverMock as any;
   });
 
   it('should initialize with default state', () => {

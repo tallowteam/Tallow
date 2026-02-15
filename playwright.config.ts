@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const isCI = !!process.env['CI'];
+const shouldReuseServer = process.env['PW_REUSE_SERVER'] === '1';
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -108,7 +109,9 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: !isCI,
+    // Avoid accidentally reusing a stale/non-dev server on :3000.
+    // Opt in locally with PW_REUSE_SERVER=1 when needed.
+    reuseExistingServer: !isCI && shouldReuseServer,
     timeout: 180000, // 3 minutes for server to start (increased from 2 minutes)
     stdout: 'pipe', // Capture server output
     stderr: 'pipe',

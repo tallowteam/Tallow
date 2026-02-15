@@ -5,8 +5,6 @@
  * Group transfers into projects for better organization
  */
 
-import type { TransferRecord } from './transfer-history';
-
 // ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
@@ -16,10 +14,35 @@ export interface ProjectFile {
   name: string;
   size: number;
   type: string;
+  relativePath: string;
+  contentHash: string | null;
+  isDuplicate: boolean;
+  thumbnail: string | null;
   addedAt: Date;
   transferId: string;
   senderId: string;
   senderName: string;
+}
+
+export type ProjectFileSortField = 'name' | 'date' | 'size' | 'sender' | 'path';
+export type ProjectFileSortDirection = 'asc' | 'desc';
+
+interface TransferFileLike {
+  name: string;
+  size: number;
+  type: string;
+  path?: string | null;
+  relativePath?: string | null;
+  hash?: string | null;
+  contentHash?: string | null;
+  thumbnail?: string | null;
+}
+
+interface TransferLike {
+  id: string;
+  files: TransferFileLike[];
+  peerId: string;
+  peerName: string;
 }
 
 export interface ProjectFolder {
@@ -44,6 +67,10 @@ interface SerializedProjectFolder {
     name: string;
     size: number;
     type: string;
+    relativePath?: string;
+    contentHash?: string | null;
+    isDuplicate?: boolean;
+    thumbnail?: string | null;
     addedAt: string;
     transferId: string;
     senderId: string;
@@ -59,6 +86,7 @@ interface SerializedProjectFolder {
 
 const STORAGE_KEY = 'tallow_projects';
 const UNSORTED_PROJECT_ID = '__unsorted__';
+const IMAGE_FILE_PATTERN = /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico|heic|heif|avif)$/i;
 
 export const PROJECT_COLORS = [
   '#5E5CE6', // Purple (primary)
@@ -79,6 +107,57 @@ export const PROJECT_ICONS = [
   '🎨', '🎬', '🎵', '📸', '💼',
   '🏠', '🏢', '🎓', '💻', '🔬',
 ] as const;
+
+function normalizeRelativePath(file: TransferFileLike): string {
+  const candidate = file.relativePath || file.path || file.name;
+  const normalized = candidate.replace(/\\/g, '/').replace(/^\/+/, '');
+  return normalized || file.name;
+}
+
+function normalizeContentHash(file: TransferFileLike): string | null {
+  const candidate = (file.contentHash || file.hash || '').trim().toLowerCase();
+  return candidate.length > 0 ? candidate : null;
+}
+
+function createProjectFileId(transferId: string, relativePath: string, index: number): string {
+  const safePath = relativePath.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const nonce = Array.from(crypto.getRandomValues(new Uint8Array(4)))
+    .map((value) => value.toString(16).padStart(2, '0'))
+    .join('');
+  return `file_${transferId}_${safePath}_${index}_${nonce}`;
+}
+
+export function isImageProjectFile(file: Pick<ProjectFile, 'name' | 'type'>): boolean {
+  if (file.type.startsWith('image/')) {
+    return true;
+  }
+  return IMAGE_FILE_PATTERN.test(file.name);
+}
+
+export function sortProjectFiles(
+  files: ProjectFile[],
+  sortField: ProjectFileSortField,
+  sortDirection: ProjectFileSortDirection
+): ProjectFile[] {
+  const sorted = [...files].sort((left, right) => {
+    switch (sortField) {
+      case 'name':
+        return left.name.localeCompare(right.name);
+      case 'date':
+        return left.addedAt.getTime() - right.addedAt.getTime();
+      case 'size':
+        return left.size - right.size;
+      case 'sender':
+        return left.senderName.localeCompare(right.senderName);
+      case 'path':
+        return left.relativePath.localeCompare(right.relativePath);
+      default:
+        return 0;
+    }
+  });
+
+  return sortDirection === 'asc' ? sorted : sorted.reverse();
+}
 
 // ============================================================================
 // STORAGE HELPERS
@@ -131,6 +210,10 @@ function deserializeProject(serialized: SerializedProjectFolder): ProjectFolder 
     ...serialized,
     files: serialized.files.map(file => ({
       ...file,
+      relativePath: file.relativePath || file.name,
+      contentHash: file.contentHash || null,
+      isDuplicate: Boolean(file.isDuplicate),
+      thumbnail: file.thumbnail || null,
       addedAt: new Date(file.addedAt),
     })),
     createdAt: new Date(serialized.createdAt),
@@ -173,12 +256,12 @@ export function createProject(
   const newProject: ProjectFolder = {
     id: generateId(),
     name,
-    description,
     color,
     icon,
     files: [],
     createdAt: new Date(),
     updatedAt: new Date(),
+    ...(description !== undefined ? { description } : {}),
   };
 
   projects.push(newProject);
@@ -213,15 +296,21 @@ export function updateProject(
   const index = projects.findIndex(p => p.id === projectId);
 
   if (index === -1) {return null;}
+  const existingProject = projects[index];
+  if (!existingProject) {return null;}
 
-  projects[index] = {
-    ...projects[index],
-    ...updates,
+  const updatedProject: ProjectFolder = {
+    ...existingProject,
+    ...(updates.name !== undefined ? { name: updates.name } : {}),
+    ...(updates.description !== undefined ? { description: updates.description } : {}),
+    ...(updates.color !== undefined ? { color: updates.color } : {}),
+    ...(updates.icon !== undefined ? { icon: updates.icon } : {}),
     updatedAt: new Date(),
   };
+  projects[index] = updatedProject;
 
   saveProjects(projects);
-  return projects[index];
+  return updatedProject;
 }
 
 /**
@@ -239,11 +328,13 @@ export function deleteProject(projectId: string): boolean {
 
   // Move files to Unsorted
   const deletedProject = projects[projectIndex];
+  if (!deletedProject) {return false;}
   const unsortedIndex = projects.findIndex(p => p.id === UNSORTED_PROJECT_ID);
+  const unsortedProject = unsortedIndex >= 0 ? projects[unsortedIndex] : undefined;
 
-  if (unsortedIndex !== -1 && deletedProject.files.length > 0) {
-    projects[unsortedIndex].files.push(...deletedProject.files);
-    projects[unsortedIndex].updatedAt = new Date();
+  if (unsortedProject && deletedProject.files.length > 0) {
+    unsortedProject.files.push(...deletedProject.files);
+    unsortedProject.updatedAt = new Date();
   }
 
   // Remove project
@@ -262,27 +353,49 @@ export function deleteProject(projectId: string): boolean {
  */
 export function addFileToProject(
   projectId: string,
-  transfer: TransferRecord
+  transfer: TransferLike
 ): void {
   const projects = getProjects();
   const projectIndex = projects.findIndex(p => p.id === projectId);
 
   if (projectIndex === -1) {return;}
+  const project = projects[projectIndex];
+  if (!project) {return;}
 
-  // Convert transfer files to project files
-  const projectFiles: ProjectFile[] = transfer.files.map(file => ({
-    id: `file_${transfer.id}_${file.name}`,
-    name: file.name,
-    size: file.size,
-    type: file.type,
-    addedAt: new Date(),
-    transferId: transfer.id,
-    senderId: transfer.peerId,
-    senderName: transfer.peerName,
-  }));
+  // Detect duplicate payloads using content hash when available.
+  const seenHashes = new Set<string>(
+    project.files
+      .map((file) => file.contentHash)
+      .filter((hash): hash is string => Boolean(hash))
+  );
 
-  projects[projectIndex].files.push(...projectFiles);
-  projects[projectIndex].updatedAt = new Date();
+  const projectFiles: ProjectFile[] = transfer.files.map((file, index) => {
+    const relativePath = normalizeRelativePath(file);
+    const contentHash = normalizeContentHash(file);
+    const isDuplicate = contentHash ? seenHashes.has(contentHash) : false;
+
+    if (contentHash) {
+      seenHashes.add(contentHash);
+    }
+
+    return {
+      id: createProjectFileId(transfer.id, relativePath, index),
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      relativePath,
+      contentHash,
+      isDuplicate,
+      thumbnail: typeof file.thumbnail === 'string' ? file.thumbnail : null,
+      addedAt: new Date(),
+      transferId: transfer.id,
+      senderId: transfer.peerId,
+      senderName: transfer.peerName,
+    };
+  });
+
+  project.files.push(...projectFiles);
+  project.updatedAt = new Date();
 
   saveProjects(projects);
 }
@@ -295,11 +408,13 @@ export function removeFileFromProject(projectId: string, fileId: string): void {
   const projectIndex = projects.findIndex(p => p.id === projectId);
 
   if (projectIndex === -1) {return;}
+  const project = projects[projectIndex];
+  if (!project) {return;}
 
-  projects[projectIndex].files = projects[projectIndex].files.filter(
+  project.files = project.files.filter(
     f => f.id !== fileId
   );
-  projects[projectIndex].updatedAt = new Date();
+  project.updatedAt = new Date();
 
   saveProjects(projects);
 }
@@ -317,17 +432,21 @@ export function moveFileBetweenProjects(
   const toIndex = projects.findIndex(p => p.id === toProjectId);
 
   if (fromIndex === -1 || toIndex === -1) {return;}
+  const fromProject = projects[fromIndex];
+  const toProject = projects[toIndex];
+  if (!fromProject || !toProject) {return;}
 
-  const fileIndex = projects[fromIndex].files.findIndex(f => f.id === fileId);
+  const fileIndex = fromProject.files.findIndex(f => f.id === fileId);
   if (fileIndex === -1) {return;}
 
   // Move file
-  const [file] = projects[fromIndex].files.splice(fileIndex, 1);
-  projects[toIndex].files.push(file);
+  const [file] = fromProject.files.splice(fileIndex, 1);
+  if (!file) {return;}
+  toProject.files.push(file);
 
   // Update timestamps
-  projects[fromIndex].updatedAt = new Date();
-  projects[toIndex].updatedAt = new Date();
+  fromProject.updatedAt = new Date();
+  toProject.updatedAt = new Date();
 
   saveProjects(projects);
 }
@@ -351,6 +470,41 @@ export function moveMultipleFiles(
 export function getProjectFiles(projectId: string): ProjectFile[] {
   const project = getProject(projectId);
   return project?.files || [];
+}
+
+/**
+ * Get image files in a project (for gallery views).
+ */
+export function getProjectImageFiles(projectId: string): ProjectFile[] {
+  return getProjectFiles(projectId).filter((file) => isImageProjectFile(file));
+}
+
+/**
+ * Group files that share the same content hash.
+ */
+export function getProjectDuplicateGroups(projectId: string): Array<{
+  contentHash: string;
+  files: ProjectFile[];
+}> {
+  const files = getProjectFiles(projectId);
+  const duplicateMap = new Map<string, ProjectFile[]>();
+
+  for (const file of files) {
+    if (!file.contentHash) {
+      continue;
+    }
+
+    const existing = duplicateMap.get(file.contentHash);
+    if (existing) {
+      existing.push(file);
+      continue;
+    }
+    duplicateMap.set(file.contentHash, [file]);
+  }
+
+  return Array.from(duplicateMap.entries())
+    .filter(([, group]) => group.length > 1)
+    .map(([contentHash, group]) => ({ contentHash, files: group }));
 }
 
 // ============================================================================
@@ -394,7 +548,8 @@ export function searchFiles(query: string): Array<{
     for (const file of project.files) {
       if (
         file.name.toLowerCase().includes(lowerQuery) ||
-        file.senderName.toLowerCase().includes(lowerQuery)
+        file.senderName.toLowerCase().includes(lowerQuery) ||
+        file.relativePath.toLowerCase().includes(lowerQuery)
       ) {
         results.push({ file, project });
       }
@@ -444,7 +599,7 @@ export function getProjectStats(projectId: string): {
     fileCount,
     totalSize,
     fileTypes,
-    latestFile,
+    ...(latestFile ? { latestFile } : {}),
   };
 }
 
@@ -490,6 +645,10 @@ export default {
   moveFileBetweenProjects,
   moveMultipleFiles,
   getProjectFiles,
+  getProjectImageFiles,
+  getProjectDuplicateGroups,
+  isImageProjectFile,
+  sortProjectFiles,
   searchProjects,
   searchFiles,
   getProjectStats,

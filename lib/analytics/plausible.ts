@@ -161,10 +161,10 @@ class PlausibleAnalytics {
   private checkAnalyticsConsent(): boolean {
     try {
       const consent = localStorage.getItem('tallow-analytics-consent');
-      return consent === 'true' || consent === null; // Default to enabled
+      return consent === 'true'; // Default to disabled unless explicitly enabled
     } catch (error) {
       console.warn('[Plausible] Failed to read consent:', error);
-      return true; // Default to enabled on error
+      return false; // Fail closed for privacy
     }
   }
 

@@ -53,7 +53,7 @@ export default function FeaturesPage() {
               <div className={styles.statLabel}>Server Latency</div>
             </div>
             <div className={styles.stat}>
-              <div className={styles.statValue}>Direct P2P</div>
+              <div className={styles.statValue}>Peer-to-Peer</div>
               <div className={styles.statLabel}>Connection Type</div>
             </div>
           </div>
@@ -159,6 +159,107 @@ export default function FeaturesPage() {
         </div>
       </section>
 
+      <section className={styles.comparisonSection}>
+        <div className={styles.comparisonHeader}>
+          <span className={styles.comparisonLabel}>COMPARISON</span>
+          <h2 className={styles.comparisonTitle}>How Tallow Compares</h2>
+          <p className={styles.comparisonSubtitle}>
+            Privacy-first transfer compared with typical cloud sharing and email attachments.
+          </p>
+        </div>
+        <div className={styles.comparisonTableWrap}>
+          <table className={styles.comparisonTable}>
+            <caption className={styles.comparisonCaption}>
+              Feature comparison between Tallow, cloud services, and email attachments
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Feature</th>
+                <th scope="col">Tallow</th>
+                <th scope="col">Cloud Services</th>
+                <th scope="col">Email</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Post-Quantum Security</th>
+                <td>Yes</td>
+                <td>No</td>
+                <td>No</td>
+              </tr>
+              <tr>
+                <th scope="row">Direct Peer-to-Peer Path</th>
+                <td>Yes</td>
+                <td>No</td>
+                <td>No</td>
+              </tr>
+              <tr>
+                <th scope="row">Default File Size Limits</th>
+                <td>No hard limit</td>
+                <td>Plan-dependent</td>
+                <td>Low</td>
+              </tr>
+              <tr>
+                <th scope="row">Provider Access to File Contents</th>
+                <td>No</td>
+                <td>Usually possible</td>
+                <td>Usually possible</td>
+              </tr>
+              <tr>
+                <th scope="row">Cryptographic Verification (SAS)</th>
+                <td>Built in</td>
+                <td>Rare</td>
+                <td>No</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className={styles.educationSection} aria-labelledby="education-journey-title">
+        <div className={styles.educationHeader}>
+          <span className={styles.educationLabel}>GUIDED JOURNEY</span>
+          <h2 id="education-journey-title" className={styles.educationTitle}>Your secure transfer journey</h2>
+          <p className={styles.educationSubtitle}>
+            Start simple, then dive deeper into architecture and security details when you are ready.
+          </p>
+        </div>
+        <ol className={styles.educationSteps}>
+          <li className={styles.educationStep}>
+            <span className={styles.educationStepNumber}>01</span>
+            <div className={styles.educationStepContent}>
+              <h3>Explore Features</h3>
+              <p>See what Tallow can do across transfer speed, privacy, and platform coverage.</p>
+              <Link href="/features" className={styles.educationLink}>Open Features</Link>
+            </div>
+          </li>
+          <li className={styles.educationStep}>
+            <span className={styles.educationStepNumber}>02</span>
+            <div className={styles.educationStepContent}>
+              <h3>Understand the Flow</h3>
+              <p>Learn the transfer lifecycle from discovery and trust checks to delivery.</p>
+              <Link href="/how-it-works" className={styles.educationLink}>Read How It Works</Link>
+            </div>
+          </li>
+          <li className={styles.educationStep}>
+            <span className={styles.educationStepNumber}>03</span>
+            <div className={styles.educationStepContent}>
+              <h3>Inspect Security Details</h3>
+              <p>Review post-quantum encryption, threat model assumptions, and FAQ answers.</p>
+              <Link href="/security#faq" className={styles.educationLink}>Open Security FAQ</Link>
+            </div>
+          </li>
+          <li className={styles.educationStep}>
+            <span className={styles.educationStepNumber}>04</span>
+            <div className={styles.educationStepContent}>
+              <h3>Keep Docs Handy</h3>
+              <p>Use docs as your reference for setup, API details, and troubleshooting.</p>
+              <Link href="/docs" className={styles.educationLink}>Go to Documentation</Link>
+            </div>
+          </li>
+        </ol>
+      </section>
+
       {/* Feature 06 - Anonymous Discovery */}
       <section className={`${styles.feature} ${styles.featureReverse}`}>
         <div className={styles.featureVisual}>
@@ -187,7 +288,7 @@ export default function FeaturesPage() {
           <h2 className={styles.featureTitle}>Send to anyone, anywhere</h2>
           <p className={styles.featureDescription}>
             Room codes, QR codes, shareable links, and email invites. Transfer files across the globe
-            with direct P2P connections. No same-network requirement.
+            with peer-to-peer connections. No same-network requirement.
           </p>
         </div>
         <div className={styles.featureVisual}>

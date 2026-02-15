@@ -168,7 +168,7 @@ interface PendingRequest<T = unknown> {
  */
 export class IPCProtocol {
   private config: Required<IPCProtocolConfig>;
-  private pendingRequests = new Map<string, PendingRequest>();
+  private pendingRequests = new Map<string, PendingRequest<any>>();
   private messageCounter = 0;
   private instanceId: string;
 
@@ -211,9 +211,9 @@ export class IPCProtocol {
       channel,
       payload,
       timestamp: Date.now(),
-      priority: options?.priority,
-      timeout: options?.timeout,
-      correlationId: options?.correlationId,
+      ...(options?.priority !== undefined ? { priority: options.priority } : {}),
+      ...(options?.timeout !== undefined ? { timeout: options.timeout } : {}),
+      ...(options?.correlationId !== undefined ? { correlationId: options.correlationId } : {}),
     };
   }
 
@@ -229,7 +229,7 @@ export class IPCProtocol {
       id: messageId,
       success: true,
       data,
-      metadata,
+      ...(metadata !== undefined ? { metadata } : {}),
     };
   }
 
@@ -245,7 +245,7 @@ export class IPCProtocol {
       id: messageId,
       success: false,
       error: error instanceof Error ? error.message : error,
-      errorCode,
+      ...(errorCode !== undefined ? { errorCode } : {}),
     };
   }
 
@@ -274,10 +274,12 @@ export class IPCProtocol {
       throw new Error('Request aborted');
     }
 
-    const message = this.createMessage(type, channel, payload, {
-      priority: options?.priority,
-      timeout: options?.timeout,
-    });
+    const messageOptions = {
+      ...(options?.priority !== undefined ? { priority: options.priority } : {}),
+      ...(options?.timeout !== undefined ? { timeout: options.timeout } : {}),
+    };
+
+    const message = this.createMessage(type, channel, payload, messageOptions);
 
     const timeout = options?.timeout ?? this.config.defaultTimeout;
 
@@ -309,7 +311,7 @@ export class IPCProtocol {
         startTime: Date.now(),
         retryCount: 0,
         message,
-        onProgress: options?.onProgress,
+        ...(options?.onProgress ? { onProgress: options.onProgress } : {}),
       };
 
       this.pendingRequests.set(message.id, pendingRequest);

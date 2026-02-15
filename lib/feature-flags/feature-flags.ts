@@ -27,6 +27,10 @@ export type FeatureFlagKey =
   | 'scheduled_transfers'
   | 'team_workspaces'
   | 'browser_extension_api'
+  | 'share_sheet_integrations'
+  | 'nfc_pairing'
+  | 'qr_linking'
+  | 'clipboard_sharing'
   | 'advanced_compression'
   | 'delta_sync'
   | 'webauthn'
@@ -58,6 +62,10 @@ const DEFAULT_FLAGS: FeatureFlagValues = {
 
   // Integration features
   browser_extension_api: true,
+  share_sheet_integrations: false,
+  nfc_pairing: false,
+  qr_linking: false,
+  clipboard_sharing: false,
 
   // Advanced features
   advanced_compression: true,
@@ -79,8 +87,8 @@ const DEFAULT_FLAGS: FeatureFlagValues = {
   // Privacy features
   guest_mode: true,
 
-  // Experimental features - disabled by default
-  experimental_pqc: false,
+  // Experimental features
+  experimental_pqc: true,
 
   // Developer features
   debug_mode: false,

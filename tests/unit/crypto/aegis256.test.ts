@@ -332,7 +332,10 @@ describe('AEGIS-256 Serialization', () => {
 
   it('should handle large data serialization', () => {
     const key = generateAegis256Key();
-    const plaintext = crypto.getRandomValues(new Uint8Array(100000)); // 100KB
+    const plaintext = new Uint8Array(100000); // 100KB
+    for (let i = 0; i < plaintext.length; i++) {
+      plaintext[i] = i % 256;
+    }
 
     const encrypted = aegis256Encrypt(plaintext, key);
     const serialized = serializeAegis256Data(encrypted);

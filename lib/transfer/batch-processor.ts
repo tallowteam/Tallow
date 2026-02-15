@@ -180,7 +180,7 @@ export class BatchProcessor {
     }
 
     const index = this.items.findIndex((item) => item.id === itemId);
-    if (index === -1) return false;
+    if (index === -1) {return false;}
 
     this.items.splice(index, 1);
     return true;
@@ -268,7 +268,7 @@ export class BatchProcessor {
       // Start new tasks up to maxParallel
       while (processing.length < maxParallel && queue.length > 0) {
         const item = queue.shift();
-        if (!item) break;
+        if (!item) {break;}
 
         const task = this.processItem(item).then((result) => {
           results.push(result);
@@ -443,7 +443,7 @@ export class BatchProcessor {
     for (const item of failedItems) {
       item.status = 'pending';
       item.success = false;
-      item.error = undefined;
+      delete item.error;
       this.failedCount--;
     }
 
@@ -486,7 +486,7 @@ export class BatchProcessor {
       .filter((i) => i.startTime && i.endTime)
       .map((i) => (i.endTime! - i.startTime!));
 
-    if (durations.length === 0) return 0;
+    if (durations.length === 0) {return 0;}
 
     return durations.reduce((sum, d) => sum + d, 0) / durations.length;
   }

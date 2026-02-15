@@ -158,7 +158,11 @@ export class DeltaEnabledTransferManager extends PQCTransferManager {
     for (let i = 0; i < blocks.length; i++) {
       // In a real implementation, you'd send these through the data channel
       // This is a simplified example
-      await this.sendDeltaBlock(fileId, i, blocks[i]);
+      const block = blocks[i];
+      if (!block) {
+        continue;
+      }
+      await this.sendDeltaBlock(fileId, i, block);
     }
 
     // Send completion message
@@ -238,7 +242,7 @@ export class DeltaEnabledTransferManager extends PQCTransferManager {
 
     // Compute signatures
     console.log('[Delta] Computing signatures for local file');
-    const signatures = await this.deltaManager.initDeltaSync(fileId, localFile);
+    await this.deltaManager.initDeltaSync(fileId, localFile);
     const signaturesJson = this.deltaManager.exportSignatures(fileId);
 
     // Send signatures to peer
@@ -270,8 +274,8 @@ export class DeltaEnabledTransferManager extends PQCTransferManager {
    * Handle incoming patch
    */
   private async handleDeltaPatch(message: DeltaSyncMessage): Promise<void> {
-    const { fileId, fileName, payload } = message;
-    const { metadata, blockCount } = payload;
+    const { payload } = message;
+    const { blockCount } = payload;
 
     console.log(`[Delta] Receiving patch with ${blockCount} blocks`);
 
@@ -284,7 +288,7 @@ export class DeltaEnabledTransferManager extends PQCTransferManager {
    * Handle delta completion
    */
   private async handleDeltaComplete(message: DeltaSyncMessage): Promise<void> {
-    const { fileId, fileName } = message;
+    const { fileName } = message;
 
     console.log(`[Delta] Patch complete for ${fileName}`);
 
@@ -299,6 +303,7 @@ export class DeltaEnabledTransferManager extends PQCTransferManager {
    * Handle fallback to full transfer
    */
   private async handleDeltaFallback(message: DeltaSyncMessage): Promise<void> {
+    void message;
     console.log('[Delta] Peer requested full file transfer');
     // Proceed with normal file transfer
   }
@@ -311,7 +316,7 @@ export class DeltaEnabledTransferManager extends PQCTransferManager {
    * Check if local file exists
    * Implement based on your storage system
    */
-  private async checkLocalFile(fileId: string, fileName: string): Promise<boolean> {
+  private async checkLocalFile(_fileId: string, _fileName: string): Promise<boolean> {
     // Example implementation - replace with your actual logic
     // Could check IndexedDB, localStorage, or in-memory cache
     return false;
@@ -321,7 +326,7 @@ export class DeltaEnabledTransferManager extends PQCTransferManager {
    * Get local file
    * Implement based on your storage system
    */
-  private async getLocalFile(fileId: string, fileName: string): Promise<File | null> {
+  private async getLocalFile(_fileId: string, _fileName: string): Promise<File | null> {
     // Example implementation - replace with your actual logic
     return null;
   }
@@ -332,7 +337,7 @@ export class DeltaEnabledTransferManager extends PQCTransferManager {
   private sendDeltaMessage(message: DeltaSyncMessage): void {
     // Use the parent class's message sending mechanism
     // This is a simplified example
-    const json = JSON.stringify(message);
+    JSON.stringify(message);
     // this.sendMessage({ type: 'delta-sync', payload: json });
     console.log('[Delta] Sending message:', message.type);
   }
@@ -340,7 +345,7 @@ export class DeltaEnabledTransferManager extends PQCTransferManager {
   /**
    * Send delta block through data channel
    */
-  private async sendDeltaBlock(fileId: string, index: number, block: ArrayBuffer): Promise<void> {
+  private async sendDeltaBlock(_fileId: string, index: number, block: ArrayBuffer): Promise<void> {
     // Send block data
     // In a real implementation, you'd send this through the RTCDataChannel
     console.log(`[Delta] Sending block ${index} (${block.byteLength} bytes)`);

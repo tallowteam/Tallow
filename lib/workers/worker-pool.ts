@@ -191,6 +191,9 @@ export class WorkerPool {
         for (let i = 0; i < this.workers.length; i++) {
             this.currentIndex = (this.currentIndex + 1) % this.workers.length;
             const worker = this.workers[this.currentIndex];
+            if (!worker) {
+                continue;
+            }
 
             if (!worker.busy) {
                 return worker;

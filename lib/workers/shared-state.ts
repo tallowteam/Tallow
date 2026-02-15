@@ -201,7 +201,7 @@ export class SharedProgress {
    * Update percent value (internal)
    */
   private updatePercent(): void {
-    if (!this.view) return;
+    if (!this.view) {return;}
 
     const current = AtomicHelper.load(this.view, SharedProgress.CURRENT_INDEX);
     const total = AtomicHelper.load(this.view, SharedProgress.TOTAL_INDEX);

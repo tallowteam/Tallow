@@ -1,4 +1,4 @@
-/* eslint-disable no-console, @typescript-eslint/no-require-imports */
+ 
 /**
  * TALLOW Relay Server
  *

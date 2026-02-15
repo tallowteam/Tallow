@@ -20,6 +20,7 @@ async function getSocketIO(): Promise<typeof import('socket.io-client')> {
 import { generateUUID } from '../utils/uuid';
 import {
   deriveRoomEncryptionKey,
+  deriveRoomSenderKey,
   encryptRoomMessage,
   decryptRoomMessage,
   type RoomEncryptionKey,
@@ -92,6 +93,7 @@ export interface EncryptedRoomPayload {
   encrypted: boolean;
   ct: string;
   iv: string;
+  sid?: string;
   ts?: number;
   v?: number;
 }
@@ -144,6 +146,9 @@ export class TransferRoomManager {
   // PQC Room Encryption
   private roomEncryptionKey: RoomEncryptionKey | null = null;
   private encryptionEnabled: boolean = true; // Enable by default
+  private roomCodeForEncryption: string | null = null;
+  private roomPasswordForEncryption: string | undefined;
+  private senderKeyCache: Map<string, RoomEncryptionKey> = new Map();
 
   constructor(deviceId: string, deviceName: string) {
     this.deviceId = deviceId;
@@ -322,7 +327,7 @@ export class TransferRoomManager {
       expiresAt,
       members: new Map(),
       isPasswordProtected: !!config.password,
-      maxMembers: config.maxMembers || 10,
+      maxMembers: Math.min(Math.max(config.maxMembers || 10, 2), 50),
     };
 
     // Add self as owner
@@ -431,12 +436,16 @@ export class TransferRoomManager {
   leaveRoom(): void {
     if (!this.socket || !this.currentRoom) {return;}
 
-    this.socket.emit('leave-room', {
+    this.socket.emit('leave-transfer-room', {
       roomId: this.currentRoom.id,
       deviceId: this.deviceId,
     });
 
     this.currentRoom = null;
+    this.roomEncryptionKey = null;
+    this.roomCodeForEncryption = null;
+    this.roomPasswordForEncryption = undefined;
+    this.senderKeyCache.clear();
   }
 
   /**
@@ -498,6 +507,37 @@ export class TransferRoomManager {
     });
 
     this.currentRoom = null;
+    this.roomEncryptionKey = null;
+    this.roomCodeForEncryption = null;
+    this.roomPasswordForEncryption = undefined;
+    this.senderKeyCache.clear();
+  }
+
+  /**
+   * Remove a member from the room (owner/admin only).
+   */
+  removeMember(memberId: string): boolean {
+    if (!this.currentRoom) {return false;}
+    if (!this.isOwner()) {
+      throw new Error('Only room owner can remove members');
+    }
+    if (memberId === this.deviceId) {
+      return false;
+    }
+
+    const removed = this.currentRoom.members.delete(memberId);
+    if (!removed) {
+      return false;
+    }
+
+    this.socket?.emit('remove-room-member', {
+      roomId: this.currentRoom.id,
+      ownerId: this.deviceId,
+      memberId,
+    });
+
+    this.onMembersUpdatedCallback?.(Array.from(this.currentRoom.members.values()));
+    return true;
   }
 
   /**
@@ -545,6 +585,10 @@ export class TransferRoomManager {
     }
     this.socket?.disconnect();
     this.socket = null;
+    this.roomEncryptionKey = null;
+    this.roomCodeForEncryption = null;
+    this.roomPasswordForEncryption = undefined;
+    this.senderKeyCache.clear();
   }
 
   /**
@@ -566,11 +610,40 @@ export class TransferRoomManager {
     if (!this.encryptionEnabled) {return;}
 
     try {
+      this.roomCodeForEncryption = roomCode.toUpperCase();
+      this.roomPasswordForEncryption = password;
       this.roomEncryptionKey = await deriveRoomEncryptionKey(roomCode, password);
+      this.senderKeyCache.clear();
+      const ownKey = await deriveRoomSenderKey(roomCode, this.deviceId, password);
+      this.senderKeyCache.set(this.deviceId, ownKey);
       secureLog.log('[Room] Initialized PQC room encryption (HKDF-AES-256)');
     } catch (error) {
       secureLog.error('[Room] Failed to initialize room encryption:', error);
       this.encryptionEnabled = false;
+    }
+  }
+
+  private async getSenderEncryptionKey(senderId: string): Promise<RoomEncryptionKey | null> {
+    if (!this.roomCodeForEncryption) {
+      return this.roomEncryptionKey;
+    }
+
+    const cached = this.senderKeyCache.get(senderId);
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const derived = await deriveRoomSenderKey(
+        this.roomCodeForEncryption,
+        senderId,
+        this.roomPasswordForEncryption
+      );
+      this.senderKeyCache.set(senderId, derived);
+      return derived;
+    } catch (error) {
+      secureLog.error('[Room] Failed to derive sender key', { error, senderId });
+      return this.roomEncryptionKey;
     }
   }
 
@@ -583,7 +656,12 @@ export class TransferRoomManager {
     }
 
     try {
-      return await encryptRoomMessage(this.roomEncryptionKey, data);
+      const senderKey = await this.getSenderEncryptionKey(this.deviceId);
+      const encrypted = await encryptRoomMessage(senderKey || this.roomEncryptionKey, data);
+      return {
+        ...encrypted,
+        sid: this.deviceId,
+      };
     } catch (error) {
       secureLog.error('[Room] Failed to encrypt message:', error);
       return data; // Fall back to unencrypted
@@ -609,7 +687,10 @@ export class TransferRoomManager {
         ...(typeof payload['ts'] === 'number' ? { ts: payload['ts'] } : {}),
         ...(typeof payload['v'] === 'number' ? { v: payload['v'] } : {}),
       };
-      return await decryptRoomMessage(this.roomEncryptionKey, encryptedData);
+
+      const senderId = typeof payload['sid'] === 'string' ? payload['sid'] : null;
+      const senderKey = senderId ? await this.getSenderEncryptionKey(senderId) : null;
+      return await decryptRoomMessage(senderKey || this.roomEncryptionKey, encryptedData);
     } catch (error) {
       secureLog.error('[Room] Failed to decrypt message:', error);
       return data; // Fall back to encrypted data (will fail)

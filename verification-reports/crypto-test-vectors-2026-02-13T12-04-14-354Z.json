@@ -1,0 +1,52 @@
+{
+  "timestamp": "2026-02-13T12:04:14.352Z",
+  "checks": [
+    {
+      "name": "Policy, test, and workflow files exist",
+      "pass": true,
+      "details": [
+        "all required files for crypto vector enforcement are present"
+      ]
+    },
+    {
+      "name": "BLAKE3 official vectors are pinned in unit tests",
+      "pass": true,
+      "details": [
+        "official BLAKE3 vectors present in tests/unit/crypto/blake3.test.ts"
+      ]
+    },
+    {
+      "name": "SHA3 FIPS/NIST vectors are pinned in unit tests",
+      "pass": true,
+      "details": [
+        "FIPS/NIST SHA3 vectors present in tests/unit/crypto/sha3.test.ts"
+      ]
+    },
+    {
+      "name": "Vector suites do not use skipped tests",
+      "pass": true,
+      "details": [
+        "no skip markers detected in required vector suites"
+      ]
+    },
+    {
+      "name": "Package scripts expose crypto vector gates",
+      "pass": true,
+      "details": [
+        "test:crypto: vitest run tests/unit/crypto",
+        "verify:crypto:test-vectors: node scripts/verify-crypto-test-vectors.js"
+      ]
+    },
+    {
+      "name": "CI and release workflows execute crypto vector gates",
+      "pass": true,
+      "details": [
+        ".github/workflows/ci.yml runs npm run verify:crypto:test-vectors",
+        ".github/workflows/ci.yml runs npm run test:crypto -- tests/unit/crypto/blake3.test.ts tests/unit/crypto/sha3.test.ts",
+        ".github/workflows/release.yml runs npm run verify:crypto:test-vectors",
+        ".github/workflows/release.yml runs npm run test:crypto -- tests/unit/crypto/blake3.test.ts tests/unit/crypto/sha3.test.ts"
+      ]
+    }
+  ],
+  "passed": true
+}

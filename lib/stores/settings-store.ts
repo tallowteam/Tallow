@@ -114,7 +114,7 @@ const getDefaultDeviceName = (): string => {
   return 'My Device';
 };
 
-const DEFAULT_SETTINGS = {
+const createDefaultSettings = () => ({
   deviceName: getDefaultDeviceName(),
   deviceId: generateDeviceId(),
   theme: 'dark' as const,
@@ -139,7 +139,15 @@ const DEFAULT_SETTINGS = {
   silentHoursEnabled: false,
   silentHoursStart: '22:00',
   silentHoursEnd: '08:00',
-};
+  clipboardAutoSendEnabled: false,
+  clipboardTargetDeviceId: null,
+  clipboardConfirmBeforeSend: true,
+  clipboardSendImages: true,
+  clipboardSendDocuments: true,
+  clipboardSendText: true,
+  clipboardSendAllTypes: false,
+  clipboardMaxFileSize: 10 * 1024 * 1024,
+});
 
 // ============================================================================
 // STORE IMPLEMENTATION
@@ -149,7 +157,7 @@ export const useSettingsStore = create<SettingsState>()(
   devtools(
     persist(
       (set) => ({
-        ...DEFAULT_SETTINGS,
+        ...createDefaultSettings(),
 
         // Device Settings
         setDeviceName: (name) => set({ deviceName: name }),
@@ -183,9 +191,17 @@ export const useSettingsStore = create<SettingsState>()(
         setSilentHoursEnabled: (enabled) => set({ silentHoursEnabled: enabled }),
         setSilentHoursStart: (time) => set({ silentHoursStart: time }),
         setSilentHoursEnd: (time) => set({ silentHoursEnd: time }),
+        setClipboardAutoSendEnabled: (enabled) => set({ clipboardAutoSendEnabled: enabled }),
+        setClipboardTargetDeviceId: (deviceId) => set({ clipboardTargetDeviceId: deviceId }),
+        setClipboardConfirmBeforeSend: (enabled) => set({ clipboardConfirmBeforeSend: enabled }),
+        setClipboardSendImages: (enabled) => set({ clipboardSendImages: enabled }),
+        setClipboardSendDocuments: (enabled) => set({ clipboardSendDocuments: enabled }),
+        setClipboardSendText: (enabled) => set({ clipboardSendText: enabled }),
+        setClipboardSendAllTypes: (enabled) => set({ clipboardSendAllTypes: enabled }),
+        setClipboardMaxFileSize: (size) => set({ clipboardMaxFileSize: Math.max(0, size) }),
 
         // Reset
-        resetToDefaults: () => set(DEFAULT_SETTINGS),
+        resetToDefaults: () => set(createDefaultSettings()),
       }),
       {
         name: 'tallow-settings-store',

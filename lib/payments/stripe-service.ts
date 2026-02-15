@@ -49,7 +49,7 @@ export class StripeService {
 
     if (secretKey) {
       this.stripe = new Stripe(secretKey, {
-        apiVersion: '2024-12-18.acacia',
+        apiVersion: '2025-12-15.clover',
         typescript: true,
       });
     } else {
@@ -269,12 +269,16 @@ export class StripeService {
 
     // Get current subscription
     const currentSub = await stripe.subscriptions.retrieve(subscriptionId);
+    const firstItem = currentSub.items.data[0];
+    if (!firstItem) {
+      throw new Error(`Subscription ${subscriptionId} has no items`);
+    }
 
     // Update subscription with new price
     const subscription = await stripe.subscriptions.update(subscriptionId, {
       items: [
         {
-          id: currentSub.items.data[0].id,
+          id: firstItem.id,
           price: newPriceId,
         },
       ],
@@ -302,12 +306,14 @@ export class StripeService {
     metadata?: Record<string, string>;
   }): Promise<Stripe.Customer> {
     const stripe = this.getStripe();
-
-    return await stripe.customers.create({
+    const customerParams: Stripe.CustomerCreateParams = {
       email: params.email,
-      name: params.name,
       metadata: params.metadata || {},
-    });
+    };
+    if (params.name) {
+      customerParams.name = params.name;
+    }
+    return await stripe.customers.create(customerParams);
   }
 
   /**
@@ -398,13 +404,17 @@ export class StripeService {
     if (!plan) {
       return null;
     }
+    const periodEnd = subscription.items.data[0]?.current_period_end;
+    if (!periodEnd) {
+      return null;
+    }
 
     return {
       id: subscription.id,
       customerId: subscription.customer as string,
       status: subscription.status,
       plan,
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+      currentPeriodEnd: new Date(periodEnd * 1000),
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
       priceId,
     };

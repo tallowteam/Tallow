@@ -147,7 +147,7 @@ export function onBatteryChange(
 
   // Send initial status
   getBatteryStatus().then((status) => {
-    if (status) callback(status);
+    if (status) {callback(status);}
   });
 
   return () => {
@@ -328,7 +328,6 @@ async function runCPUBenchmark(): Promise<number> {
   const start = performance.now();
 
   // CPU-intensive task: calculate primes
-  let primes = 0;
   for (let i = 2; i < 10000; i++) {
     let isPrime = true;
     for (let j = 2; j <= Math.sqrt(i); j++) {
@@ -337,7 +336,9 @@ async function runCPUBenchmark(): Promise<number> {
         break;
       }
     }
-    if (isPrime) primes++;
+    if (isPrime) {
+      // Intentional no-op: prime detection work is the benchmark itself.
+    }
   }
 
   const duration = performance.now() - start;
@@ -417,7 +418,7 @@ async function updatePowerMode(
  * Apply power mode settings to application
  */
 export function applyPowerMode(mode: PowerMode): void {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {return;}
 
   const { settings } = mode;
 
@@ -470,7 +471,7 @@ export function getNetworkSettings(mode: PowerMode): {
 export async function shouldDeferExpensiveOps(): Promise<boolean> {
   const battery = await getBatteryStatus();
 
-  if (!battery) return false;
+  if (!battery) {return false;}
 
   // Defer if battery is low and not charging
   return battery.level < 0.15 && !battery.charging;
@@ -493,7 +494,7 @@ export function startPowerMonitoring(
   let active = true;
 
   const monitor = async () => {
-    if (!active) return;
+    if (!active) {return;}
 
     const [battery, cpu, mode] = await Promise.all([
       getBatteryStatus(),

@@ -1,0 +1,58 @@
+{
+  "timestamp": "2026-02-13T17:09:39.869Z",
+  "checks": [
+    {
+      "name": "WASM policy, bridges, worker, and workflows exist",
+      "pass": true,
+      "details": [
+        "all required wasm alchemist files are present"
+      ]
+    },
+    {
+      "name": "WASM loader is async, capability-detected, and cached",
+      "pass": true,
+      "details": [
+        "async fetch+instantiate loader with cache and support checks verified"
+      ]
+    },
+    {
+      "name": "Hash acceleration path exposes WASM-first with JS fallback",
+      "pass": true,
+      "details": [
+        "hash routing exists across wasm-loader, performance bridge, and wasm index API"
+      ]
+    },
+    {
+      "name": "Compression and chunking bridges expose async WASM hooks with JS fallback",
+      "pass": true,
+      "details": [
+        "compression/chunking bridge exports and fallback paths verified"
+      ]
+    },
+    {
+      "name": "Crypto worker remains available for off-main-thread execution",
+      "pass": false,
+      "details": [
+        "crypto worker is missing message event listener"
+      ]
+    },
+    {
+      "name": "Release benchmark evidence exists for WASM-related transfer performance tracking",
+      "pass": true,
+      "details": [
+        "bench:transfer:release: node --expose-gc scripts/benchmark/transfer-release-benchmark.js",
+        "latest release benchmark report: reports/transfer-benchmarks/release-benchmark-report-1770982933578.md"
+      ]
+    },
+    {
+      "name": "WASM alchemist gate is wired in package scripts and workflows",
+      "pass": true,
+      "details": [
+        "verify:wasm:alchemist: node scripts/verify-wasm-alchemist.js",
+        ".github/workflows/ci.yml runs wasm alchemist verification",
+        ".github/workflows/release.yml runs wasm alchemist verification"
+      ]
+    }
+  ],
+  "passed": false
+}

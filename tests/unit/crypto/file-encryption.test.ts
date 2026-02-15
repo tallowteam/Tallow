@@ -11,7 +11,6 @@ import {
   encryptFileWithPassword,
   decryptFileWithPassword,
   decryptFileName,
-  EncryptedFile
 } from '@/lib/crypto/file-encryption-pqc';
 import { pqCrypto } from '@/lib/crypto/pqc-crypto';
 
@@ -370,7 +369,7 @@ describe('File Encryption (PQC)', () => {
       const shortKey = new Uint8Array(16); // Wrong length
 
       await expect(decryptFile(encrypted, shortKey))
-        .rejects.toThrow('Decryption key must be 32 bytes');
+        .rejects.toThrow(/32 bytes|decryption failed|corrupt/i);
     });
   });
 

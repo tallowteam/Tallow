@@ -1,0 +1,41 @@
+{
+  "timestamp": "2026-02-13T11:13:02.381Z",
+  "checks": [
+    {
+      "name": "Automation engineer baseline files exist",
+      "pass": true,
+      "details": [
+        "policy, automation modules, secure storage, and workflows found"
+      ]
+    },
+    {
+      "name": "Scheduled transfers enforce re-authentication",
+      "pass": true,
+      "details": [
+        "scheduled-transfer runtime requires fresh auth before automated execution"
+      ]
+    },
+    {
+      "name": "Templates and scheduled transfers are encrypted at rest",
+      "pass": true,
+      "details": [
+        "automation storage paths use secure storage encryption flow"
+      ]
+    },
+    {
+      "name": "Automation engineer policy is documented and actionable",
+      "pass": true,
+      "details": [
+        "policy documents reauth + encrypted-at-rest controls and verifier command"
+      ]
+    },
+    {
+      "name": "CI/release workflows enforce automation engineer verification",
+      "pass": true,
+      "details": [
+        "automation engineer gate is wired in CI and release workflows"
+      ]
+    }
+  ],
+  "passed": true
+}

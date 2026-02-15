@@ -5,14 +5,25 @@
  * Securely clears sensitive data from memory to prevent leakage
  *
  * SECURITY: Defense-in-depth against memory dumps, cold boot attacks, and debugging
+ *
+ * Core wipe logic is delegated to zeroMemory() from lib/crypto/secure-buffer.ts
+ * which implements the double-overwrite pattern (random then zero) that prevents
+ * the JavaScript optimizer from eliding the wipe as a dead store.
  */
 
+import { zeroMemory } from '../crypto/secure-buffer';
+
 /**
- * Securely wipe a Uint8Array by overwriting with random data
- * Prevents sensitive data from remaining in memory after use
+ * Securely wipe a Uint8Array by overwriting with random data then zeros.
+ * Prevents sensitive data from remaining in memory after use.
+ *
+ * The _passes parameter is retained for backward compatibility but the core
+ * wipe now always uses the double-overwrite pattern from zeroMemory().
+ * Additional passes add alternating patterns for defense-in-depth.
  *
  * @param buffer - The buffer to wipe
- * @param passes - Number of overwrite passes (default: 3)
+ * @param passes - Number of overwrite passes (default: 3). The minimum
+ *                 double-overwrite (random + zero) always runs regardless.
  */
 export function secureWipeBuffer(buffer: Uint8Array, passes: number = 3): void {
   if (!buffer || !(buffer instanceof Uint8Array)) {
@@ -22,29 +33,17 @@ export function secureWipeBuffer(buffer: Uint8Array, passes: number = 3): void {
   const length = buffer.length;
   if (length === 0) {return;}
 
-  // crypto.getRandomValues has a 65,536 byte limit
-  const CHUNK_SIZE = 65536;
+  // Core wipe: random overwrite then zero (prevents optimizer elision)
+  zeroMemory(buffer);
 
-  // Multiple passes with different patterns for paranoid security
-  for (let pass = 0; pass < passes; pass++) {
-    if (pass === 0) {
-      // Pass 1: Random data (in chunks for large buffers)
-      for (let offset = 0; offset < length; offset += CHUNK_SIZE) {
-        const chunkEnd = Math.min(offset + CHUNK_SIZE, length);
-        const chunk = buffer.subarray(offset, chunkEnd);
-        crypto.getRandomValues(chunk);
-      }
-    } else if (pass === 1) {
-      // Pass 2: All zeros
-      buffer.fill(0);
-    } else {
-      // Pass 3+: Alternating pattern
+  // Additional passes for paranoid defense-in-depth (passes > 1)
+  if (passes > 1) {
+    for (let pass = 1; pass < passes; pass++) {
       buffer.fill(pass % 2 === 0 ? 0xAA : 0x55);
     }
+    // Final pass: zeros
+    zeroMemory(buffer);
   }
-
-  // Final pass: zeros
-  buffer.fill(0);
 }
 
 /**
@@ -124,12 +123,46 @@ export function secureWipeObject(obj: Record<string, unknown>): void {
  * }
  * ```
  */
+/**
+ * FinalizationRegistry for SecureWrapper -- auto-wipes data if the wrapper
+ * is garbage-collected without an explicit dispose() call.
+ *
+ * SAFETY NET ONLY. Callers MUST call dispose() explicitly in a finally block.
+ * The held value is the raw data reference (not the wrapper) because the
+ * wrapper is being finalized.
+ */
+let _wrapperRegistry: FinalizationRegistry<Uint8Array | Record<string, unknown>> | null = null;
+
+function getWrapperRegistry(): FinalizationRegistry<Uint8Array | Record<string, unknown>> | null {
+  if (_wrapperRegistry) {
+    return _wrapperRegistry;
+  }
+  if (typeof FinalizationRegistry !== 'undefined') {
+    _wrapperRegistry = new FinalizationRegistry<Uint8Array | Record<string, unknown>>((heldData) => {
+      if (heldData instanceof Uint8Array) {
+        zeroMemory(heldData);
+      } else if (typeof heldData === 'object' && heldData !== null) {
+        secureWipeObject(heldData as Record<string, unknown>);
+      }
+    });
+  }
+  return _wrapperRegistry;
+}
+
 export class SecureWrapper<T extends Uint8Array | Record<string, unknown>> {
   private _data: T | null;
   private _disposed: boolean = false;
+  private _unregisterToken: object;
 
   constructor(data: T) {
     this._data = data;
+    this._unregisterToken = {};
+
+    // Register with FinalizationRegistry (safety net for missed dispose())
+    const registry = getWrapperRegistry();
+    if (registry && data) {
+      registry.register(this, data, this._unregisterToken);
+    }
   }
 
   get data(): T {
@@ -165,6 +198,12 @@ export class SecureWrapper<T extends Uint8Array | Record<string, unknown>> {
 
     this._data = null;
     this._disposed = true;
+
+    // Unregister from FinalizationRegistry (cleanup already done)
+    const registry = getWrapperRegistry();
+    if (registry) {
+      registry.unregister(this._unregisterToken);
+    }
   }
 
   /**

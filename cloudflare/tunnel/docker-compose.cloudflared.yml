@@ -1,0 +1,17 @@
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:2026.2.0
+    container_name: tallow-cloudflared
+    command: tunnel --config /etc/cloudflared/config.yml run
+    restart: unless-stopped
+    environment:
+      - CLOUDFLARE_TUNNEL_ID=${CLOUDFLARE_TUNNEL_ID}
+      - CLOUDFLARE_TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    volumes:
+      - ./cloudflare/tunnel/config.yml:/etc/cloudflared/config.yml:ro
+      - ./cloudflare/tunnel/credentials.json:/etc/cloudflared/credentials.json:ro
+    healthcheck:
+      test: ["CMD", "cloudflared", "tunnel", "info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

@@ -204,14 +204,28 @@ export async function decryptFile(
     ]);
 
     // Decrypt
-    const decrypted = await pqCrypto.decrypt(
-      {
-        ciphertext: encChunk.data,
-        nonce: encChunk.nonce,
-      },
-      encryptionKey,
-      associatedData
-    );
+    let decrypted: Uint8Array;
+    try {
+      decrypted = await pqCrypto.decrypt(
+        {
+          ciphertext: encChunk.data,
+          nonce: encChunk.nonce,
+        },
+        encryptionKey,
+        associatedData
+      );
+    } catch (error) {
+      const decryptError = new Error(`Chunk ${encChunk.index} decryption failed - file corrupted`);
+      captureException(error instanceof Error ? error : decryptError, {
+        tags: { module: 'file-encryption-pqc', operation: 'decryptFile' },
+        extra: {
+          chunkIndex: encChunk.index,
+          totalChunks: encryptedFile.metadata.totalChunks,
+          originalSize: encryptedFile.metadata.originalSize,
+        }
+      });
+      throw decryptError;
+    }
 
     // Verify chunk hash
     const computedHash = pqCrypto.hash(decrypted);
@@ -310,22 +324,18 @@ export async function decryptFileWithPassword(
   // Derive key using Argon2id (memory-hard KDF)
   const encryptionKey = await pqCrypto.deriveKeyFromPassword(password, salt);
 
-  // Decrypt - hash mismatch after password derivation indicates wrong password
+  // Decrypt - any cryptographic failure is surfaced as an auth/corruption error.
   try {
     return await decryptFile(encryptedFile, encryptionKey);
   } catch (error) {
-    if (error instanceof Error && error.message.includes('hash mismatch')) {
-      // Report password decryption failure (likely wrong password)
-      captureException(error, {
-        tags: { module: 'file-encryption-pqc', operation: 'decryptFileWithPassword' },
-        extra: {
-          reason: 'hash_mismatch_likely_wrong_password',
-          originalSize: encryptedFile.metadata.originalSize,
-        }
-      });
-      throw new Error('Decryption failed - incorrect password or corrupted file');
-    }
-    throw error;
+    captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { module: 'file-encryption-pqc', operation: 'decryptFileWithPassword' },
+      extra: {
+        reason: 'password_decrypt_failure',
+        originalSize: encryptedFile.metadata.originalSize,
+      }
+    });
+    throw new Error('Decryption failed - incorrect password or corrupted file');
   }
 }
 

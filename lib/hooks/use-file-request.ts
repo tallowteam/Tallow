@@ -142,9 +142,9 @@ export function useFileRequest({
           id: message.id,
           from: message.from,
           fromName: message.fromName,
-          ...(message.fileName != null && { fileName: message.fileName }),
-          ...(message.fileType != null && { fileType: message.fileType }),
-          ...(message.message != null && { message: message.message }),
+          ...(message.fileName !== null && message.fileName !== undefined && { fileName: message.fileName }),
+          ...(message.fileType !== null && message.fileType !== undefined && { fileType: message.fileType }),
+          ...(message.message !== null && message.message !== undefined && { message: message.message }),
           timestamp: message.timestamp,
           status: 'pending' as const,
         };
@@ -188,9 +188,9 @@ export function useFileRequest({
         id: requestId,
         from: currentUserId,
         fromName: currentUserName,
-        ...(fileName != null && { fileName }),
-        ...(fileType != null && { fileType }),
-        ...(message != null && { message }),
+        ...(fileName !== null && fileName !== undefined && { fileName }),
+        ...(fileType !== null && fileType !== undefined && { fileType }),
+        ...(message !== null && message !== undefined && { message }),
         timestamp: Date.now(),
       };
 
@@ -203,9 +203,9 @@ export function useFileRequest({
         id: requestId,
         from: currentUserId,
         fromName: currentUserName,
-        ...(fileName != null && { fileName }),
-        ...(fileType != null && { fileType }),
-        ...(message != null && { message }),
+        ...(fileName !== null && fileName !== undefined && { fileName }),
+        ...(fileType !== null && fileType !== undefined && { fileType }),
+        ...(message !== null && message !== undefined && { message }),
         timestamp: Date.now(),
         status: 'pending' as const,
       };

@@ -183,7 +183,6 @@ export async function loadQRCodeLib(): Promise<typeof import('qrcode')> {
  */
 export async function loadJSZip(): Promise<typeof import('jszip')> {
   const mod = await import('jszip');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (mod as any).default ?? mod;
 }
 

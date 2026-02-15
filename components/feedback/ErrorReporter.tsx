@@ -139,7 +139,7 @@ export function ErrorReporter({
       onClose={onClose || (() => {})}
       title={title || 'Something went wrong'}
       size="md"
-      closeOnEscape={true}
+      closeOnEscape
       closeOnBackdropClick={false}
     >
       <div className={styles.errorReporter}>

@@ -14,9 +14,8 @@
  * - Connection health monitoring
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
-  selectBestTransport,
   selectForFileTransfer,
   type TransportProtocol,
   type TransportSelectionResult,
@@ -105,10 +104,10 @@ class WebTransportAdapter implements UnifiedTransport {
   getMetrics(): ConnectionMetrics {
     const stats = this.connection.getStats();
     return {
-      latency: stats.rtt,
-      bandwidth: stats.estimatedBandwidth,
+      latency: stats.smoothedRttMs,
+      bandwidth: stats.throughputBps,
       packetsLost: 0, // QUIC handles this internally
-      connectionQuality: stats.rtt < 20 ? 'excellent' : stats.rtt < 50 ? 'good' : 'fair',
+      connectionQuality: stats.smoothedRttMs < 20 ? 'excellent' : stats.smoothedRttMs < 50 ? 'good' : 'fair',
     };
   }
 }
@@ -404,7 +403,7 @@ export function WebTransportFileTransfer() {
   // ============================================================================
 
   const formatBytes = (bytes: number): string => {
-    if (bytes === 0) return '0 B';
+    if (bytes === 0) {return '0 B';}
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -416,7 +415,7 @@ export function WebTransportFileTransfer() {
   };
 
   const formatTime = (seconds: number): string => {
-    if (seconds < 60) return `${Math.round(seconds)}s`;
+    if (seconds < 60) {return `${Math.round(seconds)}s`;}
     const minutes = Math.floor(seconds / 60);
     const secs = Math.round(seconds % 60);
     return `${minutes}m ${secs}s`;

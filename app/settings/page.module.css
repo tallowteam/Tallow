@@ -310,12 +310,52 @@
   background: linear-gradient(135deg, #f8f8fc, #eeeef4);
 }
 
+.themePreviewForest {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, black 88%, forestgreen 12%),
+    color-mix(in srgb, black 82%, forestgreen 18%)
+  );
+}
+
+.themePreviewOcean {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, black 88%, midnightblue 12%),
+    color-mix(in srgb, black 82%, midnightblue 18%)
+  );
+}
+
 .themePreviewHighContrast {
-  background: linear-gradient(135deg, #000000, #0a0a10);
+  background: #000000;
+  border: 2px solid #ffffff;
+}
+
+.themePreviewHighContrast .themePreviewWindow {
+  background: #000000;
+  border: 2px solid #ffffff;
+}
+
+.themePreviewHighContrast .themePreviewHeader {
+  background: #ffff00;
+  border-bottom: 2px solid #ffffff;
+}
+
+.themePreviewHighContrast .themePreviewLine {
+  background: #ffffff;
+  height: 4px;
 }
 
 .themePreviewColorblind {
   background: linear-gradient(135deg, #030306, #08080e);
+}
+
+.themePreviewColorblind .themePreviewHeader {
+  background: linear-gradient(90deg, #648fff 33%, #fe6100 66%, #ffb000 100%);
+}
+
+.themePreviewColorblind .themePreviewLine {
+  background: rgba(100, 143, 255, 0.3);
 }
 
 .themePreviewWindow {

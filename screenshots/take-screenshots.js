@@ -54,7 +54,6 @@ const pages = [
       const headings = await page.$$('h1, h2, h3');
       const headingTexts = [];
       for (const h of headings.slice(0, 10)) {
-        const tag = await h.tagName;
         const text = await h.textContent();
         headingTexts.push(`${await h.evaluate(e => e.tagName)}: ${text.trim().substring(0, 80)}`);
       }
@@ -76,7 +75,7 @@ const pages = [
       const a11ySnapshot = await page.accessibility.snapshot();
       if (a11ySnapshot) {
         const printTree = (node, indent) => {
-          if (!node) return;
+          if (!node) {return;}
           const prefix = '  '.repeat(indent);
           const name = node.name ? ` "${node.name.substring(0, 60)}"` : '';
           const value = node.value ? ` [val: ${node.value.substring(0, 40)}]` : '';

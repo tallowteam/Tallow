@@ -1,0 +1,340 @@
+/* Form Field Component — Tallow Design System
+ * Agent 036 — FORM-ARCHITECT
+ *
+ * Uses existing design tokens: --text, --text-2, --text-3, --accent,
+ * --error, --success, --warning, --glass, --glass-border, --bg
+ */
+
+/* ============================================
+   FormField
+   ============================================ */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-inter);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text, #f2f2f8);
+  line-height: 1.4;
+}
+
+.requiredMarker {
+  color: var(--error, #ef4444);
+  font-weight: 600;
+}
+
+.helpText {
+  font-size: 0.8rem;
+  color: var(--text-3, #7a7a90);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.errorMessage {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--error, #ef4444);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.errorIcon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+}
+
+/* ============================================
+   ValidatedInput
+   ============================================ */
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.validatedInput {
+  width: 100%;
+  padding: 12px 16px;
+  font-family: inherit;
+  font-size: max(16px, 0.9rem);
+  color: var(--text, #f2f2f8);
+  background: var(--glass, rgba(12, 12, 22, 0.55));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border, rgba(99, 102, 241, 0.08));
+  border-radius: 12px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+  min-height: 44px;
+}
+
+.validatedInput::placeholder {
+  color: var(--text-3, #5a5a70);
+}
+
+.validatedInput:hover:not(:disabled) {
+  border-color: rgba(99, 102, 241, 0.12);
+}
+
+.validatedInput:focus {
+  border-color: var(--accent, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.validatedInput:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(12, 12, 22, 0.3);
+}
+
+/* Error state */
+.inputError {
+  border-color: var(--error, #ef4444);
+}
+
+.inputError:focus {
+  border-color: var(--error, #ef4444);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+/* Success state (valid after touch) */
+.inputValid {
+  border-color: var(--success, #22c55e);
+}
+
+.inputValid:focus {
+  border-color: var(--success, #22c55e);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
+/* ============================================
+   FormGroup (fieldset/legend)
+   ============================================ */
+
+.group {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.groupLegend {
+  font-family: var(--font-inter);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text, #f2f2f8);
+  padding: 0;
+  margin-bottom: 0.5rem;
+}
+
+.groupDescription {
+  font-size: 0.8125rem;
+  color: var(--text-3, #7a7a90);
+  margin: -0.25rem 0 0.5rem;
+  line-height: 1.5;
+}
+
+/* ============================================
+   FormErrorSummary
+   ============================================ */
+
+.errorSummary {
+  padding: 1rem 1.25rem;
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.errorSummaryTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--error, #ef4444);
+  margin: 0 0 0.5rem;
+}
+
+.errorSummaryIcon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.errorSummaryList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.errorSummaryItem {
+  font-size: 0.8125rem;
+  color: var(--error, #ef4444);
+}
+
+.errorSummaryLink {
+  color: var(--error, #ef4444);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.errorSummaryLink:hover {
+  text-decoration-style: solid;
+}
+
+.errorSummaryLink:focus-visible {
+  outline: 2px solid var(--error, #ef4444);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ============================================
+   PasswordStrengthMeter
+   ============================================ */
+
+.strengthMeter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.strengthBarTrack {
+  display: flex;
+  gap: 4px;
+  height: 4px;
+}
+
+.strengthBarSegment {
+  flex: 1;
+  height: 100%;
+  background: var(--glass-border, rgba(99, 102, 241, 0.08));
+  border-radius: 2px;
+  transition: background-color 0.3s ease;
+}
+
+.strengthBarSegment.active {
+  /* Colors set via inline style for dynamic strength levels */
+}
+
+.strengthLabel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.strengthText {
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.strengthWeak {
+  color: var(--error, #ef4444);
+}
+
+.strengthFair {
+  color: var(--warning, #f59e0b);
+}
+
+.strengthGood {
+  color: var(--success, #22c55e);
+}
+
+.strengthStrong {
+  color: var(--accent, #6366f1);
+}
+
+.strengthFeedback {
+  font-size: 0.75rem;
+  color: var(--text-3, #7a7a90);
+}
+
+/* ============================================
+   Light Mode
+   ============================================ */
+
+[data-theme="light"] .label {
+  color: #0a0a10;
+}
+
+[data-theme="light"] .helpText {
+  color: #5a5a70;
+}
+
+[data-theme="light"] .groupLegend {
+  color: #0a0a10;
+}
+
+[data-theme="light"] .groupDescription {
+  color: #5a5a70;
+}
+
+[data-theme="light"] .validatedInput {
+  background: rgba(255, 255, 255, 0.7);
+  color: #0a0a10;
+  border-color: rgba(99, 102, 241, 0.1);
+}
+
+[data-theme="light"] .validatedInput::placeholder {
+  color: #9494a8;
+}
+
+[data-theme="light"] .validatedInput:hover:not(:disabled) {
+  border-color: rgba(99, 102, 241, 0.15);
+}
+
+[data-theme="light"] .validatedInput:focus {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08);
+}
+
+[data-theme="light"] .validatedInput:disabled {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+[data-theme="light"] .errorSummary {
+  background: rgba(239, 68, 68, 0.04);
+  border-color: rgba(239, 68, 68, 0.15);
+}
+
+/* ============================================
+   Reduced Motion Support
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .validatedInput {
+    transition: none;
+  }
+
+  .strengthBarSegment {
+    transition: none;
+  }
+}

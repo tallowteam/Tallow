@@ -1,0 +1,62 @@
+{
+  "timestamp": "2026-02-13T11:12:00.714Z",
+  "checks": [
+    {
+      "name": "Documentation scribe baseline files exist",
+      "pass": true,
+      "details": [
+        "api/storybook/architecture/whitepaper/workflow files found"
+      ]
+    },
+    {
+      "name": "Every API endpoint is represented in OpenAPI documentation",
+      "pass": true,
+      "details": [
+        "openapi paths cover 14 discovered route handlers"
+      ]
+    },
+    {
+      "name": "API documentation includes request/response examples",
+      "pass": true,
+      "details": [
+        "openapi example tokens=57, routes=14"
+      ]
+    },
+    {
+      "name": "Storybook props-table coverage tracks all components",
+      "pass": true,
+      "details": [
+        "tracked components=136, discovered components=136"
+      ]
+    },
+    {
+      "name": "Architecture diagrams are indexed and aligned with live sources",
+      "pass": true,
+      "details": [
+        "diagram index references canonical sources and expected diagram set"
+      ]
+    },
+    {
+      "name": "Security whitepaper is published with required sections",
+      "pass": true,
+      "details": [
+        "whitepaper includes strategic security and compliance sections"
+      ]
+    },
+    {
+      "name": "Documentation scribe policy is documented and actionable",
+      "pass": true,
+      "details": [
+        "policy captures API/storybook/architecture/whitepaper requirements"
+      ]
+    },
+    {
+      "name": "CI/release workflows enforce documentation-scribe verification",
+      "pass": true,
+      "details": [
+        "documentation-scribe gate is wired in CI and release workflows"
+      ]
+    }
+  ],
+  "passed": true
+}

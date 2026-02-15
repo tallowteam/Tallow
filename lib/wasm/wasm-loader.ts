@@ -278,7 +278,7 @@ class WasmCryptoImpl implements WasmCrypto {
   }
 
   private async encryptJS(
-    algorithm: string,
+    _algorithm: string,
     key: Uint8Array,
     data: Uint8Array,
     nonce?: Uint8Array
@@ -339,7 +339,7 @@ class WasmCryptoImpl implements WasmCrypto {
   }
 
   private async decryptJS(
-    algorithm: string,
+    _algorithm: string,
     key: Uint8Array,
     data: Uint8Array,
     nonce: Uint8Array

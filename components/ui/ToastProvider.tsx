@@ -7,10 +7,28 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
-import { Toast, type ToastProps } from './Toast';
+import { Toast, TOAST_DURATIONS, type ToastProps, type ToastVariant } from './Toast';
 import styles from './ToastProvider.module.css';
 
 type ToastOptions = Omit<ToastProps, 'id' | 'onClose'>;
+
+/**
+ * Priority weight per variant. Higher = more important.
+ * Used to decide which toasts to keep when at capacity.
+ * error > warning > info > success
+ */
+const VARIANT_PRIORITY: Record<ToastVariant, number> = {
+  error: 4,
+  warning: 3,
+  info: 2,
+  success: 1,
+};
+
+/** Maximum number of toasts allowed in the queue (visible + queued). */
+const MAX_QUEUE_SIZE = 50;
+
+/** Window (ms) within which identical message+variant is considered a duplicate. */
+const DEDUP_WINDOW_MS = 5000;
 
 interface ToastContextValue {
   toasts: ToastProps[];
@@ -21,12 +39,15 @@ interface ToastContextValue {
   error: (message: string, options?: Partial<ToastOptions>) => string;
   warning: (message: string, options?: Partial<ToastOptions>) => string;
   info: (message: string, options?: Partial<ToastOptions>) => string;
+  /** Count of unread/active notifications. */
+  unreadCount: number;
 }
 
 const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
 export interface ToastProviderProps {
   children: ReactNode;
+  /** Maximum visible toasts at once. Oldest auto-dismissed when exceeded. Default 5. */
   maxToasts?: number;
   position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'top-center' | 'bottom-center';
 }
@@ -46,21 +67,54 @@ export const ToastProvider = ({
 
   const addToast = useCallback((options: ToastOptions): string => {
     const id = `toast-${++toastCounter}-${Date.now()}`;
+    const variant = options.variant || 'info';
+    const now = Date.now();
 
     setToasts((prev) => {
-      const newToasts = [
-        ...prev,
-        {
-          ...options,
-          id,
-          onClose: (toastId: string) => removeToast(toastId),
-        },
-      ];
+      // -- De-duplication: skip if same message+variant was added within DEDUP_WINDOW_MS --
+      const isDuplicate = prev.some(
+        (t) =>
+          t.message === options.message &&
+          (t.variant || 'info') === variant &&
+          t.createdAt &&
+          now - t.createdAt < DEDUP_WINDOW_MS
+      );
+      if (isDuplicate) {
+        return prev;
+      }
 
-      // Limit the number of toasts
+      const newToast: ToastProps = {
+        ...options,
+        id,
+        variant,
+        createdAt: now,
+        onClose: (toastId: string) => removeToast(toastId),
+      };
+
+      let newToasts = [...prev, newToast];
+
+      // -- Enforce visible limit: auto-dismiss oldest non-error toasts first --
       if (newToasts.length > maxToasts) {
-        // Remove the oldest toast(s)
-        return newToasts.slice(newToasts.length - maxToasts);
+        // Sort by priority (keep higher-priority toasts) then by time (keep newer)
+        // We remove the oldest, lowest-priority toast(s) to get back to maxToasts
+        const excess = newToasts.length - maxToasts;
+        // Find candidates to remove: prefer lower priority and older
+        const candidates = [...newToasts].sort((a, b) => {
+          const aPri = VARIANT_PRIORITY[a.variant || 'info'];
+          const bPri = VARIANT_PRIORITY[b.variant || 'info'];
+          if (aPri !== bPri) return aPri - bPri; // lower priority first
+          return (a.createdAt || 0) - (b.createdAt || 0); // older first
+        });
+
+        const idsToRemove = new Set(
+          candidates.slice(0, excess).map((t) => t.id)
+        );
+        newToasts = newToasts.filter((t) => !idsToRemove.has(t.id));
+      }
+
+      // -- Hard cap on total queue to prevent memory leaks --
+      if (newToasts.length > MAX_QUEUE_SIZE) {
+        newToasts = newToasts.slice(newToasts.length - MAX_QUEUE_SIZE);
       }
 
       return newToasts;
@@ -78,6 +132,7 @@ export const ToastProvider = ({
       return addToast({
         message,
         variant: 'success',
+        duration: TOAST_DURATIONS.success,
         ...options,
       });
     },
@@ -89,7 +144,7 @@ export const ToastProvider = ({
       return addToast({
         message,
         variant: 'error',
-        duration: 7000, // Errors stay longer by default
+        duration: TOAST_DURATIONS.error, // Infinity -- errors persist until manually closed
         ...options,
       });
     },
@@ -101,6 +156,7 @@ export const ToastProvider = ({
       return addToast({
         message,
         variant: 'warning',
+        duration: TOAST_DURATIONS.warning,
         ...options,
       });
     },
@@ -112,6 +168,7 @@ export const ToastProvider = ({
       return addToast({
         message,
         variant: 'info',
+        duration: TOAST_DURATIONS.info,
         ...options,
       });
     },
@@ -127,6 +184,7 @@ export const ToastProvider = ({
     error,
     warning,
     info,
+    unreadCount: toasts.length,
   };
 
   return (

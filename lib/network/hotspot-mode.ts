@@ -192,7 +192,7 @@ export class HotspotDetector {
     } else {
       this.clients.set(ip, {
         ip,
-        mac,
+        ...(mac ? { mac } : {}),
         firstSeen: new Date(),
         lastSeen: new Date(),
         isActive: true,
@@ -351,7 +351,7 @@ export class HotspotDetector {
   private cleanupStaleClients(): void {
     const now = Date.now();
 
-    this.clients.forEach((client, ip) => {
+    this.clients.forEach((client) => {
       const age = now - client.lastSeen.getTime();
 
       if (age > CLIENT_TIMEOUT) {

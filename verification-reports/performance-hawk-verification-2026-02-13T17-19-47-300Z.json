@@ -1,0 +1,53 @@
+{
+  "timestamp": "2026-02-13T17:19:47.296Z",
+  "checks": [
+    {
+      "name": "Performance policy, benchmark scripts, runtime paths, and workflows exist",
+      "pass": true,
+      "details": [
+        "all required performance hawk files are present"
+      ]
+    },
+    {
+      "name": "Crypto operations are wired for worker execution",
+      "pass": true,
+      "details": [
+        "crypto worker client + worker operation handlers verified"
+      ]
+    },
+    {
+      "name": "Heavy UI/features are lazy-loaded through dynamic import boundaries",
+      "pass": true,
+      "details": [
+        "dynamic loading paths detected for heavy chart and transfer UI modules"
+      ]
+    },
+    {
+      "name": "Bundle and Lighthouse benchmark evidence is present",
+      "pass": true,
+      "details": [
+        "bundle report indicates budgets met",
+        "lighthouse budget pass reports found: 5"
+      ]
+    },
+    {
+      "name": "Performance benchmark and image-optimization scripts are configured",
+      "pass": true,
+      "details": [
+        "bench:bundle: node scripts/benchmark/bundle-size-tracker.js",
+        "bench:lighthouse: node scripts/benchmark/lighthouse-ci.js",
+        "optimize:images: node scripts/optimize-images.js"
+      ]
+    },
+    {
+      "name": "Performance hawk gate is wired in package scripts and workflows",
+      "pass": true,
+      "details": [
+        "verify:performance:hawk: node scripts/verify-performance-hawk.js",
+        ".github/workflows/ci.yml runs performance hawk verification",
+        ".github/workflows/release.yml runs performance hawk verification"
+      ]
+    }
+  ],
+  "passed": true
+}

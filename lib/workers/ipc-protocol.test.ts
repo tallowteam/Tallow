@@ -244,8 +244,9 @@ describe('IPCProtocol', () => {
 
   describe('Request Cancellation', () => {
     it('should cancel a pending request', async () => {
+      const mockPostMessage = vi.fn();
       const mockWorker = {
-        postMessage: vi.fn(),
+        postMessage: mockPostMessage,
       } as unknown as Worker;
 
       const requestPromise = protocol.request(
@@ -256,7 +257,7 @@ describe('IPCProtocol', () => {
       );
 
       // Get the message ID from the mock call
-      const sentMessage = mockWorker.postMessage.mock.calls[0][0] as IPCMessage;
+      const sentMessage = mockPostMessage.mock.calls[0]?.[0] as IPCMessage;
 
       // Cancel the request
       const cancelled = protocol.cancelRequest(sentMessage.id);

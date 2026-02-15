@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "branch": "main",
+  "requireStrictStatusChecks": true,
+  "requiredSuites": [
+    {
+      "id": "lint",
+      "workflowJobId": "lint",
+      "contextPattern": "Lint & Type Check"
+    },
+    {
+      "id": "unit-test",
+      "workflowJobId": "unit-test",
+      "contextPattern": "Unit Tests"
+    },
+    {
+      "id": "integration-test",
+      "workflowJobId": "integration-test",
+      "contextPattern": "Integration Tests"
+    },
+    {
+      "id": "e2e-test",
+      "workflowJobId": "e2e-test",
+      "contextPattern": "E2E Tests"
+    },
+    {
+      "id": "security-scan",
+      "workflowJobId": "security-scan",
+      "contextPattern": "Security Scan"
+    }
+  ]
+}

@@ -25,7 +25,6 @@ const STORAGE_KEY = 'tallow-sender-folders';
 const DEFAULT_SETTINGS: SenderFolderSettings = {
   autoCreateForNewSenders: true,
   defaultFolderTemplate: 'sender_name',
-  customTemplate: undefined,
   folders: {},
 };
 
@@ -95,7 +94,7 @@ export class SenderFolderManager {
    * Initialize manager and load settings from localStorage
    */
   initialize(): void {
-    if (this.isInitialized) return;
+    if (this.isInitialized) {return;}
 
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -195,7 +194,7 @@ export class SenderFolderManager {
 
     // Check if folder already assigned
     const existing = this.getSenderFolder(senderId);
-    if (existing) return existing;
+    if (existing) {return existing;}
 
     // Auto-create if enabled
     if (this.settings.autoCreateForNewSenders) {
@@ -363,7 +362,7 @@ export class SenderFolderManager {
       const imported = JSON.parse(jsonString) as SenderFolderSettings;
       this.settings = { ...DEFAULT_SETTINGS, ...imported };
       this.save();
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Invalid settings format');
     }
   }

@@ -99,6 +99,28 @@ function sanitizeText(input: string): string {
 }
 
 /**
+ * Guarantee unsubscribe controls are present in both HTML and text outputs.
+ */
+function withUnsubscribeFooter(
+  template: { html: string; text: string },
+  unsubscribeUrl: string
+): { html: string; text: string } {
+  const hasHtmlUnsubscribe = /unsubscribe/i.test(template.html);
+  const hasTextUnsubscribe = /unsubscribe/i.test(template.text);
+
+  const htmlFooter = `
+<div style="margin-top:24px;padding-top:16px;border-top:1px solid #334155;text-align:center;font-size:12px;color:#94A3B8;">
+  <a href="${unsubscribeUrl}" style="color:#9333EA;text-decoration:none;">Unsubscribe</a> from transfer emails
+</div>`.trim();
+  const textFooter = `\n\nUnsubscribe: ${unsubscribeUrl}`;
+
+  return {
+    html: hasHtmlUnsubscribe ? template.html : `${template.html}\n${htmlFooter}`,
+    text: hasTextUnsubscribe ? template.text : `${template.text}${textFooter}`,
+  };
+}
+
+/**
  * OPTIONS - Handle CORS preflight
  */
 export const OPTIONS = withAPIMetrics(async (request: NextRequest): Promise<NextResponse> => {
@@ -263,6 +285,7 @@ export const POST = withAPIMetrics(async (request: NextRequest): Promise<NextRes
     }
 
     // Generate email template
+    const unsubscribeUrl = `https://tallow.app/email-preferences?email=${encodeURIComponent(sanitizedEmail)}`;
      
     const template = shareEmailTemplate({
       senderName,
@@ -273,6 +296,7 @@ export const POST = withAPIMetrics(async (request: NextRequest): Promise<NextRes
       fileSize: body.fileSize ?? '',
       expiresAt: expiresAt ?? new Date(),
     });
+    const finalTemplate = withUnsubscribeFooter(template, unsubscribeUrl);
 
     // Send email via Resend
     try {
@@ -280,8 +304,12 @@ export const POST = withAPIMetrics(async (request: NextRequest): Promise<NextRes
         from: process.env['RESEND_FROM_EMAIL'] || 'Tallow <noreply@tallow.app>',
         to: sanitizedEmail,
         subject: body.subject || template.subject,
-        html: template.html,
-        text: template.text,
+        html: finalTemplate.html,
+        text: finalTemplate.text,
+        headers: {
+          'List-Unsubscribe': `<mailto:unsubscribe@tallow.app>, <${unsubscribeUrl}>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        },
         tags: [
           { name: 'type', value: 'share_notification' },
           { name: 'sender', value: senderName },

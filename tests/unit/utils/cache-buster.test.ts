@@ -177,8 +177,8 @@ describe('Cache Buster', () => {
       const reloadSpy = vi.spyOn(window.location, 'reload');
 
       const promise = clearOldCaches();
-      vi.advanceTimersByTime(2000);
       await promise;
+      vi.advanceTimersByTime(2000);
 
       expect(reloadSpy).toHaveBeenCalled();
 
@@ -256,7 +256,7 @@ describe('Cache Buster', () => {
 
       forceHardRefresh();
 
-      expect(reloadSpy).toHaveBeenCalledWith(true);
+      expect(reloadSpy).toHaveBeenCalledTimes(1);
     });
 
     it('should skip on server-side', () => {

@@ -1,66 +1,96 @@
+import styles from './loading.module.css';
+
 export default function PricingLoading() {
+  const plans = Array.from({ length: 4 }, (_, i) => i);
+  const features = Array.from({ length: 5 }, (_, i) => i);
+  const supportCards = Array.from({ length: 3 }, (_, i) => i);
+
   return (
     <div
-      style={{
-        minHeight: '100vh',
-        background: 'var(--bg, #030306)',
-        padding: 'clamp(120px, 18vw, 200px) clamp(16px, 4vw, 24px) 4rem',
-      }}
+      className={styles.page}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
     >
-      <div
-        style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '1.5rem',
-        }}
-      >
+      <span className={styles.srOnly}>Loading pricing page...</span>
+
+      <div className={styles.container}>
+        {/* Hero */}
         <div
-          style={{
-            width: '100px',
-            height: '14px',
-            borderRadius: '60px',
-            background: 'linear-gradient(90deg, rgba(24,24,42,0.4) 0%, rgba(36,36,58,0.6) 40%, rgba(24,24,42,0.4) 80%)',
-            backgroundSize: '200% 100%',
-            animation: 'shimmer 1.8s ease-in-out infinite',
-          }}
-        />
-        <div
-          style={{
-            width: 'min(450px, 70vw)',
-            height: '48px',
-            borderRadius: '8px',
-            background: 'linear-gradient(90deg, rgba(24,24,42,0.4) 0%, rgba(36,36,58,0.6) 40%, rgba(24,24,42,0.4) 80%)',
-            backgroundSize: '200% 100%',
-            animation: 'shimmer 1.8s ease-in-out infinite',
-          }}
-        />
-        {/* Pricing cards */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-            gap: '1.5rem',
-            width: '100%',
-            marginTop: '3rem',
-          }}
+          className={styles.streamStage}
+          data-stream-stage="1"
+          aria-hidden="true"
         >
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              style={{
-                height: '400px',
-                borderRadius: '16px',
-                background: 'rgba(12, 12, 22, 0.55)',
-                border: '1px solid rgba(99, 102, 241, 0.08)',
-              }}
-            />
-          ))}
+          <div className={styles.hero}>
+            <div className={`${styles.skeleton} ${styles.heroLabel}`} />
+            <div className={`${styles.skeleton} ${styles.heroTitle}`} />
+          </div>
+        </div>
+
+        {/* Plan cards */}
+        <div
+          className={styles.streamStage}
+          data-stream-stage="2"
+          aria-hidden="true"
+        >
+          <div className={styles.planGrid}>
+            {plans.map((i) => (
+              <div key={i} className={styles.planCard}>
+                <div className={`${styles.skeleton} ${styles.planName}`} />
+                <div className={`${styles.skeleton} ${styles.planDesc}`} />
+                <div className={`${styles.skeleton} ${styles.planPrice}`} />
+                <div className={styles.planFeatures}>
+                  {features.map((j) => (
+                    <div key={j} className={styles.planFeature}>
+                      <div className={`${styles.skeleton} ${styles.planCheck}`} />
+                      <div className={`${styles.skeleton} ${styles.planFeatureText}`} />
+                    </div>
+                  ))}
+                </div>
+                <div className={`${styles.skeleton} ${styles.planCta}`} />
+              </div>
+            ))}
+          </div>
+          <div className={`${styles.skeleton} ${styles.billingNote}`} />
+        </div>
+
+        {/* Philosophy */}
+        <div
+          className={styles.streamStage}
+          data-stream-stage="3"
+          aria-hidden="true"
+        >
+          <div className={styles.philosophySection}>
+            <div className={`${styles.skeleton} ${styles.philosophyTitle}`} />
+            <div className={`${styles.skeleton} ${styles.philosophyLine}`} />
+            <div className={`${styles.skeleton} ${styles.philosophyLine}`} />
+            <div className={`${styles.skeleton} ${styles.philosophyLineShort}`} />
+          </div>
+        </div>
+
+        {/* Support the Mission */}
+        <div
+          className={styles.streamStage}
+          data-stream-stage="4"
+          aria-hidden="true"
+        >
+          <div className={styles.supportSection}>
+            <div className={styles.supportHeader}>
+              <div className={`${styles.skeleton} ${styles.supportTitle}`} />
+              <div className={`${styles.skeleton} ${styles.supportSubtitle}`} />
+            </div>
+            <div className={styles.supportGrid}>
+              {supportCards.map((i) => (
+                <div key={i} className={styles.supportCard}>
+                  <div className={`${styles.skeleton} ${styles.supportIcon}`} />
+                  <div className={`${styles.skeleton} ${styles.supportCardTitle}`} />
+                  <div className={`${styles.skeleton} ${styles.supportCardDesc}`} />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
-      <style>{`@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }`}</style>
     </div>
   );
 }

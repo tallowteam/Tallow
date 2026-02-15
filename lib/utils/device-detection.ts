@@ -32,6 +32,17 @@ export interface DeviceInfo {
   connectionType?: string | undefined;
 }
 
+interface ExperimentalNetworkConnection {
+  effectiveType?: string;
+}
+
+interface NavigatorWithExperimentalConnections extends Navigator {
+  connection?: ExperimentalNetworkConnection;
+  mozConnection?: ExperimentalNetworkConnection;
+  webkitConnection?: ExperimentalNetworkConnection;
+  standalone?: boolean;
+}
+
 /**
  * Check if device has touch capabilities
  */
@@ -221,8 +232,11 @@ export function isOnline(): boolean {
 export function getConnectionType(): string | undefined {
   if (typeof navigator === 'undefined') {return undefined;}
 
-  // @ts-ignore - NetworkInformation is experimental
-  const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  const experimentalNavigator = navigator as NavigatorWithExperimentalConnections;
+  const connection =
+    experimentalNavigator.connection ||
+    experimentalNavigator.mozConnection ||
+    experimentalNavigator.webkitConnection;
 
   if (connection && connection.effectiveType) {
     return connection.effectiveType; // '4g', '3g', '2g', 'slow-2g'
@@ -280,10 +294,10 @@ export function isTV(): boolean {
 export function isPWA(): boolean {
   if (typeof window === 'undefined') {return false;}
 
+  const experimentalNavigator = window.navigator as NavigatorWithExperimentalConnections;
   return (
     window.matchMedia('(display-mode: standalone)').matches ||
-    // @ts-ignore - iOS specific
-    window.navigator.standalone === true
+    experimentalNavigator.standalone === true
   );
 }
 

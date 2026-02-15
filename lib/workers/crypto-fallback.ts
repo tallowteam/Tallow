@@ -4,13 +4,6 @@
  */
 
 /**
- * Generate random bytes
- */
-function randomBytes(length: number): Uint8Array {
-  return crypto.getRandomValues(new Uint8Array(length));
-}
-
-/**
  * AES-256-GCM Encryption (Main Thread)
  */
 export async function encrypt(

@@ -80,7 +80,7 @@ async function main() {
       // Check for console errors
       const consoleErrors = [];
       tab.on('console', msg => {
-        if (msg.type() === 'error') consoleErrors.push(msg.text());
+        if (msg.type() === 'error') {consoleErrors.push(msg.text());}
       });
 
     } catch (err) {

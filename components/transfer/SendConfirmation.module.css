@@ -1,0 +1,229 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay {
+    animation: none;
+  }
+}
+
+.modal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 90%;
+  max-width: 440px;
+  padding: 32px;
+  background: var(--glass-heavy);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-2xl);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal {
+    animation: none;
+  }
+}
+
+.iconContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: var(--accent-alpha-12);
+  border-radius: var(--radius-xl);
+}
+
+.icon {
+  color: var(--accent);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+.fileCount {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.separator {
+  color: var(--text-4);
+}
+
+.totalSize {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--success);
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.2);
+  border-radius: var(--radius-pill);
+}
+
+.badge svg {
+  flex-shrink: 0;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.cancelButton,
+.confirmButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancelButton {
+  color: var(--text-2);
+  background: transparent;
+  border: 1px solid var(--border-2);
+}
+
+.cancelButton:hover {
+  background: var(--bg-2);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.cancelButton:active {
+  background: var(--bg-3);
+}
+
+.confirmButton {
+  color: white;
+  background: var(--accent);
+  border: 1px solid transparent;
+}
+
+.confirmButton:hover {
+  background: var(--accent-2);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--accent-alpha-20);
+}
+
+.confirmButton:active {
+  transform: translateY(0);
+}
+
+.confirmButton svg {
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cancelButton,
+  .confirmButton {
+    transition: none;
+  }
+
+  .confirmButton:hover {
+    transform: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal {
+    padding: 24px;
+    gap: 16px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .actions {
+    flex-direction: column-reverse;
+  }
+
+  .cancelButton,
+  .confirmButton {
+    width: 100%;
+  }
+}
+
+/* Focus styles for accessibility */
+.cancelButton:focus-visible,
+.confirmButton:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

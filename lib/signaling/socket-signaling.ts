@@ -148,6 +148,26 @@ class SignalingClient {
                 resolve();
             });
 
+            // Respond to application-level heartbeat pings from the server
+            // This prevents the server from disconnecting us for inactivity
+            this.socket.on('heartbeat-ping', () => {
+                this.socket?.emit('heartbeat-pong');
+            });
+
+            // Handle room-member-disconnected (peer went offline but may reconnect)
+            this.socket.on('room-member-disconnected', (data: unknown) => {
+                if (data && typeof data === 'object' && 'socketId' in data && typeof data.socketId === 'string') {
+                    this.events.onPeerLeft?.({ socketId: data.socketId });
+                }
+            });
+
+            // Handle room-member-reconnected (peer came back online)
+            this.socket.on('room-member-reconnected', (data: unknown) => {
+                if (data && typeof data === 'object' && 'memberId' in data && typeof data.memberId === 'string') {
+                    secureLog.log('[Signaling] Room member reconnected:', data.memberId);
+                }
+            });
+
             this.socket.on('disconnect', (reason) => {
                 secureLog.log('[Signaling] Disconnected:', reason);
                 // Only notify if we had previously connected successfully

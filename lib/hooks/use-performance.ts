@@ -294,6 +294,7 @@ export function useIntersectionLoad(options: {
 
   const [isVisible, setIsVisible] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const hasLoadedRef = useRef(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const elementRef = useRef<Element | null>(null);
 
@@ -315,7 +316,8 @@ export function useIntersectionLoad(options: {
         const entry = entries[0];
         if (entry && entry.isIntersecting) {
           setIsVisible(true);
-          if (!hasLoaded) {
+          if (!hasLoadedRef.current) {
+            hasLoadedRef.current = true;
             setHasLoaded(true);
             onLoad?.();
           }
@@ -330,7 +332,7 @@ export function useIntersectionLoad(options: {
     );
 
     observerRef.current.observe(element);
-  }, [rootMargin, threshold, onLoad, once, hasLoaded]);
+  }, [rootMargin, threshold, onLoad, once]);
 
   useEffect(() => {
     return () => {

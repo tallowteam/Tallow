@@ -260,7 +260,7 @@ async function compressWithStream(
   try {
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
+      if (done) {break;}
       chunks.push(value);
     }
   } finally {
@@ -299,7 +299,7 @@ async function decompressWithStream(
   try {
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
+      if (done) {break;}
       chunks.push(value);
     }
   } finally {
@@ -423,13 +423,10 @@ export function compressBrotliStream(
   const compressionStream = new CompressionStream(format);
 
   let headerSent = false;
-  let totalBytesRead = 0;
 
   // Transform stream to inject header before compressed data
   const transformStream = new TransformStream<Uint8Array, Uint8Array>({
     transform(chunk, controller) {
-      totalBytesRead += chunk.length;
-
       if (!headerSent) {
         // Note: We don't know the original size yet in streaming mode
         // We'll use 0 as a sentinel value to indicate streaming mode
@@ -544,9 +541,9 @@ export function getRecommendedQuality(
     return fileSize < 10 * 1024 * 1024 ? 11 : 9; // 10MB threshold
   } else {
     // Balanced for general use
-    if (fileSize < 100 * 1024) return 6; // < 100KB
-    if (fileSize < 1024 * 1024) return 5; // < 1MB
-    if (fileSize < 10 * 1024 * 1024) return 4; // < 10MB
+    if (fileSize < 100 * 1024) {return 6;} // < 100KB
+    if (fileSize < 1024 * 1024) {return 5;} // < 1MB
+    if (fileSize < 10 * 1024 * 1024) {return 4;} // < 10MB
     return 3; // >= 10MB
   }
 }

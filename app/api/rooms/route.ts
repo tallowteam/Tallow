@@ -40,6 +40,16 @@ const deleteRateLimiter = createRateLimiter({
   message: 'Too many room deletion requests. Please try again later.',
 });
 
+const ROOM_HOUR_MS = 60 * 60 * 1000;
+const DEFAULT_ROOM_TTL_HOURS = Math.min(
+  Math.max(Number(process.env['TALLOW_ROOM_DEFAULT_TTL_HOURS'] || 24), 1),
+  168
+);
+const MAX_ROOM_TTL_HOURS = Math.min(
+  Math.max(Number(process.env['TALLOW_ROOM_MAX_TTL_HOURS'] || 168), 1),
+  168
+);
+
 /**
  * Generate a cryptographically secure random salt
  */
@@ -150,6 +160,10 @@ function timingSafeEquals(a: string, b: string): boolean {
     result |= a.charCodeAt(i) ^ b.charCodeAt(i);
   }
   return result === 0;
+}
+
+function getDefaultRoomExpiration(): string {
+  return new Date(Date.now() + DEFAULT_ROOM_TTL_HOURS * ROOM_HOUR_MS).toISOString();
 }
 
 /**
@@ -358,15 +372,17 @@ export const POST = withAPIMetrics(async (request: NextRequest): Promise<NextRes
           request.headers.get('origin')
         );
       }
-      // Do not allow expiration more than 7 days in the future
-      const maxExpiration = Date.now() + 7 * 24 * 60 * 60 * 1000;
+      // Do not allow expiration beyond configured max TTL
+      const maxExpiration = Date.now() + MAX_ROOM_TTL_HOURS * ROOM_HOUR_MS;
       if (expirationDate.getTime() > maxExpiration) {
         return withCORS(
-          ApiErrors.badRequest('Expiration cannot be more than 7 days in the future'),
+          ApiErrors.badRequest(`Expiration cannot exceed ${MAX_ROOM_TTL_HOURS} hours from now`),
           request.headers.get('origin')
         );
       }
       validExpiresAt = expirationDate.toISOString();
+    } else {
+      validExpiresAt = getDefaultRoomExpiration();
     }
 
     // Create room
@@ -449,6 +465,7 @@ export const DELETE = withAPIMetrics(async (request: NextRequest): Promise<NextR
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code')?.toUpperCase();
     const ownerId = searchParams.get('ownerId');
+    const memberId = searchParams.get('memberId');
 
     if (!code) {
       return withCORS(ApiErrors.badRequest('Room code is required'), request.headers.get('origin'));
@@ -476,6 +493,36 @@ export const DELETE = withAPIMetrics(async (request: NextRequest): Promise<NextR
     // Verify ownership (use timing-safe comparison for security)
     if (!timingSafeEquals(room.ownerId, ownerId)) {
       return withCORS(ApiErrors.forbidden('Only the room owner can delete the room'), request.headers.get('origin'));
+    }
+
+    if (memberId) {
+      if (!/^[a-zA-Z0-9-]{1,64}$/.test(memberId)) {
+        return withCORS(ApiErrors.badRequest('Invalid member ID format'), request.headers.get('origin'));
+      }
+
+      if (memberId === room.ownerId) {
+        return withCORS(ApiErrors.forbidden('Room owner cannot be removed as a member'), request.headers.get('origin'));
+      }
+
+      const beforeCount = room.members.length;
+      room.members = room.members.filter((member) => {
+        if (!member || typeof member !== 'object') {
+          return true;
+        }
+        const typed = member as { id?: unknown; deviceId?: unknown };
+        return typed.id !== memberId && typed.deviceId !== memberId;
+      });
+
+      if (room.members.length === beforeCount) {
+        return withCORS(ApiErrors.notFound('Member not found in room'), request.headers.get('origin'));
+      }
+
+      rooms.set(code, room);
+      secureLog.log(`[Rooms API] Removed member ${memberId} from room: ${code}`);
+      return withCORS(
+        jsonResponse({ success: true, message: 'Member removed successfully', memberId }),
+        request.headers.get('origin')
+      );
     }
 
     rooms.delete(code);

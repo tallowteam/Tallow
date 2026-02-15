@@ -13,7 +13,7 @@
  * - LocalStorage persistence (via mock)
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { useSettingsStore } from '@/lib/stores/settings-store';
 
 describe('SettingsStore', () => {

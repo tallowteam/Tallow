@@ -1,0 +1,57 @@
+{
+  "timestamp": "2026-02-13T22:13:50.493Z",
+  "checks": [
+    {
+      "name": "Policy, implementation, tests, and workflow files exist",
+      "pass": true,
+      "details": [
+        "all required notification-herald files are present"
+      ]
+    },
+    {
+      "name": "Success/error notification semantics and persistent failure path are implemented",
+      "pass": true,
+      "details": [
+        "success toasts, error toasts, retry actions, and Infinity-duration persistence support are present"
+      ]
+    },
+    {
+      "name": "Incoming transfer requests include file context plus accept/reject behavior",
+      "pass": true,
+      "details": [
+        "transfer requests include sender+file context with accept action and timeout rejection"
+      ]
+    },
+    {
+      "name": "Notification manager groups related events to reduce spam",
+      "pass": true,
+      "details": [
+        "grouping state and grouped transfer/connection updates are present"
+      ]
+    },
+    {
+      "name": "Toast system supports rich preview payloads and action buttons",
+      "pass": true,
+      "details": [
+        "preview payloads and single/multi-action buttons are implemented in Toast.tsx"
+      ]
+    },
+    {
+      "name": "Unit tests cover transfer-request actions, persistence, and anti-spam behaviors",
+      "pass": true,
+      "details": [
+        "use-notifications and toast tests include required notification-herald scenarios"
+      ]
+    },
+    {
+      "name": "Notification-herald gate is wired in package scripts and workflows",
+      "pass": true,
+      "details": [
+        "verify:notification:herald: node scripts/verify-notification-herald.js",
+        ".github/workflows/ci.yml runs notification-herald verification",
+        ".github/workflows/release.yml runs notification-herald verification"
+      ]
+    }
+  ],
+  "passed": true
+}

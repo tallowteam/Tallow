@@ -2,7 +2,14 @@
 
 /**
  * Notification Manager
- * Central notification system that coordinates toasts, browser notifications, and sounds
+ * Central notification system that coordinates toasts, browser notifications, and sounds.
+ *
+ * Key features:
+ * - De-duplication: identical notifications within 5 seconds are suppressed
+ * - Priority ordering: error > warning > info > success
+ * - Persistence: important notifications survive page refresh via sessionStorage
+ * - Badge count: tracks unread notification count
+ * - Silent hours: respects user-configured Do Not Disturb windows
  */
 
 import { browserNotifications } from './browser-notifications';
@@ -37,6 +44,8 @@ export interface NotificationOptions {
   browserNotification?: boolean;
   priority?: NotificationPriority;
   group?: NotificationGroup;
+  /** When true, the notification is persisted to sessionStorage for recovery. */
+  persist?: boolean;
 }
 
 export interface NotificationSettings {
@@ -58,6 +67,30 @@ interface GroupedNotification {
   lastTimestamp: number;
 }
 
+/** Record stored for de-duplication. */
+interface DeduplicationEntry {
+  message: string;
+  variant: string;
+  timestamp: number;
+}
+
+/** Record stored in sessionStorage for persistent notifications. */
+interface PersistedNotification {
+  title?: string;
+  message: string;
+  variant: 'success' | 'error' | 'warning' | 'info';
+  timestamp: number;
+}
+
+/** De-duplication window in milliseconds. */
+const DEDUP_WINDOW_MS = 5000;
+
+/** sessionStorage key for persisted notifications. */
+const PERSIST_KEY = 'tallow_persisted_notifications';
+
+/** Maximum persisted notifications to keep. */
+const MAX_PERSISTED = 20;
+
 class NotificationManager {
   private settings: NotificationSettings = {
     notificationSound: true,
@@ -72,9 +105,17 @@ class NotificationManager {
   };
 
   private soundEnabled = true;
-  private audioContext: AudioContext | null = null;
   private groupedNotifications = new Map<NotificationGroup, GroupedNotification>();
   private notificationCallback: ((options: NotificationOptions & { id?: string }) => string) | null = null;
+
+  /** Recent notifications for de-duplication. */
+  private recentNotifications: DeduplicationEntry[] = [];
+
+  /** Badge count of unread notifications. */
+  private _unreadCount = 0;
+
+  /** Whether browser notification permission has been explicitly requested by user action. */
+  private permissionRequested = false;
 
   /**
    * Register notification callback for toast display
@@ -89,6 +130,100 @@ class NotificationManager {
   updateSettings(settings: Partial<NotificationSettings>): void {
     this.settings = { ...this.settings, ...settings };
   }
+
+  /**
+   * Get the current unread badge count.
+   */
+  get unreadCount(): number {
+    return this._unreadCount;
+  }
+
+  /**
+   * Reset the unread badge count (e.g., when user views notifications).
+   */
+  resetUnreadCount(): void {
+    this._unreadCount = 0;
+  }
+
+  // ──────────────────────────────────────────────
+  // De-duplication
+  // ──────────────────────────────────────────────
+
+  /**
+   * Check if a notification is a duplicate (same message+variant within DEDUP_WINDOW_MS).
+   */
+  private isDuplicate(message: string, variant: string): boolean {
+    const now = Date.now();
+    // Prune expired entries
+    this.recentNotifications = this.recentNotifications.filter(
+      (entry) => now - entry.timestamp < DEDUP_WINDOW_MS
+    );
+
+    return this.recentNotifications.some(
+      (entry) => entry.message === message && entry.variant === variant
+    );
+  }
+
+  /**
+   * Record a notification for de-duplication tracking.
+   */
+  private recordNotification(message: string, variant: string): void {
+    this.recentNotifications.push({
+      message,
+      variant,
+      timestamp: Date.now(),
+    });
+  }
+
+  // ──────────────────────────────────────────────
+  // Persistence (sessionStorage)
+  // ──────────────────────────────────────────────
+
+  /**
+   * Persist an important notification so it can be recovered after page refresh.
+   */
+  private persistNotification(
+    title: string | undefined,
+    message: string,
+    variant: 'success' | 'error' | 'warning' | 'info'
+  ): void {
+    if (typeof window === 'undefined' || typeof sessionStorage === 'undefined') {
+      return;
+    }
+
+    try {
+      const stored = sessionStorage.getItem(PERSIST_KEY);
+      const list: PersistedNotification[] = stored ? JSON.parse(stored) : [];
+      list.push({ ...(title !== undefined ? { title } : {}), message, variant, timestamp: Date.now() });
+
+      // Cap to prevent unbounded growth
+      const capped = list.slice(-MAX_PERSISTED);
+      sessionStorage.setItem(PERSIST_KEY, JSON.stringify(capped));
+    } catch {
+      // Storage may be full or disabled
+    }
+  }
+
+  /**
+   * Retrieve and clear persisted notifications (called on mount).
+   */
+  getPersistedNotifications(): PersistedNotification[] {
+    if (typeof window === 'undefined' || typeof sessionStorage === 'undefined') {
+      return [];
+    }
+
+    try {
+      const stored = sessionStorage.getItem(PERSIST_KEY);
+      sessionStorage.removeItem(PERSIST_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  // ──────────────────────────────────────────────
+  // Silent hours
+  // ──────────────────────────────────────────────
 
   /**
    * Check if currently in silent hours
@@ -117,8 +252,8 @@ class NotificationManager {
    * Check if notification should be shown based on priority and silent hours
    */
   private shouldShowNotification(priority: NotificationPriority = 'normal'): boolean {
-    // Urgent notifications bypass silent hours
-    if (priority === 'urgent') {
+    // High-severity notifications bypass silent hours
+    if (priority === 'urgent' || priority === 'high') {
       return true;
     }
 
@@ -129,6 +264,10 @@ class NotificationManager {
 
     return true;
   }
+
+  // ──────────────────────────────────────────────
+  // Grouping
+  // ──────────────────────────────────────────────
 
   /**
    * Get or create grouped notification
@@ -189,6 +328,10 @@ class NotificationManager {
     }
   }
 
+  // ──────────────────────────────────────────────
+  // Priority
+  // ──────────────────────────────────────────────
+
   /**
    * Determine priority based on context
    */
@@ -208,6 +351,10 @@ class NotificationManager {
     }
     return 'normal';
   }
+
+  // ──────────────────────────────────────────────
+  // Sound
+  // ──────────────────────────────────────────────
 
   /**
    * Play notification sound by type
@@ -238,8 +385,14 @@ class NotificationManager {
     notificationSounds.setMuted(muted);
   }
 
+  // ──────────────────────────────────────────────
+  // Browser notifications
+  // ──────────────────────────────────────────────
+
   /**
-   * Show a browser notification if in background and enabled
+   * Show a browser notification if in background and enabled.
+   * IMPORTANT: This will NOT auto-request permission. Permission must be
+   * explicitly requested via requestPermission() from a user gesture.
    */
   private async showBrowserNotification(
     title: string,
@@ -247,6 +400,11 @@ class NotificationManager {
     tag?: string
   ): Promise<void> {
     if (!this.settings.browserNotifications) {
+      return;
+    }
+
+    // Only show if permission was already granted -- never auto-request
+    if (!browserNotifications.isGranted()) {
       return;
     }
 
@@ -261,6 +419,53 @@ class NotificationManager {
       });
     }
   }
+
+  // ──────────────────────────────────────────────
+  // Central dispatch
+  // ──────────────────────────────────────────────
+
+  /**
+   * Central dispatch method for all notifications.
+   * Handles de-duplication, persistence, badge count, and routing to toast/browser/sound.
+   */
+  dispatch(options: NotificationOptions): string | null {
+    const variant = options.variant || 'info';
+    const message = options.message;
+
+    // De-duplicate
+    if (this.isDuplicate(message, variant)) {
+      return null;
+    }
+
+    // Check silent hours
+    const priority = options.priority || 'normal';
+    if (!this.shouldShowNotification(priority)) {
+      return null;
+    }
+
+    // Record for de-duplication
+    this.recordNotification(message, variant);
+
+    // Increment badge
+    this._unreadCount++;
+
+    // Persist if requested
+    if (options.persist) {
+      this.persistNotification(options.title, message, variant);
+    }
+
+    // Show toast
+    let toastId: string | null = null;
+    if (this.notificationCallback) {
+      toastId = this.notificationCallback(options);
+    }
+
+    return toastId;
+  }
+
+  // ──────────────────────────────────────────────
+  // Domain-specific notification methods
+  // ──────────────────────────────────────────────
 
   /**
    * Transfer started notification
@@ -282,7 +487,9 @@ class NotificationManager {
       return;
     }
 
-    const priority = this.determinePriority({ fileSize });
+    const priority = this.determinePriority({
+      ...(fileSize !== undefined ? { fileSize } : {}),
+    });
 
     if (!this.shouldShowNotification(priority)) {
       return;
@@ -304,6 +511,10 @@ class NotificationManager {
         ? `Successfully sent: ${fileName}`
         : `Successfully received: ${fileName}`;
 
+    // Persist transfer-complete notifications
+    this.persistNotification(title, message, 'success');
+    this._unreadCount++;
+
     await this.showBrowserNotification(title, message, 'transfer-complete');
   }
 
@@ -323,6 +534,8 @@ class NotificationManager {
     const message = error
       ? `Failed to transfer ${fileName}: ${error}`
       : `Failed to transfer ${fileName}`;
+
+    this._unreadCount++;
 
     await this.showBrowserNotification(
       'Transfer Failed',
@@ -414,6 +627,8 @@ class NotificationManager {
     }
 
     await this.playSound('incomingTransfer');
+    this._unreadCount++;
+
     await this.showBrowserNotification(
       'Incoming Transfer Request',
       `${deviceName} wants to send: ${fileName}`,
@@ -426,7 +641,7 @@ class NotificationManager {
    */
   async connectionRequest(
     deviceName: string,
-    deviceId: string,
+    _deviceId: string,
     onAccept: () => void,
     onReject: () => void
   ): Promise<string | null> {
@@ -436,11 +651,30 @@ class NotificationManager {
     }
 
     await this.playSound('incomingTransfer');
+    this._unreadCount++;
+
     await this.showBrowserNotification(
       'Connection Request',
       `${deviceName} wants to connect`,
       'connection-request'
     );
+
+    let responded = false;
+    const handleAccept = () => {
+      responded = true;
+      onAccept();
+    };
+    const handleReject = () => {
+      responded = true;
+      onReject();
+    };
+
+    // Auto-reject after timeout even when no toast callback is registered.
+    setTimeout(() => {
+      if (!responded) {
+        handleReject();
+      }
+    }, 30000);
 
     // Return toast ID if callback is registered
     if (this.notificationCallback) {
@@ -453,14 +687,9 @@ class NotificationManager {
         group: 'connection',
         action: {
           label: 'Accept',
-          onClick: onAccept,
+          onClick: handleAccept,
         },
       });
-
-      // Auto-reject after timeout
-      setTimeout(() => {
-        onReject();
-      }, 30000);
 
       return toastId;
     }
@@ -469,12 +698,23 @@ class NotificationManager {
   }
 
   /**
-   * Request notification permission
+   * Request notification permission.
+   * This MUST only be called from a user-initiated action (e.g., button click).
+   * Never call this automatically on page load.
    */
-  async requestPermission(): Promise<void> {
+  async requestPermission(): Promise<NotificationPermission> {
+    this.permissionRequested = true;
     if (this.settings.browserNotifications) {
-      await browserNotifications.requestPermission();
+      return await browserNotifications.requestPermission();
     }
+    return 'denied';
+  }
+
+  /**
+   * Whether the user has explicitly triggered a permission request.
+   */
+  hasRequestedPermission(): boolean {
+    return this.permissionRequested;
   }
 
   /**
@@ -545,7 +785,7 @@ class NotificationManager {
    * Show transfer notification with progress
    */
   async showTransferNotification(
-    transferId: string,
+    _transferId: string,
     progress: number,
     fileName: string
   ): Promise<string | null> {
@@ -566,7 +806,7 @@ class NotificationManager {
           ? `${fileName} has been transferred successfully`
           : `Transferring ${fileName}...`,
         variant: progress === 100 ? 'success' : 'info',
-        duration: progress === 100 ? 5000 : Infinity,
+        duration: progress === 100 ? 3000 : Infinity,
         preview: {
           type: 'transfer',
           fileName,

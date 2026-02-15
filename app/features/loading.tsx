@@ -1,79 +1,81 @@
+import styles from './loading.module.css';
+
 export default function FeaturesLoading() {
+  const featureBlocks = Array.from({ length: 5 }, (_, i) => i);
+
   return (
     <div
-      style={{
-        minHeight: '100vh',
-        background: 'var(--bg, #030306)',
-        padding: 'clamp(120px, 18vw, 200px) clamp(16px, 4vw, 24px) 4rem',
-      }}
+      className={styles.page}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
     >
+      <span className={styles.srOnly}>Loading features page...</span>
+
+      {/* Header */}
       <div
-        style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '1.5rem',
-        }}
+        className={styles.streamStage}
+        data-stream-stage="1"
+        aria-hidden="true"
       >
-        {/* Label */}
-        <div
-          style={{
-            width: '140px',
-            height: '14px',
-            borderRadius: '60px',
-            background: 'linear-gradient(90deg, rgba(24,24,42,0.4) 0%, rgba(36,36,58,0.6) 40%, rgba(24,24,42,0.4) 80%)',
-            backgroundSize: '200% 100%',
-            animation: 'shimmer 1.8s ease-in-out infinite',
-          }}
-        />
-        {/* Title */}
-        <div
-          style={{
-            width: 'min(500px, 70vw)',
-            height: '48px',
-            borderRadius: '8px',
-            background: 'linear-gradient(90deg, rgba(24,24,42,0.4) 0%, rgba(36,36,58,0.6) 40%, rgba(24,24,42,0.4) 80%)',
-            backgroundSize: '200% 100%',
-            animation: 'shimmer 1.8s ease-in-out infinite',
-          }}
-        />
-        {/* Description */}
-        <div
-          style={{
-            width: 'min(400px, 60vw)',
-            height: '16px',
-            borderRadius: '8px',
-            background: 'linear-gradient(90deg, rgba(24,24,42,0.4) 0%, rgba(36,36,58,0.6) 40%, rgba(24,24,42,0.4) 80%)',
-            backgroundSize: '200% 100%',
-            animation: 'shimmer 1.8s ease-in-out infinite',
-          }}
-        />
-        {/* Card grid */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: '1.5rem',
-            width: '100%',
-            marginTop: '3rem',
-          }}
-        >
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              style={{
-                height: '200px',
-                borderRadius: '16px',
-                background: 'rgba(12, 12, 22, 0.55)',
-                border: '1px solid rgba(99, 102, 241, 0.08)',
-              }}
-            />
-          ))}
+        <div className={styles.header}>
+          <div className={`${styles.skeleton} ${styles.label}`} />
+          <div className={`${styles.skeleton} ${styles.title}`} />
+          <div className={`${styles.skeleton} ${styles.subtitle}`} />
         </div>
       </div>
-      <style>{`@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }`}</style>
+
+      {/* Feature blocks — alternating layout */}
+      <div
+        className={styles.streamStage}
+        data-stream-stage="2"
+        aria-hidden="true"
+      >
+        {featureBlocks.map((i) => (
+          <div
+            key={i}
+            className={`${styles.featureBlock} ${i % 2 !== 0 ? styles.featureBlockReverse : ''}`}
+          >
+            <div className={styles.featureContent}>
+              <div className={`${styles.skeleton} ${styles.featureLabel}`} />
+              <div className={`${styles.skeleton} ${styles.featureTitle}`} />
+              <div className={`${styles.skeleton} ${styles.featureDesc}`} />
+              <div className={`${styles.skeleton} ${styles.featureDescShort}`} />
+            </div>
+            <div className={styles.featureVisual}>
+              <div className={`${styles.skeleton} ${styles.visualCard}`} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Comparison section */}
+      <div
+        className={styles.streamStage}
+        data-stream-stage="3"
+        aria-hidden="true"
+      >
+        <div className={styles.comparisonSection}>
+          <div className={styles.comparisonHeader}>
+            <div className={`${styles.skeleton} ${styles.comparisonLabel}`} />
+            <div className={`${styles.skeleton} ${styles.comparisonTitle}`} />
+            <div className={`${styles.skeleton} ${styles.comparisonSubtitle}`} />
+          </div>
+          <div className={`${styles.skeleton} ${styles.comparisonTable}`} />
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div
+        className={styles.streamStage}
+        data-stream-stage="4"
+        aria-hidden="true"
+      >
+        <div className={styles.cta}>
+          <div className={`${styles.skeleton} ${styles.ctaTitle}`} />
+          <div className={`${styles.skeleton} ${styles.ctaButton}`} />
+        </div>
+      </div>
     </div>
   );
 }

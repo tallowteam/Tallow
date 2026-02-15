@@ -161,7 +161,7 @@ export function generateTeamCode(): string {
   crypto.getRandomValues(randomBytes);
   let code = '';
   for (let i = 0; i < 8; i++) {
-    code += chars.charAt(randomBytes[i] % chars.length);
+    code += chars.charAt((randomBytes[i] ?? 0) % chars.length);
   }
   return code;
 }

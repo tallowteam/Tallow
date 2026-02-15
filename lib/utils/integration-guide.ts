@@ -42,7 +42,7 @@ export function TransferPageIntegration() {
     }
   }, [peerFromUrl, devices, selectDeviceById]);
 
-  const handleDeviceSelect = useCallback(
+  const _handleDeviceSelect = useCallback(
     (deviceId: string) => {
       // Update URL with peer parameter
       const params = new URLSearchParams(window.location.search);
@@ -54,6 +54,7 @@ export function TransferPageIntegration() {
     },
     [router, selectDeviceById]
   );
+  void _handleDeviceSelect;
 
   // ===== FEATURE 2: Idle Connection Cleanup =====
   useEffect(() => {
@@ -70,13 +71,14 @@ export function TransferPageIntegration() {
     };
   }, []);
 
-  const handleDataTransfer = useCallback((connectionId: string, data: ArrayBuffer) => {
+  const _handleDataTransfer = useCallback((connectionId: string, _data: ArrayBuffer) => {
     // Reset idle timer on data activity
     resetTimer(connectionId);
 
     // Process the data...
     console.log('[Integration] Data transferred, idle timer reset');
   }, []);
+  void _handleDataTransfer;
 
   // ===== FEATURE 3: Background Task Scheduler =====
   useEffect(() => {
@@ -149,7 +151,7 @@ export function useP2PConnectionWithUtilities() {
  */
 export function useFileTransferWithIdleReset(connectionId: string) {
   const sendChunk = useCallback(
-    async (chunk: ArrayBuffer) => {
+    async (_chunk: ArrayBuffer) => {
       // Reset idle timer before sending
       resetTimer(connectionId);
 
@@ -160,7 +162,7 @@ export function useFileTransferWithIdleReset(connectionId: string) {
   );
 
   const receiveChunk = useCallback(
-    (chunk: ArrayBuffer) => {
+    (_chunk: ArrayBuffer) => {
       // Reset idle timer on receive
       resetTimer(connectionId);
 
@@ -362,7 +364,9 @@ export function ExampleTransferComponent() {
   // 2. Idle Monitoring
   useEffect(() => {
     startIdleMonitor(5 * 60 * 1000);
-    return () => stopIdleMonitor();
+    return () => {
+      stopIdleMonitor();
+    };
   }, []);
 
   // 3. Background Tasks
@@ -376,26 +380,25 @@ export function ExampleTransferComponent() {
       priority: 'low',
     });
 
-    return () => cancelTask(taskId);
+    return () => {
+      cancelTask(taskId);
+    };
   }, []);
 
   // Event handlers
-  const handleSelectDevice = (deviceId: string) => {
+  const _handleSelectDevice = (deviceId: string) => {
     const params = new URLSearchParams(window.location.search);
     params.set('peer', deviceId);
     router.push(`/transfer?${params.toString()}`, { scroll: false });
   };
+  void _handleSelectDevice;
 
-  const handleDataTransfer = (connectionId: string) => {
+  const _handleDataTransfer = (connectionId: string) => {
     resetTimer(connectionId);
   };
+  void _handleDataTransfer;
 
-  return (
-    <div>
-      {/* Your component JSX */}
-      <button onClick={() => handleSelectDevice('device-123')}>
-        Select Device
-      </button>
-    </div>
-  );
+  // Example component intentionally returns null in this .ts utility guide file.
+  // Use the handlers above inside a real .tsx component for rendered UI.
+  return null;
 }

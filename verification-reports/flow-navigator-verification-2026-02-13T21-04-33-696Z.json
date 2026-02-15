@@ -1,0 +1,43 @@
+{
+  "timestamp": "2026-02-13T21:04:33.693Z",
+  "checks": [
+    {
+      "name": "Flow navigator policy, sources, tests, and workflows exist",
+      "pass": true,
+      "details": [
+        "all required flow navigator files are present"
+      ]
+    },
+    {
+      "name": "Transfer navigation surfaces expose orientation semantics",
+      "pass": true,
+      "details": [
+        "desktop/mobile markers + active-state aria semantics are present"
+      ]
+    },
+    {
+      "name": "Responsive CSS enforces sidebar/tabbar exclusivity",
+      "pass": true,
+      "details": [
+        "desktop/mobile nav visibility split confirmed in sidebar CSS"
+      ]
+    },
+    {
+      "name": "E2E coverage includes exclusivity and browser back-button behavior",
+      "pass": true,
+      "details": [
+        "flow navigator e2e assertions detected in transfer + navigation suites"
+      ]
+    },
+    {
+      "name": "Flow navigator gate is wired in package scripts and workflows",
+      "pass": true,
+      "details": [
+        "verify:flow:navigator: node scripts/verify-flow-navigator.js",
+        ".github/workflows/ci.yml runs flow navigator verification",
+        ".github/workflows/release.yml runs flow navigator verification"
+      ]
+    }
+  ],
+  "passed": true
+}

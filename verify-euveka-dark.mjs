@@ -27,7 +27,7 @@ const pages = [
     const consoleErrors = [];
 
     page.on('console', msg => {
-      if (msg.type() === 'error') consoleErrors.push(msg.text());
+      if (msg.type() === 'error') {consoleErrors.push(msg.text());}
     });
 
     page.on('pageerror', err => {
@@ -72,7 +72,7 @@ const pages = [
         let dashedCount = 0;
         for (const el of document.querySelectorAll('*')) {
           const s = getComputedStyle(el);
-          if (s.borderStyle?.includes('dashed') || s.borderTopStyle?.includes('dashed')) dashedCount++;
+          if (s.borderStyle?.includes('dashed') || s.borderTopStyle?.includes('dashed')) {dashedCount++;}
         }
         results.dashedBorderCount = dashedCount;
 

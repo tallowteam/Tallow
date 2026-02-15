@@ -1,15 +1,17 @@
 import type { NextConfig } from "next";
-import type { Configuration as WebpackConfig } from "webpack";
 
 // Bundle analyzer (only in analyze mode)
 const withBundleAnalyzer = process.env.ANALYZE === 'true'
   ? require('@next/bundle-analyzer')({ enabled: true })
   : (config: NextConfig) => config;
 
+const enforceHttpsUpgradeCsp =
+  process.env.NODE_ENV === 'production' && process.env.TALLOW_ALLOW_HTTP !== '1';
+
 const nextConfig: NextConfig = {
-  // Skip TypeScript errors during build (pre-existing issues in i18n/tests)
+  // TypeScript strict mode enforced - no build errors allowed
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
 
   // Use webpack for build (not Turbopack) due to better compatibility
@@ -63,7 +65,9 @@ const nextConfig: NextConfig = {
               "default-src 'self'",
               // NOTE: 'unsafe-inline' should be replaced with nonce-based CSP in production
               // Next.js requires inline scripts for hydration - implement nonce system for stronger security
-              "script-src 'self' 'unsafe-inline'",
+              process.env.NODE_ENV === 'development'
+                ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+                : "script-src 'self' 'unsafe-inline'",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https:",
               "font-src 'self' data:",
@@ -74,9 +78,9 @@ const nextConfig: NextConfig = {
               "base-uri 'self'",
               "form-action 'self'",
               "frame-ancestors 'none'",
-              "upgrade-insecure-requests",
-              "block-all-mixed-content"
-            ].join('; ')
+              enforceHttpsUpgradeCsp ? "upgrade-insecure-requests" : '',
+              enforceHttpsUpgradeCsp ? "block-all-mixed-content" : ''
+            ].filter(Boolean).join('; ')
           },
           {
             key: 'X-XSS-Protection',
@@ -154,7 +158,7 @@ const nextConfig: NextConfig = {
   },
 
   // Webpack configuration for performance
-  webpack: (config: WebpackConfig, { isServer }: { isServer: boolean }) => {
+  webpack: (config: any, { isServer }: { isServer: boolean }) => {
     // Enable WASM support
     config.experiments = {
       ...config.experiments,

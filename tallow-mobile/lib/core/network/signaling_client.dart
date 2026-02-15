@@ -240,7 +240,7 @@ class SignalingClient {
   Future<void> leaveRoom() async {
     if (_roomId == null) return;
 
-    _socket?.emit('leave-room', {
+    _socket?.emit('leave-transfer-room', {
       'roomId': _roomId,
       'deviceId': _deviceId,
     });

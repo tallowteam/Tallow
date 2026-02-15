@@ -8,6 +8,8 @@
  * Random nonce fallback is only for backward compatibility.
  */
 
+export {};
+
 // Message types for communication
 interface CryptoWorkerMessage {
     type: 'encrypt' | 'decrypt' | 'hash' | 'derive-key';
@@ -38,13 +40,6 @@ interface DeriveKeyPayload {
 
 // Worker context
 const ctx: Worker = self as unknown as Worker;
-
-/**
- * Generate random bytes
- */
-function _randomBytes(length: number): Uint8Array {
-    return crypto.getRandomValues(new Uint8Array(length));
-}
 
 /**
  * AES-256-GCM Encryption

@@ -1,0 +1,43 @@
+{
+  "timestamp": "2026-02-13T20:44:29.255Z",
+  "checks": [
+    {
+      "name": "Compression specialist policy, code paths, tests, and workflows exist",
+      "pass": true,
+      "details": [
+        "all required compression specialist files are present"
+      ]
+    },
+    {
+      "name": "Entropy-first gate skips files above 7.5 bits/byte",
+      "pass": true,
+      "details": [
+        "entropy gate constants and skip condition found"
+      ]
+    },
+    {
+      "name": "Compression defaults enforce Zstd level-3 + LZ4 speed + LZMA max mode",
+      "pass": true,
+      "details": [
+        "algorithm routing and defaults match policy"
+      ]
+    },
+    {
+      "name": "Unit tests cover entropy skip behavior",
+      "pass": true,
+      "details": [
+        "high-entropy test coverage found in compression pipeline tests"
+      ]
+    },
+    {
+      "name": "Compression specialist gate is wired in package scripts and workflows",
+      "pass": true,
+      "details": [
+        "verify:compression:specialist: node scripts/verify-compression-specialist.js",
+        ".github/workflows/ci.yml runs compression specialist verification",
+        ".github/workflows/release.yml runs compression specialist verification"
+      ]
+    }
+  ],
+  "passed": true
+}

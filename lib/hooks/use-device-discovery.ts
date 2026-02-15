@@ -56,7 +56,7 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryReturn {
     return () => {
       discoveryController.stop();
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   return {
     status: discoveryController.status,

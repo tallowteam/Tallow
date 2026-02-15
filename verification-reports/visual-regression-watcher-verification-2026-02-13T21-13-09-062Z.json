@@ -1,0 +1,44 @@
+{
+  "timestamp": "2026-02-13T21:13:09.060Z",
+  "checks": [
+    {
+      "name": "Visual regression policy, Storybook, test suite, and workflows exist",
+      "pass": true,
+      "details": [
+        "all required visual-regression watcher files are present"
+      ]
+    },
+    {
+      "name": "Storybook + component table baseline is present",
+      "pass": false,
+      "details": [
+        "storybook preview missing actions argTypesRegex defaults",
+        "component props table appears incomplete (rows: 11)"
+      ]
+    },
+    {
+      "name": "Visual suite covers themes + viewport extremes with screenshot diffs",
+      "pass": true,
+      "details": [
+        "visual spec includes 4 themes, 320/1920 widths, and screenshot diff assertions"
+      ]
+    },
+    {
+      "name": "PR workflow runs visual regression job",
+      "pass": true,
+      "details": [
+        "visual regression job exists and is PR-triggered"
+      ]
+    },
+    {
+      "name": "Visual watcher gate is wired in package scripts and workflows",
+      "pass": true,
+      "details": [
+        "verify:visual:regression: node scripts/verify-visual-regression-watcher.js",
+        ".github/workflows/ci.yml runs visual watcher verification",
+        ".github/workflows/release.yml runs visual watcher verification"
+      ]
+    }
+  ],
+  "passed": false
+}

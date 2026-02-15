@@ -21,8 +21,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useP2PConnection } from './use-p2p-connection';
 import { useNATOptimizedConnection } from './use-nat-optimized-connection';
-import { encryptFile } from '../crypto/file-encryption-pqc';
-import { pqCrypto } from '../crypto/pqc-crypto';
+import { PQCTransferManager } from '../transfer/pqc-transfer-manager';
 import { Device, Transfer } from '../types';
 import { generateUUID } from '../utils/uuid';
 import secureLog from '../utils/secure-logger';
@@ -54,6 +53,7 @@ export interface TransferOrchestratorState {
   currentTransferId: string | null;
   error: string | null;
   encryptionEnabled: boolean;
+  pqcSessionReady: boolean;
 }
 
 /**
@@ -66,6 +66,20 @@ export interface TransferOrchestratorOptions {
   chunkSize?: number;
 }
 
+export interface UseTransferOrchestratorReturn {
+  state: TransferOrchestratorState;
+  connectToDevice: (device: Device) => Promise<void>;
+  disconnect: () => void;
+  sendFiles: (files: File[]) => Promise<void>;
+  p2pState: ReturnType<typeof useP2PConnection>['state'];
+  currentTransfer: ReturnType<typeof useP2PConnection>['currentTransfer'];
+  receivedFiles: ReturnType<typeof useP2PConnection>['receivedFiles'];
+  natState: ReturnType<typeof useNATOptimizedConnection> | null;
+  confirmVerification: ReturnType<typeof useP2PConnection>['confirmVerification'];
+  failVerification: ReturnType<typeof useP2PConnection>['failVerification'];
+  skipVerification: ReturnType<typeof useP2PConnection>['skipVerification'];
+}
+
 /**
  * Custom hook for orchestrating real P2P file transfers.
  *
@@ -73,7 +87,9 @@ export interface TransferOrchestratorOptions {
  * in lib/transfer/store-actions.ts so the compiler cannot convert
  * them into reactive subscriptions.
  */
-export function useTransferOrchestrator(options: TransferOrchestratorOptions = {}) {
+export function useTransferOrchestrator(
+  options: TransferOrchestratorOptions = {}
+): UseTransferOrchestratorReturn {
   const {
     enableEncryption = true,
     enableNATOptimization = true,
@@ -92,6 +108,7 @@ export function useTransferOrchestrator(options: TransferOrchestratorOptions = {
     currentTransferId: null,
     error: null,
     encryptionEnabled: enableEncryption,
+    pqcSessionReady: false,
   });
 
   // Hooks
@@ -103,25 +120,129 @@ export function useTransferOrchestrator(options: TransferOrchestratorOptions = {
 
   // Refs
   const encryptionKey = useRef<Uint8Array | null>(null);
+  const pqcManagerRef = useRef<PQCTransferManager | null>(null);
+  const pqcHandshakeStartedRef = useRef(false);
+  const currentTransferIdRef = useRef<string | null>(null);
+
+  const parsePQCMessageType = useCallback((raw: string): string | null => {
+    try {
+      const parsed = JSON.parse(raw) as { type?: unknown };
+      return typeof parsed.type === 'string' ? parsed.type : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const resetPQCState = useCallback(() => {
+    pqcManagerRef.current?.destroy();
+    pqcManagerRef.current = null;
+    pqcHandshakeStartedRef.current = false;
+    currentTransferIdRef.current = null;
+    setState((prev) => ({ ...prev, pqcSessionReady: false }));
+  }, []);
 
   /**
-   * Initialize encryption key for session
+   * Initialize or reuse PQC transfer manager
    */
-  const initializeEncryption = useCallback(async () => {
-    if (!enableEncryption) {
-      encryptionKey.current = null;
-      return;
+  const ensurePQCManager = useCallback(async (): Promise<PQCTransferManager> => {
+    if (pqcManagerRef.current) {
+      if (p2pConnection.dataChannel) {
+        pqcManagerRef.current.setDataChannel(p2pConnection.dataChannel);
+      }
+      return pqcManagerRef.current;
     }
 
-    try {
-      const key = pqCrypto.randomBytes(32);
-      encryptionKey.current = key;
-      secureLog.log('[TransferOrchestrator] Encryption key initialized');
-    } catch (error) {
-      secureLog.error('[TransferOrchestrator] Failed to initialize encryption:', error);
-      throw new Error('Failed to initialize encryption');
+    const manager = new PQCTransferManager();
+    await manager.initializeSession('send');
+
+    manager.onSessionReady(() => {
+      setState((prev) => ({ ...prev, pqcSessionReady: true }));
+    });
+
+    manager.onProgress((progress) => {
+      const transferId = currentTransferIdRef.current;
+      if (transferId) {
+        transferUpdateProgress(transferId, progress);
+        transferSetUploadProgress(progress);
+      }
+    });
+
+    manager.onComplete((blob, filename) => {
+      void (async () => {
+        setState((prev) => ({ ...prev, isReceiving: true }));
+        transferSetReceiving(true);
+
+        try {
+          await downloadFile(blob, filename);
+          setState((prev) => ({ ...prev, isReceiving: false }));
+        } catch (error) {
+          setState((prev) => ({
+            ...prev,
+            isReceiving: false,
+            error: error instanceof Error ? error.message : 'Failed to receive file',
+          }));
+        } finally {
+          transferSetReceiving(false);
+        }
+      })();
+    });
+
+    manager.onError((error) => {
+      setState((prev) => ({
+        ...prev,
+        error: error.message,
+        isTransferring: false,
+      }));
+    });
+
+    if (p2pConnection.dataChannel) {
+      manager.setDataChannel(p2pConnection.dataChannel);
     }
-  }, [enableEncryption]);
+
+    pqcManagerRef.current = manager;
+    return manager;
+  }, [p2pConnection.dataChannel]);
+
+  /**
+   * Wait until PQC key exchange completes
+   */
+  const waitForPQCSessionReady = useCallback(async (timeoutMs = 15000) => {
+    const start = Date.now();
+
+    while (Date.now() - start < timeoutMs) {
+      if (pqcManagerRef.current?.isReady()) {
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 75));
+    }
+
+    throw new Error('PQC key exchange did not complete in time');
+  }, []);
+
+  /**
+   * Ensure PQC handshake is active before sending file payloads
+   */
+  const ensurePQCHandshake = useCallback(async () => {
+    const manager = await ensurePQCManager();
+
+    if (!p2pConnection.dataChannel || p2pConnection.dataChannel.readyState !== 'open') {
+      throw new Error('Data channel not ready for PQC transfer');
+    }
+
+    manager.setDataChannel(p2pConnection.dataChannel);
+
+    if (manager.isReady()) {
+      return manager;
+    }
+
+    if (!pqcHandshakeStartedRef.current) {
+      manager.startKeyExchange();
+      pqcHandshakeStartedRef.current = true;
+    }
+
+    await waitForPQCSessionReady();
+    return manager;
+  }, [ensurePQCManager, p2pConnection.dataChannel, waitForPQCSessionReady]);
 
   /**
    * Connect to a device for P2P transfer
@@ -131,7 +252,7 @@ export function useTransferOrchestrator(options: TransferOrchestratorOptions = {
     deviceStartConnecting(device.id, device.name);
 
     try {
-      await initializeEncryption();
+      resetPQCState();
 
       if (enableNATOptimization && !natOptimized.localNAT) {
         secureLog.log('[TransferOrchestrator] Detecting NAT type...');
@@ -153,6 +274,7 @@ export function useTransferOrchestrator(options: TransferOrchestratorOptions = {
           isConnected: true,
           isConnecting: false,
           connectedDevice: device,
+          pqcSessionReady: false,
         }));
         deviceSetConnected('p2p');
         secureLog.log('[TransferOrchestrator] Connected to device:', device.name);
@@ -170,7 +292,7 @@ export function useTransferOrchestrator(options: TransferOrchestratorOptions = {
       throw error;
     }
   }, [
-    initializeEncryption,
+    resetPQCState,
     enableNATOptimization,
     natOptimized,
     p2pConnection,
@@ -190,6 +312,8 @@ export function useTransferOrchestrator(options: TransferOrchestratorOptions = {
     setState(prev => ({ ...prev, isTransferring: true, error: null }));
 
     try {
+      const pqcManager = await ensurePQCHandshake();
+
       for (const file of files) {
         const transferId = generateUUID();
         const thisDevice: Device = {
@@ -230,8 +354,8 @@ export function useTransferOrchestrator(options: TransferOrchestratorOptions = {
           eta: null,
           quality: 'excellent',
           encryptionMetadata: enableEncryption ? {
-            algorithm: 'ChaCha20-Poly1305',
-            keyExchange: 'X25519',
+            algorithm: 'AES-256-GCM',
+            keyExchange: 'Hybrid',
             iv: '',
             authTag: '',
             kdf: 'HKDF-SHA256',
@@ -244,29 +368,11 @@ export function useTransferOrchestrator(options: TransferOrchestratorOptions = {
 
         transferAdd(transfer);
         transferSetCurrent(file.name, file.size, file.type, state.connectedDevice!.id);
+        currentTransferIdRef.current = transferId;
         setState(prev => ({ ...prev, currentTransferId: transferId }));
 
-        secureLog.log('[TransferOrchestrator] Starting file transfer:', file.name);
-
-        let fileToSend = file;
-        if (enableEncryption && encryptionKey.current) {
-          secureLog.log('[TransferOrchestrator] Encrypting file...');
-          const encrypted = await encryptFile(file, encryptionKey.current);
-
-          const chunks: Uint8Array[] = [];
-          for (const chunk of encrypted.chunks) {
-            chunks.push(chunk.data);
-          }
-          const blob = new Blob(chunks, { type: 'application/octet-stream' });
-          fileToSend = new File([blob], file.name, { type: 'application/octet-stream' });
-
-          secureLog.log('[TransferOrchestrator] File encrypted, chunks:', encrypted.chunks.length);
-        }
-
-        await p2pConnection.sendFile(fileToSend, (progress) => {
-          transferUpdateProgress(transferId, progress);
-          transferSetUploadProgress(progress);
-        });
+        secureLog.log('[TransferOrchestrator] Starting PQC file transfer:', file.name);
+        await pqcManager.sendFile(file);
 
         transferUpdate(transferId, {
           status: 'completed',
@@ -282,6 +388,7 @@ export function useTransferOrchestrator(options: TransferOrchestratorOptions = {
         isTransferring: false,
         currentTransferId: null,
       }));
+      currentTransferIdRef.current = null;
       transferClearCurrent();
 
     } catch (error) {
@@ -290,10 +397,12 @@ export function useTransferOrchestrator(options: TransferOrchestratorOptions = {
         ...prev,
         isTransferring: false,
         error: errorMessage,
+        currentTransferId: null,
       }));
 
-      if (state.currentTransferId) {
-        transferUpdate(state.currentTransferId, {
+      const activeTransferId = currentTransferIdRef.current;
+      if (activeTransferId) {
+        transferUpdate(activeTransferId, {
           status: 'failed',
           error: {
             type: 'transfer',
@@ -304,6 +413,7 @@ export function useTransferOrchestrator(options: TransferOrchestratorOptions = {
           endTime: Date.now(),
         });
       }
+      currentTransferIdRef.current = null;
 
       secureLog.error('[TransferOrchestrator] Transfer failed:', error);
       throw error;
@@ -311,9 +421,8 @@ export function useTransferOrchestrator(options: TransferOrchestratorOptions = {
   }, [
     state.isConnected,
     state.connectedDevice,
-    state.currentTransferId,
+    ensurePQCHandshake,
     enableEncryption,
-    p2pConnection,
   ]);
 
   /**
@@ -321,6 +430,7 @@ export function useTransferOrchestrator(options: TransferOrchestratorOptions = {
    * Uses plain store-actions functions (not hook-based store access).
    */
   const disconnect = useCallback(() => {
+    resetPQCState();
     performFullDisconnect(
       () => p2pConnection.disconnect(),
       encryptionKey,
@@ -332,7 +442,59 @@ export function useTransferOrchestrator(options: TransferOrchestratorOptions = {
       connectedDevice: null,
       currentTransferId: null,
     }));
-  }, [p2pConnection]);
+  }, [p2pConnection, resetPQCState]);
+
+  /**
+   * Route PQC protocol messages to the transfer manager.
+   */
+  useEffect(() => {
+    p2pConnection.onMessage((payload) => {
+      if (typeof payload !== 'string') {
+        return;
+      }
+
+      const messageType = parsePQCMessageType(payload);
+      if (!messageType) {
+        return;
+      }
+
+      const pqcTypes = new Set([
+        'public-key',
+        'key-exchange',
+        'key-rotation',
+        'file-metadata',
+        'chunk',
+        'ack',
+        'error',
+        'complete',
+      ]);
+
+      if (!pqcTypes.has(messageType)) {
+        return;
+      }
+
+      void (async () => {
+        try {
+          const manager = await ensurePQCManager();
+
+          if (p2pConnection.dataChannel) {
+            manager.setDataChannel(p2pConnection.dataChannel);
+          }
+
+          if (messageType === 'public-key' && !pqcHandshakeStartedRef.current) {
+            manager.startKeyExchange();
+            pqcHandshakeStartedRef.current = true;
+          }
+
+          await manager.handleIncomingMessage(payload);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'PQC message handling failed';
+          setState((prev) => ({ ...prev, error: message }));
+          secureLog.error('[TransferOrchestrator] PQC message handling failed:', error);
+        }
+      })();
+    });
+  }, [ensurePQCManager, p2pConnection, parsePQCMessageType]);
 
   /**
    * Handle received files
@@ -346,10 +508,6 @@ export function useTransferOrchestrator(options: TransferOrchestratorOptions = {
         secureLog.log('[TransferOrchestrator] Received file:', receivedFile.name);
 
         const finalBlob = receivedFile.blob;
-
-        if (enableEncryption && encryptionKey.current) {
-          secureLog.log('[TransferOrchestrator] File received (decryption requires metadata)');
-        }
 
         await downloadFile(finalBlob, receivedFile.name);
 
@@ -367,7 +525,7 @@ export function useTransferOrchestrator(options: TransferOrchestratorOptions = {
         transferSetReceiving(false);
       }
     });
-  }, [p2pConnection, enableEncryption]);
+  }, [p2pConnection]);
 
   /**
    * Sync P2P connection state with orchestrator
@@ -398,12 +556,15 @@ export function useTransferOrchestrator(options: TransferOrchestratorOptions = {
   p2pRef.current = p2pConnection;
   useEffect(() => {
     return () => {
+      pqcManagerRef.current?.destroy();
+      pqcManagerRef.current = null;
+      currentTransferIdRef.current = null;
       performFullDisconnect(
         () => p2pRef.current.disconnect(),
         encryptionKey,
       );
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);  
 
   return {
     state,

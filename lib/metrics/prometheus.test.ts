@@ -231,7 +231,7 @@ describe('Summary', () => {
     // p50 should be around 5
     expect(output).toMatch(/quantile="0\.5".*[5-6]/);
     // p90 should be around 9
-    expect(output).toMatch(/quantile="0\.9".*[9-10]/);
+    expect(output).toMatch(/quantile="0\.9".*(9|10)/);
   });
 
   it('should serialize to Prometheus format', () => {

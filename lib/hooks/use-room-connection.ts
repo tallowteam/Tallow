@@ -305,7 +305,7 @@ export function useRoomConnection(options: UseRoomConnectionOptions = {}): UseRo
     return () => {
       disconnect();
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);  
 
   // Monitor connection quality based on member updates
   useEffect(() => {

@@ -40,10 +40,28 @@ export type {
 } from './performance-bridge';
 
 // ============================================================================
+// Re-export WASM bridge modules
+// ============================================================================
+
+export {
+  compressWithWasm,
+  decompressWithWasm,
+} from './compression-bridge';
+
+export type {
+  WasmCompressionAlgorithm,
+} from './compression-bridge';
+
+export {
+  chunkBufferWithWasm,
+  reassembleChunks,
+} from './chunking-bridge';
+
+// ============================================================================
 // Convenience Functions
 // ============================================================================
 
-import { isWasmSupported } from './wasm-loader';
+import { isWasmSupported, getWasmCrypto } from './wasm-loader';
 import { getPerformanceBridge } from './performance-bridge';
 
 /**

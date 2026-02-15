@@ -94,10 +94,10 @@ class BrowserNotificationManager {
         icon: options.icon || '/icon.svg',
         badge: options.badge || '/icon.svg',
       };
-      if (options.tag !== undefined) notifOpts.tag = options.tag;
-      if (options.requireInteraction !== undefined) notifOpts.requireInteraction = options.requireInteraction;
-      if (options.silent !== undefined) notifOpts.silent = options.silent;
-      if (options.data !== undefined) notifOpts.data = options.data;
+      if (options.tag !== undefined) {notifOpts.tag = options.tag;}
+      if (options.requireInteraction !== undefined) {notifOpts.requireInteraction = options.requireInteraction;}
+      if (options.silent !== undefined) {notifOpts.silent = options.silent;}
+      if (options.data !== undefined) {notifOpts.data = options.data;}
       const notification = new Notification(options.title, notifOpts);
 
       // Store click handler

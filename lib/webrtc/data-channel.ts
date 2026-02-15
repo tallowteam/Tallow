@@ -108,6 +108,16 @@ export interface DataChannelEvents {
   onMessage?: (peerId: string, data: string | ArrayBuffer) => void;
   onNATDetected?: (result: NATDetectionResult) => void;
   onConnectionStrategyDetermined?: (peerId: string, strategy: ConnectionStrategyResult) => void;
+  /**
+   * Called when an ICE restart offer needs to be sent to the remote peer.
+   * The caller MUST relay this offer via the signaling server and return
+   * the remote peer's answer. If this callback is not provided, ICE
+   * restart offers will be created but never delivered (the original bug).
+   */
+  onICERestartNeeded?: (
+    peerId: string,
+    offer: RTCSessionDescriptionInit,
+  ) => Promise<RTCSessionDescriptionInit>;
 }
 
 // ============================================================================
@@ -139,7 +149,8 @@ const DATA_CHANNEL_CONFIG: DataChannelConfig = {
 const BUFFER_HIGH_THRESHOLD = 16 * 1024 * 1024; // 16MB - pause sending
 const BUFFER_LOW_THRESHOLD = 4 * 1024 * 1024; // 4MB - resume sending
 
-const RECONNECT_DELAYS = [1000, 2000, 5000]; // ms - exponential backoff
+// ICE-BREAKER Agent 022: exponential backoff 1s -> 2s -> 4s (max 3 retries)
+const RECONNECT_DELAYS = [1000, 2000, 4000]; // ms - exponential backoff
 const PING_INTERVAL = 5000; // 5 seconds
 const ACTIVITY_TIMEOUT = 30000; // 30 seconds
 
@@ -210,6 +221,8 @@ export class DataChannelManager {
     }
 
     secureLog.log(`[DataChannel] Creating connection to peer: ${peerName}`);
+
+    await this.ensureNATReadyBeforeNegotiation('offer', peerId, peerName);
 
     // Create peer connection with privacy-preserving config
     const rtcConfig = this.privateTransport.getRTCConfiguration();
@@ -303,6 +316,8 @@ export class DataChannelManager {
     }
 
     secureLog.log(`[DataChannel] Accepting connection from peer: ${peerName}`);
+
+    await this.ensureNATReadyBeforeNegotiation('answer', peerId, peerName);
 
     // Create peer connection
     const rtcConfig = this.privateTransport.getRTCConfiguration();
@@ -732,45 +747,129 @@ export class DataChannelManager {
     const attempts = this.reconnectAttempts.get(peerId) || 0;
 
     if (attempts < this.config.reconnectAttempts) {
-      secureLog.log(`[DataChannel] Connection failed for ${peerInfo.peerName}, attempting reconnect (${attempts + 1}/${this.config.reconnectAttempts})`);
+      secureLog.log(
+        `[DataChannel] Connection failed for ${peerInfo.peerName}, ` +
+        `attempting ICE restart (${attempts + 1}/${this.config.reconnectAttempts})`,
+      );
 
       this.reconnectAttempts.set(peerId, attempts + 1);
 
-      // Schedule reconnect with exponential backoff
-      const delay = RECONNECT_DELAYS[Math.min(attempts, RECONNECT_DELAYS.length - 1)] || 5000;
+      // ICE-BREAKER Agent 022: exponential backoff 1s -> 2s -> 4s
+      const delay = RECONNECT_DELAYS[Math.min(attempts, RECONNECT_DELAYS.length - 1)] || 4000;
       setTimeout(() => {
         this.attemptReconnect(peerId);
       }, delay);
     } else {
-      secureLog.error(`[DataChannel] Connection failed for ${peerInfo.peerName} after ${attempts} attempts`);
+      secureLog.error(
+        `[DataChannel] Connection failed for ${peerInfo.peerName} ` +
+        `after ${attempts} ICE restart attempts`,
+      );
 
       // Record failed WebRTC connection metrics
       const connectionType = this.config.enablePrivacyMode ? 'relay' : 'direct';
       recordWebRTCConnection('failed', connectionType);
       recordError('network', 'error');
 
-      this.disconnectPeer(peerId, 'Connection failed after retries');
+      this.disconnectPeer(peerId, 'Connection failed after ICE restart retries');
     }
   }
 
+  /**
+   * Attempt ICE restart: create offer with iceRestart:true, send it to
+   * the remote peer via signaling, and apply the returned answer.
+   *
+   * ICE-BREAKER Agent 022 fix: The original implementation created the
+   * restart offer but never sent it to the remote peer. The offer is now
+   * delivered via the onICERestartNeeded callback, which the caller must
+   * wire to the signaling server.
+   */
   private async attemptReconnect(peerId: string): Promise<void> {
     const peerInfo = this.peers.get(peerId);
     if (!peerInfo) {return;}
 
     try {
-      // ICE restart
+      // Step 1: Create ICE restart offer.
       const offer = await peerInfo.connection.createOffer({ iceRestart: true });
       await peerInfo.connection.setLocalDescription(offer);
 
-      // Wait for ICE gathering
+      // Step 2: Wait for ICE gathering to complete.
       await this.waitForIceGathering(peerInfo.connection);
 
-      secureLog.log(`[DataChannel] ICE restart initiated for ${peerInfo.peerName}`);
-      // The new offer should be sent via signaling server
+      const localDesc = peerInfo.connection.localDescription;
+      if (!localDesc) {
+        throw new Error('Local description is null after ICE restart offer');
+      }
+
+      // Step 3: Send the restart offer via signaling and get the answer.
+      if (!this.events.onICERestartNeeded) {
+        secureLog.error(
+          `[DataChannel] ICE restart for ${peerInfo.peerName}: ` +
+          `no onICERestartNeeded callback registered -- offer cannot be delivered`,
+        );
+        // Fall through to failure handler so retries/disconnect proceed.
+        this.handleConnectionFailure(peerId);
+        return;
+      }
+
+      secureLog.log(
+        `[DataChannel] ICE restart: sending offer to ${peerInfo.peerName} via signaling`,
+      );
+
+      const answer = await this.events.onICERestartNeeded(peerId, localDesc);
+
+      // Step 4: Apply the remote answer.
+      await peerInfo.connection.setRemoteDescription(answer);
+
+      secureLog.log(
+        `[DataChannel] ICE restart completed for ${peerInfo.peerName}`,
+      );
+
+      // Reset attempt counter on success.
+      this.reconnectAttempts.set(peerId, 0);
     } catch (error) {
-      secureLog.error(`[DataChannel] Reconnect failed for ${peerInfo.peerName}:`, error);
+      secureLog.error(
+        `[DataChannel] ICE restart failed for ${peerInfo.peerName}:`,
+        error,
+      );
       this.handleConnectionFailure(peerId);
     }
+  }
+
+  /**
+   * Handle an incoming ICE restart offer from a remote peer.
+   * Called by the signaling layer when the remote side initiates a restart.
+   *
+   * @returns The local answer to send back via signaling.
+   */
+  async handleRemoteICERestart(
+    peerId: string,
+    offer: RTCSessionDescriptionInit,
+  ): Promise<RTCSessionDescriptionInit> {
+    const peerInfo = this.peers.get(peerId);
+    if (!peerInfo) {
+      throw new Error(`Peer ${peerId} not found for ICE restart`);
+    }
+
+    secureLog.log(
+      `[DataChannel] Handling remote ICE restart from ${peerInfo.peerName}`,
+    );
+
+    await peerInfo.connection.setRemoteDescription(offer);
+    const answer = await peerInfo.connection.createAnswer();
+    await peerInfo.connection.setLocalDescription(answer);
+
+    await this.waitForIceGathering(peerInfo.connection);
+
+    const localDesc = peerInfo.connection.localDescription;
+    if (!localDesc) {
+      throw new Error('Local description is null after creating restart answer');
+    }
+
+    secureLog.log(
+      `[DataChannel] ICE restart answer created for ${peerInfo.peerName}`,
+    );
+
+    return localDesc;
   }
 
   // ==========================================================================
@@ -799,6 +898,38 @@ export class DataChannelManager {
 
       connection.addEventListener('icegatheringstatechange', handler);
     });
+  }
+
+  /**
+   * Ensure NAT detection completed before WebRTC negotiation starts.
+   * This makes connection strategy decisions deterministic and logged.
+   */
+  private async ensureNATReadyBeforeNegotiation(
+    direction: 'offer' | 'answer',
+    peerId: string,
+    peerName: string
+  ): Promise<void> {
+    if (!this.config.enableNATDetection) {
+      return;
+    }
+
+    try {
+      const result = await this.detectNAT();
+      secureLog.log('[DataChannel] NAT ready before negotiation', {
+        direction,
+        peerId,
+        peerName,
+        natType: result.type,
+        confidence: result.confidence,
+      });
+    } catch (error) {
+      secureLog.warn('[DataChannel] NAT detection failed before negotiation, continuing with fallback strategy', {
+        direction,
+        peerId,
+        peerName,
+        error,
+      });
+    }
   }
 
   // ==========================================================================

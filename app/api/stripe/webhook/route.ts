@@ -17,6 +17,14 @@ export const runtime = 'nodejs';
 // Increase body size limit for webhook payloads
 export const maxDuration = 10; // 10 seconds max
 
+function getInvoiceSubscriptionId(invoice: Stripe.Invoice): string | undefined {
+  const subscription = invoice.parent?.subscription_details?.subscription;
+  if (!subscription) {
+    return undefined;
+  }
+  return typeof subscription === 'string' ? subscription : subscription.id;
+}
+
 // ============================================================================
 // WEBHOOK EVENT HANDLERS
 // ============================================================================
@@ -183,7 +191,7 @@ async function handleInvoicePaymentSucceeded(
   console.log('Invoice payment succeeded:', {
     invoiceId: invoice.id,
     customerId: invoice.customer,
-    subscriptionId: invoice.subscription,
+    subscriptionId: getInvoiceSubscriptionId(invoice),
     amount: invoice.amount_paid,
     billing_reason: invoice.billing_reason,
   });
@@ -212,7 +220,7 @@ async function handleInvoicePaymentFailed(
   console.log('Invoice payment failed:', {
     invoiceId: invoice.id,
     customerId: invoice.customer,
-    subscriptionId: invoice.subscription,
+    subscriptionId: getInvoiceSubscriptionId(invoice),
     amount: invoice.amount_due,
     attemptCount: invoice.attempt_count,
   });
@@ -236,7 +244,7 @@ async function handleInvoiceUpcoming(
 
   console.log('Upcoming invoice:', {
     customerId: invoice.customer,
-    subscriptionId: invoice.subscription,
+    subscriptionId: getInvoiceSubscriptionId(invoice),
     amount: invoice.amount_due,
     periodEnd: invoice.period_end,
   });

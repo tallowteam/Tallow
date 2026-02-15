@@ -7,7 +7,7 @@
 // PLAN TYPES
 // ============================================================================
 
-export type PlanTier = 'free' | 'pro' | 'business';
+export type PlanTier = 'free' | 'pro' | 'business' | 'enterprise';
 
 export interface PlanFeatures {
   // File Transfer Limits
@@ -70,6 +70,8 @@ export const STRIPE_PRICE_IDS = {
   PRO_YEARLY: process.env['NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY'] || 'price_test_pro_yearly',
   BUSINESS_MONTHLY: process.env['NEXT_PUBLIC_STRIPE_PRICE_BUSINESS_MONTHLY'] || 'price_test_business_monthly',
   BUSINESS_YEARLY: process.env['NEXT_PUBLIC_STRIPE_PRICE_BUSINESS_YEARLY'] || 'price_test_business_yearly',
+  ENTERPRISE_MONTHLY: process.env['NEXT_PUBLIC_STRIPE_PRICE_ENTERPRISE_MONTHLY'] || 'price_test_enterprise_monthly',
+  ENTERPRISE_YEARLY: process.env['NEXT_PUBLIC_STRIPE_PRICE_ENTERPRISE_YEARLY'] || 'price_test_enterprise_yearly',
 } as const;
 
 /**
@@ -179,6 +181,39 @@ const BUSINESS_FEATURES: PlanFeatures = {
   customBranding: true,
 };
 
+const ENTERPRISE_FEATURES: PlanFeatures = {
+  // Transfer Limits
+  maxFileSize: Infinity, // No limit
+  maxTransfersPerDay: Infinity, // No limit
+  maxRecipients: Infinity, // No limit
+
+  // Performance
+  priorityRelay: true,
+  priorityTurnServers: true,
+  bandwidthPriority: true,
+
+  // Team
+  teamMembers: Infinity, // No limit
+  sharedRooms: true,
+  teamAnalytics: true,
+
+  // Storage
+  transferHistory: Infinity, // Unlimited history retention
+  transferAnalytics: true,
+
+  // Support
+  supportLevel: 'dedicated',
+  responseTime: '1 hour',
+
+  // Advanced
+  customRoomCodes: true,
+  apiAccess: true,
+  webhooks: true,
+  ssoIntegration: true,
+  selfHostedOption: true,
+  customBranding: true,
+};
+
 // ============================================================================
 // PRICING PLANS
 // ============================================================================
@@ -259,6 +294,24 @@ export const PRICING_PLANS: Record<PlanTier, PricingPlan> = {
       'Dedicated support (4h)',
     ],
   },
+
+  enterprise: {
+    id: 'enterprise',
+    name: 'Enterprise',
+    description: 'For regulated and mission-critical deployments',
+    price: 99.99,
+    priceId: STRIPE_PRICE_IDS.ENTERPRISE_MONTHLY,
+    features: ENTERPRISE_FEATURES,
+    included: [
+      'Everything in Business',
+      'Enterprise SLA and incident response',
+      'Priority onboarding and migration',
+      'Custom deployment architecture review',
+      'Unlimited compliance evidence retention',
+      'Dedicated technical account manager',
+      'Quarterly security and reliability reviews',
+    ],
+  },
 };
 
 // ============================================================================
@@ -272,6 +325,7 @@ export interface ComparisonFeature {
     free: string | boolean;
     pro: string | boolean;
     business: string | boolean;
+    enterprise?: string | boolean;
     tooltip?: string;
   }[];
 }
