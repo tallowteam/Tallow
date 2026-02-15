@@ -1,0 +1,175 @@
+//! Hybrid KEM combining ML-KEM and X25519
+
+use crate::error::{CryptoError, Result};
+use crate::hash::{blake3, domain};
+use crate::kem::{mlkem, x25519};
+use serde::{Deserialize, Serialize};
+use zeroize::Zeroize;
+
+/// Hybrid public key (ML-KEM + X25519)
+#[derive(Clone, Serialize, Deserialize)]
+pub struct PublicKey {
+    pub mlkem: mlkem::PublicKey,
+    #[serde(with = "x25519_pubkey_serde")]
+    pub x25519: x25519::X25519PublicKey,
+}
+
+// Custom serde for X25519 PublicKey
+mod x25519_pubkey_serde {
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+    use x25519_dalek::PublicKey;
+
+    pub fn serialize<S>(pk: &PublicKey, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        pk.as_bytes().serialize(serializer)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<PublicKey, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let bytes = <[u8; 32]>::deserialize(deserializer)?;
+        Ok(PublicKey::from(bytes))
+    }
+}
+
+/// Hybrid secret key (ML-KEM + X25519)
+#[derive(Clone, Zeroize, Serialize, Deserialize)]
+#[zeroize(drop)]
+pub struct SecretKey {
+    pub mlkem: mlkem::SecretKey,
+    pub x25519: x25519::X25519KeyPair,
+}
+
+/// Hybrid ciphertext
+#[derive(Clone, Serialize, Deserialize)]
+pub struct Ciphertext {
+    pub mlkem: mlkem::Ciphertext,
+    #[serde(with = "x25519_pubkey_serde")]
+    pub x25519_public: x25519::X25519PublicKey,
+}
+
+/// Hybrid shared secret
+#[derive(Clone, Zeroize)]
+#[zeroize(drop)]
+pub struct SharedSecret(pub [u8; 32]);
+
+/// Hybrid KEM operations
+pub struct HybridKem;
+
+impl HybridKem {
+    /// Generate a new hybrid keypair
+    ///
+    /// # Returns
+    ///
+    /// A tuple of (public_key, secret_key)
+    pub fn keygen() -> (PublicKey, SecretKey) {
+        let (mlkem_pk, mlkem_sk) = mlkem::MlKem::keygen();
+        let x25519_kp = x25519::X25519KeyPair::generate();
+
+        let pk = PublicKey {
+            mlkem: mlkem_pk,
+            x25519: *x25519_kp.public_key(),
+        };
+
+        let sk = SecretKey {
+            mlkem: mlkem_sk,
+            x25519: x25519_kp,
+        };
+
+        (pk, sk)
+    }
+
+    /// Encapsulate a shared secret to a hybrid public key
+    ///
+    /// # Arguments
+    ///
+    /// * `pk` - The recipient's public key
+    ///
+    /// # Returns
+    ///
+    /// A tuple of (ciphertext, shared_secret)
+    pub fn encapsulate(pk: &PublicKey) -> Result<(Ciphertext, SharedSecret)> {
+        // Encapsulate with ML-KEM
+        let (mlkem_ct, mlkem_ss) = mlkem::MlKem::encapsulate(&pk.mlkem)?;
+
+        // Generate ephemeral X25519 keypair and compute DH
+        let ephemeral_kp = x25519::X25519KeyPair::generate();
+        let x25519_ss = ephemeral_kp.diffie_hellman(&pk.x25519);
+
+        // Combine both shared secrets using BLAKE3
+        let combined = Self::combine_secrets(&mlkem_ss.0, &x25519_ss.0)?;
+
+        let ct = Ciphertext {
+            mlkem: mlkem_ct,
+            x25519_public: *ephemeral_kp.public_key(),
+        };
+
+        Ok((ct, SharedSecret(combined)))
+    }
+
+    /// Decapsulate a shared secret from a hybrid ciphertext
+    ///
+    /// # Arguments
+    ///
+    /// * `sk` - The recipient's secret key
+    /// * `ct` - The ciphertext
+    ///
+    /// # Returns
+    ///
+    /// The shared secret
+    pub fn decapsulate(sk: &SecretKey, ct: &Ciphertext) -> Result<SharedSecret> {
+        // Decapsulate ML-KEM
+        let mlkem_ss = mlkem::MlKem::decapsulate(&sk.mlkem, &ct.mlkem)?;
+
+        // Compute X25519 DH
+        let x25519_ss = sk.x25519.diffie_hellman(&ct.x25519_public);
+
+        // Combine both shared secrets
+        let combined = Self::combine_secrets(&mlkem_ss.0, &x25519_ss.0)?;
+
+        Ok(SharedSecret(combined))
+    }
+
+    /// Combine two shared secrets using BLAKE3 KDF
+    fn combine_secrets(mlkem_ss: &[u8; 32], x25519_ss: &[u8; 32]) -> Result<[u8; 32]> {
+        let mut combined_input = [0u8; 64];
+        combined_input[..32].copy_from_slice(mlkem_ss);
+        combined_input[32..].copy_from_slice(x25519_ss);
+
+        // Use BLAKE3 with domain separation to combine
+        Ok(blake3::derive_key(domain::DOMAIN_HYBRID_COMBINE, &combined_input))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_hybrid_roundtrip() {
+        let (pk, sk) = HybridKem::keygen();
+        let (ct, ss1) = HybridKem::encapsulate(&pk).unwrap();
+        let ss2 = HybridKem::decapsulate(&sk, &ct).unwrap();
+
+        assert_eq!(ss1.0, ss2.0);
+    }
+
+    #[test]
+    fn test_hybrid_serialization() {
+        let (pk, sk) = HybridKem::keygen();
+
+        let pk_serialized = bincode::serialize(&pk).unwrap();
+        let sk_serialized = bincode::serialize(&sk).unwrap();
+
+        let pk2: PublicKey = bincode::deserialize(&pk_serialized).unwrap();
+        let sk2: SecretKey = bincode::deserialize(&sk_serialized).unwrap();
+
+        let (ct, ss1) = HybridKem::encapsulate(&pk2).unwrap();
+        let ss2 = HybridKem::decapsulate(&sk2, &ct).unwrap();
+
+        assert_eq!(ss1.0, ss2.0);
+    }
+}

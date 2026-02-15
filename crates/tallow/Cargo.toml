@@ -1,0 +1,63 @@
+[package]
+name = "tallow"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "The most secure peer-to-peer file transfer CLI tool"
+default-run = "tallow"
+
+[[bin]]
+name = "tallow"
+path = "src/main.rs"
+
+[features]
+default = ["tui", "quic"]
+tui = ["dep:tallow-tui"]
+quic = ["tallow-net/quic"]
+aegis = ["tallow-crypto/aegis"]
+onion = ["tallow-net/onion"]
+full = ["tui", "quic", "aegis", "onion"]
+
+[dependencies]
+tallow-crypto = { path = "../tallow-crypto" }
+tallow-net = { path = "../tallow-net" }
+tallow-protocol = { path = "../tallow-protocol" }
+tallow-store = { path = "../tallow-store" }
+tallow-tui = { path = "../tallow-tui", optional = true }
+
+# CLI
+clap = { version = "4", features = ["derive", "env", "string", "wrap_help"] }
+clap_complete = "4"
+clap_mangen = "0.2"
+
+# Interactive CLI
+dialoguer = { version = "0.11", features = ["password", "fuzzy-select"] }
+indicatif = "0.17"
+owo-colors = "4"
+comfy-table = "7"
+qrcode = "0.14"
+arboard = "3"
+
+# Async
+tokio.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Logging
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tracing-appender = "0.2"
+
+# Error handling
+anyhow.workspace = true
+color-eyre = "0.6"
+
+# Memory locking (cross-platform)
+region = "3"
+
+[dev-dependencies]
+assert_cmd = "2"
+predicates = "3"
+tempfile = "3"

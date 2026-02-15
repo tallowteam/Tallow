@@ -1,0 +1,53 @@
+[package]
+name = "tallow-net"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Networking layer for Tallow — QUIC, TCP+TLS, mDNS, NAT traversal, relay"
+
+[features]
+default = ["quic"]
+quic = ["dep:quinn"]
+onion = []
+
+[dependencies]
+tallow-crypto = { path = "../tallow-crypto" }
+
+# QUIC Transport
+quinn = { version = "0.11", optional = true }
+
+# TLS
+rustls = { version = "0.23", features = ["ring"] }
+rustls-pemfile = "2"
+webpki-roots = "0.26"
+tokio-rustls = "0.26"
+
+# DNS
+hickory-resolver = { version = "0.24", features = ["dns-over-https-rustls"] }
+
+# Local Discovery
+mdns-sd = "0.11"
+
+# Proxy
+tokio-socks = "0.5"
+
+# UPnP
+igd-next = "0.15"
+
+# Async
+tokio.workspace = true
+tokio-util.workspace = true
+futures.workspace = true
+
+# Serialization
+serde.workspace = true
+bincode.workspace = true
+
+# Utilities
+bytes.workspace = true
+rand.workspace = true
+tracing.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }

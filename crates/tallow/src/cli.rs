@@ -1,0 +1,289 @@
+//! CLI argument parsing
+
+use clap::{Parser, Subcommand, Args};
+use std::path::PathBuf;
+
+#[derive(Parser)]
+#[command(name = "tallow")]
+#[command(author, version, about = "Secure P2P file transfer", long_about = None)]
+pub struct Cli {
+    /// Verbose output (-v, -vv, -vvv)
+    #[arg(short, long, action = clap::ArgAction::Count)]
+    pub verbose: u8,
+
+    #[command(subcommand)]
+    pub command: Commands,
+}
+
+#[derive(Subcommand)]
+pub enum Commands {
+    /// Send files to a peer
+    Send(SendArgs),
+
+    /// Receive files from a peer
+    Receive(ReceiveArgs),
+
+    /// Start a chat session
+    Chat(ChatArgs),
+
+    /// Sync a folder with a peer
+    Sync(SendArgs),
+
+    /// Watch a folder for changes and auto-send
+    Watch(ReceiveArgs),
+
+    /// Stream data to a peer
+    Stream(SendArgs),
+
+    /// Start interactive TUI
+    Tui(TuiArgs),
+
+    /// Connect through a specific relay
+    Relay(SendArgs),
+
+    /// List and probe relay servers
+    Relays,
+
+    /// Manage contacts
+    Contacts(ContactsArgs),
+
+    /// Manage trust database
+    Trust(TrustArgs),
+
+    /// Manage identity keys
+    Identity(IdentityArgs),
+
+    /// Manage configuration
+    Config(ConfigArgs),
+
+    /// Run diagnostic checks
+    Doctor,
+
+    /// Run performance benchmarks
+    Benchmark(BenchmarkArgs),
+
+    /// Generate shell completions
+    Completions(CompletionsArgs),
+
+    /// Show version and build info
+    Version,
+}
+
+#[derive(Args)]
+pub struct SendArgs {
+    /// Files or directories to send
+    #[arg(required = true)]
+    pub files: Vec<PathBuf>,
+
+    /// Target peer ID or device name
+    #[arg(short, long)]
+    pub to: Option<String>,
+
+    /// Room code for internet transfer
+    #[arg(short, long)]
+    pub room: Option<String>,
+
+    /// Enable compression
+    #[arg(short, long)]
+    pub compress: bool,
+
+    /// Strip metadata from files
+    #[arg(long)]
+    pub strip_metadata: bool,
+
+    /// Encrypt filenames
+    #[arg(long)]
+    pub encrypt_filenames: bool,
+
+    /// Output format (text/json)
+    #[arg(short, long, default_value = "text")]
+    pub output: String,
+}
+
+#[derive(Args)]
+pub struct ReceiveArgs {
+    /// Output directory
+    #[arg(short, long)]
+    pub output: Option<PathBuf>,
+
+    /// Room code to join
+    #[arg(short, long)]
+    pub room: Option<String>,
+
+    /// Auto-accept from trusted peers
+    #[arg(long)]
+    pub auto_accept: bool,
+
+    /// Output format (text/json)
+    #[arg(short = 'f', long, default_value = "text")]
+    pub format: String,
+}
+
+#[derive(Args)]
+pub struct ChatArgs {
+    /// Peer ID or device name
+    pub peer: Option<String>,
+
+    /// Room code to join
+    #[arg(short, long)]
+    pub room: Option<String>,
+}
+
+#[derive(Args)]
+pub struct TuiArgs {
+    /// Start in minimal mode
+    #[arg(short, long)]
+    pub minimal: bool,
+
+    /// Start in zen mode
+    #[arg(short, long)]
+    pub zen: bool,
+
+    /// Start in monitor mode
+    #[arg(long)]
+    pub monitor: bool,
+}
+
+#[derive(Args)]
+pub struct ContactsArgs {
+    #[command(subcommand)]
+    pub command: Option<ContactsCommands>,
+}
+
+#[derive(Subcommand)]
+pub enum ContactsCommands {
+    /// Add a contact
+    Add {
+        /// Contact name
+        name: String,
+        /// Public key (hex or file path)
+        #[arg(short, long)]
+        key: String,
+    },
+    /// Remove a contact
+    Remove {
+        /// Contact ID or name
+        id: String,
+    },
+    /// List all contacts
+    List,
+    /// Show contact details
+    Show {
+        /// Contact ID or name
+        id: String,
+    },
+}
+
+#[derive(Args)]
+pub struct TrustArgs {
+    #[command(subcommand)]
+    pub command: Option<TrustCommands>,
+}
+
+#[derive(Subcommand)]
+pub enum TrustCommands {
+    /// Mark a peer as trusted
+    Trust {
+        /// Peer ID
+        peer_id: String,
+    },
+    /// Remove trust from a peer
+    Untrust {
+        /// Peer ID
+        peer_id: String,
+    },
+    /// Verify a peer's key
+    Verify {
+        /// Peer ID
+        peer_id: String,
+        /// Fingerprint to compare
+        fingerprint: String,
+    },
+    /// List all trusted peers
+    List,
+}
+
+#[derive(Args)]
+pub struct IdentityArgs {
+    #[command(subcommand)]
+    pub command: Option<IdentityCommands>,
+}
+
+#[derive(Subcommand)]
+pub enum IdentityCommands {
+    /// Generate a new identity
+    Generate {
+        /// Overwrite existing identity
+        #[arg(short, long)]
+        force: bool,
+    },
+    /// Show current identity
+    Show,
+    /// Export identity
+    Export {
+        /// Output file
+        #[arg(short, long)]
+        output: PathBuf,
+    },
+    /// Import identity
+    Import {
+        /// Input file
+        file: PathBuf,
+    },
+    /// Show fingerprint
+    Fingerprint {
+        /// Use emoji format
+        #[arg(short, long)]
+        emoji: bool,
+    },
+}
+
+#[derive(Args)]
+pub struct ConfigArgs {
+    #[command(subcommand)]
+    pub command: Option<ConfigCommands>,
+}
+
+#[derive(Subcommand)]
+pub enum ConfigCommands {
+    /// Show current configuration
+    Show,
+    /// Edit configuration
+    Edit,
+    /// Set a configuration value
+    Set {
+        /// Config key (e.g., network.enable_mdns)
+        key: String,
+        /// Config value
+        value: String,
+    },
+    /// Get a configuration value
+    Get {
+        /// Config key
+        key: String,
+    },
+    /// Reset to defaults
+    Reset {
+        /// Skip confirmation
+        #[arg(short, long)]
+        yes: bool,
+    },
+}
+
+#[derive(Args)]
+pub struct BenchmarkArgs {
+    /// Benchmark type (crypto/network/compression)
+    #[arg(default_value = "all")]
+    pub bench_type: String,
+
+    /// Duration in seconds
+    #[arg(short, long, default_value = "10")]
+    pub duration: u64,
+}
+
+#[derive(Args)]
+pub struct CompletionsArgs {
+    /// Shell type
+    #[arg(value_enum)]
+    pub shell: clap_complete::Shell,
+}

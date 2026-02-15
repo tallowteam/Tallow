@@ -1,0 +1,69 @@
+[package]
+name = "tallow-crypto"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Cryptographic primitives for Tallow — PQC, symmetric, hashing, PAKE, ratchets"
+
+[features]
+default = []
+aegis = ["dep:aegis"]
+fips = []
+
+[dependencies]
+# Post-Quantum KEM
+pqcrypto-kyber = "0.8"
+pqcrypto-traits = "0.3"
+
+# Post-Quantum Signatures
+pqcrypto-dilithium = "0.5"
+pqcrypto-sphincsplus = "0.7"
+
+# Classical Key Exchange
+x25519-dalek = { version = "2", features = ["static_secrets"] }
+curve25519-dalek = "4"
+
+# Classical Signatures
+ed25519-dalek = { version = "2", features = ["rand_core"] }
+
+# Symmetric Encryption
+aes-gcm = "0.10"
+chacha20poly1305 = "0.10"
+aegis = { version = "0.6", optional = true }
+
+# Hashing & KDF
+blake3.workspace = true
+sha3 = "0.10"
+sha2 = "0.10"
+argon2 = "0.5"
+hkdf = "0.12"
+
+# PAKE
+opaque-ke = "3"
+
+# Key Safety
+zeroize.workspace = true
+secrecy.workspace = true
+subtle.workspace = true
+
+# Randomness
+rand.workspace = true
+getrandom.workspace = true
+rand_core = "0.6"
+
+# Serialization
+serde.workspace = true
+bincode.workspace = true
+
+# Errors
+thiserror.workspace = true
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+proptest = "1"
+hex = "0.4"
+tokio = { workspace = true, features = ["test-util"] }
+
+[[bench]]
+name = "crypto_benchmarks"
+harness = false

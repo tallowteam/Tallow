@@ -1,0 +1,32 @@
+//! Key Encapsulation Mechanisms (KEM)
+//!
+//! Provides ML-KEM (Kyber), X25519, and hybrid KEM constructions.
+
+pub mod hybrid;
+pub mod mlkem;
+pub mod negotiation;
+pub mod x25519;
+
+pub use hybrid::HybridKem;
+pub use mlkem::MlKem;
+pub use negotiation::{negotiate, KemCapabilities};
+pub use x25519::X25519KeyPair;
+
+use serde::{Deserialize, Serialize};
+
+/// Supported KEM algorithms
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum KemAlgorithm {
+    /// ML-KEM-1024 (post-quantum)
+    MlKem1024,
+    /// X25519 (classical ECDH)
+    X25519,
+    /// Hybrid: ML-KEM-1024 + X25519
+    Hybrid,
+}
+
+impl Default for KemAlgorithm {
+    fn default() -> Self {
+        KemAlgorithm::Hybrid
+    }
+}
