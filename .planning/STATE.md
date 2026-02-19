@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Files transfer securely between two parties where the relay never sees plaintext, with post-quantum cryptography protecting against future quantum attacks.
-**Current focus:** Phase 2 — Wire Protocol, Transport and Relay
+**Current focus:** Phase 3 — File Transfer Pipeline
 
 ## Current Position
 
-Phase: 2 of 6 (Wire Protocol, Transport and Relay)
+Phase: 3 of 6 (File Transfer Pipeline)
 Plan: 0 of TBD in current phase
-Status: Phase 1 complete, starting Phase 2
-Last activity: 2026-02-19 — Phase 1 Security Hardening complete (all 15 SECFIX requirements)
+Status: Phase 2 complete, starting Phase 3
+Last activity: 2026-02-19 — Phase 2 Wire Protocol complete (WIRE, XPORT, RELAY)
 
-Progress: [██░░░░░░░░] 17%
+Progress: [████░░░░░░] 33%
 
 ## Performance Metrics
 
