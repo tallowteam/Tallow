@@ -22,14 +22,14 @@ pub struct SlhDsaSigner {
 
 impl SlhDsaSigner {
     /// Generate a new SLH-DSA keypair
-    pub fn keygen() -> Self {
-        let (vk, sk) =
-            slh_dsa_sha2_256f::KG::try_keygen().expect("SLH-DSA keygen uses OS RNG");
+    pub fn keygen() -> Result<Self> {
+        let (vk, sk) = slh_dsa_sha2_256f::KG::try_keygen()
+            .map_err(|_| CryptoError::KeyGeneration("SLH-DSA keygen failed: OS RNG unavailable".to_string()))?;
 
-        Self {
+        Ok(Self {
             public_key: vk.into_bytes().to_vec(),
             secret_key: sk.into_bytes().to_vec(),
-        }
+        })
     }
 
     /// Sign a message
@@ -101,7 +101,7 @@ mod tests {
 
     #[test]
     fn test_slhdsa_sign_verify() {
-        let signer = SlhDsaSigner::keygen();
+        let signer = SlhDsaSigner::keygen().unwrap();
         let message = b"test message";
 
         let sig = signer.sign(message).unwrap();
@@ -112,7 +112,7 @@ mod tests {
 
     #[test]
     fn test_slhdsa_wrong_message() {
-        let signer = SlhDsaSigner::keygen();
+        let signer = SlhDsaSigner::keygen().unwrap();
         let message = b"test message";
         let wrong_message = b"wrong message";
 

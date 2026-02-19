@@ -68,10 +68,10 @@ pub struct PreKeyBundle {
 impl SignedPreKey {
     /// Generate a new signed pre-key
     pub fn generate(id: u32, identity: &Ed25519Signer) -> Result<Self> {
-        let (pk, _sk) = HybridKem::keygen();
+        let (pk, _sk) = HybridKem::keygen()?;
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .expect("system clock before UNIX epoch")
+            .map_err(|e| CryptoError::KeyGeneration(format!("system clock error: {}", e)))?
             .as_secs();
 
         let pk_bytes = bincode::serialize(&pk)
@@ -108,8 +108,8 @@ impl SignedPreKey {
 
 impl OneTimePreKey {
     /// Generate a new one-time pre-key
-    pub fn generate(id: u32) -> Self {
-        let (pk, _sk) = HybridKem::keygen();
-        Self { id, public_key: pk }
+    pub fn generate(id: u32) -> Result<Self> {
+        let (pk, _sk) = HybridKem::keygen()?;
+        Ok(Self { id, public_key: pk })
     }
 }

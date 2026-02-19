@@ -10,6 +10,7 @@ pub mod panels;
 pub mod overlays;
 pub mod security;
 pub mod modes;
+pub mod widgets;
 
 use app::App;
 use crossterm::event::KeyCode;

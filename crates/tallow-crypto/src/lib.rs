@@ -12,7 +12,7 @@
 //! - **Domain Separation**: Cryptographic domain separation for all use cases
 
 #![warn(missing_docs)]
-#![forbid(unsafe_code)]
+#![deny(unsafe_code)]
 
 pub mod error;
 pub mod file;

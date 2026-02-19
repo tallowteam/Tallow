@@ -1,5 +1,6 @@
 //! Key rotation records with signed transitions
 
+use crate::error::{CryptoError, Result};
 use crate::sig::{Ed25519Signer, HybridSigner};
 use serde::{Deserialize, Serialize};
 
@@ -39,12 +40,12 @@ impl KeyRotationRecord {
     pub fn new(
         old_identity: &Ed25519Signer,
         new_identity: &Ed25519Signer,
-    ) -> Self {
+    ) -> Result<Self> {
         let old_key_id = old_identity.verifying_key_bytes();
         let new_key_id = new_identity.verifying_key_bytes();
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .expect("system clock before UNIX epoch")
+            .map_err(|e| CryptoError::KeyGeneration(format!("system clock error: {}", e)))?
             .as_secs();
 
         let mut message = Vec::new();
@@ -54,12 +55,12 @@ impl KeyRotationRecord {
 
         let signature = old_identity.sign(&message);
 
-        Self {
+        Ok(Self {
             old_key_id,
             new_key_id,
             timestamp,
             signature,
-        }
+        })
     }
 
     /// Verify the rotation record signature

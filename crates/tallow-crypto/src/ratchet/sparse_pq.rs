@@ -42,16 +42,16 @@ impl SparsePqRatchet {
     }
 
     /// Perform a ratchet step
-    pub fn step(&mut self) -> Option<PublicKey> {
+    pub fn step(&mut self) -> Result<Option<PublicKey>> {
         self.step_count += 1;
 
         if self.step_count % self.rekey_interval == 0 {
             // Time to rekey
-            let (pk, sk) = MlKem::keygen();
+            let (pk, sk) = MlKem::keygen()?;
             self.keypair = Some((pk.clone(), sk));
-            Some(pk)
+            Ok(Some(pk))
         } else {
-            None
+            Ok(None)
         }
     }
 

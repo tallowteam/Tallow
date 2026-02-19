@@ -22,13 +22,14 @@ pub struct MlDsaSigner {
 
 impl MlDsaSigner {
     /// Generate a new ML-DSA-87 keypair
-    pub fn keygen() -> Self {
-        let (vk, sk) = ml_dsa_87::KG::try_keygen().expect("ML-DSA-87 keygen uses OS RNG");
+    pub fn keygen() -> Result<Self> {
+        let (vk, sk) = ml_dsa_87::KG::try_keygen()
+            .map_err(|_| CryptoError::KeyGeneration("ML-DSA-87 keygen failed: OS RNG unavailable".to_string()))?;
 
-        Self {
+        Ok(Self {
             public_key: vk.into_bytes().to_vec(),
             secret_key: sk.into_bytes().to_vec(),
-        }
+        })
     }
 
     /// Sign a message
@@ -100,7 +101,7 @@ mod tests {
 
     #[test]
     fn test_mldsa_sign_verify() {
-        let signer = MlDsaSigner::keygen();
+        let signer = MlDsaSigner::keygen().unwrap();
         let message = b"test message";
 
         let sig = signer.sign(message).unwrap();
@@ -111,7 +112,7 @@ mod tests {
 
     #[test]
     fn test_mldsa_wrong_message() {
-        let signer = MlDsaSigner::keygen();
+        let signer = MlDsaSigner::keygen().unwrap();
         let message = b"test message";
         let wrong_message = b"wrong message";
 
@@ -123,7 +124,7 @@ mod tests {
 
     #[test]
     fn test_mldsa_key_sizes() {
-        let signer = MlDsaSigner::keygen();
+        let signer = MlDsaSigner::keygen().unwrap();
         assert_eq!(signer.public_key_bytes().len(), VK_LEN);
         assert_eq!(signer.secret_key.len(), SK_LEN);
     }

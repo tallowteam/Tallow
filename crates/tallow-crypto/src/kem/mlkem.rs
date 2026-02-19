@@ -101,14 +101,15 @@ impl MlKem {
     ///
     /// # Returns
     ///
-    /// A tuple of (public_key, secret_key)
-    pub fn keygen() -> (PublicKey, SecretKey) {
-        let (ek, dk) = ml_kem_1024::KG::try_keygen().expect("ML-KEM-1024 keygen uses OS RNG");
+    /// A tuple of (public_key, secret_key), or an error if the system RNG fails
+    pub fn keygen() -> Result<(PublicKey, SecretKey)> {
+        let (ek, dk) = ml_kem_1024::KG::try_keygen()
+            .map_err(|_| CryptoError::KeyGeneration("ML-KEM-1024 keygen failed: OS RNG unavailable".to_string()))?;
 
         let ek_bytes = ek.into_bytes().to_vec();
         let dk_bytes = dk.into_bytes().to_vec();
 
-        (PublicKey(ek_bytes), SecretKey(dk_bytes))
+        Ok((PublicKey(ek_bytes), SecretKey(dk_bytes)))
     }
 
     /// Encapsulate a shared secret to a public key
@@ -177,7 +178,7 @@ mod tests {
 
     #[test]
     fn test_mlkem_roundtrip() {
-        let (pk, sk) = MlKem::keygen();
+        let (pk, sk) = MlKem::keygen().unwrap();
         let (ct, ss1) = MlKem::encapsulate(&pk).unwrap();
         let ss2 = MlKem::decapsulate(&sk, &ct).unwrap();
 
@@ -186,7 +187,7 @@ mod tests {
 
     #[test]
     fn test_mlkem_serialization() {
-        let (pk, sk) = MlKem::keygen();
+        let (pk, sk) = MlKem::keygen().unwrap();
 
         let pk_bytes = pk.as_bytes().to_vec();
         let sk_bytes = sk.as_bytes().to_vec();
@@ -202,7 +203,7 @@ mod tests {
 
     #[test]
     fn test_mlkem_key_sizes() {
-        let (pk, sk) = MlKem::keygen();
+        let (pk, sk) = MlKem::keygen().unwrap();
         assert_eq!(pk.as_bytes().len(), EK_LEN);
         assert_eq!(sk.as_bytes().len(), DK_LEN);
     }

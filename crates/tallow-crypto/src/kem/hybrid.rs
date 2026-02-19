@@ -64,9 +64,9 @@ impl HybridKem {
     ///
     /// # Returns
     ///
-    /// A tuple of (public_key, secret_key)
-    pub fn keygen() -> (PublicKey, SecretKey) {
-        let (mlkem_pk, mlkem_sk) = mlkem::MlKem::keygen();
+    /// A tuple of (public_key, secret_key), or an error if key generation fails
+    pub fn keygen() -> Result<(PublicKey, SecretKey)> {
+        let (mlkem_pk, mlkem_sk) = mlkem::MlKem::keygen()?;
         let x25519_kp = x25519::X25519KeyPair::generate();
 
         let pk = PublicKey {
@@ -79,7 +79,7 @@ impl HybridKem {
             x25519: x25519_kp,
         };
 
-        (pk, sk)
+        Ok((pk, sk))
     }
 
     /// Encapsulate a shared secret to a hybrid public key
@@ -150,7 +150,7 @@ mod tests {
 
     #[test]
     fn test_hybrid_roundtrip() {
-        let (pk, sk) = HybridKem::keygen();
+        let (pk, sk) = HybridKem::keygen().unwrap();
         let (ct, ss1) = HybridKem::encapsulate(&pk).unwrap();
         let ss2 = HybridKem::decapsulate(&sk, &ct).unwrap();
 
@@ -159,7 +159,7 @@ mod tests {
 
     #[test]
     fn test_hybrid_serialization() {
-        let (pk, sk) = HybridKem::keygen();
+        let (pk, sk) = HybridKem::keygen().unwrap();
 
         let pk_serialized = bincode::serialize(&pk).unwrap();
         let sk_serialized = bincode::serialize(&sk).unwrap();

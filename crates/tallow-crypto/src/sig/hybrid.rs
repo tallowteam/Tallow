@@ -44,11 +44,11 @@ pub struct HybridSigner {
 
 impl HybridSigner {
     /// Generate a new hybrid keypair
-    pub fn keygen() -> Self {
-        Self {
-            mldsa: mldsa::MlDsaSigner::keygen(),
+    pub fn keygen() -> Result<Self> {
+        Ok(Self {
+            mldsa: mldsa::MlDsaSigner::keygen()?,
             ed25519: ed25519::Ed25519Signer::keygen(),
-        }
+        })
     }
 
     /// Sign a message with both algorithms
@@ -104,7 +104,7 @@ mod tests {
 
     #[test]
     fn test_hybrid_sign_verify() {
-        let signer = HybridSigner::keygen();
+        let signer = HybridSigner::keygen().unwrap();
         let message = b"test message";
 
         let signature = signer.sign(message).unwrap();

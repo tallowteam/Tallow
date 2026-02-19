@@ -51,12 +51,13 @@ impl TripleRatchet {
     ///
     /// If the sparse PQ ratchet triggers a rekey, the new PQ shared secret
     /// is mixed into the double ratchet's root key via HKDF.
-    pub fn step(&mut self) {
-        if let Some(_pk) = self.sparse_pq_ratchet.step() {
+    pub fn step(&mut self) -> Result<()> {
+        if let Some(_pk) = self.sparse_pq_ratchet.step()? {
             // PQ rekey occurred — mix the new secret into the double ratchet
             let pq_secret = *self.sparse_pq_ratchet.current_secret();
             self.double_ratchet.mix_pq_secret(&pq_secret);
         }
+        Ok(())
     }
 
     /// Get the double ratchet reference
@@ -92,11 +93,11 @@ mod tests {
         let mut ratchet = TripleRatchet::init(&shared_secret, 2);
 
         // Step 1: no PQ rekey
-        ratchet.step();
+        ratchet.step().unwrap();
 
         // Step 2: PQ rekey should occur (interval = 2)
         // This should mix the PQ secret into the double ratchet
-        ratchet.step();
+        ratchet.step().unwrap();
 
         // Verify the ratchet still works after PQ mixing
         let ct = ratchet.encrypt_message(b"after pq rekey").unwrap();

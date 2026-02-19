@@ -16,7 +16,7 @@ pub struct IdentityKeyPair {
 impl IdentityKeyPair {
     /// Generate a new identity keypair
     pub fn generate() -> Result<Self> {
-        let signer = HybridSigner::keygen();
+        let signer = HybridSigner::keygen()?;
         let pk = signer.public_key();
 
         // Derive identity from public key

@@ -57,10 +57,10 @@ fn bench_mlkem(c: &mut Criterion) {
     let mut group = c.benchmark_group("kem/ml-kem-1024");
 
     group.bench_function("keygen", |b| {
-        b.iter(|| MlKem::keygen());
+        b.iter(|| MlKem::keygen().unwrap());
     });
 
-    let (pk, sk) = MlKem::keygen();
+    let (pk, sk) = MlKem::keygen().unwrap();
 
     group.bench_function("encapsulate", |b| {
         b.iter(|| MlKem::encapsulate(black_box(&pk)));
