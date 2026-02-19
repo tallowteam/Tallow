@@ -3,6 +3,8 @@
 //! Manages configuration, identity keypairs, trust database, contacts,
 //! transfer history, and encrypted key-value persistence.
 
+#![forbid(unsafe_code)]
+
 pub mod error;
 pub mod config;
 pub mod identity;

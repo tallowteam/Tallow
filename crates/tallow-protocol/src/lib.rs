@@ -3,6 +3,8 @@
 //! Defines message formats, transfer pipelines, compression, file manifests,
 //! chat protocol, room management, and metadata handling.
 
+#![forbid(unsafe_code)]
+
 pub mod error;
 pub mod wire;
 pub mod transfer;

@@ -3,6 +3,8 @@
 //! Provides transport abstractions, NAT traversal, discovery, privacy-preserving
 //! networking, relay support, and signaling protocols.
 
+#![forbid(unsafe_code)]
+
 pub mod error;
 pub mod transport;
 pub mod nat;

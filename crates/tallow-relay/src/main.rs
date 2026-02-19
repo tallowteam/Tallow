@@ -1,5 +1,7 @@
 //! Tallow relay server
 
+#![forbid(unsafe_code)]
+
 mod config;
 mod server;
 mod signaling;

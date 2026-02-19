@@ -1,5 +1,7 @@
 //! Terminal UI for Tallow
 
+#![forbid(unsafe_code)]
+
 pub mod app;
 pub mod event;
 pub mod render;
