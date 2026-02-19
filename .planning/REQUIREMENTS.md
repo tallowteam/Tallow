@@ -280,10 +280,10 @@ Deferred to future release. Tracked but not in current roadmap.
 | DISC-03 | Phase 5 | Pending |
 
 **Coverage:**
-- v1 requirements: 78 total
-- Mapped to phases: 78
-- Unmapped: 0 ✓
+- v1 requirements: 87 total
+- Mapped to phases: 87
+- Unmapped: 0 (corrected from prior count of 78 which undercounted WIRE, XPORT, RELAY, DISC categories)
 
 ---
 *Requirements defined: 2026-02-19*
-*Last updated: 2026-02-19 after initial definition*
+*Last updated: 2026-02-19 after roadmap creation (coverage count corrected to 87)*
