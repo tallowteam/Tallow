@@ -4,4 +4,4 @@ pub mod keypair;
 pub mod fingerprint;
 
 pub use keypair::IdentityStore;
-pub use fingerprint::{fingerprint_emoji, fingerprint_hex};
+pub use fingerprint::{fingerprint_emoji, fingerprint_hex, fingerprint_short};

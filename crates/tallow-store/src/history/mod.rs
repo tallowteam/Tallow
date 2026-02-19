@@ -2,4 +2,4 @@
 
 pub mod log;
 
-pub use log::TransferLog;
+pub use log::{TransferDirection, TransferEntry, TransferLog, TransferStatus};

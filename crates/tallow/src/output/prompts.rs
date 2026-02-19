@@ -1,24 +1,32 @@
-//! User prompts and input
+//! User prompts and input using dialoguer
 
 use std::io;
 
 /// Prompt for yes/no confirmation
 pub fn confirm(message: &str) -> io::Result<bool> {
-    print!("{} [y/N]: ", message);
-    // Would use dialoguer crate
-    Ok(false)
+    dialoguer::Confirm::new()
+        .with_prompt(message)
+        .default(false)
+        .interact()
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Prompt failed: {}", e)))
 }
 
-/// Prompt for password input
+/// Prompt for password input (hidden)
 pub fn password_prompt(message: &str) -> io::Result<String> {
-    print!("{}: ", message);
-    // Would use dialoguer crate with hidden input
-    Ok(String::new())
+    dialoguer::Password::new()
+        .with_prompt(message)
+        .interact()
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Password prompt failed: {}", e)))
 }
 
 /// Select from a list of options
-pub fn select<T: ToString>(message: &str, _options: &[T]) -> io::Result<usize> {
-    print!("{}: ", message);
-    // Would use dialoguer crate
-    Ok(0)
+pub fn select<T: ToString>(message: &str, options: &[T]) -> io::Result<usize> {
+    let items: Vec<String> = options.iter().map(|o| o.to_string()).collect();
+
+    dialoguer::Select::new()
+        .with_prompt(message)
+        .items(&items)
+        .default(0)
+        .interact()
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Select failed: {}", e)))
 }

@@ -44,6 +44,13 @@ tokio.workspace = true
 # Serialization
 serde.workspace = true
 serde_json.workspace = true
+toml = "0.8"
+
+# Crypto
+rand.workspace = true
+getrandom.workspace = true
+blake3.workspace = true
+hex = "0.4"
 
 # Logging
 tracing.workspace = true

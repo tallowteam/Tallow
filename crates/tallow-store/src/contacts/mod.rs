@@ -3,5 +3,5 @@
 pub mod database;
 pub mod groups;
 
-pub use database::ContactDatabase;
+pub use database::{Contact, ContactDatabase};
 pub use groups::ContactGroup;

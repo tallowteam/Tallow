@@ -8,8 +8,16 @@ use std::path::PathBuf;
 #[command(author, version, about = "Secure P2P file transfer", long_about = None)]
 pub struct Cli {
     /// Verbose output (-v, -vv, -vvv)
-    #[arg(short, long, action = clap::ArgAction::Count)]
+    #[arg(short, long, action = clap::ArgAction::Count, global = true)]
     pub verbose: u8,
+
+    /// Suppress non-essential output
+    #[arg(short, long, global = true)]
+    pub quiet: bool,
+
+    /// Output in JSON format (machine-readable)
+    #[arg(long, global = true)]
+    pub json: bool,
 
     #[command(subcommand)]
     pub command: Commands,
@@ -95,28 +103,36 @@ pub struct SendArgs {
     #[arg(long)]
     pub encrypt_filenames: bool,
 
-    /// Output format (text/json)
-    #[arg(short, long, default_value = "text")]
-    pub output: String,
+    /// Relay server address
+    #[arg(long, default_value = "relay.tallow.app:4433")]
+    pub relay: String,
+
+    /// SOCKS5 proxy address (e.g., socks5://127.0.0.1:9050)
+    #[arg(long)]
+    pub proxy: Option<String>,
 }
 
 #[derive(Args)]
 pub struct ReceiveArgs {
+    /// Code phrase to join
+    #[arg()]
+    pub code: Option<String>,
+
     /// Output directory
     #[arg(short, long)]
     pub output: Option<PathBuf>,
-
-    /// Room code to join
-    #[arg(short, long)]
-    pub room: Option<String>,
 
     /// Auto-accept from trusted peers
     #[arg(long)]
     pub auto_accept: bool,
 
-    /// Output format (text/json)
-    #[arg(short = 'f', long, default_value = "text")]
-    pub format: String,
+    /// Relay server address
+    #[arg(long, default_value = "relay.tallow.app:4433")]
+    pub relay: String,
+
+    /// SOCKS5 proxy address
+    #[arg(long)]
+    pub proxy: Option<String>,
 }
 
 #[derive(Args)]
@@ -219,13 +235,13 @@ pub enum IdentityCommands {
     },
     /// Show current identity
     Show,
-    /// Export identity
+    /// Export identity to file
     Export {
         /// Output file
         #[arg(short, long)]
         output: PathBuf,
     },
-    /// Import identity
+    /// Import identity from file
     Import {
         /// Input file
         file: PathBuf,
@@ -248,7 +264,7 @@ pub struct ConfigArgs {
 pub enum ConfigCommands {
     /// Show current configuration
     Show,
-    /// Edit configuration
+    /// Edit configuration in $EDITOR
     Edit,
     /// Set a configuration value
     Set {
@@ -262,6 +278,8 @@ pub enum ConfigCommands {
         /// Config key
         key: String,
     },
+    /// List all configuration keys and values
+    List,
     /// Reset to defaults
     Reset {
         /// Skip confirmation
@@ -272,7 +290,7 @@ pub enum ConfigCommands {
 
 #[derive(Args)]
 pub struct BenchmarkArgs {
-    /// Benchmark type (crypto/network/compression)
+    /// Benchmark type (crypto/network/compression/all)
     #[arg(default_value = "all")]
     pub bench_type: String,
 
