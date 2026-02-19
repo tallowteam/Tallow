@@ -1,6 +1,6 @@
 //! Password strength estimation and generation
 
-use crate::error::Result;
+use crate::kdf::eff_wordlist::EFF_WORDLIST;
 use rand::{seq::SliceRandom, thread_rng};
 
 /// Estimate the entropy of a password in bits
@@ -61,49 +61,29 @@ pub fn estimate_entropy(password: &str) -> f64 {
     length * bits_per_char
 }
 
-/// Generate a diceware passphrase
+/// Generate a diceware passphrase using the EFF Large Wordlist
 ///
-/// Creates a passphrase using a simplified word list.
-/// Real implementation should use the EFF word list.
+/// Uses the full 7776-word EFF wordlist for ~12.9 bits of entropy per word.
+/// 6 words provides ~77.5 bits, 8 words provides ~103.4 bits.
 ///
 /// # Arguments
 ///
-/// * `word_count` - Number of words in the passphrase
+/// * `word_count` - Number of words in the passphrase (6+ recommended)
 ///
 /// # Returns
 ///
-/// A passphrase with words separated by spaces
+/// A passphrase with words separated by hyphens
 pub fn generate_diceware(word_count: usize) -> String {
-    // Simplified word list for demonstration
-    // Production should use the full EFF word list (7776 words)
-    const WORDS: &[&str] = &[
-        "abandon", "ability", "able", "about", "above", "absent", "absorb", "abstract",
-        "absurd", "abuse", "access", "accident", "account", "accuse", "achieve", "acid",
-        "acoustic", "acquire", "across", "act", "action", "actor", "actress", "actual",
-        "adapt", "add", "addict", "address", "adjust", "admit", "adult", "advance",
-        "advice", "aerobic", "affair", "afford", "afraid", "again", "age", "agent",
-        "agree", "ahead", "aim", "air", "airport", "aisle", "alarm", "album",
-        "alcohol", "alert", "alien", "all", "alley", "allow", "almost", "alone",
-        "alpha", "already", "also", "alter", "always", "amateur", "amazing", "among",
-        "amount", "amused", "analyst", "anchor", "ancient", "anger", "angle", "angry",
-        "animal", "ankle", "announce", "annual", "another", "answer", "antenna", "antique",
-        "anxiety", "any", "apart", "apology", "appear", "apple", "approve", "april",
-        "arch", "arctic", "area", "arena", "argue", "arm", "armed", "armor",
-        "army", "around", "arrange", "arrest", "arrive", "arrow", "art", "artefact",
-        "artist", "artwork", "ask", "aspect", "assault", "asset", "assist", "assume",
-        // In production, include all 7776 EFF words
-    ];
-
     let mut rng = thread_rng();
     let mut words = Vec::with_capacity(word_count);
 
     for _ in 0..word_count {
-        if let Some(word) = WORDS.choose(&mut rng) {
+        if let Some(word) = EFF_WORDLIST.choose(&mut rng) {
             words.push(*word);
         }
     }
 
-    words.join(" ")
+    words.join("-")
 }
 
 /// Check if a password meets minimum strength requirements
@@ -212,7 +192,16 @@ mod tests {
     #[test]
     fn test_generate_diceware() {
         let passphrase = generate_diceware(6);
-        assert_eq!(passphrase.split_whitespace().count(), 6);
+        assert_eq!(passphrase.split('-').count(), 6);
+
+        // Verify all words come from the EFF wordlist
+        for word in passphrase.split('-') {
+            assert!(
+                EFF_WORDLIST.contains(&word),
+                "Word '{}' not in EFF wordlist",
+                word
+            );
+        }
     }
 
     #[test]

@@ -3,6 +3,7 @@
 //! This module provides KDF primitives including HKDF, Argon2, and password utilities.
 
 pub mod argon2;
+pub mod eff_wordlist;
 pub mod hkdf;
 pub mod password;
 
