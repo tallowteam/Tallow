@@ -44,7 +44,7 @@ impl KeyRotationRecord {
         let new_key_id = new_identity.verifying_key_bytes();
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .expect("system clock before UNIX epoch")
             .as_secs();
 
         let mut message = Vec::new();

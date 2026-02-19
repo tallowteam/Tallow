@@ -1,17 +1,28 @@
-//! ML-KEM (Kyber) implementation
+//! ML-KEM-1024 (FIPS 203) key encapsulation mechanism
 
 use crate::error::{CryptoError, Result};
-use crate::mem::SecureBuf;
-use pqcrypto_kyber::kyber1024;
-use pqcrypto_traits::kem::{Ciphertext as _, PublicKey as _, SecretKey as _, SharedSecret as _};
+use fips203::ml_kem_1024;
+use fips203::traits::{Decaps, Encaps, KeyGen, SerDes};
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 
-/// ML-KEM-1024 public key
+/// ML-KEM-1024 encapsulation key (public key) byte length
+pub const EK_LEN: usize = 1568;
+
+/// ML-KEM-1024 decapsulation key (secret key) byte length
+pub const DK_LEN: usize = 3168;
+
+/// ML-KEM-1024 ciphertext byte length
+pub const CT_LEN: usize = 1568;
+
+/// ML-KEM-1024 shared secret byte length
+pub const SS_LEN: usize = 32;
+
+/// ML-KEM-1024 public key (encapsulation key)
 #[derive(Clone, Serialize, Deserialize)]
 pub struct PublicKey(Vec<u8>);
 
-/// ML-KEM-1024 secret key
+/// ML-KEM-1024 secret key (decapsulation key)
 #[derive(Clone, Zeroize, Serialize, Deserialize)]
 #[zeroize(drop)]
 pub struct SecretKey(Vec<u8>);
@@ -33,10 +44,10 @@ impl PublicKey {
 
     /// Create a public key from raw bytes
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self> {
-        if bytes.len() != kyber1024::public_key_bytes() {
+        if bytes.len() != EK_LEN {
             return Err(CryptoError::InvalidKey(format!(
-                "Invalid public key length: expected {}, got {}",
-                kyber1024::public_key_bytes(),
+                "Invalid ML-KEM-1024 public key length: expected {}, got {}",
+                EK_LEN,
                 bytes.len()
             )));
         }
@@ -52,10 +63,10 @@ impl SecretKey {
 
     /// Create a secret key from raw bytes
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self> {
-        if bytes.len() != kyber1024::secret_key_bytes() {
+        if bytes.len() != DK_LEN {
             return Err(CryptoError::InvalidKey(format!(
-                "Invalid secret key length: expected {}, got {}",
-                kyber1024::secret_key_bytes(),
+                "Invalid ML-KEM-1024 secret key length: expected {}, got {}",
+                DK_LEN,
                 bytes.len()
             )));
         }
@@ -71,10 +82,10 @@ impl Ciphertext {
 
     /// Create a ciphertext from raw bytes
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self> {
-        if bytes.len() != kyber1024::ciphertext_bytes() {
+        if bytes.len() != CT_LEN {
             return Err(CryptoError::InvalidKey(format!(
-                "Invalid ciphertext length: expected {}, got {}",
-                kyber1024::ciphertext_bytes(),
+                "Invalid ML-KEM-1024 ciphertext length: expected {}, got {}",
+                CT_LEN,
                 bytes.len()
             )));
         }
@@ -82,7 +93,7 @@ impl Ciphertext {
     }
 }
 
-/// ML-KEM-1024 operations
+/// ML-KEM-1024 operations (FIPS 203)
 pub struct MlKem;
 
 impl MlKem {
@@ -92,11 +103,12 @@ impl MlKem {
     ///
     /// A tuple of (public_key, secret_key)
     pub fn keygen() -> (PublicKey, SecretKey) {
-        let (pk, sk) = kyber1024::keypair();
-        (
-            PublicKey(pk.as_bytes().to_vec()),
-            SecretKey(sk.as_bytes().to_vec()),
-        )
+        let (ek, dk) = ml_kem_1024::KG::try_keygen().expect("ML-KEM-1024 keygen uses OS RNG");
+
+        let ek_bytes = ek.into_bytes().to_vec();
+        let dk_bytes = dk.into_bytes().to_vec();
+
+        (PublicKey(ek_bytes), SecretKey(dk_bytes))
     }
 
     /// Encapsulate a shared secret to a public key
@@ -109,19 +121,21 @@ impl MlKem {
     ///
     /// A tuple of (ciphertext, shared_secret)
     pub fn encapsulate(pk: &PublicKey) -> Result<(Ciphertext, SharedSecret)> {
-        let pk_obj = kyber1024::PublicKey::from_bytes(&pk.0)
-            .map_err(|e| CryptoError::Encryption(format!("Invalid public key: {:?}", e)))?;
+        let ek_bytes: [u8; EK_LEN] = pk.0.as_slice().try_into().map_err(|_| {
+            CryptoError::InvalidKey("Invalid encapsulation key length".to_string())
+        })?;
 
-        let (ss, ct) = kyber1024::encapsulate(&pk_obj);
+        let ek = ml_kem_1024::EncapsKey::try_from_bytes(ek_bytes)
+            .map_err(|_| CryptoError::Encryption("Invalid ML-KEM-1024 public key".to_string()))?;
 
-        let ss_bytes = ss.as_bytes();
-        let mut shared_secret = [0u8; 32];
-        shared_secret.copy_from_slice(&ss_bytes[..32]);
+        let (ss, ct) = ek.try_encaps().map_err(|_| {
+            CryptoError::Encryption("ML-KEM-1024 encapsulation failed".to_string())
+        })?;
 
-        Ok((
-            Ciphertext(ct.as_bytes().to_vec()),
-            SharedSecret(shared_secret),
-        ))
+        let ss_bytes = ss.into_bytes();
+        let ct_bytes = ct.into_bytes().to_vec();
+
+        Ok((Ciphertext(ct_bytes), SharedSecret(ss_bytes)))
     }
 
     /// Decapsulate a shared secret from a ciphertext
@@ -135,19 +149,25 @@ impl MlKem {
     ///
     /// The shared secret
     pub fn decapsulate(sk: &SecretKey, ct: &Ciphertext) -> Result<SharedSecret> {
-        let sk_obj = kyber1024::SecretKey::from_bytes(&sk.0)
-            .map_err(|e| CryptoError::Decryption(format!("Invalid secret key: {:?}", e)))?;
+        let dk_bytes: [u8; DK_LEN] = sk.0.as_slice().try_into().map_err(|_| {
+            CryptoError::InvalidKey("Invalid decapsulation key length".to_string())
+        })?;
 
-        let ct_obj = kyber1024::Ciphertext::from_bytes(&ct.0)
-            .map_err(|e| CryptoError::Decryption(format!("Invalid ciphertext: {:?}", e)))?;
+        let dk = ml_kem_1024::DecapsKey::try_from_bytes(dk_bytes)
+            .map_err(|_| CryptoError::Decryption("Invalid ML-KEM-1024 secret key".to_string()))?;
 
-        let ss = kyber1024::decapsulate(&ct_obj, &sk_obj);
+        let ct_bytes: [u8; CT_LEN] = ct.0.as_slice().try_into().map_err(|_| {
+            CryptoError::InvalidKey("Invalid ciphertext length".to_string())
+        })?;
 
-        let ss_bytes = ss.as_bytes();
-        let mut shared_secret = [0u8; 32];
-        shared_secret.copy_from_slice(&ss_bytes[..32]);
+        let ct_obj = ml_kem_1024::CipherText::try_from_bytes(ct_bytes)
+            .map_err(|_| CryptoError::Decryption("Invalid ML-KEM-1024 ciphertext".to_string()))?;
 
-        Ok(SharedSecret(shared_secret))
+        let ss = dk.try_decaps(&ct_obj).map_err(|_| {
+            CryptoError::Decryption("ML-KEM-1024 decapsulation failed".to_string())
+        })?;
+
+        Ok(SharedSecret(ss.into_bytes()))
     }
 }
 
@@ -178,5 +198,19 @@ mod tests {
         let ss2 = MlKem::decapsulate(&sk2, &ct).unwrap();
 
         assert_eq!(ss1.0, ss2.0);
+    }
+
+    #[test]
+    fn test_mlkem_key_sizes() {
+        let (pk, sk) = MlKem::keygen();
+        assert_eq!(pk.as_bytes().len(), EK_LEN);
+        assert_eq!(sk.as_bytes().len(), DK_LEN);
+    }
+
+    #[test]
+    fn test_mlkem_invalid_key_length() {
+        assert!(PublicKey::from_bytes(vec![0u8; 32]).is_err());
+        assert!(SecretKey::from_bytes(vec![0u8; 32]).is_err());
+        assert!(Ciphertext::from_bytes(vec![0u8; 32]).is_err());
     }
 }

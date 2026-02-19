@@ -10,12 +10,14 @@ use crate::error::{CryptoError, Result};
 ///
 /// - **Unix**: Uses `setrlimit(RLIMIT_CORE, 0)`
 /// - **Windows**: Currently a no-op (core dumps not typical on Windows)
+#[allow(unsafe_code)]
 pub fn prevent_core_dumps() -> Result<()> {
     #[cfg(unix)]
     {
         use std::io;
-        // SAFETY: setrlimit is safe to call with valid parameters
-        // We're setting RLIMIT_CORE to 0 to disable core dumps
+        // SAFETY: setrlimit is safe to call with valid parameters.
+        // We're setting RLIMIT_CORE to 0 to disable core dumps,
+        // which is a non-destructive operation.
         unsafe {
             let rlim = libc::rlimit {
                 rlim_cur: 0,
@@ -40,20 +42,82 @@ pub fn prevent_core_dumps() -> Result<()> {
 
 /// Lock memory pages to prevent swapping to disk
 ///
+/// Pins the specified memory region in physical RAM so it cannot be
+/// swapped out by the operating system. Use this for key material.
+///
 /// # Arguments
 ///
 /// * `ptr` - Pointer to the memory region
 /// * `len` - Length of the memory region in bytes
 ///
-/// # Safety
+/// # Platform Support
 ///
-/// This function is safe because it only attempts to lock memory,
-/// which is a non-destructive operation. However, it may fail if
-/// the process lacks sufficient privileges.
-pub fn lock_memory(_ptr: *const u8, _len: usize) -> Result<()> {
-    // Note: Actual mlock/VirtualLock implementation would require unsafe code
-    // For now, we'll make this a no-op to maintain forbid(unsafe_code)
-    // In production, this would be behind a feature flag
+/// - **Unix**: Uses `mlock(2)` to pin pages
+/// - **Windows**: No-op (VirtualLock deferred to future release)
+/// - **Other**: No-op
+#[allow(unsafe_code)]
+pub fn lock_memory(ptr: *const u8, len: usize) -> Result<()> {
+    if len == 0 || ptr.is_null() {
+        return Ok(());
+    }
+
+    #[cfg(unix)]
+    {
+        use std::io;
+        // SAFETY: mlock is safe to call with any valid pointer and length.
+        // It merely advises the kernel to keep pages resident in RAM.
+        // Failure (e.g., RLIMIT_MEMLOCK exceeded) is non-fatal.
+        unsafe {
+            if libc::mlock(ptr as *const libc::c_void, len) != 0 {
+                let err = io::Error::last_os_error();
+                // EPERM or ENOMEM are non-fatal — key material still works,
+                // it just might be swappable. Log but don't fail.
+                return Err(CryptoError::Io(format!(
+                    "mlock failed (non-fatal): {}",
+                    err
+                )));
+            }
+        }
+    }
+
+    #[cfg(not(unix))]
+    {
+        // Windows VirtualLock and other platforms: deferred
+        let _ = (ptr, len);
+    }
+
+    Ok(())
+}
+
+/// Unlock previously locked memory pages
+///
+/// Allows the OS to swap the memory region again. Call this when
+/// the key material has been zeroized and is no longer needed.
+///
+/// # Arguments
+///
+/// * `ptr` - Pointer to the memory region
+/// * `len` - Length of the memory region in bytes
+#[allow(unsafe_code)]
+pub fn unlock_memory(ptr: *const u8, len: usize) -> Result<()> {
+    if len == 0 || ptr.is_null() {
+        return Ok(());
+    }
+
+    #[cfg(unix)]
+    {
+        // SAFETY: munlock is safe to call with any valid pointer and length.
+        // It merely allows the kernel to swap pages out again.
+        unsafe {
+            libc::munlock(ptr as *const libc::c_void, len);
+        }
+    }
+
+    #[cfg(not(unix))]
+    {
+        let _ = (ptr, len);
+    }
+
     Ok(())
 }
 
@@ -95,6 +159,20 @@ mod tests {
     fn test_prevent_core_dumps() {
         // Should not panic
         let _ = prevent_core_dumps();
+    }
+
+    #[test]
+    fn test_lock_memory_null() {
+        // Should succeed with null/zero
+        assert!(lock_memory(std::ptr::null(), 0).is_ok());
+    }
+
+    #[test]
+    fn test_lock_memory_real() {
+        let data = [0u8; 64];
+        // May fail due to permissions, but should not panic
+        let _ = lock_memory(data.as_ptr(), data.len());
+        let _ = unlock_memory(data.as_ptr(), data.len());
     }
 
     #[test]

@@ -1,12 +1,18 @@
-//! ML-DSA (Dilithium) signature scheme
+//! ML-DSA-87 (FIPS 204) digital signature scheme
 
 use crate::error::{CryptoError, Result};
-use pqcrypto_dilithium::dilithium5;
-use pqcrypto_traits::sign::{PublicKey as _, SecretKey as _, SignedMessage as _};
+use fips204::ml_dsa_87;
+use fips204::traits::{KeyGen, SerDes, Signer, Verifier};
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 
-/// ML-DSA-87 signer (Dilithium5)
+/// ML-DSA-87 signing key byte length
+pub const SK_LEN: usize = 4896;
+
+/// ML-DSA-87 verifying key byte length
+pub const VK_LEN: usize = 2592;
+
+/// ML-DSA-87 signer
 #[derive(Clone, Zeroize, Serialize, Deserialize)]
 #[zeroize(drop)]
 pub struct MlDsaSigner {
@@ -17,18 +23,36 @@ pub struct MlDsaSigner {
 impl MlDsaSigner {
     /// Generate a new ML-DSA-87 keypair
     pub fn keygen() -> Self {
-        let (pk, sk) = dilithium5::keypair();
+        let (vk, sk) = ml_dsa_87::KG::try_keygen().expect("ML-DSA-87 keygen uses OS RNG");
+
         Self {
-            public_key: pk.as_bytes().to_vec(),
-            secret_key: sk.as_bytes().to_vec(),
+            public_key: vk.into_bytes().to_vec(),
+            secret_key: sk.into_bytes().to_vec(),
         }
     }
 
     /// Sign a message
-    pub fn sign(&self, message: &[u8]) -> Vec<u8> {
-        let sk = dilithium5::SecretKey::from_bytes(&self.secret_key).unwrap();
-        let signed_msg = dilithium5::sign(message, &sk);
-        signed_msg.as_bytes().to_vec()
+    ///
+    /// # Arguments
+    ///
+    /// * `message` - The message to sign
+    ///
+    /// # Returns
+    ///
+    /// The signature bytes, or an error if signing fails
+    pub fn sign(&self, message: &[u8]) -> Result<Vec<u8>> {
+        let sk_bytes: [u8; SK_LEN] = self.secret_key.as_slice().try_into().map_err(|_| {
+            CryptoError::InvalidKey("Invalid ML-DSA-87 signing key length".to_string())
+        })?;
+
+        let sk = ml_dsa_87::PrivateKey::try_from_bytes(sk_bytes)
+            .map_err(|_| CryptoError::Signing("Invalid ML-DSA-87 signing key".to_string()))?;
+
+        let sig = sk
+            .try_sign(message, &[])
+            .map_err(|_| CryptoError::Signing("ML-DSA-87 signing failed".to_string()))?;
+
+        Ok(sig.into_bytes().to_vec())
     }
 
     /// Get the public key bytes
@@ -37,15 +61,70 @@ impl MlDsaSigner {
     }
 }
 
-/// Verify an ML-DSA signature
-pub fn verify(public_key: &[u8], signed_message: &[u8]) -> Result<Vec<u8>> {
-    let pk = dilithium5::PublicKey::from_bytes(public_key)
-        .map_err(|_| CryptoError::Verification("Invalid public key".to_string()))?;
+/// Verify an ML-DSA-87 signature
+///
+/// # Arguments
+///
+/// * `public_key` - The signer's public key bytes
+/// * `message` - The original message
+/// * `signature` - The signature bytes to verify
+///
+/// # Returns
+///
+/// Ok(()) if valid, Err otherwise
+pub fn verify(public_key: &[u8], message: &[u8], signature: &[u8]) -> Result<()> {
+    let vk_bytes: [u8; VK_LEN] = public_key.try_into().map_err(|_| {
+        CryptoError::Verification("Invalid ML-DSA-87 public key length".to_string())
+    })?;
 
-    let signed = dilithium5::SignedMessage::from_bytes(signed_message)
-        .map_err(|_| CryptoError::Verification("Invalid signed message".to_string()))?;
+    let vk = ml_dsa_87::PublicKey::try_from_bytes(vk_bytes)
+        .map_err(|_| CryptoError::Verification("Invalid ML-DSA-87 public key".to_string()))?;
 
-    dilithium5::open(&signed, &pk)
-        .map(|m| m.to_vec())
-        .map_err(|_| CryptoError::Verification("Signature verification failed".to_string()))
+    // Convert signature bytes to fixed-size array
+    let sig_bytes: [u8; 4627] = signature.try_into().map_err(|_| {
+        CryptoError::Verification("Invalid ML-DSA-87 signature length".to_string())
+    })?;
+
+    let sig = ml_dsa_87::Signature::try_from_bytes(sig_bytes)
+        .map_err(|_| CryptoError::Verification("Invalid ML-DSA-87 signature".to_string()))?;
+
+    vk.try_verify(message, &sig, &[])
+        .map_err(|_| CryptoError::Verification("ML-DSA-87 signature verification failed".to_string()))?;
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_mldsa_sign_verify() {
+        let signer = MlDsaSigner::keygen();
+        let message = b"test message";
+
+        let sig = signer.sign(message).unwrap();
+        let result = verify(signer.public_key_bytes(), message, &sig);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_mldsa_wrong_message() {
+        let signer = MlDsaSigner::keygen();
+        let message = b"test message";
+        let wrong_message = b"wrong message";
+
+        let sig = signer.sign(message).unwrap();
+        let result = verify(signer.public_key_bytes(), wrong_message, &sig);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_mldsa_key_sizes() {
+        let signer = MlDsaSigner::keygen();
+        assert_eq!(signer.public_key_bytes().len(), VK_LEN);
+        assert_eq!(signer.secret_key.len(), SK_LEN);
+    }
 }

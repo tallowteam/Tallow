@@ -2,6 +2,7 @@
 
 use crate::error::{CryptoError, Result};
 use crate::hash::blake3;
+use crate::mem::constant_time;
 use crate::sig::{Ed25519Signer, HybridSigner};
 use serde::{Deserialize, Serialize};
 
@@ -78,9 +79,9 @@ pub fn sign_chunk(signer: &Ed25519Signer, chunk_data: &[u8], chunk_index: u64) -
 ///
 /// Ok(()) if valid, Err otherwise
 pub fn verify_chunk(public_key: &[u8; 32], chunk_data: &[u8], sig: &ChunkSignature) -> Result<()> {
-    // Verify chunk hash
+    // Verify chunk hash using constant-time comparison
     let actual_hash = blake3::hash(chunk_data);
-    if actual_hash != sig.chunk_hash {
+    if !constant_time::ct_eq(&actual_hash, &sig.chunk_hash) {
         return Err(CryptoError::HashMismatch {
             expected: format!("{:02x?}", sig.chunk_hash),
             actual: format!("{:02x?}", actual_hash),

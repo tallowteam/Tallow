@@ -1,6 +1,7 @@
 //! Merkle tree implementation for file integrity verification
 
 use crate::hash::blake3::hash;
+use crate::mem::constant_time;
 use serde::{Deserialize, Serialize};
 
 /// Merkle tree for efficient proof of chunk inclusion
@@ -72,7 +73,8 @@ impl MerkleTree {
                 [0u8; 32]
             }
         } else {
-            *self.nodes.last().unwrap()
+            // nodes is guaranteed non-empty here, last element is the root
+            *self.nodes.last().expect("nodes verified non-empty above")
         }
     }
 
@@ -132,7 +134,7 @@ impl MerkleTree {
         })
     }
 
-    /// Verify a Merkle proof
+    /// Verify a Merkle proof using constant-time comparison
     ///
     /// # Arguments
     ///
@@ -144,7 +146,7 @@ impl MerkleTree {
     ///
     /// `true` if the proof is valid, `false` otherwise
     pub fn verify(proof: &MerkleProof, root: &[u8; 32], leaf: &[u8; 32]) -> bool {
-        if proof.leaf_hash != *leaf {
+        if !constant_time::ct_eq(&proof.leaf_hash, leaf) {
             return false;
         }
 
@@ -166,7 +168,7 @@ impl MerkleTree {
             current_index /= 2;
         }
 
-        &current_hash == root
+        constant_time::ct_eq(&current_hash, root)
     }
 }
 

@@ -20,7 +20,9 @@ pub fn encrypt_keyring(passphrase: &str, keys: &[u8]) -> Result<EncryptedKeyring
 
     // Derive encryption key from passphrase
     let key = argon2::derive_key(passphrase.as_bytes(), &salt, 32)?;
-    let key_array: [u8; 32] = key.try_into().unwrap();
+    let key_array: [u8; 32] = key.try_into().map_err(|_| {
+        CryptoError::InvalidKey("Argon2 derived key is not 32 bytes".to_string())
+    })?;
 
     // Encrypt keys
     let ciphertext = chacha_encrypt(&key_array, &nonce, keys, &[])?;
@@ -36,7 +38,9 @@ pub fn encrypt_keyring(passphrase: &str, keys: &[u8]) -> Result<EncryptedKeyring
 pub fn decrypt_keyring(passphrase: &str, keyring: &EncryptedKeyring) -> Result<Vec<u8>> {
     // Derive decryption key from passphrase
     let key = argon2::derive_key(passphrase.as_bytes(), &keyring.salt, 32)?;
-    let key_array: [u8; 32] = key.try_into().unwrap();
+    let key_array: [u8; 32] = key.try_into().map_err(|_| {
+        CryptoError::InvalidKey("Argon2 derived key is not 32 bytes".to_string())
+    })?;
 
     // Decrypt keys
     chacha_decrypt(&key_array, &keyring.nonce, &keyring.ciphertext, &[])

@@ -15,14 +15,16 @@ pub struct IdentityKeyPair {
 
 impl IdentityKeyPair {
     /// Generate a new identity keypair
-    pub fn generate() -> Self {
+    pub fn generate() -> Result<Self> {
         let signer = HybridSigner::keygen();
         let pk = signer.public_key();
 
         // Derive identity from public key
-        let id = crate::hash::blake3::hash(&bincode::serialize(&pk).unwrap());
+        let pk_bytes = bincode::serialize(&pk)
+            .map_err(|e| CryptoError::Serialization(format!("Failed to serialize public key: {}", e)))?;
+        let id = crate::hash::blake3::hash(&pk_bytes);
 
-        Self { signer, id }
+        Ok(Self { signer, id })
     }
 
     /// Get the signer

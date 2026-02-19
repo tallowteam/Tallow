@@ -11,13 +11,12 @@ aegis = ["dep:aegis"]
 fips = []
 
 [dependencies]
-# Post-Quantum KEM
-pqcrypto-kyber = "0.8"
-pqcrypto-traits = "0.3"
+# Post-Quantum KEM (FIPS 203)
+fips203 = { version = "0.4", default-features = false, features = ["ml-kem-1024"] }
 
-# Post-Quantum Signatures
-pqcrypto-dilithium = "0.5"
-pqcrypto-sphincsplus = "0.7"
+# Post-Quantum Signatures (FIPS 204, FIPS 205)
+fips204 = { version = "0.4", default-features = false, features = ["ml-dsa-87"] }
+fips205 = { version = "0.4", default-features = false, features = ["slh-dsa-sha2-256f"] }
 
 # Classical Key Exchange
 x25519-dalek = { version = "2", features = ["static_secrets"] }
@@ -38,9 +37,6 @@ sha2 = "0.10"
 argon2 = "0.5"
 hkdf = "0.12"
 
-# PAKE
-opaque-ke = "3"
-
 # Key Safety
 zeroize.workspace = true
 secrecy.workspace = true
@@ -57,6 +53,9 @@ bincode.workspace = true
 
 # Errors
 thiserror.workspace = true
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }

@@ -3,6 +3,7 @@
 use crate::error::{CryptoError, Result};
 use crate::file::encrypt::EncryptedChunk;
 use crate::hash::blake3;
+use crate::mem::constant_time;
 use crate::symmetric::{aes_decrypt, CipherSuite};
 
 /// File decryptor
@@ -34,9 +35,9 @@ impl FileDecryptor {
 ///
 /// Decrypted chunk data
 pub fn decrypt_chunk(key: &[u8; 32], encrypted_chunk: &EncryptedChunk) -> Result<Vec<u8>> {
-    // Verify hash
+    // Verify hash using constant-time comparison
     let actual_hash = blake3::hash(&encrypted_chunk.ciphertext);
-    if actual_hash != encrypted_chunk.hash {
+    if !constant_time::ct_eq(&actual_hash, &encrypted_chunk.hash) {
         return Err(CryptoError::HashMismatch {
             expected: format!("{:02x?}", encrypted_chunk.hash),
             actual: format!("{:02x?}", actual_hash),

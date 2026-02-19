@@ -67,33 +67,39 @@ pub struct PreKeyBundle {
 
 impl SignedPreKey {
     /// Generate a new signed pre-key
-    pub fn generate(id: u32, identity: &Ed25519Signer) -> Self {
+    pub fn generate(id: u32, identity: &Ed25519Signer) -> Result<Self> {
         let (pk, _sk) = HybridKem::keygen();
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .expect("system clock before UNIX epoch")
             .as_secs();
+
+        let pk_bytes = bincode::serialize(&pk)
+            .map_err(|e| CryptoError::Serialization(format!("Failed to serialize pre-key: {}", e)))?;
 
         let mut message = Vec::new();
         message.extend_from_slice(&id.to_le_bytes());
-        message.extend_from_slice(&bincode::serialize(&pk).unwrap());
+        message.extend_from_slice(&pk_bytes);
         message.extend_from_slice(&timestamp.to_le_bytes());
 
         let signature = identity.sign(&message);
 
-        Self {
+        Ok(Self {
             id,
             public_key: pk,
             signature,
             timestamp,
-        }
+        })
     }
 
     /// Verify the signature on this pre-key
     pub fn verify(&self, identity_key: &[u8; 32]) -> Result<()> {
+        let pk_bytes = bincode::serialize(&self.public_key)
+            .map_err(|e| CryptoError::Serialization(format!("Failed to serialize pre-key for verification: {}", e)))?;
+
         let mut message = Vec::new();
         message.extend_from_slice(&self.id.to_le_bytes());
-        message.extend_from_slice(&bincode::serialize(&self.public_key).unwrap());
+        message.extend_from_slice(&pk_bytes);
         message.extend_from_slice(&self.timestamp.to_le_bytes());
 
         crate::sig::ed25519::verify(identity_key, &message, &self.signature)

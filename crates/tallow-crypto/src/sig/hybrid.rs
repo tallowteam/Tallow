@@ -52,11 +52,17 @@ impl HybridSigner {
     }
 
     /// Sign a message with both algorithms
-    pub fn sign(&self, message: &[u8]) -> HybridSignature {
-        HybridSignature {
-            mldsa: self.mldsa.sign(message),
-            ed25519: self.ed25519.sign(message),
-        }
+    ///
+    /// Both ML-DSA-87 and Ed25519 signatures are produced.
+    /// Both must be valid for verification to succeed.
+    pub fn sign(&self, message: &[u8]) -> Result<HybridSignature> {
+        let mldsa_sig = self.mldsa.sign(message)?;
+        let ed25519_sig = self.ed25519.sign(message);
+
+        Ok(HybridSignature {
+            mldsa: mldsa_sig,
+            ed25519: ed25519_sig,
+        })
     }
 
     /// Get the hybrid public key
@@ -78,9 +84,13 @@ pub struct HybridPublicKey {
 /// Verify a hybrid signature
 ///
 /// Both signatures must be valid for verification to succeed.
-pub fn verify(public_key: &HybridPublicKey, message: &[u8], signature: &HybridSignature) -> Result<()> {
+pub fn verify(
+    public_key: &HybridPublicKey,
+    message: &[u8],
+    signature: &HybridSignature,
+) -> Result<()> {
     // Verify ML-DSA signature
-    mldsa::verify(&public_key.mldsa, &signature.mldsa)?;
+    mldsa::verify(&public_key.mldsa, message, &signature.mldsa)?;
 
     // Verify Ed25519 signature
     ed25519::verify(&public_key.ed25519, message, &signature.ed25519)?;
@@ -97,7 +107,7 @@ mod tests {
         let signer = HybridSigner::keygen();
         let message = b"test message";
 
-        let signature = signer.sign(message);
+        let signature = signer.sign(message).unwrap();
         let public_key = signer.public_key();
 
         let result = verify(&public_key, message, &signature);
