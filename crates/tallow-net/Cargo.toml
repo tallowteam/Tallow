@@ -21,6 +21,7 @@ rustls = { version = "0.23", features = ["ring"] }
 rustls-pemfile = "2"
 webpki-roots = "0.26"
 tokio-rustls = "0.26"
+rcgen = "0.13"
 
 # DNS
 hickory-resolver = { version = "0.24", features = ["dns-over-https-rustls"] }
