@@ -7,22 +7,28 @@ use serde::{Deserialize, Serialize};
 pub struct RelayConfig {
     /// Server bind address
     pub bind_addr: String,
-    /// Maximum connections
+    /// Maximum concurrent connections
     pub max_connections: usize,
-    /// Rate limit (requests per second)
+    /// Maximum concurrent rooms
+    pub max_rooms: usize,
+    /// Rate limit (requests per second per IP)
     pub rate_limit: u32,
-    /// TLS certificate path
+    /// Room timeout in seconds (stale rooms are cleaned up)
+    pub room_timeout_secs: u64,
+    /// TLS certificate path (optional — self-signed if absent)
     pub tls_cert: Option<String>,
-    /// TLS key path
+    /// TLS key path (optional)
     pub tls_key: Option<String>,
 }
 
 impl Default for RelayConfig {
     fn default() -> Self {
         Self {
-            bind_addr: "0.0.0.0:443".to_string(),
+            bind_addr: "0.0.0.0:4433".to_string(),
             max_connections: 10000,
+            max_rooms: 5000,
             rate_limit: 100,
+            room_timeout_secs: 60,
             tls_cert: None,
             tls_key: None,
         }
