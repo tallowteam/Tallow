@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Files transfer securely between two parties where the relay never sees plaintext, with post-quantum cryptography protecting against future quantum attacks.
-**Current focus:** Phase 3 — File Transfer Pipeline
+**Current focus:** Phase 4 — Storage, CLI Commands and Polish
 
 ## Current Position
 
-Phase: 3 of 6 (File Transfer Pipeline)
+Phase: 4 of 6 (Storage, CLI Commands and Polish)
 Plan: 0 of TBD in current phase
-Status: Phase 2 complete, starting Phase 3
-Last activity: 2026-02-19 — Phase 2 Wire Protocol complete (WIRE, XPORT, RELAY)
+Status: Phase 3 complete, starting Phase 4
+Last activity: 2026-02-19 — Phase 3 File Transfer Pipeline complete
 
-Progress: [████░░░░░░] 33%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
