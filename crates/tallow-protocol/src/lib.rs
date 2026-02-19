@@ -10,6 +10,7 @@ pub mod wire;
 pub mod transfer;
 pub mod compression;
 pub mod chat;
+pub mod kex;
 pub mod room;
 pub mod metadata;
 
