@@ -1,23 +1,238 @@
 //! File sending pipeline
+//!
+//! Reads files, builds manifest, chunks, compresses, encrypts,
+//! and sends via the wire protocol.
 
-use crate::Result;
-use std::path::Path;
+use crate::compression::{self, CompressionAlgorithm};
+use crate::transfer::chunking::{self, ChunkConfig};
+use crate::transfer::manifest::{FileManifest, FileEntry};
+use crate::transfer::progress::TransferProgress;
+use crate::wire::Message;
+use crate::{ProtocolError, Result};
+use std::path::{Path, PathBuf};
 
 /// Send pipeline for file transfers
-#[derive(Debug)]
 pub struct SendPipeline {
-    #[allow(dead_code)]
-    transfer_id: String,
+    /// Unique transfer ID
+    transfer_id: [u8; 16],
+    /// Chunk configuration
+    chunk_config: ChunkConfig,
+    /// Compression algorithm
+    compression: CompressionAlgorithm,
+    /// File manifest
+    manifest: FileManifest,
+    /// Progress tracker
+    progress: Option<TransferProgress>,
+    /// Session encryption key (32 bytes, AES-256-GCM)
+    session_key: [u8; 32],
+}
+
+impl std::fmt::Debug for SendPipeline {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SendPipeline")
+            .field("transfer_id", &hex::encode(self.transfer_id))
+            .field("chunk_config", &self.chunk_config)
+            .field("compression", &self.compression)
+            .finish()
+    }
+}
+
+// Minimal hex encoding for debug display
+mod hex {
+    pub fn encode(bytes: impl AsRef<[u8]>) -> String {
+        bytes
+            .as_ref()
+            .iter()
+            .map(|b| format!("{:02x}", b))
+            .collect()
+    }
 }
 
 impl SendPipeline {
     /// Create a new send pipeline
-    pub fn new(transfer_id: String) -> Self {
-        Self { transfer_id }
+    pub fn new(transfer_id: [u8; 16], session_key: [u8; 32]) -> Self {
+        Self {
+            transfer_id,
+            chunk_config: ChunkConfig::new(),
+            compression: CompressionAlgorithm::Zstd,
+            manifest: FileManifest::new(chunking::DEFAULT_CHUNK_SIZE),
+            progress: None,
+            session_key,
+        }
     }
 
-    /// Start sending files
-    pub async fn start(&mut self, _files: &[impl AsRef<Path>]) -> Result<()> {
-        todo!("Implement send pipeline")
+    /// Set chunk configuration
+    pub fn with_chunk_config(mut self, config: ChunkConfig) -> Self {
+        self.chunk_config = config;
+        self
+    }
+
+    /// Set compression algorithm
+    pub fn with_compression(mut self, algo: CompressionAlgorithm) -> Self {
+        self.compression = algo;
+        self
+    }
+
+    /// Prepare files for transfer — scan, hash, build manifest
+    ///
+    /// # Arguments
+    ///
+    /// * `paths` - Files or directories to send
+    ///
+    /// # Returns
+    ///
+    /// The file manifest and a list of FileOffer messages
+    pub async fn prepare(&mut self, paths: &[PathBuf]) -> Result<Vec<Message>> {
+        let mut messages = Vec::new();
+
+        for path in paths {
+            self.scan_path(path).await?;
+        }
+
+        self.manifest.finalize();
+        self.progress = Some(TransferProgress::new(self.manifest.total_size));
+
+        // Create FileOffer message
+        let manifest_bytes = self.manifest.to_bytes();
+        messages.push(Message::FileOffer {
+            transfer_id: self.transfer_id,
+            manifest: manifest_bytes,
+        });
+
+        Ok(messages)
+    }
+
+    /// Scan a path and add it to the manifest
+    async fn scan_path(&mut self, path: &Path) -> Result<()> {
+        let metadata = tokio::fs::metadata(path).await.map_err(|e| {
+            ProtocolError::TransferFailed(format!("cannot read {}: {}", path.display(), e))
+        })?;
+
+        if metadata.is_file() {
+            let data = tokio::fs::read(path).await.map_err(|e| {
+                ProtocolError::TransferFailed(format!("read failed {}: {}", path.display(), e))
+            })?;
+
+            let hash: [u8; 32] = blake3::hash(&data).into();
+            let relative_path = path
+                .file_name()
+                .map(PathBuf::from)
+                .unwrap_or_else(|| PathBuf::from("unnamed"));
+
+            self.manifest
+                .add_file(relative_path, metadata.len(), hash);
+        } else if metadata.is_dir() {
+            self.scan_directory(path, path).await?;
+        }
+
+        Ok(())
+    }
+
+    /// Recursively scan a directory
+    async fn scan_directory(&mut self, base: &Path, dir: &Path) -> Result<()> {
+        let mut entries = tokio::fs::read_dir(dir).await.map_err(|e| {
+            ProtocolError::TransferFailed(format!("readdir {}: {}", dir.display(), e))
+        })?;
+
+        while let Some(entry) = entries.next_entry().await.map_err(|e| {
+            ProtocolError::TransferFailed(format!("readdir entry: {}", e))
+        })? {
+            let path = entry.path();
+            let file_type = entry.file_type().await.map_err(|e| {
+                ProtocolError::TransferFailed(format!("file_type: {}", e))
+            })?;
+
+            if file_type.is_file() {
+                let data = tokio::fs::read(&path).await.map_err(|e| {
+                    ProtocolError::TransferFailed(format!("read {}: {}", path.display(), e))
+                })?;
+
+                let hash: [u8; 32] = blake3::hash(&data).into();
+                let relative = path
+                    .strip_prefix(base)
+                    .unwrap_or(&path)
+                    .to_path_buf();
+
+                self.manifest
+                    .add_file(relative, data.len() as u64, hash);
+            } else if file_type.is_dir() {
+                Box::pin(self.scan_directory(base, &path)).await?;
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Generate chunk messages for a specific file
+    ///
+    /// Reads the file, compresses, encrypts each chunk, and returns
+    /// a sequence of Chunk messages ready for sending.
+    pub async fn chunk_file(
+        &self,
+        file_path: &Path,
+        start_chunk_index: u64,
+    ) -> Result<Vec<Message>> {
+        let data = tokio::fs::read(file_path).await.map_err(|e| {
+            ProtocolError::TransferFailed(format!("read {}: {}", file_path.display(), e))
+        })?;
+
+        // Compress
+        let compressed = compression::pipeline::compress(&data, self.compression)?;
+
+        // Split into chunks
+        let chunks = chunking::split_into_chunks(&compressed, self.chunk_config.size);
+        let total = start_chunk_index + chunks.len() as u64;
+
+        let mut messages = Vec::with_capacity(chunks.len());
+
+        for chunk in chunks {
+            let global_index = start_chunk_index + chunk.index;
+
+            // Build AAD and nonce for this chunk
+            let aad = chunking::build_chunk_aad(&self.transfer_id, global_index);
+            let nonce = chunking::build_chunk_nonce(global_index);
+
+            // Encrypt with AES-256-GCM
+            let encrypted = tallow_crypto::symmetric::aes_encrypt(
+                &self.session_key,
+                &nonce,
+                &chunk.data,
+                &aad,
+            )
+            .map_err(|e| {
+                ProtocolError::TransferFailed(format!("chunk encryption failed: {}", e))
+            })?;
+
+            messages.push(Message::Chunk {
+                transfer_id: self.transfer_id,
+                index: global_index,
+                total: if chunk.index as u64 + 1 == chunks.len() as u64 {
+                    Some(total)
+                } else {
+                    None
+                },
+                data: encrypted,
+            });
+        }
+
+        Ok(messages)
+    }
+
+    /// Get the manifest
+    pub fn manifest(&self) -> &FileManifest {
+        &self.manifest
+    }
+
+    /// Get the transfer ID
+    pub fn transfer_id(&self) -> &[u8; 16] {
+        &self.transfer_id
+    }
+
+    /// Update progress and return current state
+    pub fn update_progress(&mut self, bytes: u64) -> Option<&TransferProgress> {
+        if let Some(ref mut progress) = self.progress {
+            progress.update(bytes);
+        }
+        self.progress.as_ref()
     }
 }

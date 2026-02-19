@@ -1,13 +1,44 @@
-//! LZMA/XZ compression
+//! LZMA/XZ compression (highest ratio)
 
-use crate::Result;
+use crate::{ProtocolError, Result};
+use std::io::Read;
 
 /// Compress data with LZMA
-pub fn compress(_data: &[u8], _preset: u32) -> Result<Vec<u8>> {
-    todo!("Implement LZMA compression")
+///
+/// # Arguments
+///
+/// * `data` - Data to compress
+/// * `preset` - Compression preset (0-9, default 6)
+pub fn compress(data: &[u8], preset: u32) -> Result<Vec<u8>> {
+    let mut output = Vec::new();
+    lzma_rs::lzma_compress_with_options(
+        &mut &data[..],
+        &mut output,
+        &lzma_rs::compress::Options {
+            unpacked_size: lzma_rs::compress::UnpackedSize::WriteToHeader(Some(data.len() as u64)),
+        },
+    )
+    .map_err(|e| ProtocolError::CompressionError(format!("lzma compress failed: {}", e)))?;
+    Ok(output)
 }
 
 /// Decompress LZMA data
-pub fn decompress(_data: &[u8]) -> Result<Vec<u8>> {
-    todo!("Implement LZMA decompression")
+pub fn decompress(data: &[u8]) -> Result<Vec<u8>> {
+    let mut output = Vec::new();
+    lzma_rs::lzma_decompress(&mut &data[..], &mut output)
+        .map_err(|e| ProtocolError::CompressionError(format!("lzma decompress failed: {}", e)))?;
+    Ok(output)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_lzma_roundtrip() {
+        let data = b"hello world! This is some compressible text data.";
+        let compressed = compress(data, 6).unwrap();
+        let decompressed = decompress(&compressed).unwrap();
+        assert_eq!(&decompressed, data);
+    }
 }
