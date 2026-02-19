@@ -12,7 +12,7 @@ Tallow is a brownfield Rust project — a 7-crate workspace with ~45% implementa
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Security Hardening** - Fix 15 critical/high crypto defects before any networking code is wired
+- [x] **Phase 1: Security Hardening** - Fix 15 critical/high crypto defects before any networking code is wired
 - [ ] **Phase 2: Wire Protocol, Transport and Relay** - Postcard codec, QUIC+TCP transports, working relay server
 - [ ] **Phase 3: File Transfer Pipeline** - End-to-end send/receive with compression, key exchange, integrity verification
 - [ ] **Phase 4: Storage, CLI Commands and Polish** - Persistent identity/config, all CLI commands wired, transfer resume
@@ -100,7 +100,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Security Hardening | 0/TBD | Not started | - |
+| 1. Security Hardening | 5/5 | Complete | 2026-02-19 |
 | 2. Wire Protocol, Transport and Relay | 0/TBD | Not started | - |
 | 3. File Transfer Pipeline | 0/TBD | Not started | - |
 | 4. Storage, CLI Commands and Polish | 0/TBD | Not started | - |
