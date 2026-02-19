@@ -7,3 +7,4 @@ pub mod upnp;
 pub mod detection;
 
 pub use detection::NatType;
+pub use stun::{StunClient, StunResult};

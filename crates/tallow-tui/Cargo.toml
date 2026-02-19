@@ -19,9 +19,13 @@ color-eyre = "0.6"
 # Async
 tokio.workspace = true
 
+# Screen clearing
+clearscreen = "3"
+
 # Utilities
 tracing.workspace = true
 unicode-width = "0.2"
+chrono.workspace = true
 
 [dev-dependencies]
 insta = "1"

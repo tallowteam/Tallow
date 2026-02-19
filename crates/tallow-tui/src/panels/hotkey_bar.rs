@@ -1,23 +1,27 @@
-//! Hotkey bar panel
+//! Hotkey bar panel — single-line bar at bottom showing key bindings
 
-/// Hotkey bar widget
-#[derive(Debug)]
-pub struct HotkeyBar;
+use crate::app::App;
+use ratatui::layout::Rect;
+use ratatui::style::{Color, Style};
+use ratatui::text::{Line, Span};
+use ratatui::widgets::Paragraph;
+use ratatui::Frame;
 
-impl HotkeyBar {
-    /// Create a new hotkey bar
-    pub fn new() -> Self {
-        Self
-    }
+/// Render the hotkey bar
+pub fn render(frame: &mut Frame, area: Rect, _app: &App) {
+    let bar = Line::from(vec![
+        Span::styled(" q", Style::default().fg(Color::Yellow)),
+        Span::styled(" Quit ", Style::default().fg(Color::DarkGray)),
+        Span::styled("Tab", Style::default().fg(Color::Yellow)),
+        Span::styled(" Panel ", Style::default().fg(Color::DarkGray)),
+        Span::styled("?", Style::default().fg(Color::Yellow)),
+        Span::styled(" Help ", Style::default().fg(Color::DarkGray)),
+        Span::styled("1-4", Style::default().fg(Color::Yellow)),
+        Span::styled(" Mode ", Style::default().fg(Color::DarkGray)),
+        Span::styled("r", Style::default().fg(Color::Yellow)),
+        Span::styled(" Refresh ", Style::default().fg(Color::DarkGray)),
+    ]);
 
-    /// Render the hotkey bar
-    pub fn render(&self) {
-        todo!("Implement hotkey bar rendering")
-    }
-}
-
-impl Default for HotkeyBar {
-    fn default() -> Self {
-        Self::new()
-    }
+    let paragraph = Paragraph::new(bar);
+    frame.render_widget(paragraph, area);
 }
