@@ -16,8 +16,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Wire Protocol, Transport and Relay** - Postcard codec, QUIC+TCP transports, working relay server
 - [x] **Phase 3: File Transfer Pipeline** - End-to-end send/receive with compression, key exchange, integrity verification
 - [x] **Phase 4: Storage, CLI Commands and Polish** - Persistent identity/config, all CLI commands wired, transfer resume
-- [ ] **Phase 5: Privacy, TUI and Discovery** - Tor/SOCKS5, DNS-over-HTTPS, Ratatui dashboard, mDNS, OS sandbox
-- [ ] **Phase 6: Sandbox, Hardening and Security Audit** - Landlock, seccomp, structured logging, fuzz targets, full audit sweep
+- [x] **Phase 5: Privacy, TUI and Discovery** - Tor/SOCKS5, DNS-over-HTTPS, Ratatui dashboard, mDNS, OS sandbox
+- [x] **Phase 6: Sandbox, Hardening and Security Audit** - Landlock, seccomp, structured logging, fuzz targets, full audit sweep
 
 ## Phase Details
 
@@ -104,5 +104,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Wire Protocol, Transport and Relay | 4/4 | Complete | 2026-02-19 |
 | 3. File Transfer Pipeline | 4/4 | Complete | 2026-02-19 |
 | 4. Storage, CLI Commands and Polish | 3/3 | Complete | 2026-02-19 |
-| 5. Privacy, TUI and Discovery | 0/TBD | Not started | - |
-| 6. Sandbox, Hardening and Security Audit | 0/TBD | Not started | - |
+| 5. Privacy, TUI and Discovery | 3/3 | Complete | 2026-02-19 |
+| 6. Sandbox, Hardening and Security Audit | 1/1 | Complete | 2026-02-19 |

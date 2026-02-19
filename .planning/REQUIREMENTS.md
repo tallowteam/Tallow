@@ -258,26 +258,26 @@ Deferred to future release. Tracked but not in current roadmap.
 | CLI-10 | Phase 4 | Done |
 | CLI-11 | Phase 4 | Done |
 | CLI-12 | Phase 4 | Done |
-| PRIV-01 | Phase 5 | Pending |
-| PRIV-02 | Phase 5 | Pending |
-| PRIV-03 | Phase 5 | Pending |
-| PRIV-04 | Phase 5 | Pending |
-| TUI-01 | Phase 5 | Pending |
-| TUI-02 | Phase 5 | Pending |
-| TUI-03 | Phase 5 | Pending |
-| TUI-04 | Phase 5 | Pending |
-| TUI-05 | Phase 5 | Pending |
-| TUI-06 | Phase 5 | Pending |
-| TUI-07 | Phase 5 | Pending |
-| TUI-08 | Phase 5 | Pending |
-| SAND-01 | Phase 6 | Pending |
-| SAND-02 | Phase 6 | Pending |
-| SAND-03 | Phase 6 | Pending |
-| SAND-04 | Phase 6 | Pending |
-| SAND-05 | Phase 6 | Pending |
-| DISC-01 | Phase 5 | Pending |
-| DISC-02 | Phase 5 | Pending |
-| DISC-03 | Phase 5 | Pending |
+| PRIV-01 | Phase 5 | Done |
+| PRIV-02 | Phase 5 | Done |
+| PRIV-03 | Phase 5 | Done |
+| PRIV-04 | Phase 5 | Done |
+| TUI-01 | Phase 5 | Done |
+| TUI-02 | Phase 5 | Done |
+| TUI-03 | Phase 5 | Done |
+| TUI-04 | Phase 5 | Done |
+| TUI-05 | Phase 5 | Done |
+| TUI-06 | Phase 5 | Done |
+| TUI-07 | Phase 5 | Done |
+| TUI-08 | Phase 5 | Done |
+| SAND-01 | Phase 6 | Done |
+| SAND-02 | Phase 6 | Done |
+| SAND-03 | Phase 6 | Done |
+| SAND-04 | Phase 6 | Done |
+| SAND-05 | Phase 6 | Done |
+| DISC-01 | Phase 5 | Done |
+| DISC-02 | Phase 5 | Done |
+| DISC-03 | Phase 5 | Done |
 
 **Coverage:**
 - v1 requirements: 87 total
