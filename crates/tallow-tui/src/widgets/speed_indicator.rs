@@ -83,7 +83,7 @@ impl Widget for SpeedIndicator {
         let avg = Self::format_speed(self.avg_speed);
         let peak = Self::format_speed(self.peak_speed);
 
-        let line = format!(
+        let _line = format!(
             "Speed: {} {}/s  avg {}/s  peak {}/s",
             arrow, current, avg, peak
         );
@@ -143,10 +143,10 @@ impl SpeedIndicatorCompact {
         const MB: u64 = 1_048_576;
         match self.current_speed {
             0 => Color::DarkGray,
-            s if s < MB => Color::Yellow,       // < 1 MB/s
-            s if s < 10 * MB => Color::Cyan,    // 1-10 MB/s
-            s if s < 50 * MB => Color::Green,   // 10-50 MB/s
-            _ => Color::LightGreen,             // > 50 MB/s
+            s if s < MB => Color::Yellow,     // < 1 MB/s
+            s if s < 10 * MB => Color::Cyan,  // 1-10 MB/s
+            s if s < 50 * MB => Color::Green, // 10-50 MB/s
+            _ => Color::LightGreen,           // > 50 MB/s
         }
     }
 }
@@ -210,7 +210,7 @@ impl Widget for SpeedGraph {
         let sparkline = Sparkline::default()
             .data(&data)
             .style(Style::default().fg(Color::Cyan))
-            .max(samples.iter().max().copied());
+            .max(samples.iter().max().copied().unwrap_or(1));
 
         sparkline.render(area, buf);
     }
@@ -222,11 +222,11 @@ mod tests {
 
     #[test]
     fn test_speed_arrow() {
-        let indicator = SpeedIndicator::new(1200, 1000, 1500);
-        assert_eq!(indicator.speed_arrow(), "↑"); // 1.2x average
+        let indicator = SpeedIndicator::new(1300, 1000, 1500);
+        assert_eq!(indicator.speed_arrow(), "↑"); // 1.3x average (> 1.2)
 
         let indicator = SpeedIndicator::new(700, 1000, 1500);
-        assert_eq!(indicator.speed_arrow(), "↓"); // 0.7x average
+        assert_eq!(indicator.speed_arrow(), "↓"); // 0.7x average (< 0.8)
 
         let indicator = SpeedIndicator::new(950, 1000, 1500);
         assert_eq!(indicator.speed_arrow(), "→"); // ~1.0x average
@@ -237,14 +237,14 @@ mod tests {
 
     #[test]
     fn test_speed_color() {
-        let indicator = SpeedIndicator::new(1200, 1000, 1500);
-        assert_eq!(indicator.speed_color(), Color::Green);
+        let indicator = SpeedIndicator::new(1300, 1000, 1500);
+        assert_eq!(indicator.speed_color(), Color::Green); // 1.3x (> 1.2)
 
         let indicator = SpeedIndicator::new(700, 1000, 1500);
-        assert_eq!(indicator.speed_color(), Color::Yellow);
+        assert_eq!(indicator.speed_color(), Color::Yellow); // 0.7x (< 0.8)
 
         let indicator = SpeedIndicator::new(950, 1000, 1500);
-        assert_eq!(indicator.speed_color(), Color::Cyan);
+        assert_eq!(indicator.speed_color(), Color::Cyan); // ~1.0x
     }
 
     #[test]

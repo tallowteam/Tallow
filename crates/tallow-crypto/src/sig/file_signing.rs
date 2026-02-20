@@ -83,8 +83,8 @@ pub fn verify_chunk(public_key: &[u8; 32], chunk_data: &[u8], sig: &ChunkSignatu
     let actual_hash = blake3::hash(chunk_data);
     if !constant_time::ct_eq(&actual_hash, &sig.chunk_hash) {
         return Err(CryptoError::HashMismatch {
-            expected: format!("{:02x?}", sig.chunk_hash),
-            actual: format!("{:02x?}", actual_hash),
+            expected: String::from("[redacted]"),
+            actual: String::from("[redacted]"),
         });
     }
 

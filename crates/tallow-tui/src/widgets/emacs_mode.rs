@@ -88,10 +88,22 @@ pub fn emacs_keymap() -> Keymap {
     );
 
     // Arrow keys (standard)
-    keymap.bind(key_event(KeyCode::Up, KeyModifiers::NONE), Action::NavigateUp);
-    keymap.bind(key_event(KeyCode::Down, KeyModifiers::NONE), Action::NavigateDown);
-    keymap.bind(key_event(KeyCode::Left, KeyModifiers::NONE), Action::NavigateLeft);
-    keymap.bind(key_event(KeyCode::Right, KeyModifiers::NONE), Action::NavigateRight);
+    keymap.bind(
+        key_event(KeyCode::Up, KeyModifiers::NONE),
+        Action::NavigateUp,
+    );
+    keymap.bind(
+        key_event(KeyCode::Down, KeyModifiers::NONE),
+        Action::NavigateDown,
+    );
+    keymap.bind(
+        key_event(KeyCode::Left, KeyModifiers::NONE),
+        Action::NavigateLeft,
+    );
+    keymap.bind(
+        key_event(KeyCode::Right, KeyModifiers::NONE),
+        Action::NavigateRight,
+    );
 
     // Beginning/End of line - Ctrl+a/e
     keymap.bind_with_description(
@@ -248,7 +260,10 @@ pub fn emacs_keymap() -> Keymap {
     );
 
     // Standard actions
-    keymap.bind(key_event(KeyCode::Enter, KeyModifiers::NONE), Action::Confirm);
+    keymap.bind(
+        key_event(KeyCode::Enter, KeyModifiers::NONE),
+        Action::Confirm,
+    );
     keymap.bind(key_event(KeyCode::Esc, KeyModifiers::NONE), Action::Cancel);
 
     keymap
@@ -257,21 +272,12 @@ pub fn emacs_keymap() -> Keymap {
 /// Emacs-style state for multi-key commands.
 ///
 /// Tracks prefix keys like `Ctrl+x` for sequences like `Ctrl+x Ctrl+c`.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct EmacsState {
     /// Current prefix key (e.g., "Ctrl+x").
     pub prefix: Option<String>,
     /// Mini-buffer content for commands.
     pub minibuffer: String,
-}
-
-impl Default for EmacsState {
-    fn default() -> Self {
-        Self {
-            prefix: None,
-            minibuffer: String::new(),
-        }
-    }
 }
 
 impl EmacsState {

@@ -50,12 +50,24 @@ impl SettingsState {
     /// Initializes default settings values.
     fn initialize_defaults(&mut self) {
         // Network defaults
-        self.set_default("network.webrtc_port", SettingType::Number(9000, 1024, 65535));
-        self.set_default("network.signaling_port", SettingType::Number(8080, 1024, 65535));
+        self.set_default(
+            "network.webrtc_port",
+            SettingType::Number(9000, 1024, 65535),
+        );
+        self.set_default(
+            "network.signaling_port",
+            SettingType::Number(8080, 1024, 65535),
+        );
         self.set_default("network.enable_ipv6", SettingType::Toggle(true));
         self.set_default("network.nat_traversal", SettingType::Toggle(true));
-        self.set_default("network.upload_speed_limit", SettingType::Number(0, 0, 1000));
-        self.set_default("network.download_speed_limit", SettingType::Number(0, 0, 1000));
+        self.set_default(
+            "network.upload_speed_limit",
+            SettingType::Number(0, 0, 1000),
+        );
+        self.set_default(
+            "network.download_speed_limit",
+            SettingType::Number(0, 0, 1000),
+        );
 
         // Privacy defaults
         self.set_default("privacy.strip_metadata", SettingType::Toggle(true));
@@ -72,8 +84,14 @@ impl SettingsState {
         // Display defaults
         self.set_default("display.notifications", SettingType::Toggle(true));
         self.set_default("display.sound_effects", SettingType::Toggle(true));
-        self.set_default("display.display_name", SettingType::Text("My Device".into()));
-        self.set_default("display.show_transfer_animations", SettingType::Toggle(true));
+        self.set_default(
+            "display.display_name",
+            SettingType::Text("My Device".into()),
+        );
+        self.set_default(
+            "display.show_transfer_animations",
+            SettingType::Toggle(true),
+        );
 
         // Advanced defaults
         self.set_default("advanced.debug_logging", SettingType::Toggle(false));
@@ -92,7 +110,11 @@ impl SettingsState {
     }
 
     /// Applies a change to a setting.
-    pub fn apply_change(&mut self, key: impl Into<String>, value: SettingType) -> Result<(), String> {
+    pub fn apply_change(
+        &mut self,
+        key: impl Into<String>,
+        value: SettingType,
+    ) -> Result<(), String> {
         let key = key.into();
 
         // Validate the change
@@ -122,7 +144,8 @@ impl SettingsState {
             self.current_values.insert(key.to_string(), default.clone());
 
             if let Some(original) = self.original_values.get(key) {
-                self.modified_flags.insert(key.to_string(), original != default);
+                self.modified_flags
+                    .insert(key.to_string(), original != default);
             }
 
             Ok(())
@@ -225,7 +248,10 @@ impl SettingsState {
                 return Err("Display name must be <= 32 characters".into());
             }
             // Check for valid characters
-            if !name.chars().all(|c| c.is_alphanumeric() || c.is_whitespace() || "-_".contains(c)) {
+            if !name
+                .chars()
+                .all(|c| c.is_alphanumeric() || c.is_whitespace() || "-_".contains(c))
+            {
                 return Err("Display name contains invalid characters".into());
             }
             Ok(())
@@ -241,7 +267,7 @@ impl SettingsState {
                 return Err("Chunk size must be between 64 and 4096 KB".into());
             }
             // Ensure power of 2 for optimal performance
-            if !size.is_power_of_two() {
+            if *size > 0 && !(*size as u64).is_power_of_two() {
                 return Err("Chunk size should be a power of 2 for optimal performance".into());
             }
             Ok(())
@@ -306,7 +332,10 @@ mod tests {
     fn test_apply_change() {
         let mut state = SettingsState::new();
 
-        let result = state.apply_change("network.webrtc_port", SettingType::Number(9001, 1024, 65535));
+        let result = state.apply_change(
+            "network.webrtc_port",
+            SettingType::Number(9001, 1024, 65535),
+        );
         assert!(result.is_ok());
         assert!(state.has_unsaved_changes());
     }
@@ -315,7 +344,12 @@ mod tests {
     fn test_revert_changes() {
         let mut state = SettingsState::new();
 
-        state.apply_change("network.webrtc_port", SettingType::Number(9001, 1024, 65535)).unwrap();
+        state
+            .apply_change(
+                "network.webrtc_port",
+                SettingType::Number(9001, 1024, 65535),
+            )
+            .unwrap();
         assert!(state.has_unsaved_changes());
 
         state.revert();
@@ -327,13 +361,19 @@ mod tests {
         let state = SettingsState::new();
 
         // Valid port
-        assert!(state.validate_port(&SettingType::Number(8080, 1024, 65535)).is_ok());
+        assert!(state
+            .validate_port(&SettingType::Number(8080, 1024, 65535))
+            .is_ok());
 
         // Invalid port (too low)
-        assert!(state.validate_port(&SettingType::Number(80, 0, 65535)).is_err());
+        assert!(state
+            .validate_port(&SettingType::Number(80, 0, 65535))
+            .is_err());
 
         // Invalid port (too high)
-        assert!(state.validate_port(&SettingType::Number(70000, 0, 70000)).is_err());
+        assert!(state
+            .validate_port(&SettingType::Number(70000, 0, 70000))
+            .is_err());
     }
 
     #[test]
@@ -341,21 +381,32 @@ mod tests {
         let state = SettingsState::new();
 
         // Valid name
-        assert!(state.validate_display_name(&SettingType::Text("My Device".into())).is_ok());
+        assert!(state
+            .validate_display_name(&SettingType::Text("My Device".into()))
+            .is_ok());
 
         // Empty name
-        assert!(state.validate_display_name(&SettingType::Text("".into())).is_err());
+        assert!(state
+            .validate_display_name(&SettingType::Text("".into()))
+            .is_err());
 
         // Too long name
         let long_name = "A".repeat(40);
-        assert!(state.validate_display_name(&SettingType::Text(long_name)).is_err());
+        assert!(state
+            .validate_display_name(&SettingType::Text(long_name))
+            .is_err());
     }
 
     #[test]
     fn test_commit_changes() {
         let mut state = SettingsState::new();
 
-        state.apply_change("network.webrtc_port", SettingType::Number(9001, 1024, 65535)).unwrap();
+        state
+            .apply_change(
+                "network.webrtc_port",
+                SettingType::Number(9001, 1024, 65535),
+            )
+            .unwrap();
         assert!(state.has_unsaved_changes());
 
         state.commit();
@@ -373,7 +424,12 @@ mod tests {
     fn test_reset_setting() {
         let mut state = SettingsState::new();
 
-        state.apply_change("network.webrtc_port", SettingType::Number(9001, 1024, 65535)).unwrap();
+        state
+            .apply_change(
+                "network.webrtc_port",
+                SettingType::Number(9001, 1024, 65535),
+            )
+            .unwrap();
         state.reset_setting("network.webrtc_port").unwrap();
 
         if let Some(SettingType::Number(port, _, _)) = state.get("network.webrtc_port") {
@@ -387,8 +443,15 @@ mod tests {
     fn test_get_modified_settings() {
         let mut state = SettingsState::new();
 
-        state.apply_change("network.webrtc_port", SettingType::Number(9001, 1024, 65535)).unwrap();
-        state.apply_change("privacy.strip_metadata", SettingType::Toggle(false)).unwrap();
+        state
+            .apply_change(
+                "network.webrtc_port",
+                SettingType::Number(9001, 1024, 65535),
+            )
+            .unwrap();
+        state
+            .apply_change("privacy.strip_metadata", SettingType::Toggle(false))
+            .unwrap();
 
         let modified = state.get_modified_settings();
         assert!(modified.contains(&"network.webrtc_port".to_string()));

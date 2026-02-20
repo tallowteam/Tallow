@@ -143,7 +143,7 @@ fn rgb_to_16(r: u8, g: u8, b: u8) -> Color {
     let max_component = r.max(g).max(b);
     let min_component = r.min(g).min(b);
     let saturation = if max_component > 0 {
-        ((max_component - min_component) as f32 / max_component as f32)
+        (max_component - min_component) as f32 / max_component as f32
     } else {
         0.0
     };

@@ -3,7 +3,7 @@
 //! Provides specialized widgets for toggles, text inputs, numeric inputs, and choice selectors.
 //! Handles user input and validation for each setting type.
 
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
@@ -70,7 +70,11 @@ pub struct SettingWidget {
 
 impl SettingWidget {
     /// Creates a new setting widget.
-    pub fn new(label: impl Into<String>, description: impl Into<String>, setting_type: SettingType) -> Self {
+    pub fn new(
+        label: impl Into<String>,
+        description: impl Into<String>,
+        setting_type: SettingType,
+    ) -> Self {
         let original_value = setting_type.clone();
         Self {
             label: label.into(),
@@ -91,19 +95,17 @@ impl SettingWidget {
                     self.check_modified();
                 }
             }
-            SettingType::Text(ref mut text) => {
-                match key.code {
-                    KeyCode::Char(c) => {
-                        text.push(c);
-                        self.check_modified();
-                    }
-                    KeyCode::Backspace => {
-                        text.pop();
-                        self.check_modified();
-                    }
-                    _ => {}
+            SettingType::Text(ref mut text) => match key.code {
+                KeyCode::Char(c) => {
+                    text.push(c);
+                    self.check_modified();
                 }
-            }
+                KeyCode::Backspace => {
+                    text.pop();
+                    self.check_modified();
+                }
+                _ => {}
+            },
             SettingType::Number(ref mut value, min, max) => {
                 match key.code {
                     KeyCode::Up | KeyCode::Char('+') => {
@@ -137,23 +139,21 @@ impl SettingWidget {
                     _ => {}
                 }
             }
-            SettingType::Choice(options, ref mut selected) => {
-                match key.code {
-                    KeyCode::Left | KeyCode::Char('h') => {
-                        if *selected > 0 {
-                            *selected -= 1;
-                            self.check_modified();
-                        }
+            SettingType::Choice(options, ref mut selected) => match key.code {
+                KeyCode::Left | KeyCode::Char('h') => {
+                    if *selected > 0 {
+                        *selected -= 1;
+                        self.check_modified();
                     }
-                    KeyCode::Right | KeyCode::Char('l') => {
-                        if *selected + 1 < options.len() {
-                            *selected += 1;
-                            self.check_modified();
-                        }
-                    }
-                    _ => {}
                 }
-            }
+                KeyCode::Right | KeyCode::Char('l') => {
+                    if *selected + 1 < options.len() {
+                        *selected += 1;
+                        self.check_modified();
+                    }
+                }
+                _ => {}
+            },
         }
     }
 
@@ -257,11 +257,8 @@ mod tests {
 
     #[test]
     fn test_toggle_setting() {
-        let mut setting = SettingWidget::new(
-            "Test Toggle",
-            "A test toggle",
-            SettingType::Toggle(false),
-        );
+        let mut setting =
+            SettingWidget::new("Test Toggle", "A test toggle", SettingType::Toggle(false));
 
         assert!(!setting.is_modified);
 
@@ -298,7 +295,10 @@ mod tests {
         let mut setting = SettingWidget::new(
             "Test Choice",
             "A test choice",
-            SettingType::Choice(vec!["Option 1".into(), "Option 2".into(), "Option 3".into()], 0),
+            SettingType::Choice(
+                vec!["Option 1".into(), "Option 2".into(), "Option 3".into()],
+                0,
+            ),
         );
 
         setting.handle_input(KeyEvent::from(KeyCode::Right));
@@ -329,11 +329,8 @@ mod tests {
 
     #[test]
     fn test_reset_setting() {
-        let mut setting = SettingWidget::new(
-            "Test Reset",
-            "A test reset",
-            SettingType::Toggle(false),
-        );
+        let mut setting =
+            SettingWidget::new("Test Reset", "A test reset", SettingType::Toggle(false));
 
         setting.handle_input(KeyEvent::from(KeyCode::Enter));
         assert!(setting.is_modified);

@@ -115,7 +115,9 @@ impl CompletionBurst {
         let text: String = chars.iter().collect();
         Line::from(Span::styled(
             text,
-            Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
         ))
     }
 }
@@ -245,7 +247,11 @@ pub fn encryption_indicator(is_encrypting: bool, reduced_motion: bool) -> Span<'
 }
 
 /// Encryption indicator with frame-based animation
-pub fn encryption_indicator_frame(is_encrypting: bool, frame: u8, reduced_motion: bool) -> Span<'static> {
+pub fn encryption_indicator_frame(
+    is_encrypting: bool,
+    frame: u8,
+    reduced_motion: bool,
+) -> Span<'static> {
     if reduced_motion {
         return encryption_indicator(is_encrypting, true);
     }
@@ -292,7 +298,11 @@ pub fn transfer_speed_indicator(speed_mbps: f64, frame: u8, reduced_motion: bool
     }
 
     // Animated arrow based on speed
-    let arrow = if frame % 2 == 0 { "→" } else { "⇒" };
+    let arrow = if frame.is_multiple_of(2) {
+        "→"
+    } else {
+        "⇒"
+    };
     let color = if speed_mbps > 100.0 {
         Color::Green
     } else if speed_mbps > 10.0 {
@@ -320,10 +330,7 @@ pub fn waiting_indicator(frame: u8, reduced_motion: bool) -> Span<'static> {
         _ => "...",
     };
 
-    Span::styled(
-        format!("Waiting{}", dots),
-        Style::default().fg(Color::Gray),
-    )
+    Span::styled(format!("Waiting{}", dots), Style::default().fg(Color::Gray))
 }
 
 #[cfg(test)]

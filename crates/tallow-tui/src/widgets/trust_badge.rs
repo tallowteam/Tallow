@@ -163,7 +163,9 @@ impl Widget for TrustBadgeDetailed {
 
         // Timestamp information
         if let Some(timestamp_str) = self.format_timestamp() {
-            let timestamp_style = Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM);
+            let timestamp_style = Style::default()
+                .fg(Color::DarkGray)
+                .add_modifier(Modifier::DIM);
             buf.set_string(inner.x + 1, y, &timestamp_str, timestamp_style);
         }
     }

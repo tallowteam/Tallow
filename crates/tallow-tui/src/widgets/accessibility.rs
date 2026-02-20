@@ -7,7 +7,7 @@ use std::env;
 use std::io::{self, Write};
 
 /// Accessibility mode configuration
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct AccessibilityMode {
     /// Whether a screen reader is actively being used
     pub screen_reader_active: bool,
@@ -17,17 +17,6 @@ pub struct AccessibilityMode {
     pub reduced_motion: bool,
     /// Large text rendering
     pub large_text: bool,
-}
-
-impl Default for AccessibilityMode {
-    fn default() -> Self {
-        Self {
-            screen_reader_active: false,
-            high_contrast: false,
-            reduced_motion: false,
-            large_text: false,
-        }
-    }
 }
 
 impl AccessibilityMode {

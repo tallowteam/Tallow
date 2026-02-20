@@ -9,7 +9,7 @@ use ratatui::{
     layout::Rect,
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, StatefulWidget, Widget},
+    widgets::{Block, Borders, List, ListItem, Widget},
 };
 use std::path::PathBuf;
 
@@ -159,12 +159,10 @@ impl FileBrowser {
                 .collect();
 
             // Sort: directories first, then alphabetically
-            entries.sort_by(|a, b| {
-                match (a.is_dir, b.is_dir) {
-                    (true, false) => std::cmp::Ordering::Less,
-                    (false, true) => std::cmp::Ordering::Greater,
-                    _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
-                }
+            entries.sort_by(|a, b| match (a.is_dir, b.is_dir) {
+                (true, false) => std::cmp::Ordering::Less,
+                (false, true) => std::cmp::Ordering::Greater,
+                _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
             });
 
             self.entries.extend(entries);
@@ -310,10 +308,7 @@ impl FileBrowser {
                             Style::default()
                         },
                     ),
-                    Span::styled(
-                        format!("{:>8}", size),
-                        Style::default().fg(Color::DarkGray),
-                    ),
+                    Span::styled(format!("{:>8}", size), Style::default().fg(Color::DarkGray)),
                 ]);
 
                 ListItem::new(line)
@@ -321,7 +316,7 @@ impl FileBrowser {
             .collect();
 
         let list = List::new(items);
-        list.render(inner, buf);
+        Widget::render(list, inner, buf);
 
         // Render scrollbar indicator if needed
         if self.entries.len() > visible_height {
@@ -336,7 +331,8 @@ impl FileBrowser {
                 let x = inner.right() - 1;
                 let y = inner.top() + scrollbar_pos as u16;
                 if let Some(cell) = buf.cell_mut((x, y)) {
-                    cell.set_symbol("█").set_style(Style::default().fg(Color::Cyan));
+                    cell.set_symbol("█")
+                        .set_style(Style::default().fg(Color::Cyan));
                 }
             }
         }
@@ -352,7 +348,13 @@ mod tests {
         let entry = FileEntry::new("test.txt".into(), false, 1024, 0, PathBuf::from("test.txt"));
         assert_eq!(entry.format_size(), "1.0KB");
 
-        let entry = FileEntry::new("large.bin".into(), false, 1024 * 1024, 0, PathBuf::from("large.bin"));
+        let entry = FileEntry::new(
+            "large.bin".into(),
+            false,
+            1024 * 1024,
+            0,
+            PathBuf::from("large.bin"),
+        );
         assert_eq!(entry.format_size(), "1.0MB");
 
         let entry = FileEntry::new("dir".into(), true, 0, 0, PathBuf::from("dir"));

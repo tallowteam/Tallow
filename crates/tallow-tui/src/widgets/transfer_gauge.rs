@@ -4,6 +4,7 @@
 //! including file count, total bytes, and average speed.
 
 use ratatui::prelude::*;
+#[allow(unused_imports)]
 use ratatui::widgets::*;
 
 use super::transfer_progress::{format_bytes, format_duration};

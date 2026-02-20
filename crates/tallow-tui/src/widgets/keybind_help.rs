@@ -16,10 +16,10 @@
 //! // Render with: frame.render_widget(help, area);
 //! ```
 
-use crate::widgets::keybindings::{format_key, Action, Keymap};
+use crate::widgets::keybindings::{format_key, Keymap};
 use ratatui::{
     buffer::Buffer,
-    layout::{Alignment, Constraint, Layout, Rect},
+    layout::{Constraint, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph, Widget, Wrap},
@@ -64,10 +64,10 @@ impl KeybindHelp {
             keymap,
             visible: true,
             title: "Keyboard Shortcuts".to_string(),
-            bg_color: Color::Rgb(26, 27, 38),      // Dark background
-            fg_color: Color::Rgb(192, 202, 245),   // Light foreground
+            bg_color: Color::Rgb(26, 27, 38),    // Dark background
+            fg_color: Color::Rgb(192, 202, 245), // Light foreground
             border_color: Color::Rgb(122, 162, 247), // Blue border
-            key_color: Color::Rgb(158, 206, 106),  // Green for keys
+            key_color: Color::Rgb(158, 206, 106), // Green for keys
         }
     }
 
@@ -121,10 +121,7 @@ impl KeybindHelp {
             let key_str = format_key(&binding.key);
             let desc = binding.description.clone();
 
-            groups
-                .entry(category)
-                .or_default()
-                .push((key_str, desc));
+            groups.entry(category).or_default().push((key_str, desc));
         }
 
         // Sort entries within each category
@@ -141,43 +138,28 @@ impl KeybindHelp {
 
         // Header
         lines.push(Line::from(vec![
-            Span::styled(
-                "Press ",
-                Style::default().fg(self.fg_color),
-            ),
+            Span::styled("Press ", Style::default().fg(self.fg_color)),
             Span::styled(
                 "?",
                 Style::default()
                     .fg(self.key_color)
                     .add_modifier(Modifier::BOLD),
             ),
-            Span::styled(
-                " or ",
-                Style::default().fg(self.fg_color),
-            ),
+            Span::styled(" or ", Style::default().fg(self.fg_color)),
             Span::styled(
                 "Esc",
                 Style::default()
                     .fg(self.key_color)
                     .add_modifier(Modifier::BOLD),
             ),
-            Span::styled(
-                " to close",
-                Style::default().fg(self.fg_color),
-            ),
+            Span::styled(" to close", Style::default().fg(self.fg_color)),
         ]));
         lines.push(Line::from(""));
 
         let groups = self.group_by_category();
 
         // Define category order for consistent display
-        let category_order = [
-            "Navigation",
-            "Transfer",
-            "Actions",
-            "UI",
-            "System",
-        ];
+        let category_order = ["Navigation", "Transfer", "Actions", "UI", "System"];
 
         for category in &category_order {
             if let Some(entries) = groups.get(*category) {
@@ -200,10 +182,7 @@ impl KeybindHelp {
                                 .add_modifier(Modifier::BOLD),
                         ),
                         Span::raw(" "),
-                        Span::styled(
-                            desc.clone(),
-                            Style::default().fg(self.fg_color),
-                        ),
+                        Span::styled(desc.clone(), Style::default().fg(self.fg_color)),
                     ]));
                 }
 
@@ -235,10 +214,7 @@ impl KeybindHelp {
                                 .add_modifier(Modifier::BOLD),
                         ),
                         Span::raw(" "),
-                        Span::styled(
-                            desc.clone(),
-                            Style::default().fg(self.fg_color),
-                        ),
+                        Span::styled(desc.clone(), Style::default().fg(self.fg_color)),
                     ]));
                 }
 
@@ -320,7 +296,7 @@ pub struct KeybindColumns {
 impl KeybindColumns {
     /// Creates a new two-column keybinding display.
     pub fn new(bindings: Vec<(String, String)>) -> Self {
-        let mid = (bindings.len() + 1) / 2;
+        let mid = bindings.len().div_ceil(2);
         let (left, right) = bindings.split_at(mid);
 
         Self {

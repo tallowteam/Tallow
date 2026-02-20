@@ -3,7 +3,7 @@
 //! Provides a split-pane interface with file browser on the left and preview on the right.
 //! Supports multi-selection, sorting, and keyboard navigation.
 
-use super::file_browser::{FileBrowser, FileEntry};
+use super::file_browser::FileBrowser;
 use super::file_preview::FilePreview;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
@@ -125,23 +125,22 @@ impl FileSelector {
 
     /// Applies the current sort mode to the browser entries.
     fn apply_sort(&mut self) {
-        let parent_entry = if !self.browser.entries.is_empty()
-            && self.browser.entries[0].name == ".."
-        {
-            Some(self.browser.entries.remove(0))
-        } else {
-            None
-        };
+        let parent_entry =
+            if !self.browser.entries.is_empty() && self.browser.entries[0].name == ".." {
+                Some(self.browser.entries.remove(0))
+            } else {
+                None
+            };
 
         match self.sort_mode {
             SortMode::Name => {
-                self.browser.entries.sort_by(|a, b| {
-                    match (a.is_dir, b.is_dir) {
+                self.browser
+                    .entries
+                    .sort_by(|a, b| match (a.is_dir, b.is_dir) {
                         (true, false) => std::cmp::Ordering::Less,
                         (false, true) => std::cmp::Ordering::Greater,
                         _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
-                    }
-                });
+                    });
             }
             SortMode::Size => {
                 self.browser.entries.sort_by(|a, b| {
@@ -162,12 +161,8 @@ impl FileSelector {
                         (false, true) => std::cmp::Ordering::Greater,
                         _ => {
                             // Try to get modification times
-                            let a_time = std::fs::metadata(&a.path)
-                                .and_then(|m| m.modified())
-                                .ok();
-                            let b_time = std::fs::metadata(&b.path)
-                                .and_then(|m| m.modified())
-                                .ok();
+                            let a_time = std::fs::metadata(&a.path).and_then(|m| m.modified()).ok();
+                            let b_time = std::fs::metadata(&b.path).and_then(|m| m.modified()).ok();
 
                             match (a_time, b_time) {
                                 (Some(at), Some(bt)) => bt.cmp(&at), // Newest first
@@ -208,57 +203,56 @@ impl FileSelector {
     /// Handles keyboard input events.
     pub fn handle_key(&mut self, key: KeyEvent) -> bool {
         match self.focus {
-            Focus::Browser => {
-                match key.code {
-                    KeyCode::Tab => {
-                        self.toggle_focus();
-                        return true;
-                    }
-                    KeyCode::Char('s') => {
-                        self.cycle_sort_mode();
-                        return true;
-                    }
-                    KeyCode::Char('a') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                        self.select_all();
-                        return true;
-                    }
-                    KeyCode::Char('d') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                        self.deselect_all();
-                        return true;
-                    }
-                    KeyCode::Char(' ') => {
-                        self.toggle_selection();
-                        self.update_preview();
-                        return true;
-                    }
-                    KeyCode::Up | KeyCode::Char('k') => {
-                        self.browser.navigate_up();
-                        self.update_preview();
-                        return true;
-                    }
-                    KeyCode::Down | KeyCode::Char('j') => {
-                        self.browser.navigate_down();
-                        self.update_preview();
-                        return true;
-                    }
-                    KeyCode::Enter => {
-                        self.browser.toggle_expand();
-                        self.update_preview();
-                        return true;
-                    }
-                    KeyCode::Char('h') => {
-                        self.browser.toggle_hidden();
-                        return true;
-                    }
-                    _ => return false,
+            Focus::Browser => match key.code {
+                KeyCode::Tab => {
+                    self.toggle_focus();
+                    true
                 }
-            }
+                KeyCode::Char('s') => {
+                    self.cycle_sort_mode();
+                    true
+                }
+                KeyCode::Char('a') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    self.select_all();
+                    true
+                }
+                KeyCode::Char('d') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    self.deselect_all();
+                    true
+                }
+                KeyCode::Char(' ') => {
+                    self.toggle_selection();
+                    self.update_preview();
+                    true
+                }
+                KeyCode::Up | KeyCode::Char('k') => {
+                    self.browser.navigate_up();
+                    self.update_preview();
+                    true
+                }
+                KeyCode::Down | KeyCode::Char('j') => {
+                    self.browser.navigate_down();
+                    self.update_preview();
+                    true
+                }
+                KeyCode::Enter => {
+                    self.browser.toggle_expand();
+                    self.update_preview();
+                    true
+                }
+                KeyCode::Char('h') => {
+                    self.browser.toggle_hidden();
+                    true
+                }
+                _ => false,
+            },
             Focus::Preview => {
                 if key.code == KeyCode::Tab {
                     self.toggle_focus();
-                    return true;
+                    true
+                } else {
+                    false
                 }
-                return false;
             }
         }
     }
@@ -272,26 +266,32 @@ impl FileSelector {
             .split(area);
 
         // Render browser
-        let browser_block = Block::default()
-            .borders(Borders::ALL)
-            .border_style(if self.focus == Focus::Browser {
-                Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)
-            } else {
-                Style::default().fg(Color::DarkGray)
-            });
+        let browser_block =
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(if self.focus == Focus::Browser {
+                    Style::default()
+                        .fg(Color::Cyan)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().fg(Color::DarkGray)
+                });
 
         let browser_inner = browser_block.inner(chunks[0]);
         browser_block.render(chunks[0], buf);
         self.browser.render(browser_inner, buf);
 
         // Render preview
-        let preview_block = Block::default()
-            .borders(Borders::ALL)
-            .border_style(if self.focus == Focus::Preview {
-                Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD)
-            } else {
-                Style::default().fg(Color::DarkGray)
-            });
+        let preview_block =
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(if self.focus == Focus::Preview {
+                    Style::default()
+                        .fg(Color::Magenta)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().fg(Color::DarkGray)
+                });
 
         let preview_inner = preview_block.inner(chunks[1]);
         preview_block.render(chunks[1], buf);

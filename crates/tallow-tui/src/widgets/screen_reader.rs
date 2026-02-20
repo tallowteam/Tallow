@@ -6,20 +6,15 @@
 use std::collections::VecDeque;
 
 /// Verbosity level for screen reader announcements
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Verbosity {
     /// Brief announcements, minimal context
     Brief,
     /// Normal announcements with context
+    #[default]
     Normal,
     /// Verbose announcements with full details
     Verbose,
-}
-
-impl Default for Verbosity {
-    fn default() -> Self {
-        Self::Normal
-    }
 }
 
 /// Screen reader output management
@@ -174,7 +169,9 @@ impl ScreenReaderOutput {
         let message = match self.verbosity {
             Verbosity::Brief => format!("{} {}", device, status),
             Verbosity::Normal => format!("Device {} {}", device, status),
-            Verbosity::Verbose => format!("Connection status changed: {} is now {}", device, status),
+            Verbosity::Verbose => {
+                format!("Connection status changed: {} is now {}", device, status)
+            }
         };
         self.queue_announcement(message);
     }
@@ -182,22 +179,13 @@ impl ScreenReaderOutput {
     /// Announce encryption status
     pub fn announce_encryption_status(&mut self, active: bool) {
         let message = match self.verbosity {
-            Verbosity::Brief => {
-                if active {
-                    "Encrypted"
-                } else {
-                    "Unencrypted"
-                }
-                .to_string()
+            Verbosity::Brief => if active { "Encrypted" } else { "Unencrypted" }.to_string(),
+            Verbosity::Normal => if active {
+                "Connection is encrypted"
+            } else {
+                "Connection is not encrypted"
             }
-            Verbosity::Normal => {
-                if active {
-                    "Connection is encrypted"
-                } else {
-                    "Connection is not encrypted"
-                }
-                .to_string()
-            }
+            .to_string(),
             Verbosity::Verbose => {
                 if active {
                     "Secure encrypted connection established using post-quantum cryptography"

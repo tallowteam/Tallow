@@ -26,6 +26,14 @@ pub struct CpaceInitiator {
     code_phrase_hash: [u8; 32],
 }
 
+impl Drop for CpaceInitiator {
+    fn drop(&mut self) {
+        use zeroize::Zeroize;
+        self.scalar.zeroize();
+        self.code_phrase_hash.zeroize();
+    }
+}
+
 /// CPace responder (same protocol, different role label)
 pub struct CpaceResponder {
     scalar: Scalar,
@@ -36,6 +44,14 @@ pub struct CpaceResponder {
     /// Hash of code phrase (retained for key confirmation)
     #[allow(dead_code)]
     code_phrase_hash: [u8; 32],
+}
+
+impl Drop for CpaceResponder {
+    fn drop(&mut self) {
+        use zeroize::Zeroize;
+        self.scalar.zeroize();
+        self.code_phrase_hash.zeroize();
+    }
 }
 
 /// Derive the CPace generator from a code phrase and session context

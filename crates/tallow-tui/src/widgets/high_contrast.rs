@@ -275,9 +275,7 @@ mod tests {
 
         assert_eq!(high_contrast.fg, Some(Color::White));
         assert_eq!(high_contrast.bg, Some(Color::Black));
-        assert!(high_contrast
-            .add_modifier
-            .contains(Modifier::BOLD));
+        assert!(high_contrast.add_modifier.contains(Modifier::BOLD));
     }
 
     #[test]

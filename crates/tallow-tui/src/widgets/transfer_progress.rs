@@ -5,6 +5,7 @@
 //! precision in the progress bar.
 
 use ratatui::prelude::*;
+#[allow(unused_imports)]
 use ratatui::widgets::*;
 
 /// A widget that renders per-file transfer progress.
@@ -134,6 +135,7 @@ impl Widget for TransferProgressWidget {
 ///
 /// # Examples
 /// ```
+/// use tallow_tui::widgets::transfer_progress::format_bytes;
 /// assert_eq!(format_bytes(1024), "1.0 KB");
 /// assert_eq!(format_bytes(1_048_576), "1.0 MB");
 /// ```
@@ -153,8 +155,6 @@ pub fn format_bytes(bytes: u64) -> String {
 
     if value >= 100.0 {
         format!("{:.0} {}", value, unit)
-    } else if value >= 10.0 {
-        format!("{:.1} {}", value, unit)
     } else {
         format!("{:.1} {}", value, unit)
     }
@@ -164,6 +164,7 @@ pub fn format_bytes(bytes: u64) -> String {
 ///
 /// # Examples
 /// ```
+/// use tallow_tui::widgets::transfer_progress::format_duration;
 /// assert_eq!(format_duration(3), "3s");
 /// assert_eq!(format_duration(90), "1m 30s");
 /// assert_eq!(format_duration(3661), "1h 1m");

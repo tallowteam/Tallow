@@ -5,9 +5,10 @@
 use ratatui::prelude::*;
 
 /// Type of transition animation
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Transition {
     /// No transition
+    #[default]
     None,
     /// Slide content from right to left
     SlideLeft,
@@ -17,12 +18,6 @@ pub enum Transition {
     FadeIn,
     /// Fade content out
     FadeOut,
-}
-
-impl Default for Transition {
-    fn default() -> Self {
-        Self::None
-    }
 }
 
 /// Direction for slide transitions

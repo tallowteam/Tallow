@@ -192,7 +192,9 @@ impl Widget for DeviceList {
 
         if self.devices.is_empty() {
             let empty_msg = "No devices found";
-            let empty_style = Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM);
+            let empty_style = Style::default()
+                .fg(Color::DarkGray)
+                .add_modifier(Modifier::DIM);
             let x = inner.x + (inner.width.saturating_sub(empty_msg.len() as u16)) / 2;
             let y = inner.y + inner.height / 2;
             buf.set_string(x, y, empty_msg, empty_style);
@@ -235,7 +237,7 @@ impl Widget for DeviceList {
 
                 for dy in 0..card_area.height {
                     for dx in 0..card_area.width {
-                        let cell = buf.get_mut(card_area.x + dx, card_area.y + dy);
+                        let cell = &mut buf[(card_area.x + dx, card_area.y + dy)];
                         cell.set_style(highlight_style);
                     }
                 }
@@ -342,7 +344,7 @@ impl Widget for DeviceListCompact {
             // Format: > 🍎 ✅ ● Alice's MacBook
             let prefix = if is_selected { "> " } else { "  " };
             let status = if device.is_online { "●" } else { "○" };
-            let status_color = if device.is_online {
+            let _status_color = if device.is_online {
                 Color::Green
             } else {
                 Color::Gray

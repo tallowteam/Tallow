@@ -50,20 +50,15 @@ pub struct ThemePalette {
 /// Theme mode selector.
 ///
 /// Used to choose between different visual theme palettes.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ThemeMode {
     /// Dark theme (default).
+    #[default]
     Dark,
     /// Light theme.
     Light,
     /// High-contrast theme for accessibility.
     HighContrast,
-}
-
-impl Default for ThemeMode {
-    fn default() -> Self {
-        Self::Dark
-    }
 }
 
 /// Returns a dark theme palette inspired by Tokyo Night.
@@ -87,17 +82,17 @@ impl Default for ThemeMode {
 /// ```
 pub fn dark_palette() -> ThemePalette {
     ThemePalette {
-        bg: Color::Rgb(26, 27, 38),           // #1a1b26
-        fg: Color::Rgb(192, 202, 245),        // #c0caf5
-        primary: Color::Rgb(122, 162, 247),   // #7aa2f7
-        secondary: Color::Rgb(125, 207, 255), // #7dcfff
-        success: Color::Rgb(158, 206, 106),   // #9ece6a
-        warning: Color::Rgb(224, 175, 104),   // #e0af68
-        error: Color::Rgb(247, 118, 142),     // #f7768e
-        accent: Color::Rgb(187, 154, 247),    // #bb9af7
-        muted: Color::Rgb(86, 95, 137),       // #565f89
-        border: Color::Rgb(41, 46, 66),       // #292e42
-        selection_bg: Color::Rgb(54, 59, 92), // #363b5c
+        bg: Color::Rgb(26, 27, 38),              // #1a1b26
+        fg: Color::Rgb(192, 202, 245),           // #c0caf5
+        primary: Color::Rgb(122, 162, 247),      // #7aa2f7
+        secondary: Color::Rgb(125, 207, 255),    // #7dcfff
+        success: Color::Rgb(158, 206, 106),      // #9ece6a
+        warning: Color::Rgb(224, 175, 104),      // #e0af68
+        error: Color::Rgb(247, 118, 142),        // #f7768e
+        accent: Color::Rgb(187, 154, 247),       // #bb9af7
+        muted: Color::Rgb(86, 95, 137),          // #565f89
+        border: Color::Rgb(41, 46, 66),          // #292e42
+        selection_bg: Color::Rgb(54, 59, 92),    // #363b5c
         selection_fg: Color::Rgb(192, 202, 245), // #c0caf5
     }
 }
@@ -123,16 +118,16 @@ pub fn dark_palette() -> ThemePalette {
 /// ```
 pub fn light_palette() -> ThemePalette {
     ThemePalette {
-        bg: Color::Rgb(213, 214, 219),      // #d5d6db
-        fg: Color::Rgb(52, 59, 88),         // #343b58
-        primary: Color::Rgb(52, 84, 138),   // #34548a
-        secondary: Color::Rgb(52, 109, 132), // #346d84
-        success: Color::Rgb(88, 117, 57),   // #587539
-        warning: Color::Rgb(143, 94, 21),   // #8f5e15
-        error: Color::Rgb(168, 40, 80),     // #a82850
-        accent: Color::Rgb(102, 71, 153),   // #664799
-        muted: Color::Rgb(143, 146, 161),   // #8f92a1
-        border: Color::Rgb(169, 171, 181),  // #a9abb5
+        bg: Color::Rgb(213, 214, 219),           // #d5d6db
+        fg: Color::Rgb(52, 59, 88),              // #343b58
+        primary: Color::Rgb(52, 84, 138),        // #34548a
+        secondary: Color::Rgb(52, 109, 132),     // #346d84
+        success: Color::Rgb(88, 117, 57),        // #587539
+        warning: Color::Rgb(143, 94, 21),        // #8f5e15
+        error: Color::Rgb(168, 40, 80),          // #a82850
+        accent: Color::Rgb(102, 71, 153),        // #664799
+        muted: Color::Rgb(143, 146, 161),        // #8f92a1
+        border: Color::Rgb(169, 171, 181),       // #a9abb5
         selection_bg: Color::Rgb(185, 192, 219), // #b9c0db
         selection_fg: Color::Rgb(52, 59, 88),    // #343b58
     }
@@ -159,17 +154,17 @@ pub fn light_palette() -> ThemePalette {
 /// ```
 pub fn high_contrast_palette() -> ThemePalette {
     ThemePalette {
-        bg: Color::Rgb(0, 0, 0),             // #000000 (pure black)
-        fg: Color::Rgb(255, 255, 255),       // #ffffff (pure white)
-        primary: Color::Rgb(0, 255, 255),    // #00ffff (cyan)
-        secondary: Color::Rgb(128, 128, 255), // #8080ff (light blue)
-        success: Color::Rgb(0, 255, 0),      // #00ff00 (pure green)
-        warning: Color::Rgb(255, 255, 0),    // #ffff00 (pure yellow)
-        error: Color::Rgb(255, 0, 0),        // #ff0000 (pure red)
-        accent: Color::Rgb(255, 0, 255),     // #ff00ff (magenta)
-        muted: Color::Rgb(128, 128, 128),    // #808080 (medium gray)
-        border: Color::Rgb(255, 255, 255),   // #ffffff (white borders)
-        selection_bg: Color::Rgb(0, 128, 128), // #008080 (teal)
+        bg: Color::Rgb(0, 0, 0),                 // #000000 (pure black)
+        fg: Color::Rgb(255, 255, 255),           // #ffffff (pure white)
+        primary: Color::Rgb(0, 255, 255),        // #00ffff (cyan)
+        secondary: Color::Rgb(128, 128, 255),    // #8080ff (light blue)
+        success: Color::Rgb(0, 255, 0),          // #00ff00 (pure green)
+        warning: Color::Rgb(255, 255, 0),        // #ffff00 (pure yellow)
+        error: Color::Rgb(255, 0, 0),            // #ff0000 (pure red)
+        accent: Color::Rgb(255, 0, 255),         // #ff00ff (magenta)
+        muted: Color::Rgb(128, 128, 128),        // #808080 (medium gray)
+        border: Color::Rgb(255, 255, 255),       // #ffffff (white borders)
+        selection_bg: Color::Rgb(0, 128, 128),   // #008080 (teal)
         selection_fg: Color::Rgb(255, 255, 255), // #ffffff (white)
     }
 }

@@ -5,9 +5,10 @@
 use ratatui::prelude::*;
 
 /// Style of spinner animation
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum SpinnerStyle {
     /// Braille dot patterns: ⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏
+    #[default]
     Braille,
     /// Small dots: ⠁⠂⠄⡀⢀⠠⠐⠈
     Dots,
@@ -17,12 +18,6 @@ pub enum SpinnerStyle {
     Bounce,
     /// Pulsing states (for reduced motion)
     Pulse,
-}
-
-impl Default for SpinnerStyle {
-    fn default() -> Self {
-        Self::Braille
-    }
 }
 
 /// Animated spinner widget

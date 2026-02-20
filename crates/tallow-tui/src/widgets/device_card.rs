@@ -197,14 +197,16 @@ impl Widget for DeviceCard {
             inner.x + 1,
             y,
             &line1,
-            Style::default().fg(Color::White).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::White)
+                .add_modifier(Modifier::BOLD),
         );
         y += 1;
 
         // Line 2: Trust badge + Online status
         let trust_badge = format!("{} {}", self.trust_level.icon(), self.trust_level.name());
         let (status_icon, status_color) = self.status_indicator();
-        let status = format!("{}  {} {}", trust_badge, status_icon, self.status_text());
+        let _status = format!("{}  {} {}", trust_badge, status_icon, self.status_text());
 
         let mut x = inner.x + 1;
         // Trust icon and name
@@ -230,7 +232,9 @@ impl Widget for DeviceCard {
             inner.x + 1,
             y,
             &fp_line,
-            Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM),
+            Style::default()
+                .fg(Color::DarkGray)
+                .add_modifier(Modifier::DIM),
         );
     }
 }
@@ -288,7 +292,7 @@ impl Widget for DeviceCardCompact {
             Color::Gray
         };
 
-        let line = format!(
+        let _line = format!(
             "{} {} {} {}",
             self.platform.icon(),
             self.trust_level.icon(),
@@ -313,7 +317,12 @@ impl Widget for DeviceCardCompact {
         x += 2;
 
         // Status indicator
-        buf.set_string(x, area.y, status_indicator, Style::default().fg(status_color));
+        buf.set_string(
+            x,
+            area.y,
+            status_indicator,
+            Style::default().fg(status_color),
+        );
         x += 2;
 
         // Device name

@@ -6,7 +6,7 @@
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
-    style::{Color, Modifier, Style},
+    style::{Color, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph, Widget, Wrap},
 };
@@ -120,7 +120,11 @@ impl FilePreview {
                 let preview = lines.join("\n");
 
                 if content.lines().count() > 20 {
-                    format!("{}\n\n... ({} more lines)", preview, content.lines().count() - 20)
+                    format!(
+                        "{}\n\n... ({} more lines)",
+                        preview,
+                        content.lines().count() - 20
+                    )
                 } else {
                     preview
                 }
@@ -153,27 +157,12 @@ impl FilePreview {
             .unwrap_or("unknown")
             .to_uppercase();
 
-        // For ZIP files, we can read the contents
+        // For ZIP files, show basic info
         if extension == "ZIP" {
-            if let Ok(file) = std::fs::File::open(path) {
-                if let Ok(archive) = zip::ZipArchive::new(file) {
-                    let file_count = archive.len();
-                    let file_list: Vec<String> = archive
-                        .file_names()
-                        .take(15)
-                        .map(|s| format!("  {}", s))
-                        .collect();
-
-                    let mut preview = format!("Archive File\n\nFormat: {}\nTotal Size: {}\nFiles: {}\n\nContents:\n{}",
-                        extension, size, file_count, file_list.join("\n"));
-
-                    if file_count > 15 {
-                        preview.push_str(&format!("\n\n... and {} more files", file_count - 15));
-                    }
-
-                    return preview;
-                }
-            }
+            return format!(
+                "Archive File\n\nFormat: {}\nTotal Size: {}\n\n(ZIP contents listing requires the zip crate)",
+                extension, size
+            );
         }
 
         format!(
@@ -228,7 +217,10 @@ impl FilePreview {
     /// Previews unknown file types.
     fn preview_unknown(&self, _path: &Path) -> String {
         let size = self.format_size();
-        format!("Unknown File Type\n\nSize: {}\n\nNo preview available.", size)
+        format!(
+            "Unknown File Type\n\nSize: {}\n\nNo preview available.",
+            size
+        )
     }
 
     /// Formats file size in human-readable format.
@@ -295,9 +287,18 @@ mod tests {
     fn test_file_type_detection() {
         assert_eq!(FileType::from_path(Path::new("test.txt")), FileType::Text);
         assert_eq!(FileType::from_path(Path::new("image.png")), FileType::Image);
-        assert_eq!(FileType::from_path(Path::new("archive.zip")), FileType::Archive);
-        assert_eq!(FileType::from_path(Path::new("binary.exe")), FileType::Binary);
-        assert_eq!(FileType::from_path(Path::new("unknown.xyz")), FileType::Unknown);
+        assert_eq!(
+            FileType::from_path(Path::new("archive.zip")),
+            FileType::Archive
+        );
+        assert_eq!(
+            FileType::from_path(Path::new("binary.exe")),
+            FileType::Binary
+        );
+        assert_eq!(
+            FileType::from_path(Path::new("unknown.xyz")),
+            FileType::Unknown
+        );
     }
 
     #[test]

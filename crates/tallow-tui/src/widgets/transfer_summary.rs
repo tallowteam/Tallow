@@ -91,10 +91,7 @@ impl Widget for TransferSummary {
         let size_line = if self.has_compression() {
             let compressed = format_bytes(self.compressed_bytes());
             let total = format_bytes(self.total_bytes);
-            format!(
-                "Total Size:  {} (compressed: {})",
-                total, compressed
-            )
+            format!("Total Size:  {} (compressed: {})", total, compressed)
         } else {
             format!("Total Size:  {}", format_bytes(self.total_bytes))
         };
@@ -103,10 +100,7 @@ impl Widget for TransferSummary {
         let speed_line = format!("Avg Speed:   {}/s", format_bytes(self.avg_speed));
 
         let compression_line = if self.has_compression() {
-            format!(
-                "Compression: {:.1}% reduction",
-                self.compression_percent()
-            )
+            format!("Compression: {:.1}% reduction", self.compression_percent())
         } else {
             "Compression: None".to_string()
         };
@@ -167,7 +161,11 @@ impl Widget for TransferSummaryCompact {
             return;
         }
 
-        let file_plural = if self.files_count == 1 { "file" } else { "files" };
+        let file_plural = if self.files_count == 1 {
+            "file"
+        } else {
+            "files"
+        };
         let avg_speed = format_bytes(self.avg_speed());
         let total_size = format_bytes(self.total_bytes);
         let elapsed = format_duration(self.elapsed_secs);
@@ -246,7 +244,10 @@ impl Widget for TransferSummaryWithErrors {
         // Render base summary lines
         let files_line = format!("Files:       {} files", self.summary.files_count);
         let size_line = format!("Total Size:  {}", format_bytes(self.summary.total_bytes));
-        let elapsed_line = format!("Elapsed:     {}", format_duration(self.summary.elapsed_secs));
+        let elapsed_line = format!(
+            "Elapsed:     {}",
+            format_duration(self.summary.elapsed_secs)
+        );
         let speed_line = format!("Avg Speed:   {}/s", format_bytes(self.summary.avg_speed));
 
         // Error lines
@@ -304,10 +305,10 @@ mod tests {
     #[test]
     fn test_compression_percent() {
         let summary = TransferSummary::new(1000, 10, 100, 0.8, 5);
-        assert_eq!(summary.compression_percent(), 20.0);
+        assert!((summary.compression_percent() - 20.0).abs() < 0.001);
 
         let summary = TransferSummary::new(1000, 10, 100, 0.5, 5);
-        assert_eq!(summary.compression_percent(), 50.0);
+        assert!((summary.compression_percent() - 50.0).abs() < 0.001);
     }
 
     #[test]

@@ -180,20 +180,15 @@ impl KeyBinding {
 }
 
 /// Input mode for the application.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum InputMode {
     /// Normal mode (default, for navigation).
+    #[default]
     Normal,
     /// Insert mode (text input).
     Insert,
     /// Command mode (command palette).
     Command,
-}
-
-impl Default for InputMode {
-    fn default() -> Self {
-        Self::Normal
-    }
 }
 
 /// Complete keymap with all keybindings for an input mode.
@@ -275,52 +270,139 @@ pub fn default_keymap() -> Keymap {
     let mut keymap = Keymap::new(InputMode::Normal);
 
     // System
-    keymap.bind(key_event(KeyCode::Char('q'), KeyModifiers::NONE), Action::Quit);
-    keymap.bind(key_event(KeyCode::Char('?'), KeyModifiers::NONE), Action::Help);
+    keymap.bind(
+        key_event(KeyCode::Char('q'), KeyModifiers::NONE),
+        Action::Quit,
+    );
+    keymap.bind(
+        key_event(KeyCode::Char('?'), KeyModifiers::NONE),
+        Action::Help,
+    );
     keymap.bind(
         key_event(KeyCode::Char('k'), KeyModifiers::CONTROL),
         Action::CommandPalette,
     );
 
     // Navigation
-    keymap.bind(key_event(KeyCode::Tab, KeyModifiers::NONE), Action::SwitchPanel);
-    keymap.bind(key_event(KeyCode::Char('j'), KeyModifiers::NONE), Action::NavigateDown);
-    keymap.bind(key_event(KeyCode::Down, KeyModifiers::NONE), Action::NavigateDown);
-    keymap.bind(key_event(KeyCode::Char('k'), KeyModifiers::NONE), Action::NavigateUp);
-    keymap.bind(key_event(KeyCode::Up, KeyModifiers::NONE), Action::NavigateUp);
-    keymap.bind(key_event(KeyCode::Char('h'), KeyModifiers::NONE), Action::NavigateLeft);
-    keymap.bind(key_event(KeyCode::Left, KeyModifiers::NONE), Action::NavigateLeft);
-    keymap.bind(key_event(KeyCode::Char('l'), KeyModifiers::NONE), Action::NavigateRight);
-    keymap.bind(key_event(KeyCode::Right, KeyModifiers::NONE), Action::NavigateRight);
-    keymap.bind(key_event(KeyCode::PageUp, KeyModifiers::NONE), Action::PageUp);
-    keymap.bind(key_event(KeyCode::PageDown, KeyModifiers::NONE), Action::PageDown);
-    keymap.bind(key_event(KeyCode::Char('g'), KeyModifiers::NONE), Action::JumpTop);
-    keymap.bind(key_event(KeyCode::Char('G'), KeyModifiers::SHIFT), Action::JumpBottom);
+    keymap.bind(
+        key_event(KeyCode::Tab, KeyModifiers::NONE),
+        Action::SwitchPanel,
+    );
+    keymap.bind(
+        key_event(KeyCode::Char('j'), KeyModifiers::NONE),
+        Action::NavigateDown,
+    );
+    keymap.bind(
+        key_event(KeyCode::Down, KeyModifiers::NONE),
+        Action::NavigateDown,
+    );
+    keymap.bind(
+        key_event(KeyCode::Char('k'), KeyModifiers::NONE),
+        Action::NavigateUp,
+    );
+    keymap.bind(
+        key_event(KeyCode::Up, KeyModifiers::NONE),
+        Action::NavigateUp,
+    );
+    keymap.bind(
+        key_event(KeyCode::Char('h'), KeyModifiers::NONE),
+        Action::NavigateLeft,
+    );
+    keymap.bind(
+        key_event(KeyCode::Left, KeyModifiers::NONE),
+        Action::NavigateLeft,
+    );
+    keymap.bind(
+        key_event(KeyCode::Char('l'), KeyModifiers::NONE),
+        Action::NavigateRight,
+    );
+    keymap.bind(
+        key_event(KeyCode::Right, KeyModifiers::NONE),
+        Action::NavigateRight,
+    );
+    keymap.bind(
+        key_event(KeyCode::PageUp, KeyModifiers::NONE),
+        Action::PageUp,
+    );
+    keymap.bind(
+        key_event(KeyCode::PageDown, KeyModifiers::NONE),
+        Action::PageDown,
+    );
+    keymap.bind(
+        key_event(KeyCode::Char('g'), KeyModifiers::NONE),
+        Action::JumpTop,
+    );
+    keymap.bind(
+        key_event(KeyCode::Char('G'), KeyModifiers::SHIFT),
+        Action::JumpBottom,
+    );
 
     // Actions
-    keymap.bind(key_event(KeyCode::Enter, KeyModifiers::NONE), Action::Confirm);
+    keymap.bind(
+        key_event(KeyCode::Enter, KeyModifiers::NONE),
+        Action::Confirm,
+    );
     keymap.bind(key_event(KeyCode::Esc, KeyModifiers::NONE), Action::Cancel);
     keymap.bind(
         key_event(KeyCode::Char('a'), KeyModifiers::CONTROL),
         Action::SelectAll,
     );
-    keymap.bind(key_event(KeyCode::Char('/'), KeyModifiers::NONE), Action::Search);
-    keymap.bind(key_event(KeyCode::Char('d'), KeyModifiers::NONE), Action::Delete);
-    keymap.bind(key_event(KeyCode::Char('y'), KeyModifiers::NONE), Action::Copy);
-    keymap.bind(key_event(KeyCode::Char('p'), KeyModifiers::NONE), Action::Paste);
-    keymap.bind(key_event(KeyCode::Char('u'), KeyModifiers::NONE), Action::Undo);
+    keymap.bind(
+        key_event(KeyCode::Char('/'), KeyModifiers::NONE),
+        Action::Search,
+    );
+    keymap.bind(
+        key_event(KeyCode::Char('d'), KeyModifiers::NONE),
+        Action::Delete,
+    );
+    keymap.bind(
+        key_event(KeyCode::Char('y'), KeyModifiers::NONE),
+        Action::Copy,
+    );
+    keymap.bind(
+        key_event(KeyCode::Char('p'), KeyModifiers::NONE),
+        Action::Paste,
+    );
+    keymap.bind(
+        key_event(KeyCode::Char('u'), KeyModifiers::NONE),
+        Action::Undo,
+    );
 
     // Transfer
-    keymap.bind(key_event(KeyCode::Char('s'), KeyModifiers::NONE), Action::SendFiles);
-    keymap.bind(key_event(KeyCode::Char('r'), KeyModifiers::NONE), Action::ReceiveByCode);
-    keymap.bind(key_event(KeyCode::Char('H'), KeyModifiers::SHIFT), Action::History);
-    keymap.bind(key_event(KeyCode::Char('D'), KeyModifiers::SHIFT), Action::Devices);
+    keymap.bind(
+        key_event(KeyCode::Char('s'), KeyModifiers::NONE),
+        Action::SendFiles,
+    );
+    keymap.bind(
+        key_event(KeyCode::Char('r'), KeyModifiers::NONE),
+        Action::ReceiveByCode,
+    );
+    keymap.bind(
+        key_event(KeyCode::Char('H'), KeyModifiers::SHIFT),
+        Action::History,
+    );
+    keymap.bind(
+        key_event(KeyCode::Char('D'), KeyModifiers::SHIFT),
+        Action::Devices,
+    );
 
     // UI
-    keymap.bind(key_event(KeyCode::Char('t'), KeyModifiers::NONE), Action::ToggleTheme);
-    keymap.bind(key_event(KeyCode::Char('c'), KeyModifiers::NONE), Action::ToggleColorScheme);
-    keymap.bind(key_event(KeyCode::Char('R'), KeyModifiers::SHIFT), Action::Refresh);
-    keymap.bind(key_event(KeyCode::Char(','), KeyModifiers::NONE), Action::Settings);
+    keymap.bind(
+        key_event(KeyCode::Char('t'), KeyModifiers::NONE),
+        Action::ToggleTheme,
+    );
+    keymap.bind(
+        key_event(KeyCode::Char('c'), KeyModifiers::NONE),
+        Action::ToggleColorScheme,
+    );
+    keymap.bind(
+        key_event(KeyCode::Char('R'), KeyModifiers::SHIFT),
+        Action::Refresh,
+    );
+    keymap.bind(
+        key_event(KeyCode::Char(','), KeyModifiers::NONE),
+        Action::Settings,
+    );
 
     keymap
 }
@@ -429,7 +511,10 @@ mod tests {
     #[test]
     fn test_lookup_returns_none_for_unbound_key() {
         let keymap = default_keymap();
-        let unbound_key = KeyEvent::new(KeyCode::Char('z'), KeyModifiers::CONTROL | KeyModifiers::SHIFT);
+        let unbound_key = KeyEvent::new(
+            KeyCode::Char('z'),
+            KeyModifiers::CONTROL | KeyModifiers::SHIFT,
+        );
         assert_eq!(lookup(&keymap, &unbound_key), None);
     }
 

@@ -16,13 +16,14 @@
 //! }
 //! ```
 
-use crate::widgets::keybindings::{Action, InputMode, KeyBinding, Keymap};
+use crate::widgets::keybindings::{Action, InputMode, Keymap};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 /// Vim input modes.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum VimMode {
     /// Normal mode for navigation and commands.
+    #[default]
     Normal,
     /// Insert mode for text input.
     Insert,
@@ -30,12 +31,6 @@ pub enum VimMode {
     Command,
     /// Visual mode for selection.
     Visual,
-}
-
-impl Default for VimMode {
-    fn default() -> Self {
-        Self::Normal
-    }
 }
 
 /// State for Vim modal editing.
@@ -123,16 +118,40 @@ pub fn vim_keymap() -> Keymap {
     let mut keymap = Keymap::new(InputMode::Normal);
 
     // Basic navigation (hjkl)
-    keymap.bind(key_event(KeyCode::Char('h'), KeyModifiers::NONE), Action::NavigateLeft);
-    keymap.bind(key_event(KeyCode::Char('j'), KeyModifiers::NONE), Action::NavigateDown);
-    keymap.bind(key_event(KeyCode::Char('k'), KeyModifiers::NONE), Action::NavigateUp);
-    keymap.bind(key_event(KeyCode::Char('l'), KeyModifiers::NONE), Action::NavigateRight);
+    keymap.bind(
+        key_event(KeyCode::Char('h'), KeyModifiers::NONE),
+        Action::NavigateLeft,
+    );
+    keymap.bind(
+        key_event(KeyCode::Char('j'), KeyModifiers::NONE),
+        Action::NavigateDown,
+    );
+    keymap.bind(
+        key_event(KeyCode::Char('k'), KeyModifiers::NONE),
+        Action::NavigateUp,
+    );
+    keymap.bind(
+        key_event(KeyCode::Char('l'), KeyModifiers::NONE),
+        Action::NavigateRight,
+    );
 
     // Arrow keys
-    keymap.bind(key_event(KeyCode::Left, KeyModifiers::NONE), Action::NavigateLeft);
-    keymap.bind(key_event(KeyCode::Down, KeyModifiers::NONE), Action::NavigateDown);
-    keymap.bind(key_event(KeyCode::Up, KeyModifiers::NONE), Action::NavigateUp);
-    keymap.bind(key_event(KeyCode::Right, KeyModifiers::NONE), Action::NavigateRight);
+    keymap.bind(
+        key_event(KeyCode::Left, KeyModifiers::NONE),
+        Action::NavigateLeft,
+    );
+    keymap.bind(
+        key_event(KeyCode::Down, KeyModifiers::NONE),
+        Action::NavigateDown,
+    );
+    keymap.bind(
+        key_event(KeyCode::Up, KeyModifiers::NONE),
+        Action::NavigateUp,
+    );
+    keymap.bind(
+        key_event(KeyCode::Right, KeyModifiers::NONE),
+        Action::NavigateRight,
+    );
 
     // Page navigation
     keymap.bind(
@@ -145,23 +164,47 @@ pub fn vim_keymap() -> Keymap {
     );
 
     // Actions
-    keymap.bind(key_event(KeyCode::Enter, KeyModifiers::NONE), Action::Confirm);
+    keymap.bind(
+        key_event(KeyCode::Enter, KeyModifiers::NONE),
+        Action::Confirm,
+    );
     keymap.bind(key_event(KeyCode::Esc, KeyModifiers::NONE), Action::Cancel);
-    keymap.bind(key_event(KeyCode::Char('p'), KeyModifiers::NONE), Action::Paste);
-    keymap.bind(key_event(KeyCode::Char('u'), KeyModifiers::NONE), Action::Undo);
+    keymap.bind(
+        key_event(KeyCode::Char('p'), KeyModifiers::NONE),
+        Action::Paste,
+    );
+    keymap.bind(
+        key_event(KeyCode::Char('u'), KeyModifiers::NONE),
+        Action::Undo,
+    );
 
     // Search and command
-    keymap.bind(key_event(KeyCode::Char('/'), KeyModifiers::NONE), Action::Search);
+    keymap.bind(
+        key_event(KeyCode::Char('/'), KeyModifiers::NONE),
+        Action::Search,
+    );
 
     // System
-    keymap.bind(key_event(KeyCode::Char('?'), KeyModifiers::NONE), Action::Help);
+    keymap.bind(
+        key_event(KeyCode::Char('?'), KeyModifiers::NONE),
+        Action::Help,
+    );
 
     // Transfer
-    keymap.bind(key_event(KeyCode::Char('s'), KeyModifiers::NONE), Action::SendFiles);
-    keymap.bind(key_event(KeyCode::Char('r'), KeyModifiers::NONE), Action::ReceiveByCode);
+    keymap.bind(
+        key_event(KeyCode::Char('s'), KeyModifiers::NONE),
+        Action::SendFiles,
+    );
+    keymap.bind(
+        key_event(KeyCode::Char('r'), KeyModifiers::NONE),
+        Action::ReceiveByCode,
+    );
 
     // UI
-    keymap.bind(key_event(KeyCode::Char('t'), KeyModifiers::NONE), Action::ToggleTheme);
+    keymap.bind(
+        key_event(KeyCode::Char('t'), KeyModifiers::NONE),
+        Action::ToggleTheme,
+    );
 
     keymap
 }
@@ -247,6 +290,7 @@ fn process_normal_mode(state: &mut VimState, key: KeyEvent) -> Option<Action> {
 
             // Deletion
             "dd" => Some(Action::Delete),
+            "g" if state.command_buffer.len() == 1 => return None, // Wait for second key (gg)
             "d" if state.command_buffer.len() == 1 => return None, // Wait for second key
 
             // Yanking (copy)
@@ -293,9 +337,7 @@ fn process_normal_mode(state: &mut VimState, key: KeyEvent) -> Option<Action> {
         KeyCode::Char('d') if key.modifiers.contains(KeyModifiers::CONTROL) => {
             Some(Action::PageDown)
         }
-        KeyCode::Char('u') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-            Some(Action::PageUp)
-        }
+        KeyCode::Char('u') if key.modifiers.contains(KeyModifiers::CONTROL) => Some(Action::PageUp),
         KeyCode::Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => {
             Some(Action::Refresh)
         }
@@ -431,16 +473,28 @@ mod tests {
     #[test]
     fn test_multi_key_command_gg() {
         let mut state = VimState::default();
-        process_vim_key(&mut state, KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE));
-        let action = process_vim_key(&mut state, KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE));
+        process_vim_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
+        );
+        let action = process_vim_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
+        );
         assert_eq!(action, Some(Action::JumpTop));
     }
 
     #[test]
     fn test_multi_key_command_dd() {
         let mut state = VimState::default();
-        process_vim_key(&mut state, KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE));
-        let action = process_vim_key(&mut state, KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE));
+        process_vim_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE),
+        );
+        let action = process_vim_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE),
+        );
         assert_eq!(action, Some(Action::Delete));
     }
 
@@ -449,7 +503,10 @@ mod tests {
         let mut state = VimState::default();
         state.switch_mode(VimMode::Command);
         state.command_line = "q".to_string();
-        let action = process_vim_key(&mut state, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+        let action = process_vim_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+        );
         assert_eq!(action, Some(Action::Quit));
         assert_eq!(state.mode, VimMode::Normal);
     }
@@ -458,7 +515,10 @@ mod tests {
     fn test_visual_mode_yank() {
         let mut state = VimState::default();
         state.switch_mode(VimMode::Visual);
-        let action = process_vim_key(&mut state, KeyEvent::new(KeyCode::Char('y'), KeyModifiers::NONE));
+        let action = process_vim_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Char('y'), KeyModifiers::NONE),
+        );
         assert_eq!(action, Some(Action::Copy));
         assert_eq!(state.mode, VimMode::Normal);
     }
@@ -466,9 +526,15 @@ mod tests {
     #[test]
     fn test_count_parsing() {
         let mut state = VimState::default();
-        process_vim_key(&mut state, KeyEvent::new(KeyCode::Char('3'), KeyModifiers::NONE));
+        process_vim_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Char('3'), KeyModifiers::NONE),
+        );
         assert_eq!(state.count, Some(3));
-        process_vim_key(&mut state, KeyEvent::new(KeyCode::Char('5'), KeyModifiers::NONE));
+        process_vim_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Char('5'), KeyModifiers::NONE),
+        );
         assert_eq!(state.count, Some(35));
     }
 }

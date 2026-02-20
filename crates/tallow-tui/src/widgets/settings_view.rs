@@ -164,7 +164,12 @@ impl SettingsView {
                     "Auto-Delete History",
                     "Automatically clear transfer history",
                     SettingType::Choice(
-                        vec!["Never".into(), "After 1 day".into(), "After 7 days".into(), "After 30 days".into()],
+                        vec![
+                            "Never".into(),
+                            "After 1 day".into(),
+                            "After 7 days".into(),
+                            "After 30 days".into(),
+                        ],
                         0,
                     ),
                 ),
@@ -194,7 +199,12 @@ impl SettingsView {
                     "Session Timeout",
                     "Timeout for idle sessions",
                     SettingType::Choice(
-                        vec!["5 minutes".into(), "15 minutes".into(), "30 minutes".into(), "Never".into()],
+                        vec![
+                            "5 minutes".into(),
+                            "15 minutes".into(),
+                            "30 minutes".into(),
+                            "Never".into(),
+                        ],
                         1,
                     ),
                 ),
@@ -204,7 +214,12 @@ impl SettingsView {
                     "Theme",
                     "Application color theme",
                     SettingType::Choice(
-                        vec!["Light".into(), "Dark".into(), "Forest".into(), "Ocean".into()],
+                        vec![
+                            "Light".into(),
+                            "Dark".into(),
+                            "Forest".into(),
+                            "Ocean".into(),
+                        ],
                         1,
                     ),
                 ),

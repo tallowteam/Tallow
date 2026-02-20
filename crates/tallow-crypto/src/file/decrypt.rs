@@ -41,8 +41,8 @@ pub fn decrypt_chunk(key: &[u8; 32], encrypted_chunk: &EncryptedChunk) -> Result
     let actual_hash = blake3::hash(&encrypted_chunk.ciphertext);
     if !constant_time::ct_eq(&actual_hash, &encrypted_chunk.hash) {
         return Err(CryptoError::HashMismatch {
-            expected: format!("{:02x?}", encrypted_chunk.hash),
-            actual: format!("{:02x?}", actual_hash),
+            expected: String::from("[redacted]"),
+            actual: String::from("[redacted]"),
         });
     }
 
