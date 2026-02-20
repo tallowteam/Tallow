@@ -10,10 +10,7 @@ name = "tallow-relay"
 path = "src/main.rs"
 
 [dependencies]
-tallow-crypto = { path = "../tallow-crypto" }
 tallow-net = { path = "../tallow-net", features = ["quic"] }
-tallow-protocol = { path = "../tallow-protocol" }
-tallow-store = { path = "../tallow-store" }
 
 # CLI
 clap = { version = "4", features = ["derive", "env"] }
