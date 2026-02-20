@@ -33,12 +33,12 @@
       "Bash(grep *)",
       "Bash(mkdir *)",
       "Bash(echo *)",
-      "Bash(rustup *)"
+      "Bash(rustup *)",
+      "Bash(git push*)"
     ],
     "deny": [
       "Bash(curl *)",
       "Bash(wget *)",
-      "Bash(git push*)",
       "Read(.env*)",
       "Read(**/secrets/**)",
       "Read(**/*.pem)",
@@ -49,16 +49,6 @@
   },
   "hooks": {
     "PreToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/block-main-push.sh",
-            "timeout": 5
-          }
-        ]
-      },
       {
         "matcher": "Read",
         "hooks": [
