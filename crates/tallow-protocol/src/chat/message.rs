@@ -40,8 +40,10 @@ mod uuid {
         pub fn new_v4() -> Self {
             Self
         }
-        pub fn to_string(&self) -> String {
-            "placeholder-uuid".to_string()
+    }
+    impl std::fmt::Display for Uuid {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "placeholder-uuid")
         }
     }
 }

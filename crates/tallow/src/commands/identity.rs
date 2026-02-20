@@ -34,7 +34,7 @@ fn identity_generate(force: bool, json: bool) -> io::Result<()> {
     }
 
     store.generate("").map_err(|e| {
-        io::Error::new(io::ErrorKind::Other, format!("Failed to generate identity: {}", e))
+        io::Error::other(format!("Failed to generate identity: {}", e))
     })?;
 
     let fingerprint = store.fingerprint().unwrap_or_default();
@@ -61,16 +61,16 @@ fn identity_show(json: bool) -> io::Result<()> {
     if !store.exists() {
         // Auto-generate on first access
         store.generate("").map_err(|e| {
-            io::Error::new(io::ErrorKind::Other, format!("Failed to generate identity: {}", e))
+            io::Error::other(format!("Failed to generate identity: {}", e))
         })?;
     } else {
         store.load("").map_err(|e| {
-            io::Error::new(io::ErrorKind::Other, format!("Failed to load identity: {}", e))
+            io::Error::other(format!("Failed to load identity: {}", e))
         })?;
     }
 
     let fingerprint = store.fingerprint().unwrap_or_default();
-    let pk = store.public_key().map(|pk| hex::encode(pk)).unwrap_or_default();
+    let pk = store.public_key().map(hex::encode).unwrap_or_default();
 
     if json {
         println!(
@@ -105,11 +105,11 @@ fn identity_export(output: &std::path::Path, json: bool) -> io::Result<()> {
     }
 
     store.load("").map_err(|e| {
-        io::Error::new(io::ErrorKind::Other, format!("Failed to load identity: {}", e))
+        io::Error::other(format!("Failed to load identity: {}", e))
     })?;
 
     store.export(output, "").map_err(|e| {
-        io::Error::new(io::ErrorKind::Other, format!("Failed to export: {}", e))
+        io::Error::other(format!("Failed to export: {}", e))
     })?;
 
     if json {
@@ -137,7 +137,7 @@ fn identity_import(file: &std::path::Path, json: bool) -> io::Result<()> {
 
     let mut store = tallow_store::identity::IdentityStore::new();
     store.import(file, "").map_err(|e| {
-        io::Error::new(io::ErrorKind::Other, format!("Failed to import: {}", e))
+        io::Error::other(format!("Failed to import: {}", e))
     })?;
 
     let fingerprint = store.fingerprint().unwrap_or_default();
@@ -164,16 +164,16 @@ fn identity_fingerprint(emoji: bool, json: bool) -> io::Result<()> {
 
     if !store.exists() {
         store.generate("").map_err(|e| {
-            io::Error::new(io::ErrorKind::Other, format!("{}", e))
+            io::Error::other(format!("{}", e))
         })?;
     } else {
         store.load("").map_err(|e| {
-            io::Error::new(io::ErrorKind::Other, format!("{}", e))
+            io::Error::other(format!("{}", e))
         })?;
     }
 
     let pk = store.public_key().ok_or_else(|| {
-        io::Error::new(io::ErrorKind::Other, "No public key available")
+        io::Error::other("No public key available")
     })?;
 
     let fp = if emoji {
@@ -233,7 +233,7 @@ pub async fn execute_contacts(args: ContactsArgs, json: bool) -> io::Result<()> 
                 groups: Vec::new(),
             };
             db.add(contact).map_err(|e| {
-                io::Error::new(io::ErrorKind::Other, format!("{}", e))
+                io::Error::other(format!("{}", e))
             })?;
 
             if json {
@@ -245,7 +245,7 @@ pub async fn execute_contacts(args: ContactsArgs, json: bool) -> io::Result<()> 
         Some(ContactsCommands::Remove { id }) => {
             let mut db = tallow_store::contacts::ContactDatabase::new();
             db.remove(&id).map_err(|e| {
-                io::Error::new(io::ErrorKind::Other, format!("{}", e))
+                io::Error::other(format!("{}", e))
             })?;
 
             if json {
@@ -290,7 +290,7 @@ pub async fn execute_contacts(args: ContactsArgs, json: bool) -> io::Result<()> 
 /// Execute trust command
 pub async fn execute_trust(args: TrustArgs, json: bool) -> io::Result<()> {
     let mut store = tallow_store::trust::TofuStore::open().map_err(|e| {
-        io::Error::new(io::ErrorKind::Other, format!("Failed to open trust store: {}", e))
+        io::Error::other(format!("Failed to open trust store: {}", e))
     })?;
 
     match args.command {
@@ -320,7 +320,7 @@ pub async fn execute_trust(args: TrustArgs, json: bool) -> io::Result<()> {
         Some(TrustCommands::Trust { peer_id }) => {
             store
                 .update_trust(&peer_id, tallow_store::trust::TrustLevel::Trusted)
-                .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("{}", e)))?;
+                .map_err(|e| io::Error::other(format!("{}", e)))?;
 
             if json {
                 println!(
@@ -334,7 +334,7 @@ pub async fn execute_trust(args: TrustArgs, json: bool) -> io::Result<()> {
         Some(TrustCommands::Untrust { peer_id }) => {
             store
                 .update_trust(&peer_id, tallow_store::trust::TrustLevel::Seen)
-                .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("{}", e)))?;
+                .map_err(|e| io::Error::other(format!("{}", e)))?;
 
             if json {
                 println!(
@@ -367,7 +367,7 @@ pub async fn execute_trust(args: TrustArgs, json: bool) -> io::Result<()> {
 
             store
                 .update_trust(&peer_id, tallow_store::trust::TrustLevel::Verified)
-                .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("{}", e)))?;
+                .map_err(|e| io::Error::other(format!("{}", e)))?;
         }
     }
 

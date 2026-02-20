@@ -71,7 +71,7 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
     // Prepare files (scan, hash, build manifest)
     let file_paths: Vec<PathBuf> = args.files.clone();
     let _offer_messages = pipeline.prepare(&file_paths).await.map_err(|e| {
-        io::Error::new(io::ErrorKind::Other, format!("Failed to prepare transfer: {}", e))
+        io::Error::other(format!("Failed to prepare transfer: {}", e))
     })?;
 
     let manifest = pipeline.manifest();
@@ -120,8 +120,7 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
 
     for file in &args.files {
         let chunks = pipeline.chunk_file(file, chunk_index).await.map_err(|e| {
-            io::Error::new(
-                io::ErrorKind::Other,
+            io::Error::other(
                 format!("Failed to chunk {}: {}", file.display(), e),
             )
         })?;

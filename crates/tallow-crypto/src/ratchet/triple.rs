@@ -3,7 +3,7 @@
 //! The Triple Ratchet provides post-quantum forward secrecy by periodically
 //! mixing ML-KEM-derived secrets into the Double Ratchet's root key.
 
-use crate::error::{CryptoError, Result};
+use crate::error::Result;
 use crate::ratchet::{DoubleRatchet, SparsePqRatchet};
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;

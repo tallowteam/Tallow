@@ -1,6 +1,6 @@
 //! Hybrid signature combining ML-DSA and Ed25519
 
-use crate::error::{CryptoError, Result};
+use crate::error::Result;
 use crate::sig::{ed25519, mldsa};
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
@@ -8,8 +8,10 @@ use zeroize::Zeroize;
 /// Hybrid signature (ML-DSA + Ed25519)
 #[derive(Clone, Serialize, Deserialize)]
 pub struct HybridSignature {
+    /// ML-DSA-87 signature bytes for post-quantum authentication
     pub mldsa: Vec<u8>,
     #[serde(with = "serde_arrays")]
+    /// Ed25519 signature bytes for classical authentication
     pub ed25519: [u8; 64],
 }
 
@@ -77,7 +79,9 @@ impl HybridSigner {
 /// Hybrid public key
 #[derive(Clone, Serialize, Deserialize)]
 pub struct HybridPublicKey {
+    /// ML-DSA-87 public key bytes for post-quantum signature verification
     pub mldsa: Vec<u8>,
+    /// Ed25519 verifying key bytes for classical signature verification
     pub ed25519: [u8; 32],
 }
 

@@ -1,6 +1,6 @@
 //! File encryption
 
-use crate::error::{CryptoError, Result};
+use crate::error::Result;
 use crate::hash::blake3;
 use crate::symmetric::{aes_encrypt, CipherSuite};
 use serde::{Deserialize, Serialize};
@@ -8,14 +8,19 @@ use serde::{Deserialize, Serialize};
 /// Encrypted file chunk
 #[derive(Clone, Serialize, Deserialize)]
 pub struct EncryptedChunk {
+    /// Zero-based sequential position of this chunk within the file
     pub index: u64,
+    /// AES-256-GCM encrypted chunk data including authentication tag
     pub ciphertext: Vec<u8>,
+    /// BLAKE3 hash of the ciphertext for integrity verification
     pub hash: [u8; 32],
 }
 
 /// File encryptor
 pub struct FileEncryptor {
     key: [u8; 32],
+    /// Reserved for cipher suite negotiation (currently AES-256-GCM only)
+    #[allow(dead_code)]
     cipher: CipherSuite,
 }
 

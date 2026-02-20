@@ -1,6 +1,6 @@
 //! Hybrid KEM combining ML-KEM and X25519
 
-use crate::error::{CryptoError, Result};
+use crate::error::Result;
 use crate::hash::{blake3, domain};
 use crate::kem::{mlkem, x25519};
 use serde::{Deserialize, Serialize};
@@ -9,8 +9,10 @@ use zeroize::Zeroize;
 /// Hybrid public key (ML-KEM + X25519)
 #[derive(Clone, Serialize, Deserialize)]
 pub struct PublicKey {
+    /// ML-KEM-1024 public key component for post-quantum encapsulation
     pub mlkem: mlkem::PublicKey,
     #[serde(with = "x25519_pubkey_serde")]
+    /// X25519 public key component for classical Diffie-Hellman
     pub x25519: x25519::X25519PublicKey,
 }
 
@@ -39,15 +41,19 @@ mod x25519_pubkey_serde {
 #[derive(Clone, Zeroize, Serialize, Deserialize)]
 #[zeroize(drop)]
 pub struct SecretKey {
+    /// ML-KEM-1024 secret key component for post-quantum decapsulation
     pub mlkem: mlkem::SecretKey,
+    /// X25519 key pair component for classical Diffie-Hellman
     pub x25519: x25519::X25519KeyPair,
 }
 
 /// Hybrid ciphertext
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Ciphertext {
+    /// ML-KEM-1024 ciphertext encapsulating the post-quantum shared secret
     pub mlkem: mlkem::Ciphertext,
     #[serde(with = "x25519_pubkey_serde")]
+    /// Ephemeral X25519 public key for the classical DH component
     pub x25519_public: x25519::X25519PublicKey,
 }
 

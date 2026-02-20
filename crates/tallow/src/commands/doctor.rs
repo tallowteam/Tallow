@@ -90,8 +90,7 @@ pub async fn execute(json: bool) -> io::Result<()> {
     if all_passed {
         Ok(())
     } else {
-        Err(io::Error::new(
-            io::ErrorKind::Other,
+        Err(io::Error::other(
             "Some diagnostics failed",
         ))
     }

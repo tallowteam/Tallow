@@ -98,7 +98,7 @@ impl MerkleTree {
 
         while current_level.len() > 1 {
             // Determine sibling index
-            let sibling_index = if current_index % 2 == 0 {
+            let sibling_index = if current_index.is_multiple_of(2) {
                 current_index + 1
             } else {
                 current_index - 1
@@ -155,7 +155,7 @@ impl MerkleTree {
 
         for sibling in &proof.proof_hashes {
             let mut data = [0u8; 64];
-            if current_index % 2 == 0 {
+            if current_index.is_multiple_of(2) {
                 // Current is left child
                 data[..32].copy_from_slice(&current_hash);
                 data[32..].copy_from_slice(sibling);

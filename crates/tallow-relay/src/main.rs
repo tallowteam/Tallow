@@ -5,11 +5,15 @@
 
 #![forbid(unsafe_code)]
 
+#[allow(dead_code)]
 mod auth;
 mod config;
 mod rate_limit;
+#[allow(dead_code)]
 mod room;
+#[allow(dead_code)]
 mod server;
+#[allow(dead_code)]
 mod signaling;
 
 use clap::{Parser, Subcommand};

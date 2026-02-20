@@ -16,17 +16,14 @@ use serde::{Deserialize, Serialize};
 
 /// Supported KEM algorithms
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum KemAlgorithm {
     /// ML-KEM-1024 (post-quantum)
     MlKem1024,
     /// X25519 (classical ECDH)
     X25519,
     /// Hybrid: ML-KEM-1024 + X25519
+    #[default]
     Hybrid,
 }
 
-impl Default for KemAlgorithm {
-    fn default() -> Self {
-        KemAlgorithm::Hybrid
-    }
-}

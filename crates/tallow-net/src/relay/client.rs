@@ -5,7 +5,7 @@
 
 use crate::{NetworkError, Result};
 use std::net::SocketAddr;
-use tracing::{info, warn};
+use tracing::info;
 
 /// Relay client for connecting through relay servers
 pub struct RelayClient {

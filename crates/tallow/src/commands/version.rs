@@ -24,12 +24,12 @@ pub fn execute(json: bool) {
 }
 
 fn built_features() -> Vec<String> {
-    let mut features = Vec::new();
-
-    features.push("ML-KEM-1024".to_string());
-    features.push("AES-256-GCM".to_string());
-    features.push("BLAKE3".to_string());
-    features.push("Ed25519+ML-DSA-87".to_string());
+    let mut features = vec![
+        "ML-KEM-1024".to_string(),
+        "AES-256-GCM".to_string(),
+        "BLAKE3".to_string(),
+        "Ed25519+ML-DSA-87".to_string(),
+    ];
 
     if cfg!(feature = "quic") {
         features.push("QUIC".to_string());

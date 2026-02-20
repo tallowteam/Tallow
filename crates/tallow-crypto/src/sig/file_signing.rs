@@ -3,7 +3,7 @@
 use crate::error::{CryptoError, Result};
 use crate::hash::blake3;
 use crate::mem::constant_time;
-use crate::sig::{Ed25519Signer, HybridSigner};
+use crate::sig::Ed25519Signer;
 use serde::{Deserialize, Serialize};
 
 /// Signature for a file chunk

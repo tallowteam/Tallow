@@ -8,7 +8,7 @@
 ///
 /// 6 words = ~77.5 bits of entropy (sufficient for most uses).
 /// 8 words = ~103.4 bits (recommended for high-security passphrases).
-pub const EFF_WORDLIST: [&str; 7776] = [
+pub static EFF_WORDLIST: [&str; 7776] = [
     "abacus",
     "abdomen",
     "abdominal",

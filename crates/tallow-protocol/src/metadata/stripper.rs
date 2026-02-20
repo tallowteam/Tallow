@@ -3,7 +3,7 @@
 //! Strips EXIF data from images and metadata from other file types
 //! to prevent leaking GPS coordinates, device identifiers, timestamps, etc.
 
-use crate::{ProtocolError, Result};
+use crate::Result;
 
 /// Known image magic bytes
 const JPEG_MAGIC: &[u8] = &[0xFF, 0xD8, 0xFF];
@@ -24,11 +24,10 @@ pub fn strip_exif(data: &[u8]) -> Result<Vec<u8>> {
     }
 
     let mut output = Vec::with_capacity(data.len());
-    let mut i = 0;
 
     // Copy SOI marker
     output.extend_from_slice(&data[..2]);
-    i = 2;
+    let mut i = 2;
 
     while i < data.len() - 1 {
         if data[i] != 0xFF {
@@ -68,8 +67,7 @@ pub fn strip_exif(data: &[u8]) -> Result<Vec<u8>> {
                     && marker != 0xD9
                     && !(0xD0..=0xD7).contains(&marker)
                     && marker != 0x00
-                {
-                    if i + 1 < data.len() {
+                    && i + 1 < data.len() {
                         let seg_len =
                             ((data[i] as usize) << 8) | (data[i + 1] as usize);
                         if i + seg_len <= data.len() {
@@ -80,7 +78,6 @@ pub fn strip_exif(data: &[u8]) -> Result<Vec<u8>> {
                             break;
                         }
                     }
-                }
             }
         }
     }

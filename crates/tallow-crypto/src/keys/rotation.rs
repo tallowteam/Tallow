@@ -1,16 +1,20 @@
 //! Key rotation records with signed transitions
 
 use crate::error::{CryptoError, Result};
-use crate::sig::{Ed25519Signer, HybridSigner};
+use crate::sig::Ed25519Signer;
 use serde::{Deserialize, Serialize};
 
 /// Record of a key rotation event
 #[derive(Clone, Serialize, Deserialize)]
 pub struct KeyRotationRecord {
+    /// Ed25519 verifying key bytes identifying the key being replaced
     pub old_key_id: [u8; 32],
+    /// Ed25519 verifying key bytes identifying the replacement key
     pub new_key_id: [u8; 32],
+    /// Unix timestamp (seconds) when this rotation was recorded
     pub timestamp: u64,
     #[serde(with = "serde_sig64")]
+    /// Ed25519 signature over old_key_id, new_key_id, and timestamp, made by the old key
     pub signature: [u8; 64],
 }
 

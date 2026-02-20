@@ -51,7 +51,7 @@ impl FileManifest {
 
     /// Add a file to the manifest
     pub fn add_file(&mut self, path: PathBuf, size: u64, hash: [u8; 32]) {
-        let chunk_count = (size + self.chunk_size as u64 - 1) / self.chunk_size as u64;
+        let chunk_count = size.div_ceil(self.chunk_size as u64);
         self.total_size += size;
         self.total_chunks += chunk_count;
         self.files.push(FileEntry {

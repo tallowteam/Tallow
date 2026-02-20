@@ -46,12 +46,7 @@ impl ResumeState {
 
     /// Get the next chunk index that needs to be transferred
     pub fn next_needed_chunk(&self) -> Option<u64> {
-        for i in 0..self.total_chunks {
-            if !self.verified_chunks.contains(&i) {
-                return Some(i);
-            }
-        }
-        None
+        (0..self.total_chunks).find(|i| !self.verified_chunks.contains(i))
     }
 
     /// Get completion percentage

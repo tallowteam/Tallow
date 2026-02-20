@@ -1,6 +1,6 @@
 //! Sparse PQ ratchet for periodic ML-KEM re-keying
 
-use crate::error::{CryptoError, Result};
+use crate::error::Result;
 use crate::hash::blake3;
 use crate::kem::mlkem::{MlKem, PublicKey, SecretKey};
 use serde::{Deserialize, Serialize};
@@ -45,7 +45,7 @@ impl SparsePqRatchet {
     pub fn step(&mut self) -> Result<Option<PublicKey>> {
         self.step_count += 1;
 
-        if self.step_count % self.rekey_interval == 0 {
+        if self.step_count.is_multiple_of(self.rekey_interval) {
             // Time to rekey
             let (pk, sk) = MlKem::keygen()?;
             self.keypair = Some((pk.clone(), sk));

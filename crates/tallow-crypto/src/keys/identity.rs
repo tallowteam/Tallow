@@ -1,7 +1,7 @@
 //! Long-term identity key pairs
 
 use crate::error::{CryptoError, Result};
-use crate::sig::{Ed25519Signer, HybridSigner};
+use crate::sig::HybridSigner;
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 

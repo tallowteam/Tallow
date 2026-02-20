@@ -18,6 +18,7 @@ use serde::{Deserialize, Serialize};
 
 /// Supported signature algorithms
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum SignatureAlgorithm {
     /// Ed25519 (classical)
     Ed25519,
@@ -26,11 +27,7 @@ pub enum SignatureAlgorithm {
     /// SLH-DSA (post-quantum SPHINCS+)
     SlhDsa,
     /// Hybrid: ML-DSA-87 + Ed25519
+    #[default]
     Hybrid,
 }
 
-impl Default for SignatureAlgorithm {
-    fn default() -> Self {
-        SignatureAlgorithm::Hybrid
-    }
-}

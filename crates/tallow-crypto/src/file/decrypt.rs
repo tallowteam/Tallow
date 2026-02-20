@@ -9,6 +9,8 @@ use crate::symmetric::{aes_decrypt, CipherSuite};
 /// File decryptor
 pub struct FileDecryptor {
     key: [u8; 32],
+    /// Reserved for cipher suite negotiation (currently AES-256-GCM only)
+    #[allow(dead_code)]
     cipher: CipherSuite,
 }
 

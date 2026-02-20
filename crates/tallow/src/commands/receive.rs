@@ -65,7 +65,7 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
 
     // Initialize receive pipeline
     let transfer_id: [u8; 16] = [0u8; 16]; // Will be received from sender
-    let pipeline = tallow_protocol::transfer::ReceivePipeline::new(
+    let _pipeline = tallow_protocol::transfer::ReceivePipeline::new(
         transfer_id,
         output_dir.clone(),
         *session_key.as_bytes(),
@@ -108,7 +108,7 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
     // Log to transfer history
     if let Ok(mut history) = tallow_store::history::TransferLog::open() {
         let _ = history.append(tallow_store::history::TransferEntry {
-            id: hex::encode(&transfer_id),
+            id: hex::encode(transfer_id),
             peer_id: "unknown".to_string(),
             direction: tallow_store::history::TransferDirection::Received,
             file_count: 0,

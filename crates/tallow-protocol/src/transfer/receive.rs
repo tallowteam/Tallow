@@ -103,7 +103,7 @@ impl ReceivePipeline {
         &mut self,
         index: u64,
         data: &[u8],
-        total: Option<u64>,
+        _total: Option<u64>,
     ) -> Result<Option<Message>> {
         // Check if already received (resume scenario)
         if let Some(ref resume) = self.resume {

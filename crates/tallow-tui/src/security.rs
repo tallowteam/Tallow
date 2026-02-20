@@ -2,7 +2,7 @@
 //!
 //! Ensures no sensitive data remains visible on screen after exit or panic.
 
-use std::io::Write;
+
 
 /// Wipe the screen buffer (security feature)
 ///

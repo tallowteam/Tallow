@@ -1,6 +1,6 @@
 //! Memory wiping and protection utilities
 
-use crate::error::{CryptoError, Result};
+use crate::error::Result;
 
 /// Prevent core dumps from being generated
 ///

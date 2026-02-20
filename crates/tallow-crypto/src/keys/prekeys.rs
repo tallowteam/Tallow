@@ -9,10 +9,14 @@ use zeroize::Zeroize;
 /// Signed pre-key
 #[derive(Clone, Serialize, Deserialize)]
 pub struct SignedPreKey {
+    /// Unique identifier for this pre-key
     pub id: u32,
+    /// Hybrid public key used for key agreement
     pub public_key: PublicKey,
     #[serde(with = "serde_sig64")]
+    /// Ed25519 signature over the pre-key id, public key, and timestamp
     pub signature: [u8; 64],
+    /// Unix timestamp (seconds) when this pre-key was generated
     pub timestamp: u64,
 }
 
@@ -40,7 +44,9 @@ mod serde_sig64 {
 /// One-time pre-key
 #[derive(Clone, Serialize, Deserialize)]
 pub struct OneTimePreKey {
+    /// Unique identifier for this one-time pre-key
     pub id: u32,
+    /// Hybrid public key used for a single key agreement exchange
     pub public_key: PublicKey,
 }
 
@@ -60,8 +66,11 @@ impl Drop for OneTimePreKey {
 /// Pre-key bundle for key agreement
 #[derive(Clone, Serialize, Deserialize)]
 pub struct PreKeyBundle {
+    /// Serialized identity public key of the bundle owner
     pub identity_key: Vec<u8>,
+    /// Medium-term signed pre-key for initiating key agreement
     pub signed_prekey: SignedPreKey,
+    /// Optional one-time pre-key for forward secrecy; absent when exhausted
     pub onetime_prekey: Option<OneTimePreKey>,
 }
 

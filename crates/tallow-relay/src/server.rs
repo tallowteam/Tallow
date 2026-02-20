@@ -9,7 +9,7 @@ use crate::room::{RoomId, RoomManager};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::{error, info, warn};
+use tracing::{info, warn};
 
 /// Relay server
 pub struct RelayServer {
@@ -150,7 +150,7 @@ async fn handle_connection(
     info!("peer joining room {:?}", hex_short(&room_id));
 
     // Join the room
-    let (mut peer_rx, peer_tx, peer_present) = room_manager
+    let (mut peer_rx, _peer_tx, peer_present) = room_manager
         .join(room_id)
         .map_err(|e| anyhow::anyhow!("room join failed: {}", e))?;
 

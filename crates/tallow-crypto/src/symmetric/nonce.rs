@@ -1,7 +1,7 @@
 //! Nonce generation and management
 
-use crate::error::{CryptoError, Result};
-use rand::{RngCore, SeedableRng};
+use crate::error::Result;
+use rand::RngCore;
 use rand_core::OsRng;
 use zeroize::Zeroize;
 
@@ -79,7 +79,7 @@ impl NonceGenerator {
     /// # Returns
     ///
     /// 12-byte nonce
-    pub fn next(&mut self) -> [u8; 12] {
+    pub fn next_nonce(&mut self) -> [u8; 12] {
         let mut nonce = [0u8; 12];
 
         // Encode counter in first 8 bytes
@@ -140,8 +140,8 @@ mod tests {
     #[test]
     fn test_nonce_generation() {
         let mut gen = NonceGenerator::new(Direction::Send).unwrap();
-        let nonce1 = gen.next();
-        let nonce2 = gen.next();
+        let nonce1 = gen.next_nonce();
+        let nonce2 = gen.next_nonce();
 
         // Nonces should be different
         assert_ne!(nonce1, nonce2);
@@ -152,10 +152,10 @@ mod tests {
         let mut gen = NonceGenerator::new(Direction::Send).unwrap();
         assert_eq!(gen.counter(), 0);
 
-        gen.next();
+        gen.next_nonce();
         assert_eq!(gen.counter(), 1);
 
-        gen.next();
+        gen.next_nonce();
         assert_eq!(gen.counter(), 2);
     }
 
@@ -165,8 +165,8 @@ mod tests {
         let mut send_gen = NonceGenerator::from_seed(seed, Direction::Send);
         let mut recv_gen = NonceGenerator::from_seed(seed, Direction::Receive);
 
-        let send_nonce = send_gen.next();
-        let recv_nonce = recv_gen.next();
+        let send_nonce = send_gen.next_nonce();
+        let recv_nonce = recv_gen.next_nonce();
 
         // First 8 bytes (counter) should be the same
         assert_eq!(&send_nonce[..8], &recv_nonce[..8]);
@@ -180,7 +180,7 @@ mod tests {
         let mut gen = NonceGenerator::new(Direction::Send).unwrap();
         gen.set_counter(100);
 
-        let nonce = gen.next();
+        let nonce = gen.next_nonce();
         assert_eq!(gen.counter(), 101);
 
         // Verify counter is encoded in nonce

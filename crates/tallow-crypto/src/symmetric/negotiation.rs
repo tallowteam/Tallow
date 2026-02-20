@@ -12,7 +12,7 @@ pub fn detect_aes_ni() -> bool {
     {
         #[cfg(target_feature = "aes")]
         {
-            return true;
+            true
         }
 
         // Runtime detection on x86/x86_64

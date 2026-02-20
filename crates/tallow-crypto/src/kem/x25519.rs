@@ -1,6 +1,5 @@
 //! X25519 key exchange
 
-use crate::error::{CryptoError, Result};
 use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 use x25519_dalek::{PublicKey, StaticSecret};
@@ -27,7 +26,7 @@ pub struct X25519KeyPair {
 impl X25519KeyPair {
     /// Generate a new X25519 keypair
     pub fn generate() -> Self {
-        let secret = StaticSecret::random_from_rng(&mut OsRng);
+        let secret = StaticSecret::random_from_rng(OsRng);
         let public = PublicKey::from(&secret);
 
         Self { secret, public }

@@ -3,17 +3,6 @@
 use super::schema::*;
 use std::path::PathBuf;
 
-impl Default for TallowConfig {
-    fn default() -> Self {
-        Self {
-            network: NetworkConfig::default(),
-            transfer: TransferConfig::default(),
-            privacy: PrivacyConfig::default(),
-            ui: UiConfig::default(),
-        }
-    }
-}
-
 impl Default for NetworkConfig {
     fn default() -> Self {
         Self {

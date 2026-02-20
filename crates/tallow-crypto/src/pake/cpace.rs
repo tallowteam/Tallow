@@ -17,16 +17,24 @@ const CPACE_DOMAIN: &str = "tallow-cpace-v1";
 #[derive(Clone)]
 pub struct CpaceInitiator {
     scalar: Scalar,
+    /// Generator point derived from code phrase (retained for key confirmation)
+    #[allow(dead_code)]
     generator: RistrettoPoint,
     public: CompressedRistretto,
+    /// Hash of code phrase (retained for key confirmation)
+    #[allow(dead_code)]
     code_phrase_hash: [u8; 32],
 }
 
 /// CPace responder (same protocol, different role label)
 pub struct CpaceResponder {
     scalar: Scalar,
+    /// Generator point derived from code phrase (retained for key confirmation)
+    #[allow(dead_code)]
     generator: RistrettoPoint,
     public: CompressedRistretto,
+    /// Hash of code phrase (retained for key confirmation)
+    #[allow(dead_code)]
     code_phrase_hash: [u8; 32],
 }
 

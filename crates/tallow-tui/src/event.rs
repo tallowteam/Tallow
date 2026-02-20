@@ -1,6 +1,6 @@
 //! Event handling using crossterm
 
-use crossterm::event::{self, Event as CrosstermEvent, KeyCode, KeyEvent as CKeyEvent, KeyModifiers};
+use crossterm::event::{self, Event as CrosstermEvent, KeyCode, KeyModifiers};
 use std::io;
 use std::time::Duration;
 

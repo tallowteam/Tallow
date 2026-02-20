@@ -2,9 +2,13 @@
 
 mod cli;
 mod commands;
+#[allow(dead_code)]
 mod output;
+#[allow(dead_code)]
 mod runtime;
+#[allow(dead_code)]
 mod logging;
+#[allow(dead_code)]
 mod exit_codes;
 pub mod sandbox;
 

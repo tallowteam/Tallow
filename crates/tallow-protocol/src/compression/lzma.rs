@@ -1,7 +1,6 @@
 //! LZMA/XZ compression (highest ratio)
 
 use crate::{ProtocolError, Result};
-use std::io::Read;
 
 /// Compress data with LZMA
 ///
@@ -9,7 +8,7 @@ use std::io::Read;
 ///
 /// * `data` - Data to compress
 /// * `preset` - Compression preset (0-9, default 6)
-pub fn compress(data: &[u8], preset: u32) -> Result<Vec<u8>> {
+pub fn compress(data: &[u8], _preset: u32) -> Result<Vec<u8>> {
     let mut output = Vec::new();
     lzma_rs::lzma_compress_with_options(
         &mut &data[..],

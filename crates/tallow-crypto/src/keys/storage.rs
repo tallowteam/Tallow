@@ -8,8 +8,11 @@ use serde::{Deserialize, Serialize};
 /// Encrypted keyring
 #[derive(Clone, Serialize, Deserialize)]
 pub struct EncryptedKeyring {
+    /// Random salt used as input to Argon2id key derivation
     pub salt: [u8; 16],
+    /// ChaCha20-Poly1305 nonce used during encryption
     pub nonce: [u8; 12],
+    /// ChaCha20-Poly1305 encrypted key material including authentication tag
     pub ciphertext: Vec<u8>,
 }
 

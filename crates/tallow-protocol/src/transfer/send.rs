@@ -5,7 +5,7 @@
 
 use crate::compression::{self, CompressionAlgorithm};
 use crate::transfer::chunking::{self, ChunkConfig};
-use crate::transfer::manifest::{FileManifest, FileEntry};
+use crate::transfer::manifest::FileManifest;
 use crate::transfer::progress::TransferProgress;
 use crate::wire::Message;
 use crate::{ProtocolError, Result};
@@ -207,7 +207,7 @@ impl SendPipeline {
             messages.push(Message::Chunk {
                 transfer_id: self.transfer_id,
                 index: global_index,
-                total: if chunk.index as u64 + 1 == num_chunks {
+                total: if chunk.index + 1 == num_chunks {
                     Some(total)
                 } else {
                     None

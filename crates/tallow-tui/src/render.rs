@@ -1,6 +1,6 @@
 //! Rendering logic using ratatui
 
-use crate::app::{App, FocusedPanel};
+use crate::app::App;
 use crate::panels;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};

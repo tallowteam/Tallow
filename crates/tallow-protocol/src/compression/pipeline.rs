@@ -4,7 +4,7 @@
 //! then selects the best algorithm based on content type and size.
 
 use super::{analysis, CompressionAlgorithm};
-use crate::{ProtocolError, Result};
+use crate::Result;
 
 /// Compression pipeline
 #[derive(Debug)]
@@ -59,11 +59,8 @@ pub fn select_algorithm(data: &[u8]) -> CompressionAlgorithm {
     }
 
     // Skip compression for known-compressed file types
-    if let Some(file_type) = analysis::detect_file_type(sample) {
-        match file_type {
-            "zip" | "gzip" | "png" | "jpeg" => return CompressionAlgorithm::None,
-            _ => {}
-        }
+    if let Some("zip" | "gzip" | "png" | "jpeg") = analysis::detect_file_type(sample) {
+        return CompressionAlgorithm::None;
     }
 
     // Default: Zstd (best speed/ratio tradeoff)
