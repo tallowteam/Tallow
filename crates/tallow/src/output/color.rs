@@ -61,3 +61,62 @@ pub fn info(text: &str) {
         println!(">> {}", text);
     }
 }
+
+/// Print a transfer summary line (file count + total size)
+pub fn transfer_summary(file_count: usize, total_bytes: u64) {
+    let size_str = super::format_size(total_bytes);
+    if color_enabled() {
+        println!(
+            "{} {} ({} total)",
+            ">>".cyan().bold(),
+            format!("{} file(s)", file_count).bold(),
+            size_str
+        );
+    } else {
+        println!(">> {} file(s) ({} total)", file_count, size_str);
+    }
+}
+
+/// Print a file listing entry with name and size
+pub fn file_entry(name: &str, size: u64) {
+    let size_str = super::format_size(size);
+    if color_enabled() {
+        println!("   {} {}", name, format!("({})", size_str).dimmed());
+    } else {
+        println!("   {} ({})", name, size_str);
+    }
+}
+
+/// Print transfer completion with speed summary
+pub fn transfer_complete(total_bytes: u64, duration: std::time::Duration) {
+    let speed = super::format_speed(total_bytes, duration);
+    let size_str = super::format_size(total_bytes);
+    if color_enabled() {
+        println!(
+            "{} Transfer complete: {} at {}",
+            "OK:".green().bold(),
+            size_str,
+            speed
+        );
+    } else {
+        println!("OK: Transfer complete: {} at {}", size_str, speed);
+    }
+}
+
+/// Print a section separator (dimmed)
+pub fn section(text: &str) {
+    if color_enabled() {
+        println!("{}", text.dimmed());
+    } else {
+        println!("{}", text);
+    }
+}
+
+/// Print a highlighted code phrase for sharing
+pub fn code_phrase(code: &str) {
+    if color_enabled() {
+        println!("  {}", code.bold().cyan());
+    } else {
+        println!("  {}", code);
+    }
+}

@@ -160,11 +160,10 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
             })
         );
     } else {
-        output::color::info(&format!(
-            "Code phrase: {}",
-            output::color::styled(&code_phrase, "bold")
-        ));
-        println!("On the receiving end, run:");
+        output::color::info("Code phrase:");
+        output::color::code_phrase(&code_phrase);
+        println!();
+        output::color::section("On the receiving end, run:");
         println!("  tallow receive {}", code_phrase);
         println!();
 
@@ -250,17 +249,7 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
             })
         );
     } else {
-        let label = match &source {
-            SendSource::Text(_) => "text",
-            SendSource::Files(_) => "file(s)",
-        };
-        println!(
-            "Prepared {} {}, {} in {} chunks",
-            file_count,
-            label,
-            output::format_size(total_size),
-            total_chunks,
-        );
+        output::color::transfer_summary(file_count, total_size);
     }
 
     // --ask: prompt sender for confirmation before starting transfer
@@ -405,6 +394,7 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
     }
 
     // Create progress bar and send chunks
+    let transfer_start = std::time::Instant::now();
     let progress = output::TransferProgressBar::new(total_size);
     let mut total_sent: u64 = 0;
     let mut chunk_index: u64 = 0;
@@ -567,11 +557,7 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
             })
         );
     } else {
-        output::color::success(&format!(
-            "Transfer complete: {} in {} chunks",
-            output::format_size(total_size),
-            total_chunks
-        ));
+        output::color::transfer_complete(total_size, transfer_start.elapsed());
     }
 
     // Log to transfer history

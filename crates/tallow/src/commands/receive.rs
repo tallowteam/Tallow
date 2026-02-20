@@ -80,7 +80,8 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
             })
         );
     } else {
-        output::color::info(&format!("Connecting with code: {}", code_phrase));
+        output::color::info("Connecting with code:");
+        output::color::code_phrase(&code_phrase);
         println!("Output directory: {}", output_dir.display());
     }
 
@@ -260,24 +261,19 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
     } else {
         println!();
         if is_text_transfer {
-            println!("Incoming text transfer ({})", output::format_size(total_size));
+            output::color::info(&format!(
+                "Incoming text transfer ({})",
+                output::format_size(total_size)
+            ));
         } else {
-            println!("Incoming transfer:");
+            output::color::section("Incoming transfer:");
             for entry in manifest.files.iter() {
                 let safe_name = tallow_protocol::transfer::sanitize::sanitize_display(
                     &entry.path.display().to_string(),
                 );
-                println!(
-                    "  {} ({})",
-                    safe_name,
-                    output::format_size(entry.size),
-                );
+                output::color::file_entry(&safe_name, entry.size);
             }
-            println!(
-                "  Total: {} file(s), {}",
-                file_count,
-                output::format_size(total_size),
-            );
+            output::color::transfer_summary(file_count, total_size);
         }
         println!();
     }
@@ -383,6 +379,7 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
     }
 
     // Create progress bar
+    let transfer_start = std::time::Instant::now();
     let progress = output::TransferProgressBar::new(total_size);
     let mut bytes_received: u64 = 0;
 
@@ -539,11 +536,7 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
             .write_all(&content)
             .map_err(|e| io::Error::other(format!("stdout write: {}", e)))?;
     } else {
-        output::color::success(&format!(
-            "Transfer complete: {} file(s), {}",
-            written_files.len(),
-            output::format_size(total_size),
-        ));
+        output::color::transfer_complete(total_size, transfer_start.elapsed());
         for f in &written_files {
             println!("  Saved: {}", f.display());
         }
