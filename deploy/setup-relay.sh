@@ -41,7 +41,7 @@ if [ -d "$HOME/tallow" ]; then
     cd "$HOME/tallow"
     git pull --ff-only
 else
-    git clone https://github.com/AamirAlam/tallow.git "$HOME/tallow"
+    git clone https://github.com/tallowteam/Tallow.git "$HOME/tallow"
     cd "$HOME/tallow"
 fi
 
