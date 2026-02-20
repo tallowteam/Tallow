@@ -142,19 +142,23 @@ pub fn sanitize_filename(name: &str, output_dir: &Path) -> Result<PathBuf, Sanit
             continue;
         }
 
-        // Strip Windows drive letter prefix (e.g., "C:")
-        let part = if part.len() >= 2
+        // Strip Windows drive letter prefixes (e.g., "C:") — loop handles chained "A:B:C:"
+        let mut part = part;
+        while part.len() >= 2
             && part.as_bytes()[0].is_ascii_alphabetic()
             && part.as_bytes()[1] == b':'
         {
-            &part[2..]
-        } else {
-            part
-        };
+            part = &part[2..];
+        }
 
         if part.is_empty() {
             continue;
         }
+
+        // Replace remaining colons — invalid on Windows filenames, can trigger
+        // NTFS ADS access or be misinterpreted as drive letters in PathBuf
+        let colon_safe = part.replace(':', "_");
+        let part = colon_safe.as_str();
 
         // Trim trailing dots and spaces (Windows compatibility)
         let part = part.trim_end_matches(['.', ' ']);
@@ -477,6 +481,44 @@ mod tests {
         let result = sanitize_filename("D:important.doc", &output_dir()).unwrap();
         assert!(result.starts_with(&output_dir()));
         assert!(result.to_string_lossy().contains("important.doc"));
+    }
+
+    #[test]
+    fn test_chained_drive_letters() {
+        // Regression: "A:A:" → strip "A:" → "A:" still looks like a drive letter
+        // Must not escape output_dir on Windows
+        let result = sanitize_filename("A:A:", &output_dir());
+        match result {
+            Ok(path) => assert!(
+                path.starts_with(&output_dir()),
+                "Path {} escaped output dir",
+                path.display()
+            ),
+            Err(_) => {} // SanitizedToEmpty is also acceptable
+        }
+    }
+
+    #[test]
+    fn test_triple_chained_drive_letters() {
+        let result = sanitize_filename("C:D:E:file.txt", &output_dir());
+        match result {
+            Ok(path) => {
+                assert!(path.starts_with(&output_dir()));
+                assert!(path.to_string_lossy().contains("file"));
+            }
+            Err(_) => {}
+        }
+    }
+
+    #[test]
+    fn test_colon_in_filename() {
+        // Colons in filenames should be replaced (NTFS ADS prevention)
+        let result = sanitize_filename("file:stream.txt", &output_dir()).unwrap();
+        assert!(result.starts_with(&output_dir()));
+        // Colon should be replaced with underscore
+        let name = result.file_name().unwrap().to_string_lossy();
+        assert!(!name.contains(':'));
+        assert!(name.contains("file_stream"));
     }
 
     #[test]
