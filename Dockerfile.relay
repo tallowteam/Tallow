@@ -1,0 +1,37 @@
+# Stage 1: Chef - install cargo-chef for dependency caching
+FROM rust:1.82-slim AS chef
+RUN cargo install cargo-chef
+WORKDIR /build
+
+# Stage 2: Planner - generate dependency recipe
+FROM chef AS planner
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
+
+# Stage 3: Builder - compile dependencies (cached), then source
+FROM chef AS builder
+COPY --from=planner /build/recipe.json recipe.json
+RUN cargo chef cook --release --recipe-path recipe.json -p tallow-relay
+COPY . .
+RUN cargo build --release -p tallow-relay
+
+# Stage 4: Runtime - minimal image with non-root user
+FROM debian:bookworm-slim AS runtime
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+RUN groupadd -r tallow && useradd -r -g tallow -d /nonexistent -s /usr/sbin/nologin tallow
+
+COPY --from=builder /build/target/release/tallow-relay /usr/local/bin/
+
+# Environment variable configuration
+ENV TALLOW_RELAY_PASS=""
+ENV RUST_LOG="info"
+
+# QUIC uses UDP
+EXPOSE 4433/udp
+
+USER tallow
+ENTRYPOINT ["tallow-relay", "serve"]
+# Default args (can be overridden)
+CMD ["--addr", "0.0.0.0:4433"]

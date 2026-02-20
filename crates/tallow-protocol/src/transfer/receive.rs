@@ -216,8 +216,18 @@ impl ReceivePipeline {
                 )));
             }
 
-            // Write to output directory
-            let output_path = self.output_dir.join(&entry.path);
+            // Write to output directory (sanitized path prevents traversal attacks)
+            let output_path = crate::transfer::sanitize::sanitize_filename(
+                &entry.path.to_string_lossy(),
+                &self.output_dir,
+            )
+            .map_err(|e| {
+                ProtocolError::TransferFailed(format!(
+                    "filename sanitization failed for {}: {}",
+                    entry.path.display(),
+                    e
+                ))
+            })?;
             if let Some(parent) = output_path.parent() {
                 tokio::fs::create_dir_all(parent)
                     .await

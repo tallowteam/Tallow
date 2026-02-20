@@ -116,6 +116,7 @@ mod tests {
 
         let msg = Message::RoomJoin {
             room_id: vec![42u8; 32],
+            password_hash: None,
         };
 
         codec.encode_msg(&msg, &mut buf).unwrap();

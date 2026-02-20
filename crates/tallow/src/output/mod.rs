@@ -6,6 +6,7 @@ pub mod json;
 pub mod progress;
 pub mod prompts;
 pub mod qr;
+pub mod verify;
 
 pub use progress::TransferProgressBar;
 

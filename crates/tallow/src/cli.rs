@@ -118,8 +118,8 @@ pub struct SendArgs {
     #[arg(long)]
     pub to: Option<String>,
 
-    /// Room code for internet transfer
-    #[arg(short, long)]
+    /// Room code for internet transfer (also reads TALLOW_CODE env var)
+    #[arg(short, long, env = "TALLOW_CODE")]
     pub room: Option<String>,
 
     /// Compression algorithm (auto/zstd/brotli/lz4/lzma/none)
@@ -134,9 +134,13 @@ pub struct SendArgs {
     #[arg(long)]
     pub encrypt_filenames: bool,
 
-    /// Relay server address
-    #[arg(long, default_value = "129.146.114.5:4433")]
+    /// Relay server address (also reads TALLOW_RELAY env var)
+    #[arg(long, default_value = "129.146.114.5:4433", env = "TALLOW_RELAY")]
     pub relay: String,
+
+    /// Relay password (also reads TALLOW_RELAY_PASS env var)
+    #[arg(long = "relay-pass", env = "TALLOW_RELAY_PASS", hide_env_values = true)]
+    pub relay_pass: Option<String>,
 
     /// SOCKS5 proxy address (e.g., socks5://127.0.0.1:9050)
     #[arg(long)]
@@ -161,12 +165,16 @@ pub struct SendArgs {
     /// Prompt sender for confirmation before starting transfer
     #[arg(long)]
     pub ask: bool,
+
+    /// Display verification string after key exchange for MITM detection
+    #[arg(long)]
+    pub verify: bool,
 }
 
 #[derive(Args)]
 pub struct ReceiveArgs {
-    /// Code phrase to join
-    #[arg()]
+    /// Code phrase to join (also reads TALLOW_CODE env var)
+    #[arg(env = "TALLOW_CODE")]
     pub code: Option<String>,
 
     /// Output directory
@@ -185,9 +193,13 @@ pub struct ReceiveArgs {
     #[arg(long)]
     pub auto_accept: bool,
 
-    /// Relay server address
-    #[arg(long, default_value = "129.146.114.5:4433")]
+    /// Relay server address (also reads TALLOW_RELAY env var)
+    #[arg(long, default_value = "129.146.114.5:4433", env = "TALLOW_RELAY")]
     pub relay: String,
+
+    /// Relay password (also reads TALLOW_RELAY_PASS env var)
+    #[arg(long = "relay-pass", env = "TALLOW_RELAY_PASS", hide_env_values = true)]
+    pub relay_pass: Option<String>,
 
     /// SOCKS5 proxy address
     #[arg(long)]
@@ -200,6 +212,10 @@ pub struct ReceiveArgs {
     /// Resume a previous transfer by ID
     #[arg(long)]
     pub resume_id: Option<String>,
+
+    /// Display verification string after key exchange for MITM detection
+    #[arg(long)]
+    pub verify: bool,
 }
 
 #[derive(Args)]
@@ -227,9 +243,13 @@ pub struct SyncArgs {
     #[arg(long)]
     pub throttle: Option<String>,
 
-    /// Relay server address
-    #[arg(long, default_value = "129.146.114.5:4433")]
+    /// Relay server address (also reads TALLOW_RELAY env var)
+    #[arg(long, default_value = "129.146.114.5:4433", env = "TALLOW_RELAY")]
     pub relay: String,
+
+    /// Relay password (also reads TALLOW_RELAY_PASS env var)
+    #[arg(long = "relay-pass", env = "TALLOW_RELAY_PASS", hide_env_values = true)]
+    pub relay_pass: Option<String>,
 
     /// SOCKS5 proxy address
     #[arg(long)]
@@ -261,9 +281,13 @@ pub struct WatchArgs {
     #[arg(long)]
     pub throttle: Option<String>,
 
-    /// Relay server address
-    #[arg(long, default_value = "129.146.114.5:4433")]
+    /// Relay server address (also reads TALLOW_RELAY env var)
+    #[arg(long, default_value = "129.146.114.5:4433", env = "TALLOW_RELAY")]
     pub relay: String,
+
+    /// Relay password (also reads TALLOW_RELAY_PASS env var)
+    #[arg(long = "relay-pass", env = "TALLOW_RELAY_PASS", hide_env_values = true)]
+    pub relay_pass: Option<String>,
 
     /// SOCKS5 proxy address
     #[arg(long)]
@@ -278,6 +302,10 @@ pub struct ChatArgs {
     /// Room code to join
     #[arg(short, long)]
     pub room: Option<String>,
+
+    /// Relay password (also reads TALLOW_RELAY_PASS env var)
+    #[arg(long = "relay-pass", env = "TALLOW_RELAY_PASS", hide_env_values = true)]
+    pub relay_pass: Option<String>,
 }
 
 #[derive(Args)]

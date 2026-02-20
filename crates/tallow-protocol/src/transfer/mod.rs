@@ -10,6 +10,7 @@ pub mod progress;
 pub mod queue;
 pub mod receive;
 pub mod resume;
+pub mod sanitize;
 pub mod send;
 pub mod state_machine;
 pub mod sync;

@@ -46,6 +46,10 @@ zeroize.workspace = true
 img-parts = "0.3"
 kamadak-exif = "0.5"
 
+# Filename sanitization
+strip-ansi-escapes = "0.2"
+
 [dev-dependencies]
 tempfile = "3"
 tokio = { workspace = true, features = ["test-util"] }
+proptest = "1"

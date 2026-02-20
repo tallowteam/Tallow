@@ -48,6 +48,10 @@ enum Commands {
         /// Room timeout in seconds
         #[arg(long, default_value = "60")]
         room_timeout: u64,
+
+        /// Relay password (use TALLOW_RELAY_PASS env var for production)
+        #[arg(long = "pass", env = "TALLOW_RELAY_PASS", hide_env_values = true)]
+        pass: Option<String>,
     },
 }
 
@@ -71,6 +75,7 @@ async fn main() -> anyhow::Result<()> {
             config,
             max_rooms,
             room_timeout,
+            pass,
         } => {
             let mut relay_config = if let Some(cfg_path) = config {
                 let content = tokio::fs::read_to_string(&cfg_path).await?;
@@ -83,6 +88,7 @@ async fn main() -> anyhow::Result<()> {
             relay_config.bind_addr = addr;
             relay_config.max_rooms = max_rooms;
             relay_config.room_timeout_secs = room_timeout;
+            relay_config.password = pass.unwrap_or_default();
 
             let server = RelayServer::new(relay_config);
             server.start().await?;
