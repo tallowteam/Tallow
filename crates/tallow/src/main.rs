@@ -93,6 +93,12 @@ async fn main() {
                 eprintln!("{}", err_json);
             } else {
                 output::color::error(&format!("{}", e));
+
+                // Show actionable guidance for known error patterns
+                if let Some(hint) = output::errors::diagnose(&e) {
+                    eprintln!();
+                    eprintln!("{}", hint);
+                }
             }
             std::process::exit(exit_codes::ERROR);
         }

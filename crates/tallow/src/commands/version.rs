@@ -7,6 +7,8 @@ pub fn execute(json: bool) {
         "" => "stable",
         v => v,
     };
+    let commit = option_env!("TALLOW_BUILD_COMMIT").unwrap_or("dev");
+    let build_date = option_env!("TALLOW_BUILD_DATE").unwrap_or("unknown");
 
     if json {
         println!(
@@ -16,6 +18,8 @@ pub fn execute(json: bool) {
                 "rust_version": rust_version,
                 "platform": format!("{} {}", std::env::consts::OS, std::env::consts::ARCH),
                 "features": built_features(),
+                "commit": commit,
+                "build_date": build_date,
             })
         );
     } else {
@@ -26,6 +30,8 @@ pub fn execute(json: bool) {
             std::env::consts::OS,
             std::env::consts::ARCH
         );
+        println!("commit:   {}", commit);
+        println!("built:    {}", build_date);
         println!("features: {}", built_features().join(", "));
     }
 }

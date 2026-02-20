@@ -46,11 +46,26 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu
 
+      - name: Set build metadata
+        shell: bash
+        run: |
+          echo "TALLOW_BUILD_COMMIT=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+          echo "TALLOW_BUILD_DATE=$(date -u +%Y-%m-%d)" >> "$GITHUB_ENV"
+
       - name: Build release binary
         run: cargo build --release --target ${{ matrix.target }} --bin tallow
 
       - name: Build relay binary
         run: cargo build --release --target ${{ matrix.target }} --bin tallow-relay
+
+      - name: Generate shell completions
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        run: |
+          mkdir -p dist/completions
+          ./target/${{ matrix.target }}/release/tallow completions bash > dist/completions/tallow.bash
+          ./target/${{ matrix.target }}/release/tallow completions zsh > dist/completions/_tallow
+          ./target/${{ matrix.target }}/release/tallow completions fish > dist/completions/tallow.fish
+          ./target/${{ matrix.target }}/release/tallow completions powershell > dist/completions/_tallow.ps1
 
       - name: Package (Unix)
         if: matrix.archive == 'tar.gz'
@@ -81,17 +96,43 @@ jobs:
           name: tallow-${{ matrix.target }}
           path: tallow-${{ github.ref_name }}-${{ matrix.target }}.*
 
+      - name: Upload completions artifact
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tallow-completions
+          path: dist/completions/
+
   release:
     name: Create Release
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
+          path: artifacts
           merge-multiple: true
+
+      - name: Validate manifests
+        run: |
+          python3 -m json.tool scoop/tallow.json > /dev/null
+          bash -n scripts/install.sh
+
+      - name: Prepare completions archive
+        run: |
+          if [ -d artifacts/completions ] || ls artifacts/*.bash artifacts/_tallow artifacts/*.fish artifacts/_tallow.ps1 2>/dev/null; then
+            mkdir -p completions
+            cp artifacts/tallow.bash completions/ 2>/dev/null || true
+            cp artifacts/_tallow completions/ 2>/dev/null || true
+            cp artifacts/tallow.fish completions/ 2>/dev/null || true
+            cp artifacts/_tallow.ps1 completions/ 2>/dev/null || true
+            tar czf artifacts/tallow-completions.tar.gz -C completions .
+          fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: tallow-*
+          files: artifacts/tallow-*
           generate_release_notes: true
