@@ -21,29 +21,24 @@ impl ChatMessage {
     /// Create a new chat message
     pub fn new(sender: String, text: String) -> Self {
         Self {
-            id: uuid::Uuid::new_v4().to_string(),
+            id: generate_message_id(),
             sender,
             text,
             timestamp: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_default()
                 .as_secs(),
             encrypted: false,
         }
     }
 }
 
-// Add uuid dependency placeholder
-mod uuid {
-    pub struct Uuid;
-    impl Uuid {
-        pub fn new_v4() -> Self {
-            Self
-        }
-    }
-    impl std::fmt::Display for Uuid {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "placeholder-uuid")
-        }
-    }
+/// Generate a random message ID (hex-encoded 16 random bytes)
+fn generate_message_id() -> String {
+    let bytes: [u8; 16] = rand::random();
+    bytes.iter().fold(String::with_capacity(32), |mut s, b| {
+        use std::fmt::Write;
+        let _ = write!(s, "{b:02x}");
+        s
+    })
 }
