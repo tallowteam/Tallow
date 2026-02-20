@@ -451,6 +451,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e748733b7cbc798e1434b6ac524f0c1ff2ab456fe201501e6497c8417a4fc33"
 
 [[package]]
+name = "bytesize"
+version = "2.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6bd91ee7b2422bcb158d90ef4d14f75ef67f340943fc4149891dcce8f8b972a3"
+dependencies = [
+ "serde_core",
+]
+
+[[package]]
 name = "cassowary"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1643,6 +1652,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e629b9b98ef3dd8afe6ca2bd0f89306cec16d43d907889945bc5d6687f2f13c7"
 
 [[package]]
+name = "globset"
+version = "0.4.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "52dfc19153a48bde0cbd630453615c8151bce3a5adfac7a0aebfbf0a1e1f57e3"
+dependencies = [
+ "aho-corasick",
+ "bstr",
+ "log",
+ "regex-automata",
+ "regex-syntax",
+]
+
+[[package]]
 name = "h2"
 version = "0.3.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2094,6 +2116,22 @@ dependencies = [
  "tokio",
  "url",
  "xmltree",
+]
+
+[[package]]
+name = "ignore"
+version = "0.4.25"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3d782a365a015e0f5c04902246139249abf769125006fbe7649e2ee88169b4a"
+dependencies = [
+ "crossbeam-deque",
+ "globset",
+ "log",
+ "memchr",
+ "regex-automata",
+ "same-file",
+ "walkdir",
+ "winapi-util",
 ]
 
 [[package]]
@@ -3987,6 +4025,7 @@ dependencies = [
  "assert_cmd",
  "blake3",
  "bytes",
+ "bytesize",
  "clap",
  "clap_complete",
  "clap_mangen",
@@ -3997,6 +4036,7 @@ dependencies = [
  "dirs 5.0.1",
  "getrandom 0.2.17",
  "hex",
+ "ignore",
  "indicatif",
  "owo-colors",
  "predicates",
@@ -4088,6 +4128,7 @@ dependencies = [
  "brotli",
  "bytes",
  "futures",
+ "ignore",
  "img-parts",
  "kamadak-exif",
  "lz4_flex",
@@ -4138,6 +4179,7 @@ version = "0.1.0"
 dependencies = [
  "bincode",
  "blake3",
+ "bytesize",
  "chrono",
  "dirs 6.0.0",
  "rand 0.8.5",

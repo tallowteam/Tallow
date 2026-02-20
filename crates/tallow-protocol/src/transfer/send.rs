@@ -5,6 +5,7 @@
 
 use crate::compression::{self, CompressionAlgorithm};
 use crate::transfer::chunking::{self, ChunkConfig};
+use crate::transfer::exclusion::ExclusionConfig;
 use crate::transfer::manifest::{FileManifest, TransferType};
 use crate::transfer::progress::TransferProgress;
 use crate::wire::Message;
@@ -25,6 +26,8 @@ pub struct SendPipeline {
     progress: Option<TransferProgress>,
     /// Session encryption key (32 bytes, AES-256-GCM)
     session_key: [u8; 32],
+    /// File exclusion configuration for directory scanning
+    exclusion: ExclusionConfig,
 }
 
 impl Drop for SendPipeline {
@@ -65,6 +68,7 @@ impl SendPipeline {
             manifest: FileManifest::new(chunking::DEFAULT_CHUNK_SIZE),
             progress: None,
             session_key,
+            exclusion: ExclusionConfig::default(),
         }
     }
 
@@ -77,6 +81,12 @@ impl SendPipeline {
     /// Set compression algorithm
     pub fn with_compression(mut self, algo: CompressionAlgorithm) -> Self {
         self.compression = algo;
+        self
+    }
+
+    /// Set file exclusion configuration for directory scanning
+    pub fn with_exclusion(mut self, config: ExclusionConfig) -> Self {
+        self.exclusion = config;
         self
     }
 
@@ -141,8 +151,30 @@ impl SendPipeline {
         Ok(())
     }
 
-    /// Recursively scan a directory
+    /// Recursively scan a directory, respecting exclusion rules if configured
     async fn scan_directory(&mut self, base: &Path, dir: &Path) -> Result<()> {
+        // Use exclusion-aware walker for the root directory scan
+        if self.exclusion.is_active() && dir == base {
+            let files = self.exclusion.walk_directory(base)?;
+            for file_path in files {
+                let data = tokio::fs::read(&file_path).await.map_err(|e| {
+                    ProtocolError::TransferFailed(format!(
+                        "read {}: {}",
+                        file_path.display(),
+                        e
+                    ))
+                })?;
+                let hash: [u8; 32] = blake3::hash(&data).into();
+                let relative = file_path
+                    .strip_prefix(base)
+                    .unwrap_or(&file_path)
+                    .to_path_buf();
+                self.manifest.add_file(relative, data.len() as u64, hash);
+            }
+            return Ok(());
+        }
+
+        // Fallback: standard recursive directory walk (no exclusion)
         let mut entries = tokio::fs::read_dir(dir).await.map_err(|e| {
             ProtocolError::TransferFailed(format!("readdir {}: {}", dir.display(), e))
         })?;

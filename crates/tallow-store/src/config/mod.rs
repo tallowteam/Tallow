@@ -1,5 +1,6 @@
 //! Configuration management
 
+pub mod aliases;
 pub mod defaults;
 pub mod loader;
 pub mod schema;

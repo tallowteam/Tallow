@@ -20,6 +20,9 @@ bincode.workspace = true
 # Crypto
 rand.workspace = true
 
+# Size parsing
+bytesize = { version = "2", features = ["serde"] }
+
 # Utilities
 tracing.workspace = true
 thiserror.workspace = true

@@ -68,6 +68,10 @@ thiserror.workspace = true
 # Directories
 dirs = "5"
 
+# File exclusion and size parsing
+ignore = "0.4"
+bytesize = { version = "2", features = ["serde"] }
+
 # Memory locking (cross-platform)
 region = "3"
 

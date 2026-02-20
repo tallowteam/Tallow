@@ -138,6 +138,22 @@ pub struct SendArgs {
     /// Discover peers on LAN via mDNS
     #[arg(long)]
     pub discover: bool,
+
+    /// Exclude patterns (comma-separated, gitignore syntax)
+    #[arg(long)]
+    pub exclude: Option<String>,
+
+    /// Respect .gitignore files when sending directories
+    #[arg(long)]
+    pub git: bool,
+
+    /// Bandwidth throttle limit (e.g., "10MB", "500KB", "1GB")
+    #[arg(long)]
+    pub throttle: Option<String>,
+
+    /// Prompt sender for confirmation before starting transfer
+    #[arg(long)]
+    pub ask: bool,
 }
 
 #[derive(Args)]
