@@ -5,7 +5,7 @@ bind_addr = "0.0.0.0:4433"
 max_connections = 10000
 max_rooms = 5000
 rate_limit = 100
-room_timeout_secs = 60
+room_timeout_secs = 600
 
 # TLS: self-signed by default (auto-generated)
 # For Let's Encrypt certs, set these:

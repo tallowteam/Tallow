@@ -31,13 +31,25 @@ pub fn generate_self_signed() -> Result<TlsIdentity> {
 }
 
 /// Build a quinn ServerConfig from a TLS identity
+///
+/// Configures a 5-minute idle timeout to keep connections alive while
+/// peers wait for each other in relay rooms.
 #[cfg(feature = "quic")]
 pub fn quinn_server_config(identity: &TlsIdentity) -> Result<quinn::ServerConfig> {
-    let server_config = quinn::ServerConfig::with_single_cert(
+    let mut transport_config = quinn::TransportConfig::default();
+    transport_config.max_idle_timeout(Some(
+        std::time::Duration::from_secs(300)
+            .try_into()
+            .expect("300s fits in IdleTimeout"),
+    ));
+
+    let mut server_config = quinn::ServerConfig::with_single_cert(
         vec![identity.cert_der.clone()],
         identity.key_der.clone_key().into(),
     )
     .map_err(|e| NetworkError::TlsError(format!("quinn server config failed: {}", e)))?;
+
+    server_config.transport_config(Arc::new(transport_config));
 
     Ok(server_config)
 }
@@ -47,6 +59,9 @@ pub fn quinn_server_config(identity: &TlsIdentity) -> Result<quinn::ServerConfig
 /// Safe for Tallow because the relay is untrusted anyway — we rely on
 /// E2E encryption, not TLS, for confidentiality. TLS provides transport
 /// encryption against passive observers only.
+///
+/// Configures a 5-minute idle timeout and 15-second keep-alive interval
+/// so connections survive while waiting for peers.
 #[cfg(feature = "quic")]
 pub fn quinn_client_config() -> Result<quinn::ClientConfig> {
     let provider = Arc::new(rustls::crypto::ring::default_provider());
@@ -57,10 +72,20 @@ pub fn quinn_client_config() -> Result<quinn::ClientConfig> {
         .with_custom_certificate_verifier(Arc::new(SkipServerVerification))
         .with_no_client_auth();
 
-    let client_config = quinn::ClientConfig::new(Arc::new(
+    let mut transport_config = quinn::TransportConfig::default();
+    transport_config.max_idle_timeout(Some(
+        std::time::Duration::from_secs(300)
+            .try_into()
+            .expect("300s fits in IdleTimeout"),
+    ));
+    transport_config.keep_alive_interval(Some(std::time::Duration::from_secs(15)));
+
+    let mut client_config = quinn::ClientConfig::new(Arc::new(
         quinn::crypto::rustls::QuicClientConfig::try_from(crypto)
             .map_err(|e| NetworkError::TlsError(format!("quinn client config failed: {}", e)))?,
     ));
+
+    client_config.transport_config(Arc::new(transport_config));
 
     Ok(client_config)
 }

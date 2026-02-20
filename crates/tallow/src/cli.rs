@@ -104,7 +104,7 @@ pub struct SendArgs {
     pub encrypt_filenames: bool,
 
     /// Relay server address
-    #[arg(long, default_value = "relay.tallow.app:4433")]
+    #[arg(long, default_value = "129.146.114.5:4433")]
     pub relay: String,
 
     /// SOCKS5 proxy address (e.g., socks5://127.0.0.1:9050)
@@ -131,7 +131,7 @@ pub struct ReceiveArgs {
     pub auto_accept: bool,
 
     /// Relay server address
-    #[arg(long, default_value = "relay.tallow.app:4433")]
+    #[arg(long, default_value = "129.146.114.5:4433")]
     pub relay: String,
 
     /// SOCKS5 proxy address
