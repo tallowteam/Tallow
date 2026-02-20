@@ -90,6 +90,20 @@ pub enum Message {
         /// Error message
         error: String,
     },
+    /// Exchange manifests for sync comparison
+    ManifestExchange {
+        /// Transfer ID
+        transfer_id: [u8; 16],
+        /// Serialized manifest data
+        manifest: Vec<u8>,
+    },
+    /// Request deletion of files on the remote side
+    SyncDeleteList {
+        /// Transfer ID
+        transfer_id: [u8; 16],
+        /// Relative paths of files to delete on the remote
+        paths: Vec<String>,
+    },
     /// Ping (keepalive)
     Ping,
     /// Pong (keepalive response)
@@ -147,6 +161,14 @@ mod tests {
             Message::TransferError {
                 transfer_id: [1u8; 16],
                 error: "disk full".to_string(),
+            },
+            Message::ManifestExchange {
+                transfer_id: [2u8; 16],
+                manifest: vec![10, 20, 30, 40],
+            },
+            Message::SyncDeleteList {
+                transfer_id: [2u8; 16],
+                paths: vec!["old/file.txt".to_string(), "removed.log".to_string()],
             },
             Message::Ping,
             Message::Pong,

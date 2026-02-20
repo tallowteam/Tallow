@@ -39,8 +39,8 @@ async fn main() {
         cli::Commands::Send(args) => commands::send::execute(args, json_output).await,
         cli::Commands::Receive(args) => commands::receive::execute(args, json_output).await,
         cli::Commands::Chat(args) => commands::chat::execute(args).await,
-        cli::Commands::Sync(args) => commands::send::execute(args, json_output).await,
-        cli::Commands::Watch(args) => commands::receive::execute(args, json_output).await,
+        cli::Commands::Sync(args) => commands::sync::execute(args, json_output).await,
+        cli::Commands::Watch(args) => commands::watch::execute(args, json_output).await,
         cli::Commands::Stream(args) => commands::send::execute(args, json_output).await,
         cli::Commands::Tui(args) => commands::tui_cmd::execute(args).await,
         cli::Commands::Relay(args) => commands::send::execute(args, json_output).await,
@@ -68,6 +68,16 @@ async fn main() {
         }
         cli::Commands::Version => {
             commands::version::execute(json_output);
+            Ok(())
+        }
+        cli::Commands::CompleteCode { prefix } => {
+            // Tab completion for code phrase words
+            let prefix_lower = prefix.to_lowercase();
+            for word in tallow_crypto::kdf::eff_wordlist::EFF_WORDLIST.iter() {
+                if word.starts_with(&prefix_lower) {
+                    println!("{}", word);
+                }
+            }
             Ok(())
         }
     };

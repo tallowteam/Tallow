@@ -588,6 +588,11 @@ fn parse_throttle(throttle: &Option<String>) -> io::Result<u64> {
     }
 }
 
+/// Public throttle parser for use by sync and watch commands
+pub fn parse_throttle_pub(throttle: &Option<String>) -> io::Result<u64> {
+    parse_throttle(throttle)
+}
+
 /// Resolve a relay address string to a SocketAddr
 fn resolve_relay(relay: &str) -> io::Result<std::net::SocketAddr> {
     // Try parsing as a direct SocketAddr first

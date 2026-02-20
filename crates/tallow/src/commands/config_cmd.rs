@@ -1,6 +1,6 @@
 //! Config command implementation
 
-use crate::cli::{ConfigArgs, ConfigCommands};
+use crate::cli::{AliasCommands, ConfigArgs, ConfigCommands};
 use std::io;
 
 /// Execute config command
@@ -12,6 +12,7 @@ pub async fn execute(args: ConfigArgs, json: bool) -> io::Result<()> {
         Some(ConfigCommands::List) => config_list(json),
         Some(ConfigCommands::Edit) => config_edit(json),
         Some(ConfigCommands::Reset { yes }) => config_reset(yes, json),
+        Some(ConfigCommands::Alias { command }) => config_alias(command, json),
     }
 }
 
@@ -146,6 +147,88 @@ fn config_reset(yes: bool, json: bool) -> io::Result<()> {
         crate::output::color::success("Configuration reset to defaults");
     }
 
+    Ok(())
+}
+
+/// Handle config alias subcommands (add, remove, list)
+fn config_alias(command: AliasCommands, json: bool) -> io::Result<()> {
+    match command {
+        AliasCommands::Add { name, path } => {
+            let mut config = tallow_store::config::load_config()
+                .map_err(|e| io::Error::other(format!("{}", e)))?;
+            tallow_store::config::aliases::add_alias(&mut config.aliases, &name, &path)
+                .map_err(|e| io::Error::other(format!("{}", e)))?;
+            tallow_store::config::save_config(&config)
+                .map_err(|e| io::Error::other(format!("{}", e)))?;
+            if json {
+                println!(
+                    "{}",
+                    serde_json::json!({
+                        "event": "alias_added",
+                        "name": name,
+                        "path": path.display().to_string()
+                    })
+                );
+            } else {
+                crate::output::color::success(&format!(
+                    "Alias '{}' -> {}",
+                    name,
+                    path.display()
+                ));
+            }
+        }
+        AliasCommands::Remove { name } => {
+            let mut config = tallow_store::config::load_config()
+                .map_err(|e| io::Error::other(format!("{}", e)))?;
+            if tallow_store::config::aliases::remove_alias(&mut config.aliases, &name) {
+                tallow_store::config::save_config(&config)
+                    .map_err(|e| io::Error::other(format!("{}", e)))?;
+                if json {
+                    println!(
+                        "{}",
+                        serde_json::json!({"event": "alias_removed", "name": name})
+                    );
+                } else {
+                    crate::output::color::success(&format!("Removed alias '{}'", name));
+                }
+            } else {
+                let msg = format!("Alias '{}' not found", name);
+                if json {
+                    println!(
+                        "{}",
+                        serde_json::json!({"event": "error", "message": msg})
+                    );
+                } else {
+                    crate::output::color::error(&msg);
+                }
+            }
+        }
+        AliasCommands::List => {
+            let config = tallow_store::config::load_config()
+                .map_err(|e| io::Error::other(format!("{}", e)))?;
+            let aliases = tallow_store::config::aliases::list_aliases(&config.aliases);
+            if json {
+                let list: Vec<serde_json::Value> = aliases
+                    .iter()
+                    .map(|(name, path)| {
+                        serde_json::json!({"name": name, "path": path.display().to_string()})
+                    })
+                    .collect();
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&list).unwrap_or_default()
+                );
+            } else if aliases.is_empty() {
+                println!("No aliases configured.");
+                println!("Add one with: tallow config alias add <name> <path>");
+            } else {
+                println!("Path aliases:");
+                for (name, path) in &aliases {
+                    println!("  {} -> {}", name, path.display());
+                }
+            }
+        }
+    }
     Ok(())
 }
 
