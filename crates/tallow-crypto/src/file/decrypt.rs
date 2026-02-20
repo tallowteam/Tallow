@@ -5,12 +5,19 @@ use crate::file::encrypt::EncryptedChunk;
 use crate::hash::blake3;
 use crate::mem::constant_time;
 use crate::symmetric::{aes_decrypt, chacha_decrypt, CipherSuite};
+use zeroize::Zeroize;
 
 /// File decryptor
 pub struct FileDecryptor {
     key: [u8; 32],
     /// Cipher suite used for chunk decryption
     cipher: CipherSuite,
+}
+
+impl Drop for FileDecryptor {
+    fn drop(&mut self) {
+        self.key.zeroize();
+    }
 }
 
 impl FileDecryptor {

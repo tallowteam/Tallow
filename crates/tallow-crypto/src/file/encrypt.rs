@@ -4,6 +4,7 @@ use crate::error::Result;
 use crate::hash::blake3;
 use crate::symmetric::{aes_encrypt, chacha_encrypt, CipherSuite};
 use serde::{Deserialize, Serialize};
+use zeroize::Zeroize;
 
 /// Encrypted file chunk
 #[derive(Clone, Serialize, Deserialize)]
@@ -21,6 +22,12 @@ pub struct FileEncryptor {
     key: [u8; 32],
     /// Cipher suite used for chunk encryption
     cipher: CipherSuite,
+}
+
+impl Drop for FileEncryptor {
+    fn drop(&mut self) {
+        self.key.zeroize();
+    }
 }
 
 impl FileEncryptor {

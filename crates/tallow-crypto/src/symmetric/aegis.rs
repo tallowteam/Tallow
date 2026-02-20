@@ -19,7 +19,7 @@ use crate::error::{CryptoError, Result};
 /// Ciphertext with authentication tag appended
 #[cfg(feature = "aegis")]
 pub fn encrypt(key: &[u8; 32], nonce: &[u8; 32], plaintext: &[u8], aad: &[u8]) -> Result<Vec<u8>> {
-    let cipher = Aegis256::<256>::new(key.into(), nonce.into());
+    let cipher = Aegis256::<32>::new(key.into(), nonce.into());
     let (ciphertext, tag) = cipher.encrypt(plaintext, aad);
 
     let mut result = ciphertext;
@@ -47,7 +47,7 @@ pub fn decrypt(key: &[u8; 32], nonce: &[u8; 32], ciphertext: &[u8], aad: &[u8]) 
         ));
     }
 
-    let cipher = Aegis256::<256>::new(key.into(), nonce.into());
+    let cipher = Aegis256::<32>::new(key.into(), nonce.into());
 
     // Split ciphertext and tag
     let tag_start = ciphertext.len() - 32;

@@ -3,7 +3,10 @@
 /// Execute version command
 pub fn execute(json: bool) {
     let version = env!("CARGO_PKG_VERSION");
-    let rust_version = env!("CARGO_PKG_RUST_VERSION");
+    let rust_version = match env!("CARGO_PKG_RUST_VERSION") {
+        "" => "stable",
+        v => v,
+    };
 
     if json {
         println!(

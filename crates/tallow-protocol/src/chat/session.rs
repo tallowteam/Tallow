@@ -145,6 +145,13 @@ impl ChatSession {
 
         if msg.encrypted {
             if let Some(ref mut ratchet) = self.ratchet {
+                // Validate hex string length before decoding
+                if msg.text.len() % 2 != 0 {
+                    return Err(ProtocolError::TransferFailed(
+                        "Invalid ciphertext: odd-length hex string".to_string(),
+                    ));
+                }
+
                 // Decode hex ciphertext
                 let ct_bytes = (0..msg.text.len())
                     .step_by(2)

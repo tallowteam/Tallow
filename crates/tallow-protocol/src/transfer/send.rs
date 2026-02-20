@@ -27,6 +27,13 @@ pub struct SendPipeline {
     session_key: [u8; 32],
 }
 
+impl Drop for SendPipeline {
+    fn drop(&mut self) {
+        use zeroize::Zeroize;
+        self.session_key.zeroize();
+    }
+}
+
 impl std::fmt::Debug for SendPipeline {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SendPipeline")

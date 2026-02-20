@@ -166,9 +166,14 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
 
     // Check for resume from a previous interrupted transfer
     if let Some(ref resume_id) = args.resume_id {
+        // Sanitize resume_id to prevent path traversal
+        let safe_resume_id: String = resume_id
+            .chars()
+            .filter(|c| c.is_alphanumeric() || *c == '-' || *c == '_')
+            .collect();
         let checkpoint_path = tallow_store::persistence::data_dir()
             .join("checkpoints")
-            .join(format!("{}.checkpoint", resume_id));
+            .join(format!("{}.checkpoint", safe_resume_id));
         if checkpoint_path.exists() {
             if let Ok(data) = std::fs::read(&checkpoint_path) {
                 match tallow_protocol::transfer::resume::ResumeState::restore(&data) {

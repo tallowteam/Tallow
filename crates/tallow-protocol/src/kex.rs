@@ -25,8 +25,8 @@ impl SessionKey {
 
 impl Drop for SessionKey {
     fn drop(&mut self) {
-        // Zeroize on drop
-        self.key = [0u8; 32];
+        use zeroize::Zeroize;
+        self.key.zeroize();
     }
 }
 
