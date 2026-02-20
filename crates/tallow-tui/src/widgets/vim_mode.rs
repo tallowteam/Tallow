@@ -202,7 +202,7 @@ fn process_normal_mode(state: &mut VimState, key: KeyEvent) -> Option<Action> {
     // Handle numbers for repeat count
     if let KeyCode::Char(c) = key.code {
         if c.is_ascii_digit() && (state.count.is_some() || c != '0') {
-            let digit = c.to_digit(10).unwrap() as usize;
+            let digit = c.to_digit(10).unwrap_or(0) as usize;
             state.count = Some(state.count.unwrap_or(0) * 10 + digit);
             return None;
         }

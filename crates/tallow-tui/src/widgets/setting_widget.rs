@@ -120,7 +120,7 @@ impl SettingWidget {
                     }
                     KeyCode::Char(c) if c.is_ascii_digit() => {
                         // Allow typing numbers
-                        let digit = c.to_digit(10).unwrap() as i64;
+                        let digit = c.to_digit(10).unwrap_or(0) as i64;
                         let new_value = *value * 10 + digit;
                         if new_value <= *max {
                             *value = new_value;

@@ -121,13 +121,13 @@ impl FileBrowser {
         self.entries.clear();
 
         // Add parent directory entry if not at root
-        if self.current_path.parent().is_some() {
+        if let Some(parent) = self.current_path.parent() {
             self.entries.push(FileEntry::new(
                 String::from(".."),
                 true,
                 0,
                 0,
-                self.current_path.parent().unwrap().to_path_buf(),
+                parent.to_path_buf(),
             ));
         }
 

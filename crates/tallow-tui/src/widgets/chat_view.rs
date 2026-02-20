@@ -75,7 +75,7 @@ impl ChatMessage {
             content: content.into(),
             timestamp: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_default()
                 .as_secs(),
             is_mine,
             is_system: false,
@@ -94,7 +94,7 @@ impl ChatMessage {
             content: content.into(),
             timestamp: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_default()
                 .as_secs(),
             is_mine: false,
             is_system: true,

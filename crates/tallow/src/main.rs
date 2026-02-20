@@ -1,5 +1,7 @@
 //! Tallow CLI - Secure P2P file transfer
 
+#![forbid(unsafe_code)]
+
 mod cli;
 mod commands;
 #[allow(dead_code)]
