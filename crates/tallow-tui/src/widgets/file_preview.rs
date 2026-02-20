@@ -113,18 +113,38 @@ impl FilePreview {
     }
 
     /// Previews text files (first N lines).
+    ///
+    /// Uses BufReader to avoid reading the entire file into memory.
     fn preview_text(&self, path: &Path) -> String {
-        match std::fs::read_to_string(path) {
-            Ok(content) => {
-                let lines: Vec<&str> = content.lines().take(20).collect();
+        use std::io::BufRead;
+        match std::fs::File::open(path) {
+            Ok(file) => {
+                let reader = std::io::BufReader::new(file);
+                let mut lines = Vec::new();
+                let mut total_lines = 0;
+                for line_result in reader.lines() {
+                    match line_result {
+                        Ok(line) => {
+                            total_lines += 1;
+                            if lines.len() < 20 {
+                                lines.push(line);
+                            }
+                        }
+                        Err(_) => break,
+                    }
+                    // Stop counting after a reasonable limit
+                    if total_lines > 10_000 {
+                        break;
+                    }
+                }
                 let preview = lines.join("\n");
-
-                if content.lines().count() > 20 {
-                    format!(
-                        "{}\n\n... ({} more lines)",
-                        preview,
-                        content.lines().count() - 20
-                    )
+                if total_lines > 20 {
+                    let remaining = if total_lines > 10_000 {
+                        "10,000+".to_string()
+                    } else {
+                        (total_lines - 20).to_string()
+                    };
+                    format!("{}\n\n... ({} more lines)", preview, remaining)
                 } else {
                     preview
                 }
@@ -172,11 +192,16 @@ impl FilePreview {
     }
 
     /// Previews binary files (hex dump header).
+    ///
+    /// Only reads the first 128 bytes instead of the entire file.
     fn preview_binary(&self, path: &Path) -> String {
-        match std::fs::read(path) {
-            Ok(data) => {
+        use std::io::Read;
+        match std::fs::File::open(path) {
+            Ok(mut file) => {
                 let size = self.format_size();
-                let preview_bytes = data.iter().take(128).copied().collect::<Vec<u8>>();
+                let mut preview_bytes = vec![0u8; 128];
+                let bytes_read = file.read(&mut preview_bytes).unwrap_or(0);
+                preview_bytes.truncate(bytes_read);
 
                 let mut hex_dump = String::from("Binary File\n\nHex Dump (first 128 bytes):\n\n");
 

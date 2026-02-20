@@ -286,7 +286,7 @@ impl<'a> StatefulWidget for ChatInput<'a> {
                 ));
 
                 // Add text after cursor if any
-                if !after_cursor.is_empty() && cursor_char != after_cursor {
+                if !after_cursor.is_empty() && after_cursor.chars().count() > 1 {
                     let skip_count = after_cursor
                         .chars()
                         .next()

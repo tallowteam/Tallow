@@ -21,10 +21,10 @@ pub struct TrafficShaper {
 impl TrafficShaper {
     /// Create a new traffic shaper
     ///
-    /// `target_rate` is in bytes/sec. Packets will be padded to `packet_size`.
+    /// `target_rate` is in bytes/sec (must be > 0). Packets will be padded to `packet_size`.
     pub fn new(target_rate: u64) -> Self {
         Self {
-            target_rate,
+            target_rate: target_rate.max(1), // Prevent division by zero
             packet_size: 1024,
             window_bytes: 0,
             window_start: Instant::now(),

@@ -344,11 +344,6 @@ impl Widget for DeviceListCompact {
             // Format: > 🍎 ✅ ● Alice's MacBook
             let prefix = if is_selected { "> " } else { "  " };
             let status = if device.is_online { "●" } else { "○" };
-            let _status_color = if device.is_online {
-                Color::Green
-            } else {
-                Color::Gray
-            };
 
             let line = format!(
                 "{}{} {} {} {}",

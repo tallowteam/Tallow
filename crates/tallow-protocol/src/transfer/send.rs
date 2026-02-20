@@ -89,11 +89,11 @@ impl SendPipeline {
             self.scan_path(path).await?;
         }
 
-        self.manifest.finalize();
+        self.manifest.finalize()?;
         self.progress = Some(TransferProgress::new(self.manifest.total_size));
 
         // Create FileOffer message
-        let manifest_bytes = self.manifest.to_bytes();
+        let manifest_bytes = self.manifest.to_bytes()?;
         messages.push(Message::FileOffer {
             transfer_id: self.transfer_id,
             manifest: manifest_bytes,

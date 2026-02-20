@@ -84,8 +84,8 @@ impl TransferGauge {
             bar.push(BLOCKS[block_index]);
         }
 
-        // Empty blocks
-        while bar.len() < width as usize {
+        // Empty blocks (use chars().count() since block chars are multi-byte UTF-8)
+        while bar.chars().count() < width as usize {
             bar.push(EMPTY);
         }
 

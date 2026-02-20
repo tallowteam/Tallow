@@ -82,8 +82,8 @@ impl TransferProgressWidget {
             bar.push(BLOCKS[block_index]);
         }
 
-        // Empty blocks
-        while bar.len() < width as usize {
+        // Empty blocks (use chars().count() since block chars are multi-byte UTF-8)
+        while bar.chars().count() < width as usize {
             bar.push(EMPTY);
         }
 
@@ -105,8 +105,9 @@ impl Widget for TransferProgressWidget {
         // Calculate space for progress bar
         // Format breakdown: "📄 " (3) + filename + "  [" (3) + bar + "] " (2) + "100%" (4) + "  " (2) + speed + "  ETA " (6) + eta
         let overhead = 3 + 3 + 2 + 4 + 2 + 6;
-        let filename_display = if self.file_name.len() > 30 {
-            format!("{}...", &self.file_name[..27])
+        let filename_display = if self.file_name.chars().count() > 30 {
+            let truncated: String = self.file_name.chars().take(27).collect();
+            format!("{}...", truncated)
         } else {
             self.file_name.clone()
         };

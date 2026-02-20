@@ -59,7 +59,15 @@ impl TofuStore {
     }
 
     /// Record first contact with a peer
+    ///
+    /// If the peer already exists, this is a no-op to prevent trust downgrade.
+    /// Use [`update_trust`] to change trust level of existing peers.
     pub fn record_first_contact(&mut self, peer_id: String, public_key: Vec<u8>) -> Result<()> {
+        // Don't overwrite existing records — this would downgrade trust
+        if self.records.contains_key(&peer_id) {
+            return Ok(());
+        }
+
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
@@ -77,10 +85,12 @@ impl TofuStore {
     }
 
     /// Check if peer's key has changed (returns None if peer not seen before)
+    ///
+    /// Uses constant-time comparison to prevent timing side-channels.
     pub fn check_key_change(&self, peer_id: &str, current_key: &[u8]) -> Option<bool> {
         self.records
             .get(peer_id)
-            .map(|record| record.public_key.as_slice() != current_key)
+            .map(|record| !tallow_crypto::mem::ct_eq(&record.public_key, current_key))
     }
 
     /// Update trust level for a peer

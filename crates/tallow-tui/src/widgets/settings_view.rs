@@ -488,8 +488,8 @@ impl SettingsView {
 
         let mut y_offset = 0;
         for (idx, setting) in visible_settings {
-            let global_idx = idx + self.scroll_offset;
-            let is_selected = global_idx == self.selected_item;
+            // idx already reflects original position after .enumerate().skip()
+            let is_selected = idx == self.selected_item;
 
             let setting_area = Rect {
                 x: settings_area.x,

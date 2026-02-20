@@ -161,10 +161,16 @@ impl DeviceCard {
     fn truncate_name(&self, max_width: usize) -> String {
         // Account for platform icon (2 chars including space)
         let available = max_width.saturating_sub(3);
-        if self.name.len() <= available {
+        let char_count: usize = self.name.chars().count();
+        if char_count <= available {
             self.name.clone()
         } else {
-            format!("{}...", &self.name[..available.saturating_sub(3)])
+            let truncated: String = self
+                .name
+                .chars()
+                .take(available.saturating_sub(3))
+                .collect();
+            format!("{}...", truncated)
         }
     }
 }
@@ -206,7 +212,6 @@ impl Widget for DeviceCard {
         // Line 2: Trust badge + Online status
         let trust_badge = format!("{} {}", self.trust_level.icon(), self.trust_level.name());
         let (status_icon, status_color) = self.status_indicator();
-        let _status = format!("{}  {} {}", trust_badge, status_icon, self.status_text());
 
         let mut x = inner.x + 1;
         // Trust icon and name
@@ -291,14 +296,6 @@ impl Widget for DeviceCardCompact {
         } else {
             Color::Gray
         };
-
-        let _line = format!(
-            "{} {} {} {}",
-            self.platform.icon(),
-            self.trust_level.icon(),
-            status_indicator,
-            self.name
-        );
 
         // Render with different colors for different parts
         let mut x = area.x;

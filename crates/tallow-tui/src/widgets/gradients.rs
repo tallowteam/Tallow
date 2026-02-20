@@ -74,7 +74,11 @@ impl Gradient {
 
         (0..self.steps)
             .map(|i| {
-                let t = i as f64 / (self.steps - 1) as f64;
+                let t = if self.steps <= 1 {
+                    0.0
+                } else {
+                    i as f64 / (self.steps - 1) as f64
+                };
                 let r = Self::lerp(sr, er, t);
                 let g = Self::lerp(sg, eg, t);
                 let b = Self::lerp(sb, eb, t);

@@ -7,23 +7,12 @@ use crate::{ProtocolError, Result};
 
 /// Encrypt a filename for transit
 ///
-/// Uses AES-256-GCM with a derived nonce from the filename hash.
+/// Uses AES-256-GCM with a random nonce prepended to the ciphertext.
 /// The encrypted filename is base64url-encoded for safe transmission.
+/// Compatible with [`decrypt_filename`] for round-trip operation.
 pub fn encrypt_filename(filename: &str, key: &[u8; 32]) -> Result<String> {
-    // Use BLAKE3 to derive a deterministic nonce from the filename
-    // (so the same filename always encrypts the same way within a session)
-    let hash = blake3::keyed_hash(key, filename.as_bytes());
-    let mut nonce = [0u8; 12];
-    nonce.copy_from_slice(&hash.as_bytes()[..12]);
-
-    let plaintext = filename.as_bytes();
-    let aad = b"tallow-filename-v1";
-
-    let ciphertext = tallow_crypto::symmetric::aes_encrypt(key, &nonce, plaintext, aad)
-        .map_err(|e| ProtocolError::TransferFailed(format!("Filename encryption failed: {}", e)))?;
-
-    // Encode as base64url (URL-safe, no padding)
-    Ok(base64url_encode(&ciphertext))
+    // Use a random nonce prepended to ciphertext for safe decryption
+    encrypt_filename_random(filename, key)
 }
 
 /// Decrypt a filename received in transit

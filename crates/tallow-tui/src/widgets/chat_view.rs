@@ -199,7 +199,7 @@ impl<'a> ChatView<'a> {
         let mut lines = if msg.is_system { 0 } else { 1 };
 
         // Content lines (wrapped)
-        let content_lines = (msg.content.len() as u16).div_ceil(content_width);
+        let content_lines = (msg.content.chars().count() as u16).div_ceil(content_width);
         lines += content_lines.max(1);
 
         // Status line for own messages

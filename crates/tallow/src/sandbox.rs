@@ -107,21 +107,16 @@ pub fn apply_sandbox(config: &SandboxConfig) -> Result<(), SandboxError> {
 pub fn disable_core_dumps() {
     #[cfg(target_os = "linux")]
     {
-        // prctl(PR_SET_DUMPABLE, 0) prevents the kernel from generating
-        // core dumps and also prevents /proc/self/mem access by other processes.
-        // This is critical for protecting key material in memory.
-        //
-        // Requires: libc crate (platform-specific dep)
+        // TODO: Implement actual core dump prevention via prctl(PR_SET_DUMPABLE, 0)
+        // Requires libc crate as a platform-specific dependency.
         // unsafe { libc::prctl(libc::PR_SET_DUMPABLE, 0, 0, 0, 0); }
-        //
-        // For now, use nix crate's prctl wrapper when on Linux:
-        tracing::debug!("Core dumps: disabled via prctl(PR_SET_DUMPABLE, 0)");
+        tracing::warn!("Core dumps: prctl(PR_SET_DUMPABLE, 0) not yet implemented — stubbed");
     }
 
     #[cfg(any(target_os = "macos", target_os = "freebsd", target_os = "openbsd"))]
     {
-        // setrlimit(RLIMIT_CORE, {0, 0}) prevents core dump creation
-        tracing::debug!("Core dumps: disabled via setrlimit(RLIMIT_CORE, 0)");
+        // TODO: Implement actual core dump prevention via setrlimit(RLIMIT_CORE, 0)
+        tracing::warn!("Core dumps: setrlimit(RLIMIT_CORE, 0) not yet implemented — stubbed");
     }
 
     #[cfg(target_os = "windows")]
@@ -140,7 +135,7 @@ pub fn disable_core_dumps() {
         target_os = "windows"
     )))]
     {
-        tracing::debug!("Core dumps: no platform-specific prevention available");
+        tracing::warn!("Core dumps: no platform-specific prevention available");
     }
 }
 
@@ -205,50 +200,34 @@ fn apply_linux_sandbox(config: &SandboxConfig) -> Result<(), SandboxError> {
     //
     //   ruleset.restrict_self()?;
 
-    tracing::info!(
-        "Landlock: {} read paths, {} write paths (requires kernel 5.13+)",
+    // TODO: Implement actual Landlock filesystem restrictions (requires landlock crate)
+    tracing::warn!(
+        "Landlock: NOT YET IMPLEMENTED — {} read paths, {} write paths configured but not enforced",
         config.read_paths.len(),
         config.write_paths.len()
     );
 
-    // SAND-02: Seccomp-BPF syscall filtering
-    //
-    // Seccomp restricts which system calls the process can make.
-    // Default action: ERRNO(EPERM) for unlisted syscalls.
-    //
-    // Allowed syscall families:
-    //   File I/O:  read, write, open, close, stat, lseek, etc.
-    //   Memory:    mmap, munmap, mprotect, mlock, brk
-    //   Threading: clone, futex, exit, signals (for tokio)
-    //   Epoll:     epoll_create1, epoll_ctl, epoll_wait (for tokio)
-    //   Network:   socket, connect, send, recv (conditional)
-    //   Terminal:  ioctl (for TUI)
-    //
-    // Blocked (security-critical):
-    //   execve, execveat, fork (prevent process spawning)
-    //   ptrace (prevent debugging/injection)
-    //   mount, umount (prevent filesystem modification)
-    //   reboot, kexec_load (prevent system disruption)
-    //   init_module, finit_module (prevent kernel module loading)
-
-    tracing::info!(
-        "Seccomp: syscall filter (network={}, dns={})",
+    // TODO: Implement actual Seccomp-BPF syscall filtering (requires seccompiler crate)
+    tracing::warn!(
+        "Seccomp: NOT YET IMPLEMENTED — syscall filter configured (network={}, dns={}) but not enforced",
         config.allow_network,
         config.allow_dns
     );
 
-    tracing::info!("Linux sandbox applied (Landlock + Seccomp)");
+    tracing::warn!("Linux sandbox: STUBBED — Landlock + Seccomp not yet active");
     Ok(())
 }
 
 /// OpenBSD sandbox: pledge + unveil
 #[cfg(target_os = "openbsd")]
 fn apply_openbsd_sandbox(config: &SandboxConfig) -> Result<(), SandboxError> {
+    // TODO: Implement actual pledge + unveil (requires pledge/unveil crate)
     // pledge("stdio rpath wpath cpath inet dns tty", None)
     // For each read path: unveil(path, "r")
     // For each write path: unveil(path, "rwc")
     // unveil(None, None) to lock
-    tracing::info!("OpenBSD sandbox applied (pledge + unveil)");
+    let _ = config;
+    tracing::warn!("OpenBSD sandbox: STUBBED — pledge + unveil not yet active");
     Ok(())
 }
 

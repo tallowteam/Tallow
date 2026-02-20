@@ -118,8 +118,5 @@ impl TuiApp {
     }
 }
 
-impl Default for TuiApp {
-    fn default() -> Self {
-        Self::new().expect("failed to initialize TUI")
-    }
-}
+// Note: TuiApp does not implement Default because terminal initialization
+// is fallible. Use TuiApp::new() which returns Result.

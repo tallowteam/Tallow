@@ -1,5 +1,7 @@
 //! Memory wiping and protection utilities
 
+#[cfg(unix)]
+use crate::error::CryptoError;
 use crate::error::Result;
 
 /// Prevent core dumps from being generated

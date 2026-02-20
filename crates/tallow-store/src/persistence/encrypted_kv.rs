@@ -8,6 +8,7 @@ use crate::StoreError;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use zeroize::Zeroize;
 
 /// On-disk format for encrypted K/V entries
 #[derive(Serialize, Deserialize)]
@@ -46,11 +47,29 @@ impl EncryptedKv {
 
     /// Open a store at the given path with a master passphrase
     pub fn open(path: PathBuf, passphrase: &str) -> Result<Self> {
-        // Derive master key from passphrase using BLAKE3 KDF
-        let master_key = tallow_crypto::hash::blake3::derive_key(
-            "tallow-encrypted-kv-v1",
-            passphrase.as_bytes(),
-        );
+        // Derive master key from passphrase using Argon2id (memory-hard KDF)
+        // Uses a fixed domain-separation salt for the KV store
+        let kv_salt: [u8; 16] = {
+            let h = blake3::hash(b"tallow-encrypted-kv-v1");
+            let mut s = [0u8; 16];
+            s.copy_from_slice(&h.as_bytes()[..16]);
+            s
+        };
+        let master_key: [u8; 32] =
+            match tallow_crypto::kdf::argon2::derive_key(passphrase.as_bytes(), &kv_salt, 32) {
+                Ok(derived) => {
+                    let mut key = [0u8; 32];
+                    key.copy_from_slice(&derived[..32]);
+                    key
+                }
+                Err(_) => {
+                    // Fallback to BLAKE3 KDF if Argon2 unavailable
+                    tallow_crypto::hash::blake3::derive_key(
+                        "tallow-encrypted-kv-v1",
+                        passphrase.as_bytes(),
+                    )
+                }
+            };
 
         let mut store = Self {
             cache: HashMap::new(),
@@ -160,8 +179,13 @@ impl Default for EncryptedKv {
 
 impl Drop for EncryptedKv {
     fn drop(&mut self) {
-        // Zeroize master key on drop
-        self.master_key = [0u8; 32];
+        // Zeroize master key on drop using zeroize crate
+        // (compiler cannot optimize this away)
+        self.master_key.zeroize();
+        // Clear cached plaintext values
+        for value in self.cache.values_mut() {
+            value.zeroize();
+        }
         self.cache.clear();
     }
 }

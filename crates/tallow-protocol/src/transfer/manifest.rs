@@ -63,14 +63,19 @@ impl FileManifest {
     }
 
     /// Compute and store the manifest hash
-    pub fn finalize(&mut self) {
-        let bytes = postcard::to_stdvec(&self.files).unwrap_or_default();
+    pub fn finalize(&mut self) -> crate::Result<()> {
+        let bytes = postcard::to_stdvec(&self.files).map_err(|e| {
+            crate::ProtocolError::EncodingError(format!("manifest finalize failed: {}", e))
+        })?;
         self.manifest_hash = Some(blake3::hash(&bytes).into());
+        Ok(())
     }
 
     /// Serialize the manifest to bytes
-    pub fn to_bytes(&self) -> Vec<u8> {
-        postcard::to_stdvec(self).unwrap_or_default()
+    pub fn to_bytes(&self) -> crate::Result<Vec<u8>> {
+        postcard::to_stdvec(self).map_err(|e| {
+            crate::ProtocolError::EncodingError(format!("manifest serialize failed: {}", e))
+        })
     }
 
     /// Deserialize a manifest from bytes
@@ -86,15 +91,27 @@ impl FileManifest {
     }
 
     /// Sanitize file paths to prevent directory traversal
+    ///
+    /// Removes parent directory components (`..`), root prefixes (`/`, `C:\`),
+    /// and prefix components to ensure paths are strictly relative.
     pub fn sanitize_paths(&mut self) {
         for entry in &mut self.files {
-            // Remove any parent directory components
             let sanitized: PathBuf = entry
                 .path
                 .components()
-                .filter(|c| !matches!(c, std::path::Component::ParentDir))
+                .filter(|c| {
+                    matches!(
+                        c,
+                        std::path::Component::Normal(_) | std::path::Component::CurDir
+                    )
+                })
                 .collect();
-            entry.path = sanitized;
+            // If sanitization results in an empty path, use a safe fallback
+            entry.path = if sanitized.as_os_str().is_empty() {
+                PathBuf::from("unnamed")
+            } else {
+                sanitized
+            };
         }
     }
 }
@@ -135,9 +152,9 @@ mod tests {
         let mut manifest = FileManifest::new(64 * 1024);
         manifest.add_file(PathBuf::from("a.txt"), 100, [1u8; 32]);
         manifest.add_file(PathBuf::from("b.txt"), 200, [2u8; 32]);
-        manifest.finalize();
+        manifest.finalize().unwrap();
 
-        let bytes = manifest.to_bytes();
+        let bytes = manifest.to_bytes().unwrap();
         let decoded = FileManifest::from_bytes(&bytes).unwrap();
         assert_eq!(decoded.file_count(), 2);
         assert_eq!(decoded.total_size, 300);
@@ -149,5 +166,26 @@ mod tests {
         manifest.add_file(PathBuf::from("../../../etc/passwd"), 100, [0u8; 32]);
         manifest.sanitize_paths();
         assert!(!manifest.files[0].path.to_string_lossy().contains(".."));
+        // Should keep only the filename component
+        assert_eq!(manifest.files[0].path, PathBuf::from("etc/passwd"));
+    }
+
+    #[test]
+    fn test_sanitize_absolute_paths() {
+        let mut manifest = FileManifest::new(64 * 1024);
+        manifest.add_file(PathBuf::from("/etc/passwd"), 100, [0u8; 32]);
+        manifest.sanitize_paths();
+        // Root component should be stripped
+        assert!(!manifest.files[0].path.is_absolute());
+        assert_eq!(manifest.files[0].path, PathBuf::from("etc/passwd"));
+    }
+
+    #[test]
+    fn test_sanitize_empty_path() {
+        let mut manifest = FileManifest::new(64 * 1024);
+        manifest.add_file(PathBuf::from(".."), 100, [0u8; 32]);
+        manifest.sanitize_paths();
+        // Should fall back to "unnamed"
+        assert_eq!(manifest.files[0].path, PathBuf::from("unnamed"));
     }
 }

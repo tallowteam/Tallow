@@ -73,7 +73,12 @@ impl Transport for TcpTlsTransport {
             .ok_or_else(|| NetworkError::ConnectionFailed("not connected".to_string()))?;
 
         // Write length prefix (4 bytes BE)
-        let len = data.len() as u32;
+        let len: u32 = data.len().try_into().map_err(|_| {
+            NetworkError::ConnectionFailed(format!(
+                "payload too large for length prefix: {} bytes",
+                data.len()
+            ))
+        })?;
         stream
             .write_all(&len.to_be_bytes())
             .await

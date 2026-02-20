@@ -83,11 +83,6 @@ impl Widget for SpeedIndicator {
         let avg = Self::format_speed(self.avg_speed);
         let peak = Self::format_speed(self.peak_speed);
 
-        let _line = format!(
-            "Speed: {} {}/s  avg {}/s  peak {}/s",
-            arrow, current, avg, peak
-        );
-
         // Render with dynamic color for current speed
         let base_style = Style::default();
         let speed_color = self.speed_color();
