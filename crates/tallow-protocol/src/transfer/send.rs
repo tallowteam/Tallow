@@ -5,7 +5,7 @@
 
 use crate::compression::{self, CompressionAlgorithm};
 use crate::transfer::chunking::{self, ChunkConfig};
-use crate::transfer::manifest::FileManifest;
+use crate::transfer::manifest::{FileManifest, TransferType};
 use crate::transfer::progress::TransferProgress;
 use crate::wire::Message;
 use crate::{ProtocolError, Result};
@@ -235,6 +235,82 @@ impl SendPipeline {
     /// Get the transfer ID
     pub fn transfer_id(&self) -> &[u8; 16] {
         &self.transfer_id
+    }
+
+    /// Prepare a text payload for transfer as a virtual file.
+    ///
+    /// The text is treated as a single file named `_tallow_text_` in the manifest.
+    /// The receiver detects this special name and prints to stdout instead of disk.
+    pub async fn prepare_text(&mut self, text: &[u8]) -> Result<Vec<Message>> {
+        let hash: [u8; 32] = blake3::hash(text).into();
+
+        self.manifest.transfer_type = TransferType::Text;
+        self.manifest.add_file(
+            PathBuf::from("_tallow_text_"),
+            text.len() as u64,
+            hash,
+        );
+
+        self.manifest.finalize()?;
+        self.manifest.compression = Some(match self.compression {
+            CompressionAlgorithm::Zstd => "zstd".to_string(),
+            CompressionAlgorithm::Lz4 => "lz4".to_string(),
+            CompressionAlgorithm::Brotli => "brotli".to_string(),
+            CompressionAlgorithm::Lzma => "lzma".to_string(),
+            CompressionAlgorithm::None => "none".to_string(),
+        });
+        self.progress = Some(TransferProgress::new(self.manifest.total_size));
+
+        let manifest_bytes = self.manifest.to_bytes()?;
+        Ok(vec![Message::FileOffer {
+            transfer_id: self.transfer_id,
+            manifest: manifest_bytes,
+        }])
+    }
+
+    /// Generate chunk messages for in-memory data (text or stdin).
+    ///
+    /// Works identically to `chunk_file` but operates on a byte slice
+    /// rather than reading from disk.
+    pub async fn chunk_data(
+        &self,
+        data: &[u8],
+        start_chunk_index: u64,
+    ) -> Result<Vec<Message>> {
+        // Compress
+        let compressed = compression::pipeline::compress(data, self.compression)?;
+
+        // Split into chunks
+        let chunks = chunking::split_into_chunks(&compressed, self.chunk_config.size);
+        let num_chunks = chunks.len() as u64;
+        let total = start_chunk_index + num_chunks;
+
+        let mut messages = Vec::with_capacity(chunks.len());
+
+        for chunk in chunks {
+            let global_index = start_chunk_index + chunk.index;
+            let aad = chunking::build_chunk_aad(&self.transfer_id, global_index);
+            let nonce = chunking::build_chunk_nonce(global_index);
+
+            let encrypted =
+                tallow_crypto::symmetric::aes_encrypt(&self.session_key, &nonce, &chunk.data, &aad)
+                    .map_err(|e| {
+                        ProtocolError::TransferFailed(format!("chunk encryption failed: {}", e))
+                    })?;
+
+            messages.push(Message::Chunk {
+                transfer_id: self.transfer_id,
+                index: global_index,
+                total: if chunk.index + 1 == num_chunks {
+                    Some(total)
+                } else {
+                    None
+                },
+                data: encrypted,
+            });
+        }
+
+        Ok(messages)
     }
 
     /// Update progress and return current state

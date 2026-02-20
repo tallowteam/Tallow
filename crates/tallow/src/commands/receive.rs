@@ -3,8 +3,9 @@
 use crate::cli::ReceiveArgs;
 use crate::output;
 use bytes::BytesMut;
-use std::io;
+use std::io::{self, IsTerminal, Write};
 use std::path::PathBuf;
+use tallow_protocol::transfer::manifest::TransferType;
 use tallow_protocol::wire::{codec::TallowCodec, Message};
 
 /// Maximum receive buffer size (256 KB)
@@ -219,6 +220,8 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
         .map(|f| f.path.display().to_string())
         .collect();
 
+    let is_text_transfer = manifest.transfer_type == TransferType::Text;
+
     if json {
         println!(
             "{}",
@@ -229,20 +232,117 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
                 "total_bytes": total_size,
                 "total_chunks": total_chunks,
                 "files": filenames,
+                "text_transfer": is_text_transfer,
             })
         );
     } else {
-        println!("Incoming transfer:");
-        println!(
-            "  {} file(s), {} bytes in {} chunks",
-            file_count, total_size, total_chunks
-        );
-        for name in &filenames {
-            println!("  - {}", name);
+        println!();
+        if is_text_transfer {
+            println!("Incoming text transfer ({})", output::format_size(total_size));
+        } else {
+            println!("Incoming transfer:");
+            for entry in manifest.files.iter() {
+                println!(
+                    "  {} ({})",
+                    entry.path.display(),
+                    output::format_size(entry.size),
+                );
+            }
+            println!(
+                "  Total: {} file(s), {}",
+                file_count,
+                output::format_size(total_size),
+            );
+        }
+        println!();
+    }
+
+    // Check for existing files (overwrite protection)
+    if !is_text_transfer && !args.overwrite {
+        let mut conflicts = Vec::new();
+        for entry in manifest.files.iter() {
+            let target = output_dir.join(&entry.path);
+            if target.exists() {
+                conflicts.push(target);
+            }
+        }
+        if !conflicts.is_empty() && !json {
+            output::color::warning("The following files already exist:");
+            for path in &conflicts {
+                println!("  {}", path.display());
+            }
+            if !args.yes && !args.auto_accept {
+                let overwrite = output::prompts::confirm_with_default(
+                    "Overwrite existing files?",
+                    false,
+                )?;
+                if !overwrite {
+                    let reject_msg = Message::FileReject {
+                        transfer_id,
+                        reason: "file conflict -- receiver declined overwrite".to_string(),
+                    };
+                    encode_buf.clear();
+                    codec
+                        .encode_msg(&reject_msg, &mut encode_buf)
+                        .map_err(|e| io::Error::other(format!("Encode reject: {}", e)))?;
+                    relay
+                        .forward(&encode_buf)
+                        .await
+                        .map_err(|e| io::Error::other(format!("Send reject: {}", e)))?;
+                    relay.close().await;
+                    output::color::info("Transfer declined due to file conflicts.");
+                    return Ok(());
+                }
+            }
         }
     }
 
-    // Auto-accept (for v1; future: prompt user for confirmation)
+    // Prompt for confirmation unless --yes or --auto-accept
+    let accepted = if args.yes || args.auto_accept {
+        true
+    } else if json {
+        // JSON mode cannot prompt interactively; require --yes
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "JSON mode requires --yes flag to accept transfers",
+        ));
+    } else {
+        output::prompts::confirm_with_default(
+            &format!(
+                "Accept {} ({})?",
+                if is_text_transfer {
+                    "text transfer".to_string()
+                } else {
+                    format!("{} file(s)", file_count)
+                },
+                output::format_size(total_size),
+            ),
+            true,
+        )?
+    };
+
+    if !accepted {
+        let reject_msg = Message::FileReject {
+            transfer_id,
+            reason: "declined by receiver".to_string(),
+        };
+        encode_buf.clear();
+        codec
+            .encode_msg(&reject_msg, &mut encode_buf)
+            .map_err(|e| io::Error::other(format!("Encode FileReject failed: {}", e)))?;
+        relay
+            .forward(&encode_buf)
+            .await
+            .map_err(|e| io::Error::other(format!("Send FileReject failed: {}", e)))?;
+        relay.close().await;
+
+        if !json {
+            output::color::info("Transfer declined.");
+        }
+        return Ok(());
+    }
+
+    // Send FileAccept
     let accept_msg = Message::FileAccept { transfer_id };
     encode_buf.clear();
     codec
@@ -355,7 +455,45 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
     // Close relay connection
     relay.close().await;
 
-    if json {
+    // Handle text transfers vs file transfers
+    let is_stdout_pipe = !std::io::stdout().is_terminal();
+
+    if is_text_transfer {
+        // Text transfer: read the virtual file and output to terminal/stdout
+        let text_path = output_dir.join("_tallow_text_");
+        if text_path.exists() {
+            let content = tokio::fs::read(&text_path)
+                .await
+                .map_err(|e| io::Error::other(format!("Read text content: {}", e)))?;
+
+            if is_stdout_pipe || json {
+                // Pipe mode: raw output to stdout
+                std::io::stdout()
+                    .write_all(&content)
+                    .map_err(|e| io::Error::other(format!("stdout write: {}", e)))?;
+            } else {
+                // Interactive terminal: display with formatting
+                match std::str::from_utf8(&content) {
+                    Ok(text) => {
+                        println!();
+                        println!("{}", text);
+                    }
+                    Err(_) => {
+                        output::color::warning(
+                            "Received binary data; saving to file instead of displaying",
+                        );
+                    }
+                }
+            }
+
+            // Clean up the virtual file (don't leave _tallow_text_ on disk)
+            let _ = tokio::fs::remove_file(&text_path).await;
+        }
+
+        if !json && !is_stdout_pipe {
+            output::color::success("Text received.");
+        }
+    } else if json {
         println!(
             "{}",
             serde_json::json!({
@@ -365,11 +503,19 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
                 "files": written_files.iter().map(|f| f.display().to_string()).collect::<Vec<_>>(),
             })
         );
+    } else if is_stdout_pipe && written_files.len() == 1 {
+        // Single file received with stdout piped: cat to stdout
+        let content = tokio::fs::read(&written_files[0])
+            .await
+            .map_err(|e| io::Error::other(format!("Read for stdout: {}", e)))?;
+        std::io::stdout()
+            .write_all(&content)
+            .map_err(|e| io::Error::other(format!("stdout write: {}", e)))?;
     } else {
         output::color::success(&format!(
-            "Transfer complete: {} file(s), {} bytes",
+            "Transfer complete: {} file(s), {}",
             written_files.len(),
-            total_size
+            output::format_size(total_size),
         ));
         for f in &written_files {
             println!("  Saved: {}", f.display());

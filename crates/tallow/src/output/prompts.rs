@@ -2,11 +2,20 @@
 
 use std::io;
 
-/// Prompt for yes/no confirmation
+/// Prompt for yes/no confirmation (default: no)
 pub fn confirm(message: &str) -> io::Result<bool> {
     dialoguer::Confirm::new()
         .with_prompt(message)
         .default(false)
+        .interact()
+        .map_err(|e| io::Error::other(format!("Prompt failed: {}", e)))
+}
+
+/// Prompt for yes/no confirmation with a custom default
+pub fn confirm_with_default(message: &str, default: bool) -> io::Result<bool> {
+    dialoguer::Confirm::new()
+        .with_prompt(message)
+        .default(default)
         .interact()
         .map_err(|e| io::Error::other(format!("Prompt failed: {}", e)))
 }

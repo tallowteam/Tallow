@@ -3,12 +3,53 @@
 use crate::cli::SendArgs;
 use crate::output;
 use bytes::BytesMut;
-use std::io;
+use std::io::{self, IsTerminal, Read};
 use std::path::PathBuf;
 use tallow_protocol::wire::{codec::TallowCodec, Message};
 
 /// Maximum receive buffer size (256 KB)
 const RECV_BUF_SIZE: usize = 256 * 1024;
+
+/// Source of data to send
+enum SendSource {
+    /// File paths from CLI arguments
+    Files(Vec<PathBuf>),
+    /// Text from --text flag or stdin pipe
+    Text(Vec<u8>),
+}
+
+/// Determine what to send based on CLI args and stdin state
+fn determine_source(args: &SendArgs) -> io::Result<SendSource> {
+    // --text flag takes highest priority
+    if let Some(ref text) = args.text {
+        return Ok(SendSource::Text(text.as_bytes().to_vec()));
+    }
+
+    // Check for piped stdin (not a terminal) when no files given
+    if args.files.is_empty() && !args.ignore_stdin && !std::io::stdin().is_terminal() {
+        let mut buf = Vec::new();
+        std::io::stdin().read_to_end(&mut buf)?;
+        if buf.is_empty() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "No input: stdin is empty and no files specified",
+            ));
+        }
+        return Ok(SendSource::Text(buf));
+    }
+
+    // Require at least one file
+    if args.files.is_empty() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "No files specified. Usage: tallow send <files>\n\
+             Or use: tallow send --text \"message\"\n\
+             Or pipe: echo hello | tallow send",
+        ));
+    }
+
+    Ok(SendSource::Files(args.files.clone()))
+}
 
 /// Execute send command
 pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
@@ -56,16 +97,21 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
         }
     }
 
-    // Validate files exist
-    for file in &args.files {
-        if !file.exists() {
-            let msg = format!("File not found: {}", file.display());
-            if json {
-                println!("{}", serde_json::json!({"event": "error", "message": msg}));
-            } else {
-                output::color::error(&msg);
+    // Determine what we're sending (text, stdin pipe, or files)
+    let source = determine_source(&args)?;
+
+    // Validate files exist (only for file mode)
+    if let SendSource::Files(ref files) = source {
+        for file in files {
+            if !file.exists() {
+                let msg = format!("File not found: {}", file.display());
+                if json {
+                    println!("{}", serde_json::json!({"event": "error", "message": msg}));
+                } else {
+                    output::color::error(&msg);
+                }
+                return Err(io::Error::new(io::ErrorKind::NotFound, msg));
             }
-            return Err(io::Error::new(io::ErrorKind::NotFound, msg));
         }
     }
 
@@ -76,10 +122,28 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
     }
 
     // Generate code phrase for the room
-    let code_phrase = if let Some(room) = &args.room {
+    let code_phrase = if let Some(ref custom_code) = args.custom_code {
+        // Validate minimum length for security
+        if custom_code.len() < 4 {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Custom code must be at least 4 characters for security",
+            ));
+        }
+        if custom_code.len() < 8 && !json {
+            output::color::warning(
+                "Short custom code -- security depends on code phrase entropy",
+            );
+        }
+        custom_code.clone()
+    } else if let Some(room) = &args.room {
+        // Legacy --room flag support
         room.clone()
     } else {
-        tallow_crypto::kdf::generate_diceware(4)
+        tallow_protocol::room::code::generate_code_phrase(
+            args.words
+                .unwrap_or(tallow_protocol::room::code::DEFAULT_WORD_COUNT),
+        )
     };
 
     // Derive room ID from code phrase
@@ -92,7 +156,7 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
                 "event": "code_generated",
                 "code": code_phrase,
                 "room_id": hex::encode(room_id),
-                "files": args.files.iter().map(|f| f.display().to_string()).collect::<Vec<_>>(),
+                "receive_command": format!("tallow receive {}", code_phrase),
             })
         );
     } else {
@@ -103,6 +167,20 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
         println!("On the receiving end, run:");
         println!("  tallow receive {}", code_phrase);
         println!();
+
+        // QR code (opt-in via --qr)
+        if args.qr {
+            if let Err(e) = output::qr::display_receive_qr(&code_phrase) {
+                tracing::debug!("QR display failed: {}", e);
+            }
+            println!();
+        }
+
+        // Clipboard auto-copy (default on, disable with --no-clipboard)
+        if !args.no_clipboard {
+            output::clipboard::copy_to_clipboard(&format!("tallow receive {}", code_phrase));
+            output::color::info("(receive command copied to clipboard)");
+        }
     }
 
     // Build the transfer manifest
@@ -123,12 +201,23 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
         tallow_protocol::transfer::SendPipeline::new(transfer_id, *session_key.as_bytes())
             .with_compression(compression);
 
-    // Prepare files (scan, hash, build manifest)
-    let file_paths: Vec<PathBuf> = args.files.clone();
-    let offer_messages = pipeline
-        .prepare(&file_paths)
-        .await
-        .map_err(|e| io::Error::other(format!("Failed to prepare transfer: {}", e)))?;
+    // Prepare transfer based on source
+    let (offer_messages, source_files) = match &source {
+        SendSource::Text(data) => {
+            let msgs = pipeline
+                .prepare_text(data)
+                .await
+                .map_err(|e| io::Error::other(format!("Failed to prepare text: {}", e)))?;
+            (msgs, Vec::new())
+        }
+        SendSource::Files(files) => {
+            let msgs = pipeline
+                .prepare(files)
+                .await
+                .map_err(|e| io::Error::other(format!("Failed to prepare transfer: {}", e)))?;
+            (msgs, files.clone())
+        }
+    };
 
     let manifest = pipeline.manifest();
     let total_size = manifest.total_size;
@@ -151,9 +240,16 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
             })
         );
     } else {
+        let label = match &source {
+            SendSource::Text(_) => "text",
+            SendSource::Files(_) => "file(s)",
+        };
         println!(
-            "Prepared {} file(s), {} bytes in {} chunks",
-            file_count, total_size, total_chunks,
+            "Prepared {} {}, {} in {} chunks",
+            file_count,
+            label,
+            output::format_size(total_size),
+            total_chunks,
         );
     }
 
@@ -263,55 +359,103 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
     let mut total_sent: u64 = 0;
     let mut chunk_index: u64 = 0;
 
-    for file in &args.files {
-        let chunk_messages = pipeline
-            .chunk_file(file, chunk_index)
-            .await
-            .map_err(|e| io::Error::other(format!("Failed to chunk {}: {}", file.display(), e)))?;
-
-        for chunk_msg in &chunk_messages {
-            // Encode and send chunk
-            encode_buf.clear();
-            codec
-                .encode_msg(chunk_msg, &mut encode_buf)
-                .map_err(|e| io::Error::other(format!("Encode chunk failed: {}", e)))?;
-            relay
-                .forward(&encode_buf)
+    match &source {
+        SendSource::Text(data) => {
+            let chunk_messages = pipeline
+                .chunk_data(data, 0)
                 .await
-                .map_err(|e| io::Error::other(format!("Send chunk failed: {}", e)))?;
+                .map_err(|e| io::Error::other(format!("Failed to chunk text: {}", e)))?;
 
-            // Wait for acknowledgment
-            let n = relay
-                .receive(&mut recv_buf)
-                .await
-                .map_err(|e| io::Error::other(format!("Receive ack failed: {}", e)))?;
+            for chunk_msg in &chunk_messages {
+                encode_buf.clear();
+                codec
+                    .encode_msg(chunk_msg, &mut encode_buf)
+                    .map_err(|e| io::Error::other(format!("Encode chunk failed: {}", e)))?;
+                relay
+                    .forward(&encode_buf)
+                    .await
+                    .map_err(|e| io::Error::other(format!("Send chunk failed: {}", e)))?;
 
-            let mut ack_buf = BytesMut::from(&recv_buf[..n]);
-            let ack = codec
-                .decode_msg(&mut ack_buf)
-                .map_err(|e| io::Error::other(format!("Decode ack failed: {}", e)))?;
+                let n = relay
+                    .receive(&mut recv_buf)
+                    .await
+                    .map_err(|e| io::Error::other(format!("Receive ack failed: {}", e)))?;
 
-            match ack {
-                Some(Message::Ack { .. }) => {
-                    // Update progress
-                    if let Message::Chunk { ref data, .. } = chunk_msg {
-                        total_sent += data.len() as u64;
-                        progress.update(total_sent.min(total_size));
+                let mut ack_buf = BytesMut::from(&recv_buf[..n]);
+                let ack = codec
+                    .decode_msg(&mut ack_buf)
+                    .map_err(|e| io::Error::other(format!("Decode ack failed: {}", e)))?;
+
+                match ack {
+                    Some(Message::Ack { .. }) => {
+                        if let Message::Chunk { ref data, .. } = chunk_msg {
+                            total_sent += data.len() as u64;
+                            progress.update(total_sent.min(total_size));
+                        }
                     }
-                }
-                Some(Message::TransferError { error, .. }) => {
-                    progress.finish();
-                    let msg = format!("Transfer error from receiver: {}", error);
-                    relay.close().await;
-                    return Err(io::Error::other(msg));
-                }
-                other => {
-                    tracing::warn!("Unexpected message during transfer: {:?}", other);
+                    Some(Message::TransferError { error, .. }) => {
+                        progress.finish();
+                        let msg = format!("Transfer error from receiver: {}", error);
+                        relay.close().await;
+                        return Err(io::Error::other(msg));
+                    }
+                    other => {
+                        tracing::warn!("Unexpected message during transfer: {:?}", other);
+                    }
                 }
             }
         }
+        SendSource::Files(_) => {
+            for file in &source_files {
+                let chunk_messages = pipeline
+                    .chunk_file(file, chunk_index)
+                    .await
+                    .map_err(|e| {
+                        io::Error::other(format!("Failed to chunk {}: {}", file.display(), e))
+                    })?;
 
-        chunk_index += chunk_messages.len() as u64;
+                for chunk_msg in &chunk_messages {
+                    encode_buf.clear();
+                    codec
+                        .encode_msg(chunk_msg, &mut encode_buf)
+                        .map_err(|e| io::Error::other(format!("Encode chunk failed: {}", e)))?;
+                    relay
+                        .forward(&encode_buf)
+                        .await
+                        .map_err(|e| io::Error::other(format!("Send chunk failed: {}", e)))?;
+
+                    let n = relay
+                        .receive(&mut recv_buf)
+                        .await
+                        .map_err(|e| io::Error::other(format!("Receive ack failed: {}", e)))?;
+
+                    let mut ack_buf = BytesMut::from(&recv_buf[..n]);
+                    let ack = codec
+                        .decode_msg(&mut ack_buf)
+                        .map_err(|e| io::Error::other(format!("Decode ack failed: {}", e)))?;
+
+                    match ack {
+                        Some(Message::Ack { .. }) => {
+                            if let Message::Chunk { ref data, .. } = chunk_msg {
+                                total_sent += data.len() as u64;
+                                progress.update(total_sent.min(total_size));
+                            }
+                        }
+                        Some(Message::TransferError { error, .. }) => {
+                            progress.finish();
+                            let msg = format!("Transfer error from receiver: {}", error);
+                            relay.close().await;
+                            return Err(io::Error::other(msg));
+                        }
+                        other => {
+                            tracing::warn!("Unexpected message during transfer: {:?}", other);
+                        }
+                    }
+                }
+
+                chunk_index += chunk_messages.len() as u64;
+            }
+        }
     }
 
     progress.finish();
@@ -348,8 +492,9 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
         );
     } else {
         output::color::success(&format!(
-            "Transfer complete: {} bytes in {} chunks",
-            total_size, total_chunks
+            "Transfer complete: {} in {} chunks",
+            output::format_size(total_size),
+            total_chunks
         ));
     }
 
