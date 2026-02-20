@@ -44,7 +44,17 @@
       "Bash(cmd.exe /C \"call \"\"C:\\\\Program Files \\(x86\\)\\\\Microsoft Visual Studio\\\\2022\\\\BuildTools\\\\Common7\\\\Tools\\\\VsDevCmd.bat\"\" -arch=amd64 && echo VSDEV_OK\")",
       "Bash(cmd.exe /C \"E:\\\\Tallow\\\\build.bat\")",
       "Bash(powershell.exe -NoProfile -Command:*)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(git -C /e/Tallow status)",
+      "Bash(git -C /e/Tallow log --oneline -5)",
+      "Bash(gh -R tallowteam/Tallow run list:*)",
+      "Bash(git -C /e/Tallow ls-files .claude/hooks/block-main-push.sh)",
+      "Bash(git -C /e/Tallow push origin master)",
+      "Bash(ssh:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(git -C /e/Tallow branch -a)",
+      "Bash(git -C /e/Tallow rev-parse master)",
+      "Bash(git -C /e/Tallow rev-parse origin/master)"
     ]
   }
 }
