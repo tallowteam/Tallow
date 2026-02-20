@@ -3109,6 +3109,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "qr2term"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6867c60b38e9747a079a19614dbb5981a53f21b9a56c265f3bfdf6011a50a957"
+dependencies = [
+ "crossterm 0.28.1",
+ "qrcode",
+]
+
+[[package]]
 name = "qrcode"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3982,6 +3992,7 @@ dependencies = [
  "clap_mangen",
  "color-eyre",
  "comfy-table",
+ "crossterm 0.28.1",
  "dialoguer",
  "dirs 5.0.1",
  "getrandom 0.2.17",
@@ -3989,6 +4000,7 @@ dependencies = [
  "indicatif",
  "owo-colors",
  "predicates",
+ "qr2term",
  "qrcode",
  "rand 0.8.5",
  "region",
