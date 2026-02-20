@@ -79,7 +79,7 @@ fn identity_show(json: bool) -> io::Result<()> {
             })
         );
     } else {
-        println!("Identity");
+        crate::output::color::section("Identity");
         println!("  Fingerprint: {}", fingerprint);
         println!("  Public key:  {}", &pk[..16.min(pk.len())]);
         println!(
@@ -213,9 +213,9 @@ pub async fn execute_contacts(args: ContactsArgs, json: bool) -> io::Result<()> 
                     .collect();
                 println!("{}", serde_json::json!({"contacts": list}));
             } else if contacts.is_empty() {
-                println!("No contacts. Add one with: tallow contacts add <name> --key <key>");
+                crate::output::color::info("No contacts. Add one with: tallow contacts add <name> --key <key>");
             } else {
-                println!("Contacts:");
+                crate::output::color::section("Contacts:");
                 for contact in contacts {
                     println!("  {} ({})", contact.name, contact.id);
                 }
@@ -309,9 +309,9 @@ pub async fn execute_trust(args: TrustArgs, json: bool) -> io::Result<()> {
                     .collect();
                 println!("{}", serde_json::json!({"peers": list}));
             } else if peers.is_empty() {
-                println!("No known peers. Peers are recorded on first connection.");
+                crate::output::color::info("No known peers. Peers are recorded on first connection.");
             } else {
-                println!("Known peers:");
+                crate::output::color::section("Known peers:");
                 for (id, level) in &peers {
                     println!("  {} ({:?})", id, level);
                 }
@@ -360,7 +360,7 @@ pub async fn execute_trust(args: TrustArgs, json: bool) -> io::Result<()> {
                     })
                 );
             } else {
-                println!("Verify peer '{}' fingerprint:", peer_id);
+                crate::output::color::info(&format!("Verify peer '{}' fingerprint:", peer_id));
                 println!("  Provided: {}", fingerprint);
                 println!("  Compare this with the peer's displayed fingerprint.");
             }

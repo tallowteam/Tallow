@@ -41,11 +41,9 @@ pub async fn execute(args: SyncArgs, json: bool) -> io::Result<()> {
         );
     } else {
         output::color::info(&format!("Syncing: {}", args.dir.display()));
-        output::color::info(&format!(
-            "Code phrase: {}",
-            output::color::styled(&code_phrase, "bold")
-        ));
-        println!("On the receiving end, run:");
+        output::color::info("Code phrase:");
+        output::color::code_phrase(&code_phrase);
+        output::color::section("On the receiving end, run:");
         println!("  tallow receive {}", code_phrase);
         println!();
     }
