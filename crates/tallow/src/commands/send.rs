@@ -22,6 +22,8 @@ enum SendSource {
 fn determine_source(args: &SendArgs) -> io::Result<SendSource> {
     // --text flag takes highest priority
     if let Some(ref text) = args.text {
+        let ct = tallow_store::clipboard::detect::detect_content_type(text);
+        tracing::debug!("Text content type detected: {}", ct);
         return Ok(SendSource::Text(text.as_bytes().to_vec()));
     }
 
@@ -210,9 +212,28 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
             .with_compression(compression)
             .with_exclusion(exclusion);
 
-    // Prepare transfer based on source
+    // Prepare transfer based on source — with content type hint
     let (offer_messages, source_files) = match &source {
         SendSource::Text(data) => {
+            // Show content type hint for text transfers
+            if !json {
+                if let Ok(text) = std::str::from_utf8(data) {
+                    let ct = tallow_store::clipboard::detect::detect_content_type(text);
+                    match ct {
+                        tallow_store::clipboard::ContentType::Url => {
+                            output::color::info(&format!("Sending URL: {}", tallow_store::clipboard::preview::generate_preview(text, 80)));
+                        }
+                        tallow_store::clipboard::ContentType::Code => {
+                            output::color::info("Sending code snippet");
+                        }
+                        tallow_store::clipboard::ContentType::Html => {
+                            output::color::info("Sending HTML content");
+                        }
+                        _ => {}
+                    }
+                }
+            }
+
             let msgs = pipeline
                 .prepare_text(data)
                 .await

@@ -3,6 +3,7 @@
 pub mod clipboard;
 pub mod color;
 pub mod errors;
+pub mod image;
 pub mod json;
 pub mod progress;
 pub mod prompts;

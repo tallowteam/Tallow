@@ -14,6 +14,12 @@ pub enum TransferType {
     Files,
     /// Text-only transfer (no files written to disk on receive)
     Text,
+    /// Clipboard text content
+    Clipboard,
+    /// Clipboard image data
+    ClipboardImage,
+    /// URL/link sharing
+    Url,
 }
 
 /// File entry in manifest

@@ -5,6 +5,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod clipboard;
 pub mod config;
 pub mod contacts;
 pub mod error;

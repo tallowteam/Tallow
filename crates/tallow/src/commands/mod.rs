@@ -2,6 +2,7 @@
 
 pub mod benchmark;
 pub mod chat;
+pub mod clip;
 pub mod completions;
 pub mod config_cmd;
 pub mod doctor;

@@ -52,6 +52,7 @@ async fn main() {
             }
             Ok(())
         }
+        cli::Commands::Clip(args) => commands::clip::execute(args, json_output).await,
         cli::Commands::Contacts(args) => {
             commands::identity::execute_contacts(args, json_output).await
         }

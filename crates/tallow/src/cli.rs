@@ -76,12 +76,92 @@ pub enum Commands {
     /// Show version and build info
     Version,
 
+    /// Share clipboard content with a peer (text, images, links)
+    Clip(ClipArgs),
+
     /// Internal: complete code phrase words (used by shell completion scripts)
     #[command(hide = true)]
     CompleteCode {
         /// Partial word to complete
         prefix: String,
     },
+}
+
+#[derive(Args)]
+pub struct ClipArgs {
+    /// Subcommand (receive, watch, history, clear). Default: send clipboard.
+    #[command(subcommand)]
+    pub command: Option<ClipCommands>,
+
+    /// Force image-only mode (read image from clipboard)
+    #[arg(short, long)]
+    pub image: bool,
+
+    /// Send all clipboard items (text + image if both present)
+    #[arg(short, long)]
+    pub all: bool,
+
+    /// Use a custom code phrase
+    #[arg(short = 'c', long = "code")]
+    pub custom_code: Option<String>,
+
+    /// Relay server address (also reads TALLOW_RELAY env var)
+    #[arg(long, default_value = "129.146.114.5:4433", env = "TALLOW_RELAY")]
+    pub relay: String,
+
+    /// Relay password (also reads TALLOW_RELAY_PASS env var)
+    #[arg(long = "relay-pass", env = "TALLOW_RELAY_PASS", hide_env_values = true)]
+    pub relay_pass: Option<String>,
+
+    /// SOCKS5 proxy address (e.g., socks5://127.0.0.1:9050)
+    #[arg(long)]
+    pub proxy: Option<String>,
+
+    /// Display QR code for the receive command
+    #[arg(long)]
+    pub qr: bool,
+
+    /// Do not copy receive command to clipboard
+    #[arg(long)]
+    pub no_clipboard: bool,
+
+    /// Display verification string after key exchange for MITM detection
+    #[arg(long)]
+    pub verify: bool,
+}
+
+#[derive(Subcommand)]
+pub enum ClipCommands {
+    /// Receive clipboard content from a peer
+    Receive {
+        /// Code phrase to join
+        code: String,
+
+        /// Output directory for images (default: current dir)
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+    },
+
+    /// Watch clipboard for changes and auto-send
+    Watch {
+        /// Debounce interval in seconds (default: 2)
+        #[arg(long, default_value = "2")]
+        debounce: u64,
+    },
+
+    /// Show clipboard history
+    History {
+        /// Number of recent entries to show (default: all)
+        #[arg(short = 'n', long)]
+        count: Option<usize>,
+
+        /// Search history by keyword
+        #[arg(short, long)]
+        search: Option<String>,
+    },
+
+    /// Clear clipboard history
+    Clear,
 }
 
 #[derive(Args)]

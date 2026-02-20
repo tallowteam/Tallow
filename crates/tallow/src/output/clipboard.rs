@@ -1,5 +1,42 @@
 //! Clipboard operations (cross-platform, fail-silent)
 
+/// Read text from the system clipboard.
+///
+/// Returns `None` on headless systems or when clipboard is empty.
+/// Follows the same fail-silent pattern as [`copy_to_clipboard`].
+pub fn read_from_clipboard() -> Option<String> {
+    #[cfg(target_os = "linux")]
+    {
+        let has_display =
+            std::env::var("DISPLAY").is_ok() || std::env::var("WAYLAND_DISPLAY").is_ok();
+        if !has_display {
+            tracing::debug!("No display server; skipping clipboard read");
+            return None;
+        }
+    }
+
+    match arboard::Clipboard::new() {
+        Ok(mut cb) => match cb.get_text() {
+            Ok(text) if !text.is_empty() => {
+                tracing::debug!("Read {} bytes from clipboard", text.len());
+                Some(text)
+            }
+            Ok(_) => {
+                tracing::debug!("Clipboard is empty");
+                None
+            }
+            Err(e) => {
+                tracing::debug!("Clipboard read failed: {e}");
+                None
+            }
+        },
+        Err(e) => {
+            tracing::debug!("Clipboard unavailable: {e}");
+            None
+        }
+    }
+}
+
 /// Copy text to the system clipboard.
 ///
 /// Fails silently on headless systems (SSH, Docker, CI) where no

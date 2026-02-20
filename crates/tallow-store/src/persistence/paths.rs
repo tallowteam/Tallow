@@ -43,6 +43,16 @@ pub fn history_file() -> PathBuf {
     data_dir().join("history.json")
 }
 
+/// Get the clipboard history file path
+pub fn clipboard_history_file() -> PathBuf {
+    data_dir().join("clipboard_history.json")
+}
+
+/// Get the clipboard images directory path
+pub fn clipboard_images_dir() -> PathBuf {
+    data_dir().join("clipboard_images")
+}
+
 /// Ensure all required directories exist
 pub fn ensure_dirs() -> std::io::Result<()> {
     std::fs::create_dir_all(config_dir())?;
