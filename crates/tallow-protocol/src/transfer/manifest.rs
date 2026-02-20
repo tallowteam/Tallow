@@ -6,6 +6,16 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
+/// Transfer content type
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub enum TransferType {
+    /// Regular file transfer
+    #[default]
+    Files,
+    /// Text-only transfer (no files written to disk on receive)
+    Text,
+}
+
 /// File entry in manifest
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct FileEntry {
@@ -34,6 +44,9 @@ pub struct FileManifest {
     pub compression: Option<String>,
     /// BLAKE3 hash of the serialized manifest (before signing)
     pub manifest_hash: Option<[u8; 32]>,
+    /// Type of transfer (files or text)
+    #[serde(default)]
+    pub transfer_type: TransferType,
 }
 
 impl FileManifest {
@@ -46,6 +59,7 @@ impl FileManifest {
             chunk_size,
             compression: None,
             manifest_hash: None,
+            transfer_type: TransferType::default(),
         }
     }
 
