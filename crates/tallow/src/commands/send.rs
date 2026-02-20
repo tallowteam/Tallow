@@ -2,8 +2,13 @@
 
 use crate::cli::SendArgs;
 use crate::output;
+use bytes::BytesMut;
 use std::io;
 use std::path::PathBuf;
+use tallow_protocol::wire::{codec::TallowCodec, Message};
+
+/// Maximum receive buffer size (256 KB)
+const RECV_BUF_SIZE: usize = 256 * 1024;
 
 /// Execute send command
 pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
@@ -65,50 +70,12 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
 
     // Prepare files (scan, hash, build manifest)
     let file_paths: Vec<PathBuf> = args.files.clone();
-    let _offer_messages = pipeline
+    let offer_messages = pipeline
         .prepare(&file_paths)
         .await
         .map_err(|e| io::Error::other(format!("Failed to prepare transfer: {}", e)))?;
 
     let manifest = pipeline.manifest();
-
-    if json {
-        println!(
-            "{}",
-            serde_json::json!({
-                "event": "transfer_prepared",
-                "total_files": manifest.files.len(),
-                "total_bytes": manifest.total_size,
-                "total_chunks": manifest.total_chunks,
-            })
-        );
-    } else {
-        println!(
-            "Prepared {} file(s), {} bytes in {} chunks",
-            manifest.files.len(),
-            manifest.total_size,
-            manifest.total_chunks,
-        );
-    }
-
-    // Create progress bar
-    let progress = output::TransferProgressBar::new(manifest.total_size);
-
-    if json {
-        println!(
-            "{}",
-            serde_json::json!({
-                "event": "waiting_for_peer",
-                "code": code_phrase,
-            })
-        );
-    } else {
-        output::color::info("Waiting for receiver to connect...");
-    }
-
-    // Process each file and generate encrypted chunks
-    let mut total_sent: u64 = 0;
-    let mut chunk_index: u64 = 0;
     let total_size = manifest.total_size;
     let total_chunks = manifest.total_chunks;
     let file_count = manifest.files.len();
@@ -118,19 +85,202 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
         .map(|f| f.path.display().to_string())
         .collect();
 
+    if json {
+        println!(
+            "{}",
+            serde_json::json!({
+                "event": "transfer_prepared",
+                "total_files": file_count,
+                "total_bytes": total_size,
+                "total_chunks": total_chunks,
+            })
+        );
+    } else {
+        println!(
+            "Prepared {} file(s), {} bytes in {} chunks",
+            file_count, total_size, total_chunks,
+        );
+    }
+
+    // Resolve relay address
+    let relay_addr: std::net::SocketAddr = resolve_relay(&args.relay)?;
+
+    // Connect to relay
+    let mut relay = tallow_net::relay::RelayClient::new(relay_addr);
+
+    if json {
+        println!(
+            "{}",
+            serde_json::json!({
+                "event": "connecting_to_relay",
+                "relay": args.relay,
+            })
+        );
+    } else {
+        output::color::info(&format!("Connecting to relay {}...", args.relay));
+    }
+
+    let peer_present = relay
+        .connect(&room_id)
+        .await
+        .map_err(|e| io::Error::other(format!("Relay connection failed: {}", e)))?;
+
+    // Wait for peer if not already present
+    if !peer_present {
+        if json {
+            println!(
+                "{}",
+                serde_json::json!({
+                    "event": "waiting_for_peer",
+                    "code": code_phrase,
+                })
+            );
+        } else {
+            output::color::info("Waiting for receiver to connect...");
+        }
+
+        relay
+            .wait_for_peer()
+            .await
+            .map_err(|e| io::Error::other(format!("Wait for peer failed: {}", e)))?;
+    }
+
+    if json {
+        println!("{}", serde_json::json!({ "event": "peer_connected" }));
+    } else {
+        output::color::success("Peer connected!");
+    }
+
+    // Create codec for encoding messages
+    let mut codec = TallowCodec::new();
+    let mut encode_buf = BytesMut::new();
+
+    // Send FileOffer
+    for msg in &offer_messages {
+        encode_buf.clear();
+        codec
+            .encode_msg(msg, &mut encode_buf)
+            .map_err(|e| io::Error::other(format!("Encode FileOffer failed: {}", e)))?;
+        relay
+            .forward(&encode_buf)
+            .await
+            .map_err(|e| io::Error::other(format!("Send FileOffer failed: {}", e)))?;
+    }
+
+    // Wait for FileAccept
+    let mut recv_buf = vec![0u8; RECV_BUF_SIZE];
+    let n = relay
+        .receive(&mut recv_buf)
+        .await
+        .map_err(|e| io::Error::other(format!("Receive FileAccept failed: {}", e)))?;
+
+    let mut decode_buf = BytesMut::from(&recv_buf[..n]);
+    let response = codec
+        .decode_msg(&mut decode_buf)
+        .map_err(|e| io::Error::other(format!("Decode response failed: {}", e)))?;
+
+    match response {
+        Some(Message::FileAccept { .. }) => {
+            tracing::info!("Receiver accepted the transfer");
+        }
+        Some(Message::FileReject { reason, .. }) => {
+            let msg = format!("Transfer rejected: {}", reason);
+            if json {
+                println!(
+                    "{}",
+                    serde_json::json!({"event": "rejected", "reason": reason})
+                );
+            } else {
+                output::color::error(&msg);
+            }
+            relay.close().await;
+            return Err(io::Error::other(msg));
+        }
+        other => {
+            let msg = format!("Unexpected response: {:?}", other);
+            relay.close().await;
+            return Err(io::Error::other(msg));
+        }
+    }
+
+    // Create progress bar and send chunks
+    let progress = output::TransferProgressBar::new(total_size);
+    let mut total_sent: u64 = 0;
+    let mut chunk_index: u64 = 0;
+
     for file in &args.files {
-        let chunks = pipeline
+        let chunk_messages = pipeline
             .chunk_file(file, chunk_index)
             .await
             .map_err(|e| io::Error::other(format!("Failed to chunk {}: {}", file.display(), e)))?;
 
-        let num_chunks = chunks.len() as u64;
-        total_sent += num_chunks * pipeline.manifest().chunk_size as u64;
-        progress.update(total_sent.min(total_size));
-        chunk_index += num_chunks;
+        for chunk_msg in &chunk_messages {
+            // Encode and send chunk
+            encode_buf.clear();
+            codec
+                .encode_msg(chunk_msg, &mut encode_buf)
+                .map_err(|e| io::Error::other(format!("Encode chunk failed: {}", e)))?;
+            relay
+                .forward(&encode_buf)
+                .await
+                .map_err(|e| io::Error::other(format!("Send chunk failed: {}", e)))?;
+
+            // Wait for acknowledgment
+            let n = relay
+                .receive(&mut recv_buf)
+                .await
+                .map_err(|e| io::Error::other(format!("Receive ack failed: {}", e)))?;
+
+            let mut ack_buf = BytesMut::from(&recv_buf[..n]);
+            let ack = codec
+                .decode_msg(&mut ack_buf)
+                .map_err(|e| io::Error::other(format!("Decode ack failed: {}", e)))?;
+
+            match ack {
+                Some(Message::Ack { .. }) => {
+                    // Update progress
+                    if let Message::Chunk { ref data, .. } = chunk_msg {
+                        total_sent += data.len() as u64;
+                        progress.update(total_sent.min(total_size));
+                    }
+                }
+                Some(Message::TransferError { error, .. }) => {
+                    progress.finish();
+                    let msg = format!("Transfer error from receiver: {}", error);
+                    relay.close().await;
+                    return Err(io::Error::other(msg));
+                }
+                other => {
+                    tracing::warn!("Unexpected message during transfer: {:?}", other);
+                }
+            }
+        }
+
+        chunk_index += chunk_messages.len() as u64;
     }
 
     progress.finish();
+
+    // Send TransferComplete
+    let complete_msg = Message::TransferComplete {
+        transfer_id,
+        hash: *pipeline
+            .manifest()
+            .manifest_hash
+            .as_ref()
+            .unwrap_or(&[0u8; 32]),
+    };
+    encode_buf.clear();
+    codec
+        .encode_msg(&complete_msg, &mut encode_buf)
+        .map_err(|e| io::Error::other(format!("Encode complete failed: {}", e)))?;
+    relay
+        .forward(&encode_buf)
+        .await
+        .map_err(|e| io::Error::other(format!("Send complete failed: {}", e)))?;
+
+    // Close relay connection
+    relay.close().await;
 
     if json {
         println!(
@@ -166,4 +316,25 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
     }
 
     Ok(())
+}
+
+/// Resolve a relay address string to a SocketAddr
+fn resolve_relay(relay: &str) -> io::Result<std::net::SocketAddr> {
+    // Try parsing as a direct SocketAddr first
+    if let Ok(addr) = relay.parse() {
+        return Ok(addr);
+    }
+
+    // Try DNS resolution
+    use std::net::ToSocketAddrs;
+    relay
+        .to_socket_addrs()
+        .map_err(|e| {
+            io::Error::other(format!(
+                "Failed to resolve relay address '{}': {}",
+                relay, e
+            ))
+        })?
+        .next()
+        .ok_or_else(|| io::Error::other(format!("No addresses found for relay '{}'", relay)))
 }

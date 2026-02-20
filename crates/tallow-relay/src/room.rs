@@ -31,16 +31,25 @@ pub struct Room {
     pub peer_b: Option<RoomPeer>,
     /// When this room was created
     pub created_at: Instant,
+    /// Last time any activity occurred (join, data forwarded)
+    pub last_activity: Instant,
 }
 
 impl Room {
     /// Create a new room with the first peer
     pub fn new(peer: RoomPeer) -> Self {
+        let now = Instant::now();
         Self {
             peer_a: Some(peer),
             peer_b: None,
-            created_at: Instant::now(),
+            created_at: now,
+            last_activity: now,
         }
+    }
+
+    /// Update last activity timestamp (call on data forwarding)
+    pub fn touch(&mut self) {
+        self.last_activity = Instant::now();
     }
 
     /// Check if the room has both peers
@@ -73,42 +82,53 @@ impl RoomManager {
     ///
     /// If the room doesn't exist, creates it and the peer waits.
     /// If the room exists with one peer, the peer is paired.
-    /// Returns `(receiver, peer_already_present)`.
+    /// Returns `(receiver, peer_sender, peer_already_present)`.
+    ///
+    /// Note: the room count check happens before acquiring the entry lock
+    /// to avoid a DashMap deadlock (len() cannot be called while holding
+    /// an entry write lock on the same map).
     pub fn join(&self, room_id: RoomId) -> Result<(PeerReceiver, PeerSender, bool), RoomError> {
+        use dashmap::mapref::entry::Entry;
+
+        // Check room limit BEFORE entering the entry API to avoid deadlock:
+        // DashMap's entry() holds a shard write lock, and len() needs to
+        // read-lock all shards — calling len() inside entry() deadlocks.
+        // This is technically a TOCTOU gap, but the worst case is allowing
+        // one extra room briefly, which is acceptable for a relay server.
+        if self.rooms.len() >= self.max_rooms && !self.rooms.contains_key(&room_id) {
+            return Err(RoomError::TooManyRooms);
+        }
+
         // Create channels for this peer
         let (tx, rx) = mpsc::channel(256);
         let peer = RoomPeer { sender: tx.clone() };
 
-        // Try to join existing room or create new one
-        if let Some(mut room) = self.rooms.get_mut(&room_id) {
-            if room.peer_b.is_some() {
-                return Err(RoomError::RoomFull);
+        match self.rooms.entry(room_id) {
+            Entry::Occupied(mut entry) => {
+                let room = entry.get_mut();
+                if room.peer_b.is_some() {
+                    return Err(RoomError::RoomFull);
+                }
+                // Second peer joining — room is now paired
+                let peer_a_sender = room
+                    .peer_a
+                    .as_ref()
+                    .map(|p| p.sender.clone())
+                    .ok_or(RoomError::RoomFull)?;
+
+                room.peer_b = Some(peer);
+                room.touch();
+                Ok((rx, peer_a_sender, true))
             }
-            // Second peer joining — room is now paired
-            let peer_a_sender = room
-                .peer_a
-                .as_ref()
-                .map(|p| p.sender.clone())
-                .ok_or(RoomError::RoomFull)?;
+            Entry::Vacant(entry) => {
+                entry.insert(Room::new(peer));
 
-            room.peer_b = Some(peer);
-            Ok((rx, peer_a_sender, true))
-        } else {
-            // Check room limit
-            if self.rooms.len() >= self.max_rooms {
-                return Err(RoomError::TooManyRooms);
+                // No peer present yet — caller will wait
+                // The sender returned here is a dummy; the real peer_b sender
+                // will be available when the second peer joins.
+                let (dummy_tx, _dummy_rx) = mpsc::channel(1);
+                Ok((rx, dummy_tx, false))
             }
-
-            // Create new room with this peer
-            let room = Room::new(peer);
-            self.rooms.insert(room_id, room);
-
-            // No peer present yet — caller will wait
-            // The sender returned here is a dummy; the real peer_b sender
-            // will be available when the second peer joins.
-            // For now, return a channel that won't receive anything until pairing.
-            let (dummy_tx, _dummy_rx) = mpsc::channel(1);
-            Ok((rx, dummy_tx, false))
         }
     }
 
@@ -123,19 +143,29 @@ impl RoomManager {
         })
     }
 
+    /// Update last activity timestamp for a room (call during data forwarding)
+    pub fn touch_room(&self, room_id: &RoomId) {
+        if let Some(mut room) = self.rooms.get_mut(room_id) {
+            room.touch();
+        }
+    }
+
     /// Remove a room
     pub fn remove_room(&self, room_id: &RoomId) {
         self.rooms.remove(room_id);
     }
 
-    /// Clean up stale rooms older than the given duration
-    pub fn cleanup_stale(&self, max_age_secs: u64) -> usize {
+    /// Clean up stale rooms that have been idle longer than the given duration
+    ///
+    /// Uses `last_activity` (not `created_at`) so that active transfers
+    /// are not interrupted while completed/abandoned rooms are cleaned up.
+    pub fn cleanup_stale(&self, max_idle_secs: u64) -> usize {
         let now = Instant::now();
         let mut removed = 0;
 
         self.rooms.retain(|_id, room| {
-            let age = now.duration_since(room.created_at).as_secs();
-            if age > max_age_secs {
+            let idle_secs = now.duration_since(room.last_activity).as_secs();
+            if idle_secs > max_idle_secs {
                 removed += 1;
                 false
             } else {

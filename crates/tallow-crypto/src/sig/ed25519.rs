@@ -17,9 +17,12 @@ pub struct Ed25519Signer {
 
 impl Zeroize for Ed25519Signer {
     fn zeroize(&mut self) {
-        // signing_key and verifying_key don't implement Zeroize
-        // We can't zeroize them, so we do nothing here
-        // The actual secret material is in SigningKey which ed25519-dalek should handle
+        // ed25519-dalek's SigningKey doesn't expose Zeroize directly.
+        // Overwrite with a deterministic zero-seed key. Because SigningKey
+        // is stored inline (not behind a pointer), this overwrites the
+        // 32-byte secret seed at its memory location.
+        self.signing_key = SigningKey::from_bytes(&[0u8; 32]);
+        self.verifying_key = self.signing_key.verifying_key();
     }
 }
 

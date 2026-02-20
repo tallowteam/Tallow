@@ -10,7 +10,7 @@ pub mod slhdsa;
 
 pub use ed25519::Ed25519Signer;
 pub use file_signing::{sign_chunk, verify_chunk, ChunkSignature};
-pub use hybrid::HybridSigner;
+pub use hybrid::{HybridPublicKey, HybridSignature, HybridSigner};
 pub use mldsa::MlDsaSigner;
 pub use slhdsa::SlhDsaSigner;
 

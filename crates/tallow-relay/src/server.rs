@@ -203,6 +203,8 @@ async fn handle_connection(
                 if tx.send(data).await.is_err() {
                     break; // Peer disconnected
                 }
+                // Update last activity so stale cleanup doesn't kill active transfers
+                room_manager_fwd.touch_room(&room_id_fwd);
             }
         }
     };

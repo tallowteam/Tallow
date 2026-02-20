@@ -1,4 +1,4 @@
-//! TUI command implementation (Phase 5)
+//! TUI command implementation
 
 use crate::cli::TuiArgs;
 use std::io;
@@ -7,13 +7,13 @@ use std::io;
 pub async fn execute(_args: TuiArgs) -> io::Result<()> {
     #[cfg(feature = "tui")]
     {
-        println!("TUI dashboard will be available in Phase 5.");
-        println!("For now, use CLI commands: tallow send, tallow receive");
+        let mut app = tallow_tui::TuiApp::new()?;
+        app.run()?;
     }
 
     #[cfg(not(feature = "tui"))]
     {
-        println!("TUI feature not enabled. Compile with: cargo build --features tui");
+        eprintln!("TUI feature not enabled. Compile with: cargo build --features tui");
     }
 
     Ok(())

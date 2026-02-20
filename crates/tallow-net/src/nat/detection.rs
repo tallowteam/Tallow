@@ -53,7 +53,11 @@ pub async fn detect() -> Result<NatType> {
     };
 
     // Check if local == mapped (no NAT)
-    if result1.local_addr.ip() == result1.mapped_addr.ip() {
+    // Guard against invalid/unspecified addresses from misconfigured STUN servers
+    if result1.local_addr.ip() == result1.mapped_addr.ip()
+        && !result1.mapped_addr.ip().is_unspecified()
+        && !result1.mapped_addr.ip().is_loopback()
+    {
         return Ok(NatType::None);
     }
 
