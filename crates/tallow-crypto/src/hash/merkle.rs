@@ -73,8 +73,11 @@ impl MerkleTree {
                 [0u8; 32]
             }
         } else {
-            // nodes is guaranteed non-empty here, last element is the root
-            *self.nodes.last().expect("nodes verified non-empty above")
+            // nodes is guaranteed non-empty by the is_empty() check above
+            match self.nodes.last() {
+                Some(root) => *root,
+                None => [0u8; 32],
+            }
         }
     }
 

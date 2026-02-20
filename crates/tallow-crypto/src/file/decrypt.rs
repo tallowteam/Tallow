@@ -4,14 +4,20 @@ use crate::error::{CryptoError, Result};
 use crate::file::encrypt::EncryptedChunk;
 use crate::hash::blake3;
 use crate::mem::constant_time;
-use crate::symmetric::{aes_decrypt, CipherSuite};
+use crate::symmetric::{aes_decrypt, chacha_decrypt, CipherSuite};
+use zeroize::Zeroize;
 
 /// File decryptor
 pub struct FileDecryptor {
     key: [u8; 32],
-    /// Reserved for cipher suite negotiation (currently AES-256-GCM only)
-    #[allow(dead_code)]
+    /// Cipher suite used for chunk decryption
     cipher: CipherSuite,
+}
+
+impl Drop for FileDecryptor {
+    fn drop(&mut self) {
+        self.key.zeroize();
+    }
 }
 
 impl FileDecryptor {
@@ -22,7 +28,7 @@ impl FileDecryptor {
 
     /// Decrypt a chunk
     pub fn decrypt_chunk(&self, encrypted_chunk: &EncryptedChunk) -> Result<Vec<u8>> {
-        decrypt_chunk(&self.key, encrypted_chunk)
+        decrypt_chunk(&self.key, encrypted_chunk, self.cipher)
     }
 }
 
@@ -32,11 +38,16 @@ impl FileDecryptor {
 ///
 /// * `key` - Decryption key
 /// * `encrypted_chunk` - The encrypted chunk
+/// * `cipher` - Cipher suite to use for decryption
 ///
 /// # Returns
 ///
 /// Decrypted chunk data
-pub fn decrypt_chunk(key: &[u8; 32], encrypted_chunk: &EncryptedChunk) -> Result<Vec<u8>> {
+pub fn decrypt_chunk(
+    key: &[u8; 32],
+    encrypted_chunk: &EncryptedChunk,
+    cipher: CipherSuite,
+) -> Result<Vec<u8>> {
     // Verify hash using constant-time comparison
     let actual_hash = blake3::hash(&encrypted_chunk.ciphertext);
     if !constant_time::ct_eq(&actual_hash, &encrypted_chunk.hash) {
@@ -56,13 +67,32 @@ pub fn decrypt_chunk(key: &[u8; 32], encrypted_chunk: &EncryptedChunk) -> Result
     let mut nonce = [0u8; 12];
     nonce[..8].copy_from_slice(&encrypted_chunk.index.to_le_bytes());
 
-    // Decrypt
-    let plaintext = aes_decrypt(
-        &chunk_key,
-        &nonce,
-        &encrypted_chunk.ciphertext,
-        &encrypted_chunk.index.to_le_bytes(),
-    )?;
+    // Decrypt using the selected cipher suite
+    let plaintext = match cipher {
+        CipherSuite::Aes256Gcm => aes_decrypt(
+            &chunk_key,
+            &nonce,
+            &encrypted_chunk.ciphertext,
+            &encrypted_chunk.index.to_le_bytes(),
+        )?,
+        CipherSuite::ChaCha20Poly1305 => chacha_decrypt(
+            &chunk_key,
+            &nonce,
+            &encrypted_chunk.ciphertext,
+            &encrypted_chunk.index.to_le_bytes(),
+        )?,
+        #[cfg(feature = "aegis")]
+        CipherSuite::Aegis256 => {
+            let mut nonce32 = [0u8; 32];
+            nonce32[..12].copy_from_slice(&nonce);
+            crate::symmetric::aegis::decrypt(
+                &chunk_key,
+                &nonce32,
+                &encrypted_chunk.ciphertext,
+                &encrypted_chunk.index.to_le_bytes(),
+            )?
+        }
+    };
 
     Ok(plaintext)
 }
@@ -78,8 +108,20 @@ mod tests {
         let data = b"chunk data here";
         let index = 0;
 
-        let encrypted = encrypt_chunk(&key, data, index).unwrap();
-        let decrypted = decrypt_chunk(&key, &encrypted).unwrap();
+        let encrypted = encrypt_chunk(&key, data, index, CipherSuite::Aes256Gcm).unwrap();
+        let decrypted = decrypt_chunk(&key, &encrypted, CipherSuite::Aes256Gcm).unwrap();
+
+        assert_eq!(data, decrypted.as_slice());
+    }
+
+    #[test]
+    fn test_decrypt_chunk_chacha() {
+        let key = [0u8; 32];
+        let data = b"chunk data here";
+        let index = 0;
+
+        let encrypted = encrypt_chunk(&key, data, index, CipherSuite::ChaCha20Poly1305).unwrap();
+        let decrypted = decrypt_chunk(&key, &encrypted, CipherSuite::ChaCha20Poly1305).unwrap();
 
         assert_eq!(data, decrypted.as_slice());
     }
@@ -90,10 +132,10 @@ mod tests {
         let data = b"chunk data here";
         let index = 0;
 
-        let mut encrypted = encrypt_chunk(&key, data, index).unwrap();
+        let mut encrypted = encrypt_chunk(&key, data, index, CipherSuite::Aes256Gcm).unwrap();
         encrypted.hash[0] ^= 1; // Tamper with hash
 
-        let result = decrypt_chunk(&key, &encrypted);
+        let result = decrypt_chunk(&key, &encrypted, CipherSuite::Aes256Gcm);
         assert!(result.is_err());
     }
 }

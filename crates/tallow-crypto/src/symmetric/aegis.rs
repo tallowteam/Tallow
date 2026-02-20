@@ -1,7 +1,7 @@
 //! AEGIS-256 encryption (experimental)
 
 #[cfg(feature = "aegis")]
-use aegis::aegis256::{Aegis256, Nonce, Tag};
+use aegis::aegis256::{Aegis256, Tag};
 
 use crate::error::{CryptoError, Result};
 
@@ -19,17 +19,12 @@ use crate::error::{CryptoError, Result};
 /// Ciphertext with authentication tag appended
 #[cfg(feature = "aegis")]
 pub fn encrypt(key: &[u8; 32], nonce: &[u8; 32], plaintext: &[u8], aad: &[u8]) -> Result<Vec<u8>> {
-    let cipher = Aegis256::new(key.into());
-    let nonce = Nonce::from(*nonce);
+    let cipher = Aegis256::<32>::new(key.into(), nonce.into());
+    let (ciphertext, tag) = cipher.encrypt(plaintext, aad);
 
-    let mut ciphertext = vec![0u8; plaintext.len()];
-    let tag = cipher
-        .encrypt(&nonce, aad, plaintext, &mut ciphertext)
-        .map_err(|e| CryptoError::Encryption(format!("AEGIS-256 encryption failed: {:?}", e)))?;
-
-    // Append tag to ciphertext
-    ciphertext.extend_from_slice(tag.as_ref());
-    Ok(ciphertext)
+    let mut result = ciphertext;
+    result.extend_from_slice(tag.as_ref());
+    Ok(result)
 }
 
 /// Decrypt data using AEGIS-256
@@ -52,8 +47,7 @@ pub fn decrypt(key: &[u8; 32], nonce: &[u8; 32], ciphertext: &[u8], aad: &[u8]) 
         ));
     }
 
-    let cipher = Aegis256::new(key.into());
-    let nonce = Nonce::from(*nonce);
+    let cipher = Aegis256::<32>::new(key.into(), nonce.into());
 
     // Split ciphertext and tag
     let tag_start = ciphertext.len() - 32;
@@ -63,12 +57,9 @@ pub fn decrypt(key: &[u8; 32], nonce: &[u8; 32], ciphertext: &[u8], aad: &[u8]) 
         .map_err(|_| CryptoError::Decryption("Invalid tag length".to_string()))?;
     let tag = Tag::from(tag_bytes);
 
-    let mut plaintext = vec![0u8; ct.len()];
     cipher
-        .decrypt(&nonce, aad, ct, &tag, &mut plaintext)
-        .map_err(|e| CryptoError::Decryption(format!("AEGIS-256 decryption failed: {:?}", e)))?;
-
-    Ok(plaintext)
+        .decrypt(ct, &tag, aad)
+        .map_err(|e| CryptoError::Decryption(format!("AEGIS-256 decryption failed: {:?}", e)))
 }
 
 // Stub implementations when feature is disabled

@@ -27,6 +27,13 @@ pub struct SendPipeline {
     session_key: [u8; 32],
 }
 
+impl Drop for SendPipeline {
+    fn drop(&mut self) {
+        use zeroize::Zeroize;
+        self.session_key.zeroize();
+    }
+}
+
 impl std::fmt::Debug for SendPipeline {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SendPipeline")
@@ -90,6 +97,13 @@ impl SendPipeline {
         }
 
         self.manifest.finalize()?;
+        self.manifest.compression = Some(match self.compression {
+            CompressionAlgorithm::Zstd => "zstd".to_string(),
+            CompressionAlgorithm::Lz4 => "lz4".to_string(),
+            CompressionAlgorithm::Brotli => "brotli".to_string(),
+            CompressionAlgorithm::Lzma => "lzma".to_string(),
+            CompressionAlgorithm::None => "none".to_string(),
+        });
         self.progress = Some(TransferProgress::new(self.manifest.total_size));
 
         // Create FileOffer message

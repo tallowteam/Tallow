@@ -37,6 +37,7 @@ rand.workspace = true
 tracing.workspace = true
 thiserror.workspace = true
 blake3.workspace = true
+zeroize.workspace = true
 
 # Metadata stripping
 img-parts = "0.3"

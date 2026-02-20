@@ -18,7 +18,7 @@ pub struct ChatMessage {
 }
 
 impl ChatMessage {
-    /// Create a new chat message
+    /// Create a new plaintext chat message
     pub fn new(sender: String, text: String) -> Self {
         Self {
             id: generate_message_id(),
@@ -29,6 +29,22 @@ impl ChatMessage {
                 .unwrap_or_default()
                 .as_secs(),
             encrypted: false,
+        }
+    }
+
+    /// Create an encrypted chat message
+    ///
+    /// The `ciphertext` parameter should contain the hex-encoded encrypted bytes.
+    pub fn new_encrypted(sender: String, ciphertext: String) -> Self {
+        Self {
+            id: generate_message_id(),
+            sender,
+            text: ciphertext,
+            timestamp: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs(),
+            encrypted: true,
         }
     }
 }

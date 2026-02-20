@@ -12,6 +12,21 @@ const RECV_BUF_SIZE: usize = 256 * 1024;
 
 /// Execute receive command
 pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
+    // LAN advertise via mDNS
+    let mut _mdns_discovery = None;
+    if args.advertise {
+        if !json {
+            output::color::info("Advertising on LAN for peer discovery...");
+        }
+        let mut discovery =
+            tallow_net::discovery::MdnsDiscovery::new("tallow-receiver".to_string());
+        if let Err(e) = discovery.advertise(4433, "tallow-receiver") {
+            tracing::warn!("LAN advertise failed: {}", e);
+        }
+        // Keep discovery alive for the duration of the transfer
+        _mdns_discovery = Some(discovery);
+    }
+
     // Get the code phrase
     let code_phrase = match &args.code {
         Some(code) => code.clone(),
@@ -149,6 +164,47 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
         *session_key.as_bytes(),
     );
 
+    // Check for resume from a previous interrupted transfer
+    if let Some(ref resume_id) = args.resume_id {
+        // Sanitize resume_id to prevent path traversal
+        let safe_resume_id: String = resume_id
+            .chars()
+            .filter(|c| c.is_alphanumeric() || *c == '-' || *c == '_')
+            .collect();
+        let checkpoint_path = tallow_store::persistence::data_dir()
+            .join("checkpoints")
+            .join(format!("{}.checkpoint", safe_resume_id));
+        if checkpoint_path.exists() {
+            if let Ok(data) = std::fs::read(&checkpoint_path) {
+                match tallow_protocol::transfer::resume::ResumeState::restore(&data) {
+                    Ok(resume_state) => {
+                        if json {
+                            println!(
+                                "{}",
+                                serde_json::json!({
+                                    "event": "resuming",
+                                    "resume_id": resume_id,
+                                    "completion": resume_state.completion_percentage(),
+                                })
+                            );
+                        } else {
+                            output::color::info(&format!(
+                                "Resuming from checkpoint ({:.1}% complete)...",
+                                resume_state.completion_percentage()
+                            ));
+                        }
+                        pipeline = pipeline.with_resume(resume_state);
+                    }
+                    Err(e) => {
+                        tracing::warn!("Failed to restore checkpoint: {}", e);
+                    }
+                }
+            }
+        } else {
+            tracing::info!("No checkpoint found at {}", checkpoint_path.display());
+        }
+    }
+
     // Process the offer
     let manifest = pipeline
         .process_offer(&manifest_bytes)
@@ -243,6 +299,20 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
                 bytes_received += chunk_size;
                 progress.update(bytes_received.min(total_size));
 
+                // Save checkpoint every 100 chunks for resume support
+                if index % 100 == 0 {
+                    if let Some(resume_state) = pipeline.resume_state() {
+                        if let Ok(data) = resume_state.checkpoint() {
+                            let checkpoint_dir =
+                                tallow_store::persistence::data_dir().join("checkpoints");
+                            let _ = std::fs::create_dir_all(&checkpoint_dir);
+                            let checkpoint_path = checkpoint_dir
+                                .join(format!("{}.checkpoint", hex::encode(transfer_id)));
+                            let _ = std::fs::write(&checkpoint_path, data);
+                        }
+                    }
+                }
+
                 // Check if transfer is complete
                 if pipeline.is_complete() {
                     break;
@@ -275,6 +345,12 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
         .finalize()
         .await
         .map_err(|e| io::Error::other(format!("Finalize failed: {}", e)))?;
+
+    // Clean up checkpoint on success
+    let checkpoint_path = tallow_store::persistence::data_dir()
+        .join("checkpoints")
+        .join(format!("{}.checkpoint", hex::encode(transfer_id)));
+    let _ = std::fs::remove_file(&checkpoint_path);
 
     // Close relay connection
     relay.close().await;

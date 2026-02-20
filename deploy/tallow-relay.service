@@ -1,0 +1,40 @@
+[Unit]
+Description=Tallow Relay Server — zero-knowledge encrypted file transfer relay
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=tallow
+Group=tallow
+WorkingDirectory=/opt/tallow
+ExecStart=/opt/tallow/tallow-relay serve --config /opt/tallow/relay.toml
+Restart=always
+RestartSec=5
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/tallow
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+MemoryDenyWriteExecute=true
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=tallow-relay
+
+# Environment
+Environment=RUST_LOG=info
+
+[Install]
+WantedBy=multi-user.target

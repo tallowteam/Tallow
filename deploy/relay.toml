@@ -1,0 +1,13 @@
+# Tallow Relay Server Configuration
+# Place at: /opt/tallow/relay.toml
+
+bind_addr = "0.0.0.0:4433"
+max_connections = 10000
+max_rooms = 5000
+rate_limit = 100
+room_timeout_secs = 60
+
+# TLS: self-signed by default (auto-generated)
+# For Let's Encrypt certs, set these:
+# tls_cert = "/etc/letsencrypt/live/relay.yourdomain.com/fullchain.pem"
+# tls_key = "/etc/letsencrypt/live/relay.yourdomain.com/privkey.pem"

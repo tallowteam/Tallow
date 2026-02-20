@@ -33,6 +33,13 @@ pub struct ReceivePipeline {
     compression: CompressionAlgorithm,
 }
 
+impl Drop for ReceivePipeline {
+    fn drop(&mut self) {
+        use zeroize::Zeroize;
+        self.session_key.zeroize();
+    }
+}
+
 impl std::fmt::Debug for ReceivePipeline {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ReceivePipeline")
@@ -91,7 +98,9 @@ impl ReceivePipeline {
         }
 
         self.manifest = Some(manifest);
-        Ok(self.manifest.as_ref().expect("just set"))
+        self.manifest
+            .as_ref()
+            .ok_or_else(|| ProtocolError::TransferFailed("manifest not set".to_string()))
     }
 
     /// Process a Chunk message — decrypt, verify, store
@@ -198,9 +207,9 @@ impl ReceivePipeline {
 
             let file_data = &decompressed[offset..end];
 
-            // Verify BLAKE3 hash
+            // Verify BLAKE3 hash using constant-time comparison
             let actual_hash: [u8; 32] = blake3::hash(file_data).into();
-            if actual_hash != entry.hash {
+            if !tallow_crypto::mem::constant_time::ct_eq(&actual_hash, &entry.hash) {
                 return Err(ProtocolError::TransferFailed(format!(
                     "hash mismatch for {}",
                     entry.path.display()

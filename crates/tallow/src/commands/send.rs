@@ -12,6 +12,50 @@ const RECV_BUF_SIZE: usize = 256 * 1024;
 
 /// Execute send command
 pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
+    // LAN peer discovery via mDNS
+    if args.discover {
+        if !json {
+            output::color::info("Discovering peers on LAN...");
+        }
+        let mut discovery = tallow_net::discovery::MdnsDiscovery::new("tallow-sender".to_string());
+        if let Err(e) = discovery.start() {
+            tracing::warn!("LAN discovery failed: {}", e);
+        } else {
+            // Wait briefly for responses
+            tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+            let peers = discovery.discovered_peers();
+            if !peers.is_empty() {
+                if json {
+                    let peer_list: Vec<serde_json::Value> = peers
+                        .iter()
+                        .map(|p| {
+                            serde_json::json!({
+                                "id": p.id,
+                                "address": p.addr.to_string(),
+                                "name": p.name,
+                            })
+                        })
+                        .collect();
+                    println!(
+                        "{}",
+                        serde_json::json!({
+                            "event": "lan_peers_found",
+                            "peers": peer_list,
+                        })
+                    );
+                } else {
+                    println!("Found {} peer(s) on LAN:", peers.len());
+                    for peer in &peers {
+                        println!("  {} - {} ({})", peer.id, peer.name, peer.addr);
+                    }
+                }
+            } else if !json {
+                output::color::info("No peers found on LAN. Using relay...");
+            }
+            let _ = discovery.stop();
+        }
+    }
+
     // Validate files exist
     for file in &args.files {
         if !file.exists() {
@@ -65,8 +109,19 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
     let session_key = tallow_protocol::kex::derive_session_key_from_phrase(&code_phrase, &room_id);
     let transfer_id: [u8; 16] = rand::random();
 
+    // Select compression algorithm
+    let compression = match args.compress.as_str() {
+        "none" => tallow_protocol::compression::CompressionAlgorithm::None,
+        "zstd" => tallow_protocol::compression::CompressionAlgorithm::Zstd,
+        "brotli" => tallow_protocol::compression::CompressionAlgorithm::Brotli,
+        "lz4" => tallow_protocol::compression::CompressionAlgorithm::Lz4,
+        "lzma" => tallow_protocol::compression::CompressionAlgorithm::Lzma,
+        _ => tallow_protocol::compression::CompressionAlgorithm::Zstd, // "auto" and unrecognized default to zstd
+    };
+
     let mut pipeline =
-        tallow_protocol::transfer::SendPipeline::new(transfer_id, *session_key.as_bytes());
+        tallow_protocol::transfer::SendPipeline::new(transfer_id, *session_key.as_bytes())
+            .with_compression(compression);
 
     // Prepare files (scan, hash, build manifest)
     let file_paths: Vec<PathBuf> = args.files.clone();
