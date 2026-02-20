@@ -34,11 +34,11 @@ pub enum Commands {
     /// Start a chat session
     Chat(ChatArgs),
 
-    /// Sync a folder with a peer
-    Sync(SendArgs),
+    /// Sync a directory with a remote peer (one-way: local -> remote)
+    Sync(SyncArgs),
 
-    /// Watch a folder for changes and auto-send
-    Watch(ReceiveArgs),
+    /// Watch a directory for changes and auto-send to connected peer
+    Watch(WatchArgs),
 
     /// Stream data to a peer
     Stream(SendArgs),
@@ -75,6 +75,13 @@ pub enum Commands {
 
     /// Show version and build info
     Version,
+
+    /// Internal: complete code phrase words (used by shell completion scripts)
+    #[command(hide = true)]
+    CompleteCode {
+        /// Partial word to complete
+        prefix: String,
+    },
 }
 
 #[derive(Args)]
@@ -193,6 +200,74 @@ pub struct ReceiveArgs {
     /// Resume a previous transfer by ID
     #[arg(long)]
     pub resume_id: Option<String>,
+}
+
+#[derive(Args)]
+pub struct SyncArgs {
+    /// Directory to sync
+    pub dir: PathBuf,
+
+    /// Code phrase for the sync session
+    #[arg(short = 'c', long)]
+    pub code: Option<String>,
+
+    /// Delete remote files not present locally
+    #[arg(long)]
+    pub delete: bool,
+
+    /// Exclude patterns (comma-separated, gitignore syntax)
+    #[arg(long)]
+    pub exclude: Option<String>,
+
+    /// Respect .gitignore files
+    #[arg(long)]
+    pub git: bool,
+
+    /// Bandwidth throttle (e.g., "10MB")
+    #[arg(long)]
+    pub throttle: Option<String>,
+
+    /// Relay server address
+    #[arg(long, default_value = "129.146.114.5:4433")]
+    pub relay: String,
+
+    /// SOCKS5 proxy address
+    #[arg(long)]
+    pub proxy: Option<String>,
+}
+
+#[derive(Args)]
+pub struct WatchArgs {
+    /// Directory to watch
+    pub dir: PathBuf,
+
+    /// Code phrase for the watch session
+    #[arg(short = 'c', long)]
+    pub code: Option<String>,
+
+    /// Debounce duration in seconds (default: 2)
+    #[arg(long, default_value = "2")]
+    pub debounce: u64,
+
+    /// Exclude patterns (comma-separated, gitignore syntax)
+    #[arg(long)]
+    pub exclude: Option<String>,
+
+    /// Respect .gitignore files
+    #[arg(long)]
+    pub git: bool,
+
+    /// Bandwidth throttle (e.g., "10MB")
+    #[arg(long)]
+    pub throttle: Option<String>,
+
+    /// Relay server address
+    #[arg(long, default_value = "129.146.114.5:4433")]
+    pub relay: String,
+
+    /// SOCKS5 proxy address
+    #[arg(long)]
+    pub proxy: Option<String>,
 }
 
 #[derive(Args)]
@@ -346,6 +421,29 @@ pub enum ConfigCommands {
         #[arg(short, long)]
         yes: bool,
     },
+    /// Manage path aliases
+    Alias {
+        #[command(subcommand)]
+        command: AliasCommands,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum AliasCommands {
+    /// Add a path alias
+    Add {
+        /// Alias name (e.g., "nas")
+        name: String,
+        /// Target directory path (absolute)
+        path: PathBuf,
+    },
+    /// Remove a path alias
+    Remove {
+        /// Alias name
+        name: String,
+    },
+    /// List all path aliases
+    List,
 }
 
 #[derive(Args)]

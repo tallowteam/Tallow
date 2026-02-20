@@ -22,6 +22,10 @@ impl Default for TransferConfig {
             auto_accept_trusted: false,
             enable_compression: true,
             chunk_size: 256 * 1024, // 256 KB
+            default_throttle: String::new(),
+            default_words: 4,
+            default_exclude: String::new(),
+            default_gitignore: false,
         }
     }
 }

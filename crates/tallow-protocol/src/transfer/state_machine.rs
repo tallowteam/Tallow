@@ -7,6 +7,8 @@ use crate::{ProtocolError, Result};
 pub enum TransferState {
     /// Idle, no transfer
     Idle,
+    /// Queued, waiting for an active slot
+    Queued,
     /// Connecting to peer
     Connecting,
     /// Negotiating transfer parameters
@@ -45,6 +47,8 @@ impl TransferStateMachine {
         // Validate transition
         let valid = match (self.state, new_state) {
             (TransferState::Idle, TransferState::Connecting) => true,
+            (TransferState::Idle, TransferState::Queued) => true,
+            (TransferState::Queued, TransferState::Connecting) => true,
             (TransferState::Connecting, TransferState::Negotiating) => true,
             (TransferState::Negotiating, TransferState::Transferring) => true,
             (TransferState::Transferring, TransferState::Paused) => true,
@@ -69,5 +73,62 @@ impl TransferStateMachine {
 impl Default for TransferStateMachine {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_queued_transition_valid() {
+        let mut sm = TransferStateMachine::new();
+        assert_eq!(sm.state(), TransferState::Idle);
+        sm.transition(TransferState::Queued).unwrap();
+        assert_eq!(sm.state(), TransferState::Queued);
+    }
+
+    #[test]
+    fn test_queued_to_connecting() {
+        let mut sm = TransferStateMachine::new();
+        sm.transition(TransferState::Queued).unwrap();
+        sm.transition(TransferState::Connecting).unwrap();
+        assert_eq!(sm.state(), TransferState::Connecting);
+    }
+
+    #[test]
+    fn test_queued_to_transferring_invalid() {
+        let mut sm = TransferStateMachine::new();
+        sm.transition(TransferState::Queued).unwrap();
+        let result = sm.transition(TransferState::Transferring);
+        assert!(result.is_err(), "Queued -> Transferring must go through Connecting");
+    }
+
+    #[test]
+    fn test_queued_to_failed_valid() {
+        let mut sm = TransferStateMachine::new();
+        sm.transition(TransferState::Queued).unwrap();
+        sm.transition(TransferState::Failed).unwrap();
+        assert_eq!(sm.state(), TransferState::Failed);
+    }
+
+    #[test]
+    fn test_idle_to_connecting_still_valid() {
+        let mut sm = TransferStateMachine::new();
+        sm.transition(TransferState::Connecting).unwrap();
+        assert_eq!(sm.state(), TransferState::Connecting);
+    }
+
+    #[test]
+    fn test_full_lifecycle_with_queue() {
+        let mut sm = TransferStateMachine::new();
+        sm.transition(TransferState::Queued).unwrap();
+        sm.transition(TransferState::Connecting).unwrap();
+        sm.transition(TransferState::Negotiating).unwrap();
+        sm.transition(TransferState::Transferring).unwrap();
+        sm.transition(TransferState::Paused).unwrap();
+        sm.transition(TransferState::Transferring).unwrap();
+        sm.transition(TransferState::Completed).unwrap();
+        assert_eq!(sm.state(), TransferState::Completed);
     }
 }
