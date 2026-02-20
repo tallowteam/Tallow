@@ -100,7 +100,14 @@ fn bench_file_encryption(c: &mut Criterion) {
         let data = vec![0u8; chunk_size];
         group.throughput(Throughput::Bytes(chunk_size as u64));
         group.bench_with_input(format!("{} byte chunks", chunk_size), &data, |b, data| {
-            b.iter(|| tallow_crypto::file::encrypt_chunk(black_box(&key), black_box(data), 0));
+            b.iter(|| {
+                tallow_crypto::file::encrypt_chunk(
+                    black_box(&key),
+                    black_box(data),
+                    0,
+                    tallow_crypto::symmetric::CipherSuite::Aes256Gcm,
+                )
+            });
         });
     }
 

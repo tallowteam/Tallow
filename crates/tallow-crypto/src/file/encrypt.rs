@@ -2,7 +2,7 @@
 
 use crate::error::Result;
 use crate::hash::blake3;
-use crate::symmetric::{aes_encrypt, CipherSuite};
+use crate::symmetric::{aes_encrypt, chacha_encrypt, CipherSuite};
 use serde::{Deserialize, Serialize};
 
 /// Encrypted file chunk
@@ -19,8 +19,7 @@ pub struct EncryptedChunk {
 /// File encryptor
 pub struct FileEncryptor {
     key: [u8; 32],
-    /// Reserved for cipher suite negotiation (currently AES-256-GCM only)
-    #[allow(dead_code)]
+    /// Cipher suite used for chunk encryption
     cipher: CipherSuite,
 }
 
@@ -32,7 +31,7 @@ impl FileEncryptor {
 
     /// Encrypt a chunk
     pub fn encrypt_chunk(&self, chunk_data: &[u8], chunk_index: u64) -> Result<EncryptedChunk> {
-        encrypt_chunk(&self.key, chunk_data, chunk_index)
+        encrypt_chunk(&self.key, chunk_data, chunk_index, self.cipher)
     }
 }
 
@@ -43,6 +42,7 @@ impl FileEncryptor {
 /// * `key` - Encryption key
 /// * `chunk_data` - Chunk data to encrypt
 /// * `chunk_index` - Index of this chunk
+/// * `cipher` - Cipher suite to use for encryption
 ///
 /// # Returns
 ///
@@ -51,6 +51,7 @@ pub fn encrypt_chunk(
     key: &[u8; 32],
     chunk_data: &[u8],
     chunk_index: u64,
+    cipher: CipherSuite,
 ) -> Result<EncryptedChunk> {
     // Derive chunk-specific key
     let mut kdf_input = Vec::new();
@@ -62,8 +63,26 @@ pub fn encrypt_chunk(
     let mut nonce = [0u8; 12];
     nonce[..8].copy_from_slice(&chunk_index.to_le_bytes());
 
-    // Encrypt
-    let ciphertext = aes_encrypt(&chunk_key, &nonce, chunk_data, &chunk_index.to_le_bytes())?;
+    // Encrypt using the selected cipher suite
+    let ciphertext = match cipher {
+        CipherSuite::Aes256Gcm => {
+            aes_encrypt(&chunk_key, &nonce, chunk_data, &chunk_index.to_le_bytes())?
+        }
+        CipherSuite::ChaCha20Poly1305 => {
+            chacha_encrypt(&chunk_key, &nonce, chunk_data, &chunk_index.to_le_bytes())?
+        }
+        #[cfg(feature = "aegis")]
+        CipherSuite::Aegis256 => {
+            let mut nonce32 = [0u8; 32];
+            nonce32[..12].copy_from_slice(&nonce);
+            crate::symmetric::aegis::encrypt(
+                &chunk_key,
+                &nonce32,
+                chunk_data,
+                &chunk_index.to_le_bytes(),
+            )?
+        }
+    };
 
     // Hash for integrity
     let hash = blake3::hash(&ciphertext);
@@ -85,7 +104,18 @@ mod tests {
         let data = b"chunk data here";
         let index = 0;
 
-        let encrypted = encrypt_chunk(&key, data, index).unwrap();
+        let encrypted = encrypt_chunk(&key, data, index, CipherSuite::Aes256Gcm).unwrap();
+        assert_eq!(encrypted.index, index);
+        assert!(!encrypted.ciphertext.is_empty());
+    }
+
+    #[test]
+    fn test_encrypt_chunk_chacha() {
+        let key = [0u8; 32];
+        let data = b"chunk data here";
+        let index = 0;
+
+        let encrypted = encrypt_chunk(&key, data, index, CipherSuite::ChaCha20Poly1305).unwrap();
         assert_eq!(encrypted.index, index);
         assert!(!encrypted.ciphertext.is_empty());
     }

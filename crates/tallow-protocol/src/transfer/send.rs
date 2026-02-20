@@ -90,6 +90,13 @@ impl SendPipeline {
         }
 
         self.manifest.finalize()?;
+        self.manifest.compression = Some(match self.compression {
+            CompressionAlgorithm::Zstd => "zstd".to_string(),
+            CompressionAlgorithm::Lz4 => "lz4".to_string(),
+            CompressionAlgorithm::Brotli => "brotli".to_string(),
+            CompressionAlgorithm::Lzma => "lzma".to_string(),
+            CompressionAlgorithm::None => "none".to_string(),
+        });
         self.progress = Some(TransferProgress::new(self.manifest.total_size));
 
         // Create FileOffer message

@@ -91,9 +91,9 @@ pub struct SendArgs {
     #[arg(short, long)]
     pub room: Option<String>,
 
-    /// Enable compression
-    #[arg(short, long)]
-    pub compress: bool,
+    /// Compression algorithm (auto/zstd/brotli/lz4/lzma/none)
+    #[arg(short, long, default_value = "auto")]
+    pub compress: String,
 
     /// Strip metadata from files
     #[arg(long)]
@@ -110,6 +110,10 @@ pub struct SendArgs {
     /// SOCKS5 proxy address (e.g., socks5://127.0.0.1:9050)
     #[arg(long)]
     pub proxy: Option<String>,
+
+    /// Discover peers on LAN via mDNS
+    #[arg(long)]
+    pub discover: bool,
 }
 
 #[derive(Args)]
@@ -133,6 +137,14 @@ pub struct ReceiveArgs {
     /// SOCKS5 proxy address
     #[arg(long)]
     pub proxy: Option<String>,
+
+    /// Advertise on LAN via mDNS for peer discovery
+    #[arg(long)]
+    pub advertise: bool,
+
+    /// Resume a previous transfer by ID
+    #[arg(long)]
+    pub resume_id: Option<String>,
 }
 
 #[derive(Args)]
