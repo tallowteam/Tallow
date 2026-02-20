@@ -23,19 +23,16 @@ fn identity_generate(force: bool, json: bool) -> io::Result<()> {
     if store.exists() && !force {
         let msg = "Identity already exists. Use --force to overwrite.";
         if json {
-            println!(
-                "{}",
-                serde_json::json!({"error": msg})
-            );
+            println!("{}", serde_json::json!({"error": msg}));
         } else {
             crate::output::color::warning(msg);
         }
         return Ok(());
     }
 
-    store.generate("").map_err(|e| {
-        io::Error::other(format!("Failed to generate identity: {}", e))
-    })?;
+    store
+        .generate("")
+        .map_err(|e| io::Error::other(format!("Failed to generate identity: {}", e)))?;
 
     let fingerprint = store.fingerprint().unwrap_or_default();
 
@@ -60,13 +57,13 @@ fn identity_show(json: bool) -> io::Result<()> {
 
     if !store.exists() {
         // Auto-generate on first access
-        store.generate("").map_err(|e| {
-            io::Error::other(format!("Failed to generate identity: {}", e))
-        })?;
+        store
+            .generate("")
+            .map_err(|e| io::Error::other(format!("Failed to generate identity: {}", e)))?;
     } else {
-        store.load("").map_err(|e| {
-            io::Error::other(format!("Failed to load identity: {}", e))
-        })?;
+        store
+            .load("")
+            .map_err(|e| io::Error::other(format!("Failed to load identity: {}", e)))?;
     }
 
     let fingerprint = store.fingerprint().unwrap_or_default();
@@ -104,13 +101,13 @@ fn identity_export(output: &std::path::Path, json: bool) -> io::Result<()> {
         ));
     }
 
-    store.load("").map_err(|e| {
-        io::Error::other(format!("Failed to load identity: {}", e))
-    })?;
+    store
+        .load("")
+        .map_err(|e| io::Error::other(format!("Failed to load identity: {}", e)))?;
 
-    store.export(output, "").map_err(|e| {
-        io::Error::other(format!("Failed to export: {}", e))
-    })?;
+    store
+        .export(output, "")
+        .map_err(|e| io::Error::other(format!("Failed to export: {}", e)))?;
 
     if json {
         println!(
@@ -136,9 +133,9 @@ fn identity_import(file: &std::path::Path, json: bool) -> io::Result<()> {
     }
 
     let mut store = tallow_store::identity::IdentityStore::new();
-    store.import(file, "").map_err(|e| {
-        io::Error::other(format!("Failed to import: {}", e))
-    })?;
+    store
+        .import(file, "")
+        .map_err(|e| io::Error::other(format!("Failed to import: {}", e)))?;
 
     let fingerprint = store.fingerprint().unwrap_or_default();
 
@@ -163,18 +160,18 @@ fn identity_fingerprint(emoji: bool, json: bool) -> io::Result<()> {
     let mut store = tallow_store::identity::IdentityStore::new();
 
     if !store.exists() {
-        store.generate("").map_err(|e| {
-            io::Error::other(format!("{}", e))
-        })?;
+        store
+            .generate("")
+            .map_err(|e| io::Error::other(format!("{}", e)))?;
     } else {
-        store.load("").map_err(|e| {
-            io::Error::other(format!("{}", e))
-        })?;
+        store
+            .load("")
+            .map_err(|e| io::Error::other(format!("{}", e)))?;
     }
 
-    let pk = store.public_key().ok_or_else(|| {
-        io::Error::other("No public key available")
-    })?;
+    let pk = store
+        .public_key()
+        .ok_or_else(|| io::Error::other("No public key available"))?;
 
     let fp = if emoji {
         tallow_store::identity::fingerprint_emoji(pk)
@@ -232,24 +229,28 @@ pub async fn execute_contacts(args: ContactsArgs, json: bool) -> io::Result<()> 
                 public_key: hex::decode(&key).unwrap_or_else(|_| key.as_bytes().to_vec()),
                 groups: Vec::new(),
             };
-            db.add(contact).map_err(|e| {
-                io::Error::other(format!("{}", e))
-            })?;
+            db.add(contact)
+                .map_err(|e| io::Error::other(format!("{}", e)))?;
 
             if json {
-                println!("{}", serde_json::json!({"event": "contact_added", "name": name}));
+                println!(
+                    "{}",
+                    serde_json::json!({"event": "contact_added", "name": name})
+                );
             } else {
                 crate::output::color::success(&format!("Contact '{}' added", name));
             }
         }
         Some(ContactsCommands::Remove { id }) => {
             let mut db = tallow_store::contacts::ContactDatabase::new();
-            db.remove(&id).map_err(|e| {
-                io::Error::other(format!("{}", e))
-            })?;
+            db.remove(&id)
+                .map_err(|e| io::Error::other(format!("{}", e)))?;
 
             if json {
-                println!("{}", serde_json::json!({"event": "contact_removed", "id": id}));
+                println!(
+                    "{}",
+                    serde_json::json!({"event": "contact_removed", "id": id})
+                );
             } else {
                 crate::output::color::success(&format!("Contact '{}' removed", id));
             }
@@ -289,9 +290,8 @@ pub async fn execute_contacts(args: ContactsArgs, json: bool) -> io::Result<()> 
 
 /// Execute trust command
 pub async fn execute_trust(args: TrustArgs, json: bool) -> io::Result<()> {
-    let mut store = tallow_store::trust::TofuStore::open().map_err(|e| {
-        io::Error::other(format!("Failed to open trust store: {}", e))
-    })?;
+    let mut store = tallow_store::trust::TofuStore::open()
+        .map_err(|e| io::Error::other(format!("Failed to open trust store: {}", e)))?;
 
     match args.command {
         Some(TrustCommands::List) | None => {

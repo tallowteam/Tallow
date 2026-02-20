@@ -80,8 +80,16 @@ fn base64url_encode(data: &[u8]) -> String {
 
     while i < data.len() {
         let b0 = data[i] as u32;
-        let b1 = if i + 1 < data.len() { data[i + 1] as u32 } else { 0 };
-        let b2 = if i + 2 < data.len() { data[i + 2] as u32 } else { 0 };
+        let b1 = if i + 1 < data.len() {
+            data[i + 1] as u32
+        } else {
+            0
+        };
+        let b2 = if i + 2 < data.len() {
+            data[i + 2] as u32
+        } else {
+            0
+        };
 
         let triple = (b0 << 16) | (b1 << 8) | b2;
 
@@ -120,9 +128,21 @@ fn base64url_decode(s: &str) -> std::result::Result<Vec<u8>, String> {
 
     while i < bytes.len() {
         let v0 = char_to_val(bytes[i])?;
-        let v1 = if i + 1 < bytes.len() { char_to_val(bytes[i + 1])? } else { 0 };
-        let v2 = if i + 2 < bytes.len() { char_to_val(bytes[i + 2])? } else { 0 };
-        let v3 = if i + 3 < bytes.len() { char_to_val(bytes[i + 3])? } else { 0 };
+        let v1 = if i + 1 < bytes.len() {
+            char_to_val(bytes[i + 1])?
+        } else {
+            0
+        };
+        let v2 = if i + 2 < bytes.len() {
+            char_to_val(bytes[i + 2])?
+        } else {
+            0
+        };
+        let v3 = if i + 3 < bytes.len() {
+            char_to_val(bytes[i + 3])?
+        } else {
+            0
+        };
 
         let triple = (v0 << 18) | (v1 << 12) | (v2 << 6) | v3;
 

@@ -17,12 +17,15 @@ pub fn load_config() -> Result<TallowConfig> {
     }
 
     let content = std::fs::read_to_string(&path).map_err(|e| {
-        StoreError::ConfigError(format!("Failed to read config at {}: {}", path.display(), e))
+        StoreError::ConfigError(format!(
+            "Failed to read config at {}: {}",
+            path.display(),
+            e
+        ))
     })?;
 
-    let config: TallowConfig = toml::from_str(&content).map_err(|e| {
-        StoreError::ConfigError(format!("Failed to parse config: {}", e))
-    })?;
+    let config: TallowConfig = toml::from_str(&content)
+        .map_err(|e| StoreError::ConfigError(format!("Failed to parse config: {}", e)))?;
 
     Ok(config)
 }
@@ -52,12 +55,15 @@ pub fn config_path() -> PathBuf {
 /// Load config from a specific path
 pub fn load_config_from(path: &std::path::Path) -> Result<TallowConfig> {
     let content = std::fs::read_to_string(path).map_err(|e| {
-        StoreError::ConfigError(format!("Failed to read config at {}: {}", path.display(), e))
+        StoreError::ConfigError(format!(
+            "Failed to read config at {}: {}",
+            path.display(),
+            e
+        ))
     })?;
 
-    let config: TallowConfig = toml::from_str(&content).map_err(|e| {
-        StoreError::ConfigError(format!("Failed to parse config: {}", e))
-    })?;
+    let config: TallowConfig = toml::from_str(&content)
+        .map_err(|e| StoreError::ConfigError(format!("Failed to parse config: {}", e)))?;
 
     Ok(config)
 }
@@ -65,17 +71,16 @@ pub fn load_config_from(path: &std::path::Path) -> Result<TallowConfig> {
 /// Get a config value by dotted key path (e.g., "network.enable_mdns")
 pub fn get_config_value(config: &TallowConfig, key: &str) -> Result<String> {
     // Serialize to toml::Value and navigate by key path
-    let value = toml::Value::try_from(config).map_err(|e| {
-        StoreError::ConfigError(format!("Failed to convert config: {}", e))
-    })?;
+    let value = toml::Value::try_from(config)
+        .map_err(|e| StoreError::ConfigError(format!("Failed to convert config: {}", e)))?;
 
     let parts: Vec<&str> = key.split('.').collect();
     let mut current = &value;
 
     for part in &parts {
-        current = current.get(part).ok_or_else(|| {
-            StoreError::ConfigError(format!("Config key not found: {}", key))
-        })?;
+        current = current
+            .get(part)
+            .ok_or_else(|| StoreError::ConfigError(format!("Config key not found: {}", key)))?;
     }
 
     Ok(format_toml_value(current))
@@ -84,9 +89,8 @@ pub fn get_config_value(config: &TallowConfig, key: &str) -> Result<String> {
 /// Set a config value by dotted key path
 pub fn set_config_value(config: &mut TallowConfig, key: &str, value: &str) -> Result<()> {
     // Serialize config to toml::Value, modify, deserialize back
-    let mut toml_value = toml::Value::try_from(&*config).map_err(|e| {
-        StoreError::ConfigError(format!("Failed to convert config: {}", e))
-    })?;
+    let mut toml_value = toml::Value::try_from(&*config)
+        .map_err(|e| StoreError::ConfigError(format!("Failed to convert config: {}", e)))?;
 
     let parts: Vec<&str> = key.split('.').collect();
     let mut current = &mut toml_value;
@@ -100,16 +104,16 @@ pub fn set_config_value(config: &mut TallowConfig, key: &str, value: &str) -> Re
             let parsed = parse_toml_value(value);
             table.insert(part.to_string(), parsed);
         } else {
-            current = current.get_mut(part).ok_or_else(|| {
-                StoreError::ConfigError(format!("Config key not found: {}", key))
-            })?;
+            current = current
+                .get_mut(part)
+                .ok_or_else(|| StoreError::ConfigError(format!("Config key not found: {}", key)))?;
         }
     }
 
     // Deserialize back to TallowConfig
-    let updated: TallowConfig = toml_value.try_into().map_err(|e| {
-        StoreError::ConfigError(format!("Failed to apply config change: {}", e))
-    })?;
+    let updated: TallowConfig = toml_value
+        .try_into()
+        .map_err(|e| StoreError::ConfigError(format!("Failed to apply config change: {}", e)))?;
 
     *config = updated;
     Ok(())

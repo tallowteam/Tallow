@@ -1,7 +1,7 @@
 //! Signaling protocol for peer coordination
 
-pub mod protocol;
 pub mod client;
+pub mod protocol;
 
-pub use protocol::SignalingMessage;
 pub use client::SignalingClient;
+pub use protocol::SignalingMessage;

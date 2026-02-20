@@ -1,11 +1,11 @@
 //! Compression algorithms and pipeline
 
-pub mod pipeline;
 pub mod analysis;
-pub mod zstd;
 pub mod brotli;
 pub mod lz4;
 pub mod lzma;
+pub mod pipeline;
+pub mod zstd;
 
 use crate::Result;
 

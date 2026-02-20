@@ -58,10 +58,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
         ]));
         lines.push(Line::from(vec![
             Span::raw("       "),
-            Span::styled(
-                peer.address.as_str(),
-                Style::default().fg(Color::DarkGray),
-            ),
+            Span::styled(peer.address.as_str(), Style::default().fg(Color::DarkGray)),
         ]));
         lines.push(Line::from(""));
     }

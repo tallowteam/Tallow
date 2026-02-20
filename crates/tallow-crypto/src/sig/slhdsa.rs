@@ -23,8 +23,9 @@ pub struct SlhDsaSigner {
 impl SlhDsaSigner {
     /// Generate a new SLH-DSA keypair
     pub fn keygen() -> Result<Self> {
-        let (vk, sk) = slh_dsa_sha2_256f::KG::try_keygen()
-            .map_err(|_| CryptoError::KeyGeneration("SLH-DSA keygen failed: OS RNG unavailable".to_string()))?;
+        let (vk, sk) = slh_dsa_sha2_256f::KG::try_keygen().map_err(|_| {
+            CryptoError::KeyGeneration("SLH-DSA keygen failed: OS RNG unavailable".to_string())
+        })?;
 
         Ok(Self {
             public_key: vk.into_bytes().to_vec(),
@@ -74,20 +75,22 @@ impl SlhDsaSigner {
 ///
 /// Ok(()) if valid, Err otherwise
 pub fn verify(public_key: &[u8], message: &[u8], signature: &[u8]) -> Result<()> {
-    let vk_bytes: [u8; VK_LEN] = public_key.try_into().map_err(|_| {
-        CryptoError::Verification("Invalid SLH-DSA public key length".to_string())
-    })?;
+    let vk_bytes: [u8; VK_LEN] = public_key
+        .try_into()
+        .map_err(|_| CryptoError::Verification("Invalid SLH-DSA public key length".to_string()))?;
 
     let vk = slh_dsa_sha2_256f::PublicKey::try_from_bytes(&vk_bytes)
         .map_err(|_| CryptoError::Verification("Invalid SLH-DSA public key".to_string()))?;
 
     // SLH-DSA-SHA2-256f signature size is 49856 bytes
-    let sig_bytes: [u8; 49856] = signature.try_into().map_err(|_| {
-        CryptoError::Verification("Invalid SLH-DSA signature length".to_string())
-    })?;
+    let sig_bytes: [u8; 49856] = signature
+        .try_into()
+        .map_err(|_| CryptoError::Verification("Invalid SLH-DSA signature length".to_string()))?;
 
     if !vk.verify(message, &sig_bytes, &[]) {
-        return Err(CryptoError::Verification("SLH-DSA signature verification failed".to_string()));
+        return Err(CryptoError::Verification(
+            "SLH-DSA signature verification failed".to_string(),
+        ));
     }
 
     Ok(())

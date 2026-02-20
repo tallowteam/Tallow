@@ -5,14 +5,14 @@
 
 #![forbid(unsafe_code)]
 
-pub mod error;
-pub mod wire;
-pub mod transfer;
-pub mod compression;
 pub mod chat;
+pub mod compression;
+pub mod error;
 pub mod kex;
-pub mod room;
 pub mod metadata;
+pub mod room;
+pub mod transfer;
+pub mod wire;
 
 pub use error::ProtocolError;
 

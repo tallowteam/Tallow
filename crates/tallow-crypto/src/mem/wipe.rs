@@ -24,9 +24,7 @@ pub fn prevent_core_dumps() -> Result<()> {
                 rlim_max: 0,
             };
             if libc::setrlimit(libc::RLIMIT_CORE, &rlim) != 0 {
-                return Err(CryptoError::Io(
-                    io::Error::last_os_error().to_string(),
-                ));
+                return Err(CryptoError::Io(io::Error::last_os_error().to_string()));
             }
         }
     }

@@ -171,9 +171,7 @@ mod tests {
             .record_first_contact("peer-1".to_string(), vec![1, 2, 3])
             .unwrap();
 
-        store
-            .update_trust("peer-1", TrustLevel::Trusted)
-            .unwrap();
+        store.update_trust("peer-1", TrustLevel::Trusted).unwrap();
         assert_eq!(store.get_trust("peer-1"), TrustLevel::Trusted);
     }
 
@@ -187,9 +185,7 @@ mod tests {
             store
                 .record_first_contact("peer-1".to_string(), vec![1, 2, 3])
                 .unwrap();
-            store
-                .update_trust("peer-1", TrustLevel::Verified)
-                .unwrap();
+            store.update_trust("peer-1", TrustLevel::Verified).unwrap();
         }
 
         {

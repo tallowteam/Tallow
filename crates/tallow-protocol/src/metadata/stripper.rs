@@ -42,8 +42,7 @@ pub fn strip_exif(data: &[u8]) -> Result<Vec<u8>> {
             // APP1 (EXIF), APP2 (ICC), APP13 (IPTC) — skip these
             0xE1 | 0xE2 | 0xED => {
                 if i + 3 < data.len() {
-                    let seg_len =
-                        ((data[i + 2] as usize) << 8) | (data[i + 3] as usize);
+                    let seg_len = ((data[i + 2] as usize) << 8) | (data[i + 3] as usize);
                     i += 2 + seg_len;
                 } else {
                     // Malformed — copy rest
@@ -67,17 +66,17 @@ pub fn strip_exif(data: &[u8]) -> Result<Vec<u8>> {
                     && marker != 0xD9
                     && !(0xD0..=0xD7).contains(&marker)
                     && marker != 0x00
-                    && i + 1 < data.len() {
-                        let seg_len =
-                            ((data[i] as usize) << 8) | (data[i + 1] as usize);
-                        if i + seg_len <= data.len() {
-                            output.extend_from_slice(&data[i..i + seg_len]);
-                            i += seg_len;
-                        } else {
-                            output.extend_from_slice(&data[i..]);
-                            break;
-                        }
+                    && i + 1 < data.len()
+                {
+                    let seg_len = ((data[i] as usize) << 8) | (data[i + 1] as usize);
+                    if i + seg_len <= data.len() {
+                        output.extend_from_slice(&data[i..i + seg_len]);
+                        i += seg_len;
+                    } else {
+                        output.extend_from_slice(&data[i..]);
+                        break;
                     }
+                }
             }
         }
     }
@@ -118,7 +117,8 @@ fn strip_png_metadata(data: &[u8]) -> Result<Vec<u8>> {
 
     while i + 12 <= data.len() {
         // Read chunk: 4-byte length + 4-byte type + data + 4-byte CRC
-        let chunk_len = u32::from_be_bytes([data[i], data[i + 1], data[i + 2], data[i + 3]]) as usize;
+        let chunk_len =
+            u32::from_be_bytes([data[i], data[i + 1], data[i + 2], data[i + 3]]) as usize;
         let chunk_type = &data[i + 4..i + 8];
         let total_chunk_size = 12 + chunk_len; // 4 len + 4 type + data + 4 CRC
 
@@ -129,10 +129,7 @@ fn strip_png_metadata(data: &[u8]) -> Result<Vec<u8>> {
         }
 
         // Check if this is a metadata chunk to strip
-        let should_strip = matches!(
-            chunk_type,
-            b"tEXt" | b"zTXt" | b"iTXt" | b"eXIf"
-        );
+        let should_strip = matches!(chunk_type, b"tEXt" | b"zTXt" | b"iTXt" | b"eXIf");
 
         if !should_strip {
             output.extend_from_slice(&data[i..i + total_chunk_size]);
@@ -183,10 +180,10 @@ mod tests {
     fn test_strip_exif_minimal_jpeg() {
         // Minimal JPEG: SOI + APP1(EXIF) + SOS + image data + EOI
         let mut jpeg = vec![0xFF, 0xD8]; // SOI
-        // APP1 (EXIF) segment
+                                         // APP1 (EXIF) segment
         jpeg.extend_from_slice(&[0xFF, 0xE1, 0x00, 0x08]); // APP1, length=8
         jpeg.extend_from_slice(&[0x45, 0x78, 0x69, 0x66, 0x00, 0x00]); // "Exif\0\0"
-        // SOS marker + some data
+                                                                       // SOS marker + some data
         jpeg.extend_from_slice(&[0xFF, 0xDA, 0x00, 0x02]); // SOS
         jpeg.extend_from_slice(&[0x01, 0x02, 0x03]); // Image data
         jpeg.extend_from_slice(&[0xFF, 0xD9]); // EOI

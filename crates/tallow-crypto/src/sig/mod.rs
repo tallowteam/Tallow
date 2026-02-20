@@ -17,8 +17,7 @@ pub use slhdsa::SlhDsaSigner;
 use serde::{Deserialize, Serialize};
 
 /// Supported signature algorithms
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum SignatureAlgorithm {
     /// Ed25519 (classical)
     Ed25519,
@@ -30,4 +29,3 @@ pub enum SignatureAlgorithm {
     #[default]
     Hybrid,
 }
-

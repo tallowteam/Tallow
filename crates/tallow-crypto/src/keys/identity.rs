@@ -20,8 +20,9 @@ impl IdentityKeyPair {
         let pk = signer.public_key();
 
         // Derive identity from public key
-        let pk_bytes = bincode::serialize(&pk)
-            .map_err(|e| CryptoError::Serialization(format!("Failed to serialize public key: {}", e)))?;
+        let pk_bytes = bincode::serialize(&pk).map_err(|e| {
+            CryptoError::Serialization(format!("Failed to serialize public key: {}", e))
+        })?;
         let id = crate::hash::blake3::hash(&pk_bytes);
 
         Ok(Self { signer, id })

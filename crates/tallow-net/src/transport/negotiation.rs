@@ -14,6 +14,9 @@ pub enum TransportProtocol {
 }
 
 /// Negotiate transport protocol with peer
-pub async fn negotiate(_local_prefs: &[TransportProtocol], _remote_prefs: &[TransportProtocol]) -> Result<TransportProtocol> {
+pub async fn negotiate(
+    _local_prefs: &[TransportProtocol],
+    _remote_prefs: &[TransportProtocol],
+) -> Result<TransportProtocol> {
     todo!("Implement protocol negotiation")
 }

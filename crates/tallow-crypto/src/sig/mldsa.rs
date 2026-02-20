@@ -23,8 +23,9 @@ pub struct MlDsaSigner {
 impl MlDsaSigner {
     /// Generate a new ML-DSA-87 keypair
     pub fn keygen() -> Result<Self> {
-        let (vk, sk) = ml_dsa_87::KG::try_keygen()
-            .map_err(|_| CryptoError::KeyGeneration("ML-DSA-87 keygen failed: OS RNG unavailable".to_string()))?;
+        let (vk, sk) = ml_dsa_87::KG::try_keygen().map_err(|_| {
+            CryptoError::KeyGeneration("ML-DSA-87 keygen failed: OS RNG unavailable".to_string())
+        })?;
 
         Ok(Self {
             public_key: vk.into_bytes().to_vec(),
@@ -82,12 +83,14 @@ pub fn verify(public_key: &[u8], message: &[u8], signature: &[u8]) -> Result<()>
         .map_err(|_| CryptoError::Verification("Invalid ML-DSA-87 public key".to_string()))?;
 
     // Convert signature bytes to fixed-size array
-    let sig_bytes: [u8; 4627] = signature.try_into().map_err(|_| {
-        CryptoError::Verification("Invalid ML-DSA-87 signature length".to_string())
-    })?;
+    let sig_bytes: [u8; 4627] = signature
+        .try_into()
+        .map_err(|_| CryptoError::Verification("Invalid ML-DSA-87 signature length".to_string()))?;
 
     if !vk.verify(message, &sig_bytes, &[]) {
-        return Err(CryptoError::Verification("ML-DSA-87 signature verification failed".to_string()));
+        return Err(CryptoError::Verification(
+            "ML-DSA-87 signature verification failed".to_string(),
+        ));
     }
 
     Ok(())

@@ -103,8 +103,9 @@ impl MlKem {
     ///
     /// A tuple of (public_key, secret_key), or an error if the system RNG fails
     pub fn keygen() -> Result<(PublicKey, SecretKey)> {
-        let (ek, dk) = ml_kem_1024::KG::try_keygen()
-            .map_err(|_| CryptoError::KeyGeneration("ML-KEM-1024 keygen failed: OS RNG unavailable".to_string()))?;
+        let (ek, dk) = ml_kem_1024::KG::try_keygen().map_err(|_| {
+            CryptoError::KeyGeneration("ML-KEM-1024 keygen failed: OS RNG unavailable".to_string())
+        })?;
 
         let ek_bytes = ek.into_bytes().to_vec();
         let dk_bytes = dk.into_bytes().to_vec();
@@ -122,16 +123,17 @@ impl MlKem {
     ///
     /// A tuple of (ciphertext, shared_secret)
     pub fn encapsulate(pk: &PublicKey) -> Result<(Ciphertext, SharedSecret)> {
-        let ek_bytes: [u8; EK_LEN] = pk.0.as_slice().try_into().map_err(|_| {
-            CryptoError::InvalidKey("Invalid encapsulation key length".to_string())
-        })?;
+        let ek_bytes: [u8; EK_LEN] =
+            pk.0.as_slice().try_into().map_err(|_| {
+                CryptoError::InvalidKey("Invalid encapsulation key length".to_string())
+            })?;
 
         let ek = ml_kem_1024::EncapsKey::try_from_bytes(ek_bytes)
             .map_err(|_| CryptoError::Encryption("Invalid ML-KEM-1024 public key".to_string()))?;
 
-        let (ss, ct) = ek.try_encaps().map_err(|_| {
-            CryptoError::Encryption("ML-KEM-1024 encapsulation failed".to_string())
-        })?;
+        let (ss, ct) = ek
+            .try_encaps()
+            .map_err(|_| CryptoError::Encryption("ML-KEM-1024 encapsulation failed".to_string()))?;
 
         let ss_bytes = ss.into_bytes();
         let ct_bytes = ct.into_bytes().to_vec();
@@ -150,23 +152,25 @@ impl MlKem {
     ///
     /// The shared secret
     pub fn decapsulate(sk: &SecretKey, ct: &Ciphertext) -> Result<SharedSecret> {
-        let dk_bytes: [u8; DK_LEN] = sk.0.as_slice().try_into().map_err(|_| {
-            CryptoError::InvalidKey("Invalid decapsulation key length".to_string())
-        })?;
+        let dk_bytes: [u8; DK_LEN] =
+            sk.0.as_slice().try_into().map_err(|_| {
+                CryptoError::InvalidKey("Invalid decapsulation key length".to_string())
+            })?;
 
         let dk = ml_kem_1024::DecapsKey::try_from_bytes(dk_bytes)
             .map_err(|_| CryptoError::Decryption("Invalid ML-KEM-1024 secret key".to_string()))?;
 
-        let ct_bytes: [u8; CT_LEN] = ct.0.as_slice().try_into().map_err(|_| {
-            CryptoError::InvalidKey("Invalid ciphertext length".to_string())
-        })?;
+        let ct_bytes: [u8; CT_LEN] =
+            ct.0.as_slice()
+                .try_into()
+                .map_err(|_| CryptoError::InvalidKey("Invalid ciphertext length".to_string()))?;
 
         let ct_obj = ml_kem_1024::CipherText::try_from_bytes(ct_bytes)
             .map_err(|_| CryptoError::Decryption("Invalid ML-KEM-1024 ciphertext".to_string()))?;
 
-        let ss = dk.try_decaps(&ct_obj).map_err(|_| {
-            CryptoError::Decryption("ML-KEM-1024 decapsulation failed".to_string())
-        })?;
+        let ss = dk
+            .try_decaps(&ct_obj)
+            .map_err(|_| CryptoError::Decryption("ML-KEM-1024 decapsulation failed".to_string()))?;
 
         Ok(SharedSecret(ss.into_bytes()))
     }

@@ -3,9 +3,9 @@
 //! Framing: 4-byte big-endian length prefix + postcard-serialized payload.
 //! Maximum message size: 16 MiB (prevents OOM from malicious peers).
 
-use bytes::{Buf, BufMut, BytesMut};
 use super::Message;
 use crate::{ProtocolError, Result};
+use bytes::{Buf, BufMut, BytesMut};
 
 /// Maximum allowed message size (16 MiB)
 const MAX_MESSAGE_SIZE: usize = 16 * 1024 * 1024;
@@ -30,9 +30,8 @@ impl TallowCodec {
     ///
     /// Format: `[4-byte BE length][postcard payload]`
     pub fn encode_msg(&mut self, msg: &Message, buf: &mut BytesMut) -> Result<()> {
-        let payload = postcard::to_stdvec(msg).map_err(|e| {
-            ProtocolError::EncodingError(format!("postcard encode failed: {}", e))
-        })?;
+        let payload = postcard::to_stdvec(msg)
+            .map_err(|e| ProtocolError::EncodingError(format!("postcard encode failed: {}", e)))?;
 
         if payload.len() > MAX_MESSAGE_SIZE {
             return Err(ProtocolError::EncodingError(format!(
@@ -80,9 +79,8 @@ impl TallowCodec {
         // Extract and consume the payload
         let payload = buf.split_to(len);
 
-        let msg = postcard::from_bytes(&payload).map_err(|e| {
-            ProtocolError::DecodingError(format!("postcard decode failed: {}", e))
-        })?;
+        let msg = postcard::from_bytes(&payload)
+            .map_err(|e| ProtocolError::DecodingError(format!("postcard decode failed: {}", e)))?;
 
         Ok(Some(msg))
     }
@@ -155,11 +153,7 @@ mod tests {
         let mut codec = TallowCodec::new();
         let mut buf = BytesMut::new();
 
-        let messages = vec![
-            Message::Ping,
-            Message::Pong,
-            Message::RoomLeave,
-        ];
+        let messages = vec![Message::Ping, Message::Pong, Message::RoomLeave];
 
         // Encode all messages into the same buffer
         for msg in &messages {

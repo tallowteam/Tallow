@@ -1,8 +1,8 @@
 //! Configuration management
 
-pub mod schema;
-pub mod loader;
 pub mod defaults;
+pub mod loader;
+pub mod schema;
 
-pub use schema::{TallowConfig, NetworkConfig, TransferConfig, PrivacyConfig, UiConfig};
-pub use loader::{load_config, save_config, config_path, get_config_value, set_config_value};
+pub use loader::{config_path, get_config_value, load_config, save_config, set_config_value};
+pub use schema::{NetworkConfig, PrivacyConfig, TallowConfig, TransferConfig, UiConfig};

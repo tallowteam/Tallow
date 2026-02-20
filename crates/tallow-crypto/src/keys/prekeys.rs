@@ -83,8 +83,9 @@ impl SignedPreKey {
             .map_err(|e| CryptoError::KeyGeneration(format!("system clock error: {}", e)))?
             .as_secs();
 
-        let pk_bytes = bincode::serialize(&pk)
-            .map_err(|e| CryptoError::Serialization(format!("Failed to serialize pre-key: {}", e)))?;
+        let pk_bytes = bincode::serialize(&pk).map_err(|e| {
+            CryptoError::Serialization(format!("Failed to serialize pre-key: {}", e))
+        })?;
 
         let mut message = Vec::new();
         message.extend_from_slice(&id.to_le_bytes());
@@ -103,8 +104,12 @@ impl SignedPreKey {
 
     /// Verify the signature on this pre-key
     pub fn verify(&self, identity_key: &[u8; 32]) -> Result<()> {
-        let pk_bytes = bincode::serialize(&self.public_key)
-            .map_err(|e| CryptoError::Serialization(format!("Failed to serialize pre-key for verification: {}", e)))?;
+        let pk_bytes = bincode::serialize(&self.public_key).map_err(|e| {
+            CryptoError::Serialization(format!(
+                "Failed to serialize pre-key for verification: {}",
+                e
+            ))
+        })?;
 
         let mut message = Vec::new();
         message.extend_from_slice(&self.id.to_le_bytes());

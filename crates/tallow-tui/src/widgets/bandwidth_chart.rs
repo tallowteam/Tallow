@@ -231,10 +231,7 @@ impl<'a> Widget for BandwidthChart<'a> {
         let x_labels = self.x_axis_labels(x_min, x_max);
 
         let y_axis = Axis::default()
-            .title(Span::styled(
-                y_unit,
-                Style::default().fg(Color::White),
-            ))
+            .title(Span::styled(y_unit, Style::default().fg(Color::White)))
             .style(Style::default().fg(Color::Gray))
             .bounds([y_min, y_max])
             .labels(y_labels);
@@ -285,11 +282,7 @@ mod tests {
 
     #[test]
     fn test_y_bounds_calculation() {
-        let data = vec![
-            (0.0, 500.0),
-            (1.0, 1_500.0),
-            (2.0, 2_500_000.0),
-        ];
+        let data = vec![(0.0, 500.0), (1.0, 1_500.0), (2.0, 2_500_000.0)];
         let chart = BandwidthChart::new(&data);
         let (min, max, unit) = chart.calculate_y_bounds();
         assert_eq!(min, 0.0);
@@ -299,11 +292,7 @@ mod tests {
 
     #[test]
     fn test_x_bounds_calculation() {
-        let data = vec![
-            (0.0, 100.0),
-            (30.0, 200.0),
-            (60.0, 150.0),
-        ];
+        let data = vec![(0.0, 100.0), (30.0, 200.0), (60.0, 150.0)];
         let chart = BandwidthChart::new(&data);
         let (min, max) = chart.calculate_x_bounds();
         assert_eq!(min, 0.0);
@@ -312,12 +301,7 @@ mod tests {
 
     #[test]
     fn test_data_filtering() {
-        let data = vec![
-            (0.0, 100.0),
-            (30.0, 200.0),
-            (60.0, 150.0),
-            (90.0, 180.0),
-        ];
+        let data = vec![(0.0, 100.0), (30.0, 200.0), (60.0, 150.0), (90.0, 180.0)];
         let chart = BandwidthChart::new(&data).time_window(60.0);
         let filtered = chart.filter_data(30.0, 90.0);
         assert_eq!(filtered.len(), 3); // Should exclude first point

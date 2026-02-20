@@ -1,7 +1,7 @@
 //! Peer discovery mechanisms
 
-pub mod mdns;
 pub mod dns_sd;
+pub mod mdns;
 
-pub use mdns::{MdnsDiscovery, DiscoveredPeer};
 pub use dns_sd::DnsServiceRecord;
+pub use mdns::{DiscoveredPeer, MdnsDiscovery};

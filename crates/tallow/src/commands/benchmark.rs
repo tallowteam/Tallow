@@ -234,9 +234,15 @@ fn print_results(results: &[BenchResult], json: bool) {
                 obj
             })
             .collect();
-        println!("{}", serde_json::to_string_pretty(&list).unwrap_or_default());
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&list).unwrap_or_default()
+        );
     } else {
-        println!("{:<35} {:>10} {:>12} {:>12}", "Benchmark", "Ops", "Ops/sec", "Throughput");
+        println!(
+            "{:<35} {:>10} {:>12} {:>12}",
+            "Benchmark", "Ops", "Ops/sec", "Throughput"
+        );
         println!("{}", "-".repeat(72));
 
         for r in results {

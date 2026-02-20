@@ -154,8 +154,7 @@ mod tests {
 
         for msg in &messages {
             let bytes = postcard::to_stdvec(msg).expect("encode should succeed");
-            let decoded: Message =
-                postcard::from_bytes(&bytes).expect("decode should succeed");
+            let decoded: Message = postcard::from_bytes(&bytes).expect("decode should succeed");
             assert_eq!(&decoded, msg, "round-trip failed for {:?}", msg);
         }
     }
@@ -164,6 +163,10 @@ mod tests {
     fn test_message_compact_encoding() {
         // Ping should be very small (just a discriminant byte)
         let bytes = postcard::to_stdvec(&Message::Ping).unwrap();
-        assert!(bytes.len() <= 2, "Ping should be compact, got {} bytes", bytes.len());
+        assert!(
+            bytes.len() <= 2,
+            "Ping should be compact, got {} bytes",
+            bytes.len()
+        );
     }
 }

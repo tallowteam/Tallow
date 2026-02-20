@@ -108,9 +108,9 @@ impl CpaceInitiator {
             ));
         }
 
-        let their_bytes: [u8; 32] = their_public
-            .try_into()
-            .map_err(|_| CryptoError::InvalidKey("CPace public message must be 32 bytes".to_string()))?;
+        let their_bytes: [u8; 32] = their_public.try_into().map_err(|_| {
+            CryptoError::InvalidKey("CPace public message must be 32 bytes".to_string())
+        })?;
 
         let their_point = CompressedRistretto(their_bytes)
             .decompress()
@@ -175,9 +175,9 @@ impl CpaceResponder {
             ));
         }
 
-        let their_bytes: [u8; 32] = their_public
-            .try_into()
-            .map_err(|_| CryptoError::InvalidKey("CPace public message must be 32 bytes".to_string()))?;
+        let their_bytes: [u8; 32] = their_public.try_into().map_err(|_| {
+            CryptoError::InvalidKey("CPace public message must be 32 bytes".to_string())
+        })?;
 
         let their_point = CompressedRistretto(their_bytes)
             .decompress()

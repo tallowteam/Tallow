@@ -79,7 +79,9 @@ impl TrafficShaper {
 
         // Pad with random bytes
         if padded.len() < real_size {
-            let padding: Vec<u8> = (0..real_size - padded.len()).map(|_| rand::random()).collect();
+            let padding: Vec<u8> = (0..real_size - padded.len())
+                .map(|_| rand::random())
+                .collect();
             padded.extend_from_slice(&padding);
         }
 

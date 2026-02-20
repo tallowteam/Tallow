@@ -44,11 +44,7 @@ impl std::fmt::Debug for ReceivePipeline {
 
 impl ReceivePipeline {
     /// Create a new receive pipeline
-    pub fn new(
-        transfer_id: [u8; 16],
-        output_dir: impl AsRef<Path>,
-        session_key: [u8; 32],
-    ) -> Self {
+    pub fn new(transfer_id: [u8; 16], output_dir: impl AsRef<Path>, session_key: [u8; 32]) -> Self {
         Self {
             transfer_id,
             output_dir: output_dir.as_ref().to_path_buf(),
@@ -128,10 +124,7 @@ impl ReceivePipeline {
             &aad,
         )
         .map_err(|e| {
-            ProtocolError::TransferFailed(format!(
-                "chunk {} decryption failed: {}",
-                index, e
-            ))
+            ProtocolError::TransferFailed(format!("chunk {} decryption failed: {}", index, e))
         })?;
 
         let chunk_size = decrypted.len() as u64;
@@ -180,9 +173,10 @@ impl ReceivePipeline {
         // Reassemble all chunks in order
         let mut all_data = Vec::new();
         for i in 0..manifest.total_chunks {
-            let chunk = self.received_chunks.get(&i).ok_or_else(|| {
-                ProtocolError::TransferFailed(format!("missing chunk {}", i))
-            })?;
+            let chunk = self
+                .received_chunks
+                .get(&i)
+                .ok_or_else(|| ProtocolError::TransferFailed(format!("missing chunk {}", i)))?;
             all_data.extend_from_slice(chunk);
         }
 
@@ -216,18 +210,20 @@ impl ReceivePipeline {
             // Write to output directory
             let output_path = self.output_dir.join(&entry.path);
             if let Some(parent) = output_path.parent() {
-                tokio::fs::create_dir_all(parent).await.map_err(|e| {
-                    ProtocolError::TransferFailed(format!("mkdir failed: {}", e))
-                })?;
+                tokio::fs::create_dir_all(parent)
+                    .await
+                    .map_err(|e| ProtocolError::TransferFailed(format!("mkdir failed: {}", e)))?;
             }
 
-            tokio::fs::write(&output_path, file_data).await.map_err(|e| {
-                ProtocolError::TransferFailed(format!(
-                    "write {} failed: {}",
-                    output_path.display(),
-                    e
-                ))
-            })?;
+            tokio::fs::write(&output_path, file_data)
+                .await
+                .map_err(|e| {
+                    ProtocolError::TransferFailed(format!(
+                        "write {} failed: {}",
+                        output_path.display(),
+                        e
+                    ))
+                })?;
 
             written_paths.push(output_path);
             offset = end;

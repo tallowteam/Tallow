@@ -146,7 +146,10 @@ impl HybridKem {
         combined_input[32..].copy_from_slice(x25519_ss);
 
         // Use BLAKE3 with domain separation to combine
-        Ok(blake3::derive_key(domain::DOMAIN_HYBRID_COMBINE, &combined_input))
+        Ok(blake3::derive_key(
+            domain::DOMAIN_HYBRID_COMBINE,
+            &combined_input,
+        ))
     }
 }
 

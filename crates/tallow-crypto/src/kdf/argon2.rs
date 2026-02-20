@@ -30,9 +30,9 @@ fn production_argon2(output_len: Option<usize>) -> Result<Argon2<'static>> {
 #[cfg(test)]
 fn test_argon2(output_len: Option<usize>) -> Argon2<'static> {
     let params = Params::new(
-        16_384,  // 16 MiB — fast enough for tests
-        1,       // 1 iteration
-        1,       // 1 thread
+        16_384, // 16 MiB — fast enough for tests
+        1,      // 1 iteration
+        1,      // 1 thread
         output_len,
     )
     .expect("test Argon2 params are valid");
@@ -149,7 +149,9 @@ mod tests {
         let mut output = vec![0u8; output_len];
         argon2
             .hash_password_into(password, salt, &mut output)
-            .map_err(|e| CryptoError::KeyGeneration(format!("Argon2 key derivation failed: {}", e)))?;
+            .map_err(|e| {
+                CryptoError::KeyGeneration(format!("Argon2 key derivation failed: {}", e))
+            })?;
 
         Ok(output)
     }

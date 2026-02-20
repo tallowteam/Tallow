@@ -58,9 +58,7 @@ pub async fn get_external_ip() -> Result<std::net::IpAddr> {
     let ip = gateway
         .get_external_ip()
         .await
-        .map_err(|e| {
-            NetworkError::NatTraversal(format!("Failed to get external IP: {}", e))
-        })?;
+        .map_err(|e| NetworkError::NatTraversal(format!("Failed to get external IP: {}", e)))?;
 
     Ok(ip)
 }

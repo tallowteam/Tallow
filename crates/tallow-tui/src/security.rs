@@ -2,8 +2,6 @@
 //!
 //! Ensures no sensitive data remains visible on screen after exit or panic.
 
-
-
 /// Wipe the screen buffer (security feature)
 ///
 /// Clears all content from the terminal including scrollback buffer

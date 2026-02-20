@@ -8,4 +8,7 @@ pub mod version;
 
 pub use codec::TallowCodec;
 pub use messages::Message;
-pub use version::{PROTOCOL_VERSION, MIN_PROTOCOL_VERSION, negotiate_version, version_request, process_version_request};
+pub use version::{
+    negotiate_version, process_version_request, version_request, MIN_PROTOCOL_VERSION,
+    PROTOCOL_VERSION,
+};

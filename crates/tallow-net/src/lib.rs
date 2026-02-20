@@ -5,13 +5,13 @@
 
 #![forbid(unsafe_code)]
 
-pub mod error;
-pub mod transport;
-pub mod nat;
 pub mod discovery;
+pub mod error;
+pub mod nat;
 pub mod privacy;
 pub mod relay;
 pub mod signaling;
+pub mod transport;
 
 // Re-exports
 pub use error::NetworkError;

@@ -103,9 +103,9 @@ impl MdnsDiscovery {
             d
         };
 
-        let receiver = daemon.browse(SERVICE_TYPE).map_err(|e| {
-            NetworkError::DiscoveryError(format!("Failed to start browse: {}", e))
-        })?;
+        let receiver = daemon
+            .browse(SERVICE_TYPE)
+            .map_err(|e| NetworkError::DiscoveryError(format!("Failed to start browse: {}", e)))?;
 
         let peers = Arc::clone(&self.peers);
         let (shutdown_tx, mut shutdown_rx) = mpsc::channel::<()>(1);
@@ -170,9 +170,6 @@ impl MdnsDiscovery {
 
     /// Get discovered peers
     pub fn discovered_peers(&self) -> Vec<DiscoveredPeer> {
-        self.peers
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .clone()
+        self.peers.lock().unwrap_or_else(|e| e.into_inner()).clone()
     }
 }

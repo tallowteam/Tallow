@@ -73,14 +73,24 @@ pub fn decrypt(key: &[u8; 32], nonce: &[u8; 32], ciphertext: &[u8], aad: &[u8]) 
 
 // Stub implementations when feature is disabled
 #[cfg(not(feature = "aegis"))]
-pub fn encrypt(_key: &[u8; 32], _nonce: &[u8; 32], _plaintext: &[u8], _aad: &[u8]) -> Result<Vec<u8>> {
+pub fn encrypt(
+    _key: &[u8; 32],
+    _nonce: &[u8; 32],
+    _plaintext: &[u8],
+    _aad: &[u8],
+) -> Result<Vec<u8>> {
     Err(CryptoError::Unsupported(
         "AEGIS-256 not enabled (requires 'aegis' feature)".to_string(),
     ))
 }
 
 #[cfg(not(feature = "aegis"))]
-pub fn decrypt(_key: &[u8; 32], _nonce: &[u8; 32], _ciphertext: &[u8], _aad: &[u8]) -> Result<Vec<u8>> {
+pub fn decrypt(
+    _key: &[u8; 32],
+    _nonce: &[u8; 32],
+    _ciphertext: &[u8],
+    _aad: &[u8],
+) -> Result<Vec<u8>> {
     Err(CryptoError::Unsupported(
         "AEGIS-256 not enabled (requires 'aegis' feature)".to_string(),
     ))

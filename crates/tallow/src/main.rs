@@ -3,13 +3,13 @@
 mod cli;
 mod commands;
 #[allow(dead_code)]
-mod output;
-#[allow(dead_code)]
-mod runtime;
+mod exit_codes;
 #[allow(dead_code)]
 mod logging;
 #[allow(dead_code)]
-mod exit_codes;
+mod output;
+#[allow(dead_code)]
+mod runtime;
 pub mod sandbox;
 
 use clap::Parser;
@@ -50,9 +50,13 @@ async fn main() {
             }
             Ok(())
         }
-        cli::Commands::Contacts(args) => commands::identity::execute_contacts(args, json_output).await,
+        cli::Commands::Contacts(args) => {
+            commands::identity::execute_contacts(args, json_output).await
+        }
         cli::Commands::Trust(args) => commands::identity::execute_trust(args, json_output).await,
-        cli::Commands::Identity(args) => commands::identity::execute_identity(args, json_output).await,
+        cli::Commands::Identity(args) => {
+            commands::identity::execute_identity(args, json_output).await
+        }
         cli::Commands::Config(args) => commands::config_cmd::execute(args, json_output).await,
         cli::Commands::Doctor => commands::doctor::execute(json_output).await,
         cli::Commands::Benchmark(args) => commands::benchmark::execute(args, json_output).await,

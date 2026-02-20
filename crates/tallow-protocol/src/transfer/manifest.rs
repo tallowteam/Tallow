@@ -64,8 +64,7 @@ impl FileManifest {
 
     /// Compute and store the manifest hash
     pub fn finalize(&mut self) {
-        let bytes = postcard::to_stdvec(&self.files)
-            .unwrap_or_default();
+        let bytes = postcard::to_stdvec(&self.files).unwrap_or_default();
         self.manifest_hash = Some(blake3::hash(&bytes).into());
     }
 
@@ -76,8 +75,9 @@ impl FileManifest {
 
     /// Deserialize a manifest from bytes
     pub fn from_bytes(data: &[u8]) -> crate::Result<Self> {
-        postcard::from_bytes(data)
-            .map_err(|e| crate::ProtocolError::DecodingError(format!("manifest decode failed: {}", e)))
+        postcard::from_bytes(data).map_err(|e| {
+            crate::ProtocolError::DecodingError(format!("manifest decode failed: {}", e))
+        })
     }
 
     /// Get total number of files
@@ -112,11 +112,7 @@ mod tests {
     #[test]
     fn test_manifest_add_file() {
         let mut manifest = FileManifest::new(64 * 1024);
-        manifest.add_file(
-            PathBuf::from("test.txt"),
-            1024,
-            [0u8; 32],
-        );
+        manifest.add_file(PathBuf::from("test.txt"), 1024, [0u8; 32]);
         assert_eq!(manifest.file_count(), 1);
         assert_eq!(manifest.total_size, 1024);
         assert_eq!(manifest.total_chunks, 1);
@@ -150,11 +146,7 @@ mod tests {
     #[test]
     fn test_sanitize_paths() {
         let mut manifest = FileManifest::new(64 * 1024);
-        manifest.add_file(
-            PathBuf::from("../../../etc/passwd"),
-            100,
-            [0u8; 32],
-        );
+        manifest.add_file(PathBuf::from("../../../etc/passwd"), 100, [0u8; 32]);
         manifest.sanitize_paths();
         assert!(!manifest.files[0].path.to_string_lossy().contains(".."));
     }

@@ -47,7 +47,11 @@ impl FileEncryptor {
 /// # Returns
 ///
 /// Encrypted chunk with metadata
-pub fn encrypt_chunk(key: &[u8; 32], chunk_data: &[u8], chunk_index: u64) -> Result<EncryptedChunk> {
+pub fn encrypt_chunk(
+    key: &[u8; 32],
+    chunk_data: &[u8],
+    chunk_index: u64,
+) -> Result<EncryptedChunk> {
     // Derive chunk-specific key
     let mut kdf_input = Vec::new();
     kdf_input.extend_from_slice(key);

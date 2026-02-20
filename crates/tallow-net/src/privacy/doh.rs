@@ -52,10 +52,7 @@ impl DohResolver {
         };
 
         let response = resolver.lookup_ip(hostname).await.map_err(|e| {
-            NetworkError::DnsResolution(format!(
-                "DoH resolution failed for '{}': {}",
-                hostname, e
-            ))
+            NetworkError::DnsResolution(format!("DoH resolution failed for '{}': {}", hostname, e))
         })?;
 
         let addrs: Vec<IpAddr> = response.iter().collect();

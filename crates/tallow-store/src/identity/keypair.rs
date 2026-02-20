@@ -79,9 +79,10 @@ impl IdentityStore {
 
     /// Export keypair to a portable encrypted file
     pub fn export(&self, output: &Path, passphrase: &str) -> Result<Vec<u8>> {
-        let keypair = self.keypair.as_ref().ok_or_else(|| {
-            StoreError::IdentityError("No identity loaded".to_string())
-        })?;
+        let keypair = self
+            .keypair
+            .as_ref()
+            .ok_or_else(|| StoreError::IdentityError("No identity loaded".to_string()))?;
 
         let key_bytes = keypair.to_bytes().map_err(|e| {
             StoreError::IdentityError(format!("Failed to serialize keypair: {}", e))
@@ -100,9 +101,8 @@ impl IdentityStore {
 
     /// Import keypair from a portable encrypted file
     pub fn import(&mut self, input: &Path, passphrase: &str) -> Result<()> {
-        let data = std::fs::read(input).map_err(|e| {
-            StoreError::IdentityError(format!("Failed to read import file: {}", e))
-        })?;
+        let data = std::fs::read(input)
+            .map_err(|e| StoreError::IdentityError(format!("Failed to read import file: {}", e)))?;
 
         let keyring: tallow_crypto::keys::EncryptedKeyring =
             bincode::deserialize(&data).map_err(|e| {
@@ -175,10 +175,7 @@ impl IdentityStore {
 
         let keyring: tallow_crypto::keys::EncryptedKeyring =
             bincode::deserialize(&data).map_err(|e| {
-                StoreError::SerializationError(format!(
-                    "Failed to parse encrypted identity: {}",
-                    e
-                ))
+                StoreError::SerializationError(format!("Failed to parse encrypted identity: {}", e))
             })?;
 
         let key_bytes = tallow_crypto::keys::decrypt_keyring(passphrase, &keyring)

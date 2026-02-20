@@ -48,7 +48,11 @@ mod tests {
         // All words should be from EFF wordlist
         let wordlist = &tallow_crypto::kdf::eff_wordlist::EFF_WORDLIST;
         for word in code.split('-') {
-            assert!(wordlist.contains(&word), "word '{}' not in EFF wordlist", word);
+            assert!(
+                wordlist.contains(&word),
+                "word '{}' not in EFF wordlist",
+                word
+            );
         }
     }
 

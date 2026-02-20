@@ -71,10 +71,7 @@ impl RelayClient {
             self.peer_present = buf[0] == 1;
         }
 
-        info!(
-            "joined room, peer_present={}",
-            self.peer_present
-        );
+        info!("joined room, peer_present={}", self.peer_present);
 
         self.transport = Some(transport);
         Ok(self.peer_present)

@@ -4,12 +4,12 @@
 
 pub mod app;
 pub mod event;
-pub mod render;
-pub mod theme;
-pub mod panels;
-pub mod overlays;
-pub mod security;
 pub mod modes;
+pub mod overlays;
+pub mod panels;
+pub mod render;
+pub mod security;
+pub mod theme;
 pub mod widgets;
 
 use app::App;

@@ -41,10 +41,7 @@ mod serde_sig64 {
 
 impl KeyRotationRecord {
     /// Create a new rotation record
-    pub fn new(
-        old_identity: &Ed25519Signer,
-        new_identity: &Ed25519Signer,
-    ) -> Result<Self> {
+    pub fn new(old_identity: &Ed25519Signer, new_identity: &Ed25519Signer) -> Result<Self> {
         let old_key_id = old_identity.verifying_key_bytes();
         let new_key_id = new_identity.verifying_key_bytes();
         let timestamp = std::time::SystemTime::now()

@@ -1,7 +1,7 @@
 //! Chat protocol
 
-pub mod session;
 pub mod message;
+pub mod session;
 
-pub use session::ChatSession;
 pub use message::ChatMessage;
+pub use session::ChatSession;

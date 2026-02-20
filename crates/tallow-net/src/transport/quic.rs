@@ -87,9 +87,7 @@ impl QuicTransport {
         let (send, recv) = conn
             .accept_bi()
             .await
-            .map_err(|e| {
-                NetworkError::ConnectionFailed(format!("accept_bi failed: {}", e))
-            })?;
+            .map_err(|e| NetworkError::ConnectionFailed(format!("accept_bi failed: {}", e)))?;
 
         self.send_stream = Some(send);
         self.recv_stream = Some(recv);
@@ -132,10 +130,13 @@ impl crate::Transport for QuicTransport {
         let client_config = super::tls_config::quinn_client_config()?;
 
         // Bind to any available port
-        let mut endpoint = quinn::Endpoint::client("0.0.0.0:0".parse().map_err(|e| {
-            NetworkError::ConnectionFailed(format!("invalid bind addr: {}", e))
-        })?)
-        .map_err(|e| NetworkError::ConnectionFailed(format!("QUIC client bind failed: {}", e)))?;
+        let mut endpoint =
+            quinn::Endpoint::client("0.0.0.0:0".parse().map_err(|e| {
+                NetworkError::ConnectionFailed(format!("invalid bind addr: {}", e))
+            })?)
+            .map_err(|e| {
+                NetworkError::ConnectionFailed(format!("QUIC client bind failed: {}", e))
+            })?;
 
         endpoint.set_default_client_config(client_config);
 
@@ -153,9 +154,7 @@ impl crate::Transport for QuicTransport {
         let (send, recv) = connection
             .open_bi()
             .await
-            .map_err(|e| {
-                NetworkError::ConnectionFailed(format!("open_bi failed: {}", e))
-            })?;
+            .map_err(|e| NetworkError::ConnectionFailed(format!("open_bi failed: {}", e)))?;
 
         self.endpoint = Some(endpoint);
         self.connection = Some(connection);

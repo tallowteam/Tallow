@@ -63,31 +63,19 @@ pub fn derive_session_key_from_phrase(code_phrase: &str, room_id: &[u8; 32]) -> 
 ///
 /// (public_message, CpaceState) — send public_message to peer,
 /// then call `complete_cpace` with their public_message.
-pub fn start_cpace_initiator(
-    code_phrase: &str,
-    session_id: &[u8],
-) -> (Vec<u8>, CpaceState) {
+pub fn start_cpace_initiator(code_phrase: &str, session_id: &[u8]) -> (Vec<u8>, CpaceState) {
     let initiator = tallow_crypto::pake::CpaceInitiator::new(code_phrase, session_id);
     let public_bytes = initiator.public_message();
 
-    (
-        public_bytes.to_vec(),
-        CpaceState::Initiator(initiator),
-    )
+    (public_bytes.to_vec(), CpaceState::Initiator(initiator))
 }
 
 /// Start CPace as responder
-pub fn start_cpace_responder(
-    code_phrase: &str,
-    session_id: &[u8],
-) -> (Vec<u8>, CpaceState) {
+pub fn start_cpace_responder(code_phrase: &str, session_id: &[u8]) -> (Vec<u8>, CpaceState) {
     let responder = tallow_crypto::pake::CpaceResponder::new(code_phrase, session_id);
     let public_bytes = responder.public_message();
 
-    (
-        public_bytes.to_vec(),
-        CpaceState::Responder(responder),
-    )
+    (public_bytes.to_vec(), CpaceState::Responder(responder))
 }
 
 /// Complete CPace key exchange with the peer's public message

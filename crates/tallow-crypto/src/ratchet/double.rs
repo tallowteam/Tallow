@@ -143,8 +143,7 @@ impl DoubleRatchet {
                 let mk = blake3::derive_key("message", &self.recv_chain_key);
                 self.skipped_keys
                     .insert((dh_pub.clone(), self.recv_counter), mk);
-                self.recv_chain_key =
-                    blake3::derive_key("chain_advance", &self.recv_chain_key);
+                self.recv_chain_key = blake3::derive_key("chain_advance", &self.recv_chain_key);
                 self.recv_counter += 1;
             }
         }

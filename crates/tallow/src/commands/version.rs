@@ -18,7 +18,11 @@ pub fn execute(json: bool) {
     } else {
         println!("tallow {}", version);
         println!("rust:     {}", rust_version);
-        println!("platform: {} {}", std::env::consts::OS, std::env::consts::ARCH);
+        println!(
+            "platform: {} {}",
+            std::env::consts::OS,
+            std::env::consts::ARCH
+        );
         println!("features: {}", built_features().join(", "));
     }
 }

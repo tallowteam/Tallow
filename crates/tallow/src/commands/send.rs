@@ -12,10 +12,7 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
         if !file.exists() {
             let msg = format!("File not found: {}", file.display());
             if json {
-                println!(
-                    "{}",
-                    serde_json::json!({"event": "error", "message": msg})
-                );
+                println!("{}", serde_json::json!({"event": "error", "message": msg}));
             } else {
                 output::color::error(&msg);
             }
@@ -63,16 +60,15 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
     let session_key = tallow_protocol::kex::derive_session_key_from_phrase(&code_phrase, &room_id);
     let transfer_id: [u8; 16] = rand::random();
 
-    let mut pipeline = tallow_protocol::transfer::SendPipeline::new(
-        transfer_id,
-        *session_key.as_bytes(),
-    );
+    let mut pipeline =
+        tallow_protocol::transfer::SendPipeline::new(transfer_id, *session_key.as_bytes());
 
     // Prepare files (scan, hash, build manifest)
     let file_paths: Vec<PathBuf> = args.files.clone();
-    let _offer_messages = pipeline.prepare(&file_paths).await.map_err(|e| {
-        io::Error::other(format!("Failed to prepare transfer: {}", e))
-    })?;
+    let _offer_messages = pipeline
+        .prepare(&file_paths)
+        .await
+        .map_err(|e| io::Error::other(format!("Failed to prepare transfer: {}", e)))?;
 
     let manifest = pipeline.manifest();
 
@@ -116,14 +112,17 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
     let total_size = manifest.total_size;
     let total_chunks = manifest.total_chunks;
     let file_count = manifest.files.len();
-    let filenames: Vec<String> = manifest.files.iter().map(|f| f.path.display().to_string()).collect();
+    let filenames: Vec<String> = manifest
+        .files
+        .iter()
+        .map(|f| f.path.display().to_string())
+        .collect();
 
     for file in &args.files {
-        let chunks = pipeline.chunk_file(file, chunk_index).await.map_err(|e| {
-            io::Error::other(
-                format!("Failed to chunk {}: {}", file.display(), e),
-            )
-        })?;
+        let chunks = pipeline
+            .chunk_file(file, chunk_index)
+            .await
+            .map_err(|e| io::Error::other(format!("Failed to chunk {}: {}", file.display(), e)))?;
 
         let num_chunks = chunks.len() as u64;
         total_sent += num_chunks * pipeline.manifest().chunk_size as u64;

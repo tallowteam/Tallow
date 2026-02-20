@@ -297,10 +297,7 @@ impl<'a> NetworkQuality<'a> {
             lines.push(Line::from(Span::raw(""))); // Blank line
             lines.push(Line::from(vec![
                 Span::raw("Quality: "),
-                Span::styled(
-                    rating.indicator(),
-                    Style::default().fg(rating.color()),
-                ),
+                Span::styled(rating.indicator(), Style::default().fg(rating.color())),
                 Span::raw(" "),
                 Span::styled(
                     rating.as_str(),

@@ -90,9 +90,7 @@ pub async fn execute(json: bool) -> io::Result<()> {
     if all_passed {
         Ok(())
     } else {
-        Err(io::Error::other(
-            "Some diagnostics failed",
-        ))
+        Err(io::Error::other("Some diagnostics failed"))
     }
 }
 
@@ -127,7 +125,10 @@ fn check_config() -> DiagCheck {
         Ok(_) => DiagCheck {
             name: "Config".to_string(),
             passed: true,
-            message: format!("Loaded from {}", tallow_store::config::config_path().display()),
+            message: format!(
+                "Loaded from {}",
+                tallow_store::config::config_path().display()
+            ),
             fix: None,
         },
         Err(e) => DiagCheck {

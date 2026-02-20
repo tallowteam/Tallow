@@ -15,8 +15,7 @@ pub use x25519::X25519KeyPair;
 use serde::{Deserialize, Serialize};
 
 /// Supported KEM algorithms
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum KemAlgorithm {
     /// ML-KEM-1024 (post-quantum)
     MlKem1024,
@@ -26,4 +25,3 @@ pub enum KemAlgorithm {
     #[default]
     Hybrid,
 }
-

@@ -67,9 +67,7 @@ impl StunClient {
     pub async fn discover_public_address(&self) -> Result<StunResult> {
         let socket = UdpSocket::bind("0.0.0.0:0")
             .await
-            .map_err(|e| {
-                NetworkError::NatTraversal(format!("Failed to bind UDP socket: {}", e))
-            })?;
+            .map_err(|e| NetworkError::NatTraversal(format!("Failed to bind UDP socket: {}", e)))?;
 
         let local_addr = socket.local_addr().map_err(|e| {
             NetworkError::NatTraversal(format!("Failed to get local address: {}", e))
@@ -80,12 +78,9 @@ impl StunClient {
         let request = build_binding_request(&transaction_id);
 
         // Send request
-        socket
-            .send_to(&request, self.server)
-            .await
-            .map_err(|e| {
-                NetworkError::NatTraversal(format!("Failed to send STUN request: {}", e))
-            })?;
+        socket.send_to(&request, self.server).await.map_err(|e| {
+            NetworkError::NatTraversal(format!("Failed to send STUN request: {}", e))
+        })?;
 
         // Wait for response (3 second timeout)
         let mut buf = [0u8; 576];

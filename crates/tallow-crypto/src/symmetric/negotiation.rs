@@ -95,9 +95,7 @@ mod tests {
     fn test_select_cipher() {
         let cipher = select_cipher();
         // Should return either AES or ChaCha20 depending on platform
-        assert!(
-            cipher == CipherSuite::Aes256Gcm || cipher == CipherSuite::ChaCha20Poly1305
-        );
+        assert!(cipher == CipherSuite::Aes256Gcm || cipher == CipherSuite::ChaCha20Poly1305);
     }
 
     #[test]

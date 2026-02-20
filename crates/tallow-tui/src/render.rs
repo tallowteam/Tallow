@@ -70,7 +70,7 @@ fn render_monitor(frame: &mut Frame, app: &App) {
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(5), // Status bar
-            Constraint::Min(0),   // Transfers
+            Constraint::Min(0),    // Transfers
         ])
         .split(frame.area());
 
@@ -85,7 +85,9 @@ fn render_help_overlay(frame: &mut Frame) {
     let help_text = vec![
         Line::from(Span::styled(
             " Tallow TUI — Keyboard Shortcuts ",
-            Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
         Line::from(vec![
@@ -127,13 +129,12 @@ fn render_help_overlay(frame: &mut Frame) {
         )),
     ];
 
-    let help = Paragraph::new(help_text)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::Cyan))
-                .title(" Help "),
-        );
+    let help = Paragraph::new(help_text).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Cyan))
+            .title(" Help "),
+    );
 
     // Clear the area first
     frame.render_widget(ratatui::widgets::Clear, area);

@@ -19,7 +19,10 @@ pub fn print_json<T: Serialize>(value: &T) {
 /// Print a JSON event (for streaming output)
 pub fn print_event(event: &str, data: serde_json::Value) {
     let mut obj = serde_json::Map::new();
-    obj.insert("event".to_string(), serde_json::Value::String(event.to_string()));
+    obj.insert(
+        "event".to_string(),
+        serde_json::Value::String(event.to_string()),
+    );
     for (k, v) in data.as_object().into_iter().flatten() {
         obj.insert(k.clone(), v.clone());
     }

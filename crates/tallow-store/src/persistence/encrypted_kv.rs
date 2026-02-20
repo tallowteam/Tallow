@@ -91,9 +91,8 @@ impl EncryptedKv {
     /// Load and decrypt all entries from disk
     fn load_from_disk(&mut self) -> Result<()> {
         let data = std::fs::read(&self.path)?;
-        let store_data: StoreData = bincode::deserialize(&data).map_err(|e| {
-            StoreError::PersistenceError(format!("Failed to parse store: {}", e))
-        })?;
+        let store_data: StoreData = bincode::deserialize(&data)
+            .map_err(|e| StoreError::PersistenceError(format!("Failed to parse store: {}", e)))?;
 
         self.cache.clear();
         for (key, entry) in store_data.entries {

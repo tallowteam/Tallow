@@ -119,8 +119,7 @@ impl SendPipeline {
                 .map(PathBuf::from)
                 .unwrap_or_else(|| PathBuf::from("unnamed"));
 
-            self.manifest
-                .add_file(relative_path, metadata.len(), hash);
+            self.manifest.add_file(relative_path, metadata.len(), hash);
         } else if metadata.is_dir() {
             self.scan_directory(path, path).await?;
         }
@@ -134,13 +133,16 @@ impl SendPipeline {
             ProtocolError::TransferFailed(format!("readdir {}: {}", dir.display(), e))
         })?;
 
-        while let Some(entry) = entries.next_entry().await.map_err(|e| {
-            ProtocolError::TransferFailed(format!("readdir entry: {}", e))
-        })? {
+        while let Some(entry) = entries
+            .next_entry()
+            .await
+            .map_err(|e| ProtocolError::TransferFailed(format!("readdir entry: {}", e)))?
+        {
             let path = entry.path();
-            let file_type = entry.file_type().await.map_err(|e| {
-                ProtocolError::TransferFailed(format!("file_type: {}", e))
-            })?;
+            let file_type = entry
+                .file_type()
+                .await
+                .map_err(|e| ProtocolError::TransferFailed(format!("file_type: {}", e)))?;
 
             if file_type.is_file() {
                 let data = tokio::fs::read(&path).await.map_err(|e| {
@@ -148,13 +150,9 @@ impl SendPipeline {
                 })?;
 
                 let hash: [u8; 32] = blake3::hash(&data).into();
-                let relative = path
-                    .strip_prefix(base)
-                    .unwrap_or(&path)
-                    .to_path_buf();
+                let relative = path.strip_prefix(base).unwrap_or(&path).to_path_buf();
 
-                self.manifest
-                    .add_file(relative, data.len() as u64, hash);
+                self.manifest.add_file(relative, data.len() as u64, hash);
             } else if file_type.is_dir() {
                 Box::pin(self.scan_directory(base, &path)).await?;
             }
@@ -194,15 +192,11 @@ impl SendPipeline {
             let nonce = chunking::build_chunk_nonce(global_index);
 
             // Encrypt with AES-256-GCM
-            let encrypted = tallow_crypto::symmetric::aes_encrypt(
-                &self.session_key,
-                &nonce,
-                &chunk.data,
-                &aad,
-            )
-            .map_err(|e| {
-                ProtocolError::TransferFailed(format!("chunk encryption failed: {}", e))
-            })?;
+            let encrypted =
+                tallow_crypto::symmetric::aes_encrypt(&self.session_key, &nonce, &chunk.data, &aad)
+                    .map_err(|e| {
+                        ProtocolError::TransferFailed(format!("chunk encryption failed: {}", e))
+                    })?;
 
             messages.push(Message::Chunk {
                 transfer_id: self.transfer_id,

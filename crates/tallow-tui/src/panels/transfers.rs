@@ -66,11 +66,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
 }
 
 /// Render a single transfer row
-fn render_transfer_row(
-    frame: &mut Frame,
-    area: Rect,
-    transfer: &crate::app::TransferInfo,
-) {
+fn render_transfer_row(frame: &mut Frame, area: Rect, transfer: &crate::app::TransferInfo) {
     let rows = Layout::default()
         .direction(Direction::Vertical)
         .constraints([

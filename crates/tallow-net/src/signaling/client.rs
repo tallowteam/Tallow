@@ -1,7 +1,7 @@
 //! Signaling client implementation
 
-use crate::Result;
 use super::protocol::SignalingMessage;
+use crate::Result;
 
 /// Signaling client for coordinating with peers
 #[derive(Debug)]

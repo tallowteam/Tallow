@@ -102,10 +102,13 @@ impl TransferLog {
     pub fn query_by_direction(&self, direction: TransferDirection) -> Vec<&TransferEntry> {
         self.entries
             .iter()
-            .filter(|e| matches!((&e.direction, &direction),
-                (TransferDirection::Sent, TransferDirection::Sent) |
-                (TransferDirection::Received, TransferDirection::Received)
-            ))
+            .filter(|e| {
+                matches!(
+                    (&e.direction, &direction),
+                    (TransferDirection::Sent, TransferDirection::Sent)
+                        | (TransferDirection::Received, TransferDirection::Received)
+                )
+            })
             .collect()
     }
 

@@ -5,13 +5,13 @@
 
 #![forbid(unsafe_code)]
 
-pub mod error;
 pub mod config;
-pub mod identity;
-pub mod trust;
 pub mod contacts;
+pub mod error;
 pub mod history;
+pub mod identity;
 pub mod persistence;
+pub mod trust;
 
 pub use error::StoreError;
 
