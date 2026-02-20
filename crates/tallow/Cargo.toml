@@ -36,7 +36,9 @@ indicatif = "0.17"
 owo-colors = "4"
 comfy-table = "7"
 qrcode = "0.14"
+qr2term = "0.3"
 arboard = "3"
+crossterm = "0.28"
 
 # Async
 tokio.workspace = true

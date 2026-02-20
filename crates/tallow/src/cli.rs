@@ -80,11 +80,35 @@ pub enum Commands {
 #[derive(Args)]
 pub struct SendArgs {
     /// Files or directories to send
-    #[arg(required = true)]
+    #[arg()]
     pub files: Vec<PathBuf>,
 
+    /// Send text directly instead of files
+    #[arg(short = 't', long)]
+    pub text: Option<String>,
+
+    /// Use a custom code phrase
+    #[arg(short = 'c', long = "code")]
+    pub custom_code: Option<String>,
+
+    /// Number of words in generated code phrase (default: 4)
+    #[arg(long)]
+    pub words: Option<usize>,
+
+    /// Display QR code for the receive command
+    #[arg(long)]
+    pub qr: bool,
+
+    /// Do not copy receive command to clipboard
+    #[arg(long)]
+    pub no_clipboard: bool,
+
+    /// Ignore piped stdin (force file mode)
+    #[arg(long)]
+    pub ignore_stdin: bool,
+
     /// Target peer ID or device name
-    #[arg(short, long)]
+    #[arg(long)]
     pub to: Option<String>,
 
     /// Room code for internet transfer
@@ -92,7 +116,7 @@ pub struct SendArgs {
     pub room: Option<String>,
 
     /// Compression algorithm (auto/zstd/brotli/lz4/lzma/none)
-    #[arg(short, long, default_value = "auto")]
+    #[arg(short = 'x', long, default_value = "auto")]
     pub compress: String,
 
     /// Strip metadata from files
@@ -125,6 +149,14 @@ pub struct ReceiveArgs {
     /// Output directory
     #[arg(short, long)]
     pub output: Option<PathBuf>,
+
+    /// Auto-accept incoming transfers without prompting
+    #[arg(short = 'y', long)]
+    pub yes: bool,
+
+    /// Overwrite existing files without prompting
+    #[arg(long)]
+    pub overwrite: bool,
 
     /// Auto-accept from trusted peers
     #[arg(long)]
