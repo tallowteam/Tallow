@@ -184,8 +184,8 @@ mod tests {
 
     #[test]
     fn test_strip_exif_minimal_jpeg() {
-        // Minimal JPEG: SOI + SOS + some data + EOI
-        let mut jpeg = vec![0xFF, 0xD8, 0xFF]; // SOI
+        // Minimal JPEG: SOI + APP1(EXIF) + SOS + image data + EOI
+        let mut jpeg = vec![0xFF, 0xD8]; // SOI
         // APP1 (EXIF) segment
         jpeg.extend_from_slice(&[0xFF, 0xE1, 0x00, 0x08]); // APP1, length=8
         jpeg.extend_from_slice(&[0x45, 0x78, 0x69, 0x66, 0x00, 0x00]); // "Exif\0\0"

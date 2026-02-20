@@ -177,13 +177,14 @@ mod tests {
 
     #[test]
     fn test_wipe_on_drop() {
-        let mut value = 42;
+        use std::sync::atomic::{AtomicU32, Ordering};
+        let value = AtomicU32::new(42);
         {
             let _guard = wipe_on_drop(|| {
-                value = 0;
+                value.store(0, Ordering::SeqCst);
             });
-            assert_eq!(value, 42);
+            assert_eq!(value.load(Ordering::SeqCst), 42);
         }
-        assert_eq!(value, 0);
+        assert_eq!(value.load(Ordering::SeqCst), 0);
     }
 }

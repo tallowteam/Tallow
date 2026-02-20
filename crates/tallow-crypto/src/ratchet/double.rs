@@ -48,14 +48,36 @@ impl Drop for DoubleRatchet {
 }
 
 impl DoubleRatchet {
-    /// Initialize a new double ratchet
+    /// Initialize a new double ratchet as the initiator
     pub fn init(shared_secret: &[u8; 32]) -> Self {
+        Self::init_with_role(shared_secret, false)
+    }
+
+    /// Initialize a new double ratchet as the responder
+    ///
+    /// The responder swaps send/recv chain keys relative to the initiator,
+    /// so the initiator's send chain matches the responder's recv chain.
+    pub fn init_responder(shared_secret: &[u8; 32]) -> Self {
+        Self::init_with_role(shared_secret, true)
+    }
+
+    /// Initialize with a specific role (swap chain keys for responder)
+    fn init_with_role(shared_secret: &[u8; 32], is_responder: bool) -> Self {
         let ephemeral_keypair = X25519KeyPair::generate();
+
+        let chain_a = blake3::derive_key("send_chain", shared_secret);
+        let chain_b = blake3::derive_key("recv_chain", shared_secret);
+
+        let (send_chain_key, recv_chain_key) = if is_responder {
+            (chain_b, chain_a)
+        } else {
+            (chain_a, chain_b)
+        };
 
         Self {
             root_key: *shared_secret,
-            send_chain_key: blake3::derive_key("send_chain", shared_secret),
-            recv_chain_key: blake3::derive_key("recv_chain", shared_secret),
+            send_chain_key,
+            recv_chain_key,
             send_counter: 0,
             recv_counter: 0,
             ephemeral_keypair,
@@ -209,7 +231,7 @@ mod tests {
     fn test_double_ratchet_basic() {
         let shared_secret = [42u8; 32];
         let mut sender = DoubleRatchet::init(&shared_secret);
-        let mut receiver = DoubleRatchet::init(&shared_secret);
+        let mut receiver = DoubleRatchet::init_responder(&shared_secret);
 
         let ct = sender.encrypt_message(b"hello").unwrap();
         let pt = receiver.decrypt_message(&ct).unwrap();
@@ -221,7 +243,7 @@ mod tests {
     fn test_double_ratchet_multiple_messages() {
         let shared_secret = [42u8; 32];
         let mut sender = DoubleRatchet::init(&shared_secret);
-        let mut receiver = DoubleRatchet::init(&shared_secret);
+        let mut receiver = DoubleRatchet::init_responder(&shared_secret);
 
         for i in 0..10 {
             let msg = format!("message {}", i);
@@ -235,7 +257,7 @@ mod tests {
     fn test_double_ratchet_out_of_order() {
         let shared_secret = [42u8; 32];
         let mut sender = DoubleRatchet::init(&shared_secret);
-        let mut receiver = DoubleRatchet::init(&shared_secret);
+        let mut receiver = DoubleRatchet::init_responder(&shared_secret);
 
         // Encrypt 4 messages
         let ct0 = sender.encrypt_message(b"msg0").unwrap();

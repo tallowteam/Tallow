@@ -50,7 +50,7 @@ impl Transport for TcpTlsTransport {
             .await
             .map_err(|e| NetworkError::ConnectionFailed(format!("TCP connect failed: {}", e)))?;
 
-        let tls_config = super::tls_config::rustls_client_config();
+        let tls_config = super::tls_config::rustls_client_config()?;
         let connector = tokio_rustls::TlsConnector::from(tls_config);
 
         let server_name = rustls::pki_types::ServerName::try_from("localhost")

@@ -29,10 +29,18 @@ impl Drop for TripleRatchet {
 }
 
 impl TripleRatchet {
-    /// Initialize a new triple ratchet
+    /// Initialize a new triple ratchet as the initiator
     pub fn init(shared_secret: &[u8; 32], pq_rekey_interval: u64) -> Self {
         Self {
             double_ratchet: DoubleRatchet::init(shared_secret),
+            sparse_pq_ratchet: SparsePqRatchet::new(*shared_secret, pq_rekey_interval),
+        }
+    }
+
+    /// Initialize a new triple ratchet as the responder
+    pub fn init_responder(shared_secret: &[u8; 32], pq_rekey_interval: u64) -> Self {
+        Self {
+            double_ratchet: DoubleRatchet::init_responder(shared_secret),
             sparse_pq_ratchet: SparsePqRatchet::new(*shared_secret, pq_rekey_interval),
         }
     }
@@ -79,7 +87,7 @@ mod tests {
     fn test_triple_ratchet_basic() {
         let shared_secret = [42u8; 32];
         let mut sender = TripleRatchet::init(&shared_secret, 10);
-        let mut receiver = TripleRatchet::init(&shared_secret, 10);
+        let mut receiver = TripleRatchet::init_responder(&shared_secret, 10);
 
         let ct = sender.encrypt_message(b"hello").unwrap();
         let pt = receiver.decrypt_message(&ct).unwrap();

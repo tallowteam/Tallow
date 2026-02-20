@@ -49,7 +49,10 @@ pub fn quinn_server_config(identity: &TlsIdentity) -> Result<quinn::ServerConfig
 /// encryption against passive observers only.
 #[cfg(feature = "quic")]
 pub fn quinn_client_config() -> Result<quinn::ClientConfig> {
-    let crypto = rustls::ClientConfig::builder()
+    let provider = Arc::new(rustls::crypto::ring::default_provider());
+    let crypto = rustls::ClientConfig::builder_with_provider(provider)
+        .with_safe_default_protocol_versions()
+        .map_err(|e| NetworkError::TlsError(format!("TLS protocol versions: {}", e)))?
         .dangerous()
         .with_custom_certificate_verifier(Arc::new(SkipServerVerification))
         .with_no_client_auth();
@@ -64,7 +67,10 @@ pub fn quinn_client_config() -> Result<quinn::ClientConfig> {
 
 /// Build a rustls ServerConfig from a TLS identity (for TCP+TLS)
 pub fn rustls_server_config(identity: &TlsIdentity) -> Result<Arc<rustls::ServerConfig>> {
-    let config = rustls::ServerConfig::builder()
+    let provider = Arc::new(rustls::crypto::ring::default_provider());
+    let config = rustls::ServerConfig::builder_with_provider(provider)
+        .with_safe_default_protocol_versions()
+        .map_err(|e| NetworkError::TlsError(format!("TLS protocol versions: {}", e)))?
         .with_no_client_auth()
         .with_single_cert(
             vec![identity.cert_der.clone()],
@@ -76,13 +82,16 @@ pub fn rustls_server_config(identity: &TlsIdentity) -> Result<Arc<rustls::Server
 }
 
 /// Build a rustls ClientConfig that accepts any server certificate (for TCP+TLS)
-pub fn rustls_client_config() -> Arc<rustls::ClientConfig> {
-    let config = rustls::ClientConfig::builder()
+pub fn rustls_client_config() -> Result<Arc<rustls::ClientConfig>> {
+    let provider = Arc::new(rustls::crypto::ring::default_provider());
+    let config = rustls::ClientConfig::builder_with_provider(provider)
+        .with_safe_default_protocol_versions()
+        .map_err(|e| NetworkError::TlsError(format!("TLS protocol versions: {}", e)))?
         .dangerous()
         .with_custom_certificate_verifier(Arc::new(SkipServerVerification))
         .with_no_client_auth();
 
-    Arc::new(config)
+    Ok(Arc::new(config))
 }
 
 /// Certificate verifier that accepts any certificate
