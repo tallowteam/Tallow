@@ -53,7 +53,7 @@ impl MlDsaSigner {
             .try_sign(message, &[])
             .map_err(|_| CryptoError::Signing("ML-DSA-87 signing failed".to_string()))?;
 
-        Ok(sig.into_bytes().to_vec())
+        Ok(sig.to_vec())
     }
 
     /// Get the public key bytes
@@ -86,11 +86,9 @@ pub fn verify(public_key: &[u8], message: &[u8], signature: &[u8]) -> Result<()>
         CryptoError::Verification("Invalid ML-DSA-87 signature length".to_string())
     })?;
 
-    let sig = ml_dsa_87::Signature::try_from_bytes(sig_bytes)
-        .map_err(|_| CryptoError::Verification("Invalid ML-DSA-87 signature".to_string()))?;
-
-    vk.try_verify(message, &sig, &[])
-        .map_err(|_| CryptoError::Verification("ML-DSA-87 signature verification failed".to_string()))?;
+    if !vk.verify(message, &sig_bytes, &[]) {
+        return Err(CryptoError::Verification("ML-DSA-87 signature verification failed".to_string()));
+    }
 
     Ok(())
 }

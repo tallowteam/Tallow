@@ -181,7 +181,8 @@ impl SendPipeline {
 
         // Split into chunks
         let chunks = chunking::split_into_chunks(&compressed, self.chunk_config.size);
-        let total = start_chunk_index + chunks.len() as u64;
+        let num_chunks = chunks.len() as u64;
+        let total = start_chunk_index + num_chunks;
 
         let mut messages = Vec::with_capacity(chunks.len());
 
@@ -206,7 +207,7 @@ impl SendPipeline {
             messages.push(Message::Chunk {
                 transfer_id: self.transfer_id,
                 index: global_index,
-                total: if chunk.index as u64 + 1 == chunks.len() as u64 {
+                total: if chunk.index as u64 + 1 == num_chunks {
                     Some(total)
                 } else {
                     None

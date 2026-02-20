@@ -46,14 +46,14 @@ impl SlhDsaSigner {
             CryptoError::InvalidKey("Invalid SLH-DSA signing key length".to_string())
         })?;
 
-        let sk = slh_dsa_sha2_256f::PrivateKey::try_from_bytes(sk_bytes)
+        let sk = slh_dsa_sha2_256f::PrivateKey::try_from_bytes(&sk_bytes)
             .map_err(|_| CryptoError::Signing("Invalid SLH-DSA signing key".to_string()))?;
 
         let sig = sk
             .try_sign(message, &[], true)
             .map_err(|_| CryptoError::Signing("SLH-DSA signing failed".to_string()))?;
 
-        Ok(sig.into_bytes().to_vec())
+        Ok(sig.to_vec())
     }
 
     /// Get the public key bytes
@@ -78,7 +78,7 @@ pub fn verify(public_key: &[u8], message: &[u8], signature: &[u8]) -> Result<()>
         CryptoError::Verification("Invalid SLH-DSA public key length".to_string())
     })?;
 
-    let vk = slh_dsa_sha2_256f::PublicKey::try_from_bytes(vk_bytes)
+    let vk = slh_dsa_sha2_256f::PublicKey::try_from_bytes(&vk_bytes)
         .map_err(|_| CryptoError::Verification("Invalid SLH-DSA public key".to_string()))?;
 
     // SLH-DSA-SHA2-256f signature size is 49856 bytes
@@ -86,11 +86,9 @@ pub fn verify(public_key: &[u8], message: &[u8], signature: &[u8]) -> Result<()>
         CryptoError::Verification("Invalid SLH-DSA signature length".to_string())
     })?;
 
-    let sig = slh_dsa_sha2_256f::Signature::try_from_bytes(sig_bytes)
-        .map_err(|_| CryptoError::Verification("Invalid SLH-DSA signature".to_string()))?;
-
-    vk.try_verify(message, &sig, &[])
-        .map_err(|_| CryptoError::Verification("SLH-DSA signature verification failed".to_string()))?;
+    if !vk.verify(message, &sig_bytes, &[]) {
+        return Err(CryptoError::Verification("SLH-DSA signature verification failed".to_string()));
+    }
 
     Ok(())
 }

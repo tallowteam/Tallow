@@ -60,6 +60,10 @@ tracing-appender = "0.2"
 # Error handling
 anyhow.workspace = true
 color-eyre = "0.6"
+thiserror.workspace = true
+
+# Directories
+dirs = "5"
 
 # Memory locking (cross-platform)
 region = "3"

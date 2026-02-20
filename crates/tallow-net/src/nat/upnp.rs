@@ -21,7 +21,7 @@ pub async fn add_port_mapping(
         .await
         .map_err(|e| NetworkError::NatTraversal(format!("UPnP gateway not found: {}", e)))?;
 
-    let mapped_port = gateway
+    gateway
         .add_port(
             igd_next::PortMappingProtocol::TCP,
             external_port,
@@ -32,7 +32,7 @@ pub async fn add_port_mapping(
         .await
         .map_err(|e| NetworkError::NatTraversal(format!("UPnP port mapping failed: {}", e)))?;
 
-    Ok(mapped_port)
+    Ok(external_port)
 }
 
 /// Remove a UPnP port mapping
@@ -50,7 +50,7 @@ pub async fn remove_port_mapping(external_port: u16) -> Result<()> {
 }
 
 /// Get the external IP address from the gateway
-pub async fn get_external_ip() -> Result<std::net::Ipv4Addr> {
+pub async fn get_external_ip() -> Result<std::net::IpAddr> {
     let gateway = igd_next::aio::tokio::search_gateway(Default::default())
         .await
         .map_err(|e| NetworkError::NatTraversal(format!("UPnP gateway not found: {}", e)))?;

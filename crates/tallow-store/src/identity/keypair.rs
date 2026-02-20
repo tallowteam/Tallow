@@ -6,12 +6,20 @@ use crate::StoreError;
 use std::path::Path;
 
 /// Identity store for managing keypairs
-#[derive(Debug)]
 pub struct IdentityStore {
     /// The identity keypair (loaded on demand)
     keypair: Option<tallow_crypto::keys::IdentityKeyPair>,
     /// Path to the encrypted identity file
     path: std::path::PathBuf,
+}
+
+impl std::fmt::Debug for IdentityStore {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("IdentityStore")
+            .field("keypair", &self.keypair.as_ref().map(|_| "[REDACTED]"))
+            .field("path", &self.path)
+            .finish()
+    }
 }
 
 impl IdentityStore {

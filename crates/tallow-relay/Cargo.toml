@@ -21,6 +21,9 @@ clap = { version = "4", features = ["derive", "env"] }
 # Async
 tokio.workspace = true
 
+# QUIC Transport
+quinn = "0.11"
+
 # TLS / Certs
 rustls = "0.23"
 rcgen = "0.13"

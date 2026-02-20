@@ -6,11 +6,9 @@
 
 use crate::error::{CryptoError, Result};
 use crate::hash::blake3;
-use curve25519_dalek::constants::RISTRETTO_BASEPOINT_POINT;
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use curve25519_dalek::scalar::Scalar;
 use rand_core::OsRng;
-use serde::{Deserialize, Serialize};
 
 /// Domain separator for CPace generator derivation
 const CPACE_DOMAIN: &str = "tallow-cpace-v1";
@@ -104,7 +102,7 @@ impl CpaceInitiator {
 
         let their_bytes: [u8; 32] = their_public
             .try_into()
-            .expect("length validated above");
+            .map_err(|_| CryptoError::InvalidKey("CPace public message must be 32 bytes".to_string()))?;
 
         let their_point = CompressedRistretto(their_bytes)
             .decompress()
@@ -171,7 +169,7 @@ impl CpaceResponder {
 
         let their_bytes: [u8; 32] = their_public
             .try_into()
-            .expect("length validated above");
+            .map_err(|_| CryptoError::InvalidKey("CPace public message must be 32 bytes".to_string()))?;
 
         let their_point = CompressedRistretto(their_bytes)
             .decompress()

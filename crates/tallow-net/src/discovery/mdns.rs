@@ -15,12 +15,22 @@ use tokio::sync::mpsc;
 const SERVICE_TYPE: &str = "_tallow._tcp.local.";
 
 /// mDNS peer discovery
-#[derive(Debug)]
 pub struct MdnsDiscovery {
     service_name: String,
     peers: Arc<Mutex<Vec<DiscoveredPeer>>>,
     daemon: Option<ServiceDaemon>,
     shutdown_tx: Option<mpsc::Sender<()>>,
+}
+
+impl std::fmt::Debug for MdnsDiscovery {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MdnsDiscovery")
+            .field("service_name", &self.service_name)
+            .field("peers", &self.peers)
+            .field("daemon", &self.daemon.as_ref().map(|_| "ServiceDaemon"))
+            .field("shutdown_tx", &self.shutdown_tx)
+            .finish()
+    }
 }
 
 /// Discovered peer information

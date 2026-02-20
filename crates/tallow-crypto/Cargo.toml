@@ -12,15 +12,15 @@ fips = []
 
 [dependencies]
 # Post-Quantum KEM (FIPS 203)
-fips203 = { version = "0.4", default-features = false, features = ["ml-kem-1024"] }
+fips203 = { version = "0.4", default-features = false, features = ["ml-kem-1024", "default-rng"] }
 
 # Post-Quantum Signatures (FIPS 204, FIPS 205)
-fips204 = { version = "0.4", default-features = false, features = ["ml-dsa-87"] }
-fips205 = { version = "0.4", default-features = false, features = ["slh-dsa-sha2-256f"] }
+fips204 = { version = "0.4", default-features = false, features = ["ml-dsa-87", "default-rng"] }
+fips205 = { version = "0.4", default-features = false, features = ["slh_dsa_sha2_256f", "default-rng"] }
 
 # Classical Key Exchange
 x25519-dalek = { version = "2", features = ["static_secrets"] }
-curve25519-dalek = "4"
+curve25519-dalek = { version = "4", features = ["rand_core"] }
 
 # Classical Signatures
 ed25519-dalek = { version = "2", features = ["rand_core"] }
