@@ -4,14 +4,17 @@
 //! encryption, progress tracking, and resume.
 
 pub mod chunking;
+pub mod exclusion;
 pub mod manifest;
 pub mod progress;
 pub mod receive;
 pub mod resume;
 pub mod send;
 pub mod state_machine;
+pub mod sync;
 
 pub use chunking::{ChunkConfig, DEFAULT_CHUNK_SIZE};
+pub use exclusion::ExclusionConfig;
 pub use manifest::FileManifest;
 pub use progress::TransferProgress;
 pub use receive::ReceivePipeline;

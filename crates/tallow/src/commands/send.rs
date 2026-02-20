@@ -197,9 +197,19 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
         _ => tallow_protocol::compression::CompressionAlgorithm::Zstd, // "auto" and unrecognized default to zstd
     };
 
+    // Build exclusion config from --exclude and --git flags
+    let exclusion = tallow_protocol::transfer::ExclusionConfig::from_exclude_str(
+        args.exclude.as_deref(),
+        args.git,
+    );
+
+    // Parse bandwidth throttle
+    let throttle_bps = parse_throttle(&args.throttle)?;
+
     let mut pipeline =
         tallow_protocol::transfer::SendPipeline::new(transfer_id, *session_key.as_bytes())
-            .with_compression(compression);
+            .with_compression(compression)
+            .with_exclusion(exclusion);
 
     // Prepare transfer based on source
     let (offer_messages, source_files) = match &source {
@@ -251,6 +261,22 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
             output::format_size(total_size),
             total_chunks,
         );
+    }
+
+    // --ask: prompt sender for confirmation before starting transfer
+    if args.ask && !json {
+        let confirm = output::prompts::confirm_with_default(
+            &format!(
+                "Send {} file(s) ({})?",
+                file_count,
+                output::format_size(total_size)
+            ),
+            true,
+        )?;
+        if !confirm {
+            output::color::info("Transfer cancelled by sender.");
+            return Ok(());
+        }
     }
 
     // Resolve relay address
@@ -367,6 +393,19 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
                 .map_err(|e| io::Error::other(format!("Failed to chunk text: {}", e)))?;
 
             for chunk_msg in &chunk_messages {
+                // Apply bandwidth throttle if configured
+                if throttle_bps > 0 {
+                    let chunk_size = if let Message::Chunk { ref data, .. } = chunk_msg {
+                        data.len() as u64
+                    } else {
+                        0
+                    };
+                    let delay_ms = (chunk_size * 1000) / throttle_bps;
+                    if delay_ms > 0 {
+                        tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
+                    }
+                }
+
                 encode_buf.clear();
                 codec
                     .encode_msg(chunk_msg, &mut encode_buf)
@@ -415,6 +454,19 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
                     })?;
 
                 for chunk_msg in &chunk_messages {
+                    // Apply bandwidth throttle if configured
+                    if throttle_bps > 0 {
+                        let chunk_size = if let Message::Chunk { ref data, .. } = chunk_msg {
+                            data.len() as u64
+                        } else {
+                            0
+                        };
+                        let delay_ms = (chunk_size * 1000) / throttle_bps;
+                        if delay_ms > 0 {
+                            tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
+                        }
+                    }
+
                     encode_buf.clear();
                     codec
                         .encode_msg(chunk_msg, &mut encode_buf)
@@ -516,6 +568,24 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
     }
 
     Ok(())
+}
+
+/// Parse a throttle string (e.g., "10MB", "500KB") into bytes per second
+///
+/// Returns 0 if no throttle is configured (unlimited).
+fn parse_throttle(throttle: &Option<String>) -> io::Result<u64> {
+    match throttle {
+        None => Ok(0),
+        Some(s) => {
+            let bs: bytesize::ByteSize = s.parse().map_err(|e| {
+                io::Error::other(format!(
+                    "Invalid throttle '{}': {}. Examples: '10MB', '500KB', '1GB'",
+                    s, e
+                ))
+            })?;
+            Ok(bs.as_u64())
+        }
+    }
 }
 
 /// Resolve a relay address string to a SocketAddr

@@ -18,6 +18,9 @@ lzma-rs = "0.3"
 # File watching
 notify = "7"
 
+# File exclusion
+ignore = "0.4"
+
 # Tar streaming
 tar = "0.4"
 
