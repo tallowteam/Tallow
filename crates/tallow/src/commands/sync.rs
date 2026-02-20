@@ -112,8 +112,21 @@ pub async fn execute(args: SyncArgs, json: bool) -> io::Result<()> {
         output::color::info(&format!("Connecting to relay {}...", args.relay));
     }
 
+    // Hash relay password for authentication (if provided)
+    let password_hash: Option<[u8; 32]> = args.relay_pass.as_ref().map(|pass| {
+        blake3::hash(pass.as_bytes()).into()
+    });
+    let pw_ref = password_hash.as_ref();
+
+    if args.relay_pass.is_some() && std::env::var("TALLOW_RELAY_PASS").is_err() {
+        tracing::warn!(
+            "Relay password passed via CLI argument -- visible in process list. \
+             Use TALLOW_RELAY_PASS env var for better security."
+        );
+    }
+
     let peer_present = relay
-        .connect(&room_id)
+        .connect(&room_id, pw_ref)
         .await
         .map_err(|e| io::Error::other(format!("Relay connection failed: {}", e)))?;
 

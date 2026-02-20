@@ -1,0 +1,18 @@
+services:
+  relay:
+    build:
+      context: .
+      dockerfile: Dockerfile.relay
+    ports:
+      - "4433:4433/udp"
+    environment:
+      - TALLOW_RELAY_PASS=${TALLOW_RELAY_PASS:-}
+      - RUST_LOG=info
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 512M

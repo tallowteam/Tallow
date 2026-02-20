@@ -183,6 +183,10 @@ impl ChatSession {
             }
         }
 
+        // Sanitize all incoming message text (whether decrypted or plaintext)
+        // to strip ANSI escape sequences and control characters
+        msg.text = crate::transfer::sanitize::sanitize_display(&msg.text);
+
         self.messages.push(msg.clone());
         Ok(msg)
     }

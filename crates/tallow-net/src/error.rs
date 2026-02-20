@@ -21,6 +21,8 @@ pub enum NetworkError {
     TlsError(String),
     /// Discovery error
     DiscoveryError(String),
+    /// Relay authentication failed
+    AuthenticationFailed,
     /// IO error
     Io(std::io::Error),
 }
@@ -36,6 +38,7 @@ impl fmt::Display for NetworkError {
             Self::ProtocolNegotiation(msg) => write!(f, "Protocol negotiation failed: {}", msg),
             Self::TlsError(msg) => write!(f, "TLS error: {}", msg),
             Self::DiscoveryError(msg) => write!(f, "Discovery error: {}", msg),
+            Self::AuthenticationFailed => write!(f, "Relay authentication failed"),
             Self::Io(err) => write!(f, "IO error: {}", err),
         }
     }

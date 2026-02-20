@@ -19,6 +19,9 @@ pub struct RelayConfig {
     pub tls_cert: Option<String>,
     /// TLS key path (optional)
     pub tls_key: Option<String>,
+    /// Relay password (empty = open relay, no authentication required)
+    #[serde(default)]
+    pub password: String,
 }
 
 impl Default for RelayConfig {
@@ -31,6 +34,7 @@ impl Default for RelayConfig {
             room_timeout_secs: 60,
             tls_cert: None,
             tls_key: None,
+            password: String::new(),
         }
     }
 }

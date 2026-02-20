@@ -297,8 +297,21 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
         output::color::info(&format!("Connecting to relay {}...", args.relay));
     }
 
+    // Hash relay password for authentication (if provided)
+    let password_hash: Option<[u8; 32]> = args.relay_pass.as_ref().map(|pass| {
+        blake3::hash(pass.as_bytes()).into()
+    });
+    let pw_ref = password_hash.as_ref();
+
+    if args.relay_pass.is_some() && std::env::var("TALLOW_RELAY_PASS").is_err() {
+        tracing::warn!(
+            "Relay password passed via CLI argument -- visible in process list. \
+             Use TALLOW_RELAY_PASS env var for better security."
+        );
+    }
+
     let peer_present = relay
-        .connect(&room_id)
+        .connect(&room_id, pw_ref)
         .await
         .map_err(|e| io::Error::other(format!("Relay connection failed: {}", e)))?;
 
@@ -326,6 +339,15 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
         println!("{}", serde_json::json!({ "event": "peer_connected" }));
     } else {
         output::color::success("Peer connected!");
+    }
+
+    // Display verification string for MITM detection (opt-in via --verify)
+    if args.verify {
+        if json {
+            output::verify::display_verification_json(session_key.as_bytes());
+        } else {
+            output::verify::display_verification(session_key.as_bytes(), true);
+        }
     }
 
     // Create codec for encoding messages
@@ -361,11 +383,13 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
             tracing::info!("Receiver accepted the transfer");
         }
         Some(Message::FileReject { reason, .. }) => {
-            let msg = format!("Transfer rejected: {}", reason);
+            let safe_reason =
+                tallow_protocol::transfer::sanitize::sanitize_display(&reason);
+            let msg = format!("Transfer rejected: {}", safe_reason);
             if json {
                 println!(
                     "{}",
-                    serde_json::json!({"event": "rejected", "reason": reason})
+                    serde_json::json!({"event": "rejected", "reason": safe_reason})
                 );
             } else {
                 output::color::error(&msg);

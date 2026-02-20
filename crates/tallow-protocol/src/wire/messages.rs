@@ -27,6 +27,8 @@ pub enum Message {
     RoomJoin {
         /// Room ID (BLAKE3 hash of code phrase, 32 bytes)
         room_id: Vec<u8>,
+        /// BLAKE3 hash of relay password. None = no auth attempted.
+        password_hash: Option<Vec<u8>>,
     },
     /// Room join acknowledgment
     RoomJoined {
@@ -128,6 +130,11 @@ mod tests {
             },
             Message::RoomJoin {
                 room_id: vec![0u8; 32],
+                password_hash: Some(vec![0xAB; 32]),
+            },
+            Message::RoomJoin {
+                room_id: vec![0u8; 32],
+                password_hash: None,
             },
             Message::RoomJoined { peer_present: true },
             Message::RoomLeave,

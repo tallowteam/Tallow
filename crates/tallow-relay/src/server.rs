@@ -3,6 +3,7 @@
 //! Accepts QUIC connections, pairs peers by room code, and forwards
 //! encrypted bytes bidirectionally without inspection.
 
+use crate::auth;
 use crate::config::RelayConfig;
 use crate::rate_limit::RateLimiter;
 use crate::room::{RoomId, RoomManager};
@@ -86,12 +87,15 @@ impl RelayServer {
             }
 
             let room_manager = Arc::clone(&self.room_manager);
+            let password = self.config.password.clone();
 
             tokio::spawn(async move {
                 match incoming.await {
                     Ok(connection) => {
                         info!("accepted connection from {}", remote_addr);
-                        if let Err(e) = handle_connection(connection, room_manager).await {
+                        if let Err(e) =
+                            handle_connection(connection, room_manager, password).await
+                        {
                             warn!("connection handler error for {}: {}", remote_addr, e);
                         }
                     }
@@ -119,6 +123,7 @@ impl RelayServer {
 async fn handle_connection(
     connection: quinn::Connection,
     room_manager: Arc<RoomManager>,
+    password: String,
 ) -> anyhow::Result<()> {
     // Accept bidirectional stream from client
     let (mut send, mut recv) = connection
@@ -142,10 +147,19 @@ async fn handle_connection(
         .await
         .map_err(|e| anyhow::anyhow!("read room join message failed: {}", e))?;
 
-    // Parse room ID from the join message
-    // Expected: first byte is message discriminant for RoomJoin,
-    // followed by the room_id bytes
-    let room_id = parse_room_id(&msg_buf)?;
+    // Parse room ID and optional password hash from the join message
+    let join = parse_room_join(&msg_buf)?;
+
+    // Verify password authentication
+    if !auth::verify_relay_password(join.password_hash.as_ref(), &password) {
+        warn!("authentication failed for room {:?}", hex_short(&join.room_id));
+        // Send rejection: length-prefixed [0xFF]
+        let reject = encode_auth_rejection();
+        let _ = send.write_all(&reject).await;
+        return Ok(());
+    }
+
+    let room_id = join.room_id;
 
     info!("peer joining room {:?}", hex_short(&room_id));
 
@@ -232,35 +246,92 @@ async fn handle_connection(
     Ok(())
 }
 
-/// Parse a room ID from a RoomJoin message payload
+/// Parsed fields from a RoomJoin message
+struct RoomJoinParsed {
+    /// Room identifier (32-byte BLAKE3 hash)
+    room_id: RoomId,
+    /// Optional BLAKE3 hash of relay password
+    password_hash: Option<[u8; 32]>,
+}
+
+/// Parse a RoomJoin message payload into room ID and optional password hash
 ///
-/// This is a simplified parser — in production, use the full postcard codec.
-fn parse_room_id(data: &[u8]) -> anyhow::Result<RoomId> {
-    // Postcard format for RoomJoin variant:
-    // byte 0: variant discriminant (3 for RoomJoin in the current enum)
-    // bytes 1+: varint length of room_id Vec, then the bytes
+/// Wire format (manual postcard-like encoding from the client):
+/// - byte 0: variant discriminant (3 for RoomJoin)
+/// - byte 1: varint length of room_id (32)
+/// - bytes 2..34: room_id (32 bytes)
+/// - byte 34: Option discriminant (0x00 = None, 0x01 = Some)
+/// - if Some: byte 35: varint length of hash (32), bytes 36..68: hash (32 bytes)
+fn parse_room_join(data: &[u8]) -> anyhow::Result<RoomJoinParsed> {
     if data.is_empty() {
         anyhow::bail!("empty room join message");
     }
 
-    // Try to deserialize as a protocol message
-    // We expect a RoomJoin { room_id: Vec<u8> }
-    // For robustness, just extract the 32-byte room ID from the payload
-    // The discriminant byte + varint length prefix + 32 bytes
-    if data.len() >= 34 {
-        // Skip discriminant byte and varint length byte
-        let offset = data.len() - 32;
+    // Minimum: discriminant(1) + varint(1) + room_id(32) + option_disc(1) = 35
+    // With password: + varint(1) + hash(32) = 68
+    if data.len() >= 35 {
+        // Skip discriminant byte and varint length byte, read 32-byte room_id
         let mut room_id = [0u8; 32];
-        room_id.copy_from_slice(&data[offset..]);
-        Ok(room_id)
+        room_id.copy_from_slice(&data[2..34]);
+
+        // Parse optional password_hash
+        let password_hash = if data.len() > 34 {
+            match data[34] {
+                0x00 => None,
+                0x01 => {
+                    // Expect varint(1) + 32 bytes of hash
+                    if data.len() >= 68 {
+                        let mut hash = [0u8; 32];
+                        hash.copy_from_slice(&data[36..68]);
+                        Some(hash)
+                    } else {
+                        anyhow::bail!(
+                            "password hash truncated: expected 68 bytes, got {}",
+                            data.len()
+                        );
+                    }
+                }
+                _ => anyhow::bail!("invalid Option discriminant: {:#x}", data[34]),
+            }
+        } else {
+            // Legacy client without password field — treat as None
+            None
+        };
+
+        Ok(RoomJoinParsed {
+            room_id,
+            password_hash,
+        })
+    } else if data.len() >= 34 {
+        // Discriminant + varint + 32-byte room_id, no password field
+        let mut room_id = [0u8; 32];
+        room_id.copy_from_slice(&data[2..34]);
+        Ok(RoomJoinParsed {
+            room_id,
+            password_hash: None,
+        })
     } else if data.len() == 32 {
-        // Raw room ID
+        // Raw room ID (legacy)
         let mut room_id = [0u8; 32];
         room_id.copy_from_slice(data);
-        Ok(room_id)
+        Ok(RoomJoinParsed {
+            room_id,
+            password_hash: None,
+        })
     } else {
         anyhow::bail!("invalid room join message length: {}", data.len());
     }
+}
+
+/// Encode an authentication rejection as length-prefixed bytes
+///
+/// Payload is a single byte `0xFF` indicating auth failure.
+fn encode_auth_rejection() -> Vec<u8> {
+    let payload = [0xFF];
+    let mut msg = Vec::with_capacity(5);
+    msg.extend_from_slice(&(payload.len() as u32).to_be_bytes());
+    msg.extend_from_slice(&payload);
+    msg
 }
 
 /// Encode a RoomJoined response as length-prefixed bytes
