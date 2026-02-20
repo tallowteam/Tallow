@@ -18,6 +18,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Storage, CLI Commands and Polish** - Persistent identity/config, all CLI commands wired, transfer resume
 - [x] **Phase 5: Privacy, TUI and Discovery** - Tor/SOCKS5, DNS-over-HTTPS, Ratatui dashboard, mDNS, OS sandbox
 - [x] **Phase 6: Sandbox, Hardening and Security Audit** - Landlock, seccomp, structured logging, fuzz targets, full audit sweep
+- [ ] **Phase 7: Core Croc UX** - Text send, QR codes, custom codes, pipe support, clipboard, confirmation prompt, shorter codes, overwrite protection
+- [ ] **Phase 8: Advanced Transfer** - Exclude patterns, gitignore, throttle, transfer queue, sync, watch, path aliases, tab completion
+- [ ] **Phase 9: Security Hardening & Relay Auth** - Filename sanitization, ANSI stripping, env vars, relay password, verification strings, Docker relay
+- [ ] **Phase 10: Distribution & Polish** - Homebrew, Scoop, curl installer, shell completions in release, human-readable output, smart errors
 
 ## Phase Details
 
@@ -93,10 +97,58 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. `cargo test --workspace` passes clean, including NIST KAT vector tests for ML-KEM-1024 and ML-DSA-87
 **Plans**: TBD
 
+### Phase 7: Core Croc UX
+**Goal**: Tallow matches Croc's zero-friction UX — text send, QR codes, custom code phrases, pipe/stdin support, clipboard auto-copy, receiver confirmation prompt, shorter default codes, overwrite protection, and `--yes` auto-accept.
+**Depends on**: Phase 6
+**Requirements**: CROC-01 through CROC-12
+**Success Criteria** (what must be TRUE):
+  1. `echo "hello" | tallow send` sends the text as a virtual file; `tallow receive <code>` prints it to stdout — pipe-to-pipe transfer works
+  2. `tallow send --text "secret message"` sends text directly; receiver gets it printed to terminal without writing a file
+  3. `tallow send --code mycode file.txt` uses the custom code; `tallow receive mycode` retrieves it — custom codes work
+  4. `tallow send file.txt` displays a QR code in the terminal (when terminal is wide enough) alongside the text code phrase
+  5. Receiver shows file listing with sizes and prompts "Accept? (Y/n)" before writing — declined transfers write zero bytes
+**Plans**: TBD
+
+### Phase 8: Advanced Transfer
+**Goal**: Power-user transfer features — exclude patterns, gitignore support, bandwidth throttling, transfer queue, one-way sync, watch mode, path aliases, and code phrase tab completion.
+**Depends on**: Phase 7
+**Requirements**: ADV-01 through ADV-12
+**Success Criteria** (what must be TRUE):
+  1. `tallow send --exclude "node_modules,.git" ./project` sends the directory without excluded patterns
+  2. `tallow send --git ./repo` respects `.gitignore` files in the repository
+  3. `tallow send --throttle 10MB file.iso` limits transfer speed to ~10 MB/s
+  4. `tallow watch ./dir` monitors for changes and auto-sends modified files to the connected peer
+  5. `tallow sync ./dir` sends only new/changed files compared to the receiver's last-known state
+**Plans**: TBD
+
+### Phase 9: Security Hardening & Relay Auth
+**Goal**: Comprehensive filename sanitization (20+ attack vectors), ANSI escape stripping, environment variable support, relay password authentication, session verification strings, and Docker relay deployment.
+**Depends on**: Phase 8
+**Requirements**: SEC2-01 through SEC2-08
+**Success Criteria** (what must be TRUE):
+  1. Received filenames with null bytes, Windows reserved names (CON/PRN/NUL), Unicode fullwidth separators, and `..` traversal are all sanitized — property tests with 10,000+ random inputs pass
+  2. ANSI escape sequences (CSI, OSC, DCS) in received filenames and text messages are stripped — no terminal manipulation possible
+  3. `TALLOW_RELAY` and `TALLOW_CODE` environment variables are respected without CLI flags
+  4. Relay password authentication works: `tallow send --relay-pass secret file.txt` connects only to relays with matching password
+  5. After key exchange, both peers see matching verification strings (40 numeric digits or 8 emojis) for out-of-band verification
+**Plans**: TBD
+
+### Phase 10: Distribution & Polish
+**Goal**: Tallow is installable via Homebrew, Scoop, and curl script. CLI output uses human-readable sizes, smart error messages, and consistent colored formatting.
+**Depends on**: Phase 9
+**Requirements**: DIST-01 through DIST-10
+**Success Criteria** (what must be TRUE):
+  1. `brew install tallowteam/tap/tallow` installs working binary on macOS (Intel + Apple Silicon)
+  2. `scoop install tallow` installs working binary on Windows
+  3. `curl -sSf https://raw.githubusercontent.com/tallowteam/tallow/master/scripts/install.sh | sh` installs on Linux
+  4. All user-facing byte counts display as human-readable (e.g., "1.43 MiB" not "1500000")
+  5. Common errors (connection refused, permission denied, timeout) show actionable guidance
+**Plans**: TBD
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -106,3 +158,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 4. Storage, CLI Commands and Polish | 3/3 | Complete | 2026-02-19 |
 | 5. Privacy, TUI and Discovery | 3/3 | Complete | 2026-02-19 |
 | 6. Sandbox, Hardening and Security Audit | 1/1 | Complete | 2026-02-19 |
+| 7. Core Croc UX | 0/? | Researched | - |
+| 8. Advanced Transfer | 0/? | Researched | - |
+| 9. Security Hardening & Relay Auth | 0/? | Researched | - |
+| 10. Distribution & Polish | 0/? | Researched | - |
