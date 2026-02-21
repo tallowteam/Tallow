@@ -237,4 +237,147 @@ mod tests {
     fn test_decode_invalid_length() {
         assert!(decode_socket_addr(&[1, 2, 3]).is_err());
     }
+
+    // --- Phase 20 Plan 03 additions ---
+
+    /// Verify CandidateType discriminant values match the binary protocol
+    #[test]
+    fn test_candidate_type_values() {
+        assert_eq!(CandidateType::Host as u8, 0);
+        assert_eq!(CandidateType::ServerReflexive as u8, 1);
+        assert_eq!(CandidateType::UPnP as u8, 2);
+    }
+
+    /// Edge case: near-zero IP address with minimal port
+    #[test]
+    fn test_encode_decode_near_zero_ipv4() {
+        let addr: SocketAddr = "0.0.0.1:1".parse().unwrap();
+        let encoded = encode_socket_addr(addr);
+        let decoded = decode_socket_addr(&encoded).unwrap();
+        assert_eq!(decoded, addr);
+    }
+
+    /// Edge case: maximum IPv4 address and maximum port
+    #[test]
+    fn test_encode_decode_max_ipv4() {
+        let addr: SocketAddr = "255.255.255.254:65535".parse().unwrap();
+        let encoded = encode_socket_addr(addr);
+        let decoded = decode_socket_addr(&encoded).unwrap();
+        assert_eq!(decoded, addr);
+    }
+
+    /// Full IPv6 address with non-trivial segments
+    #[test]
+    fn test_encode_decode_ipv6_full() {
+        let addr: SocketAddr = "[2001:db8::1]:4433".parse().unwrap();
+        let encoded = encode_socket_addr(addr);
+        assert_eq!(encoded.len(), 18);
+        let decoded = decode_socket_addr(&encoded).unwrap();
+        assert_eq!(decoded, addr);
+    }
+
+    /// Private ranges should be valid candidates (LAN peers)
+    #[test]
+    fn test_validate_accepts_private_ranges() {
+        assert!(validate_candidate_addr(
+            &"10.0.0.1:8080".parse().unwrap()
+        ));
+        assert!(validate_candidate_addr(
+            &"172.16.0.1:8080".parse().unwrap()
+        ));
+        assert!(validate_candidate_addr(
+            &"192.168.0.1:8080".parse().unwrap()
+        ));
+    }
+
+    /// IPv6 link-local (fe80::/10) should be rejected
+    #[test]
+    fn test_validate_rejects_ipv6_link_local() {
+        assert!(!validate_candidate_addr(
+            &"[fe80::1]:8080".parse().unwrap()
+        ));
+    }
+
+    /// IPv6 multicast (ff00::/8) should be rejected
+    #[test]
+    fn test_validate_rejects_ipv6_multicast() {
+        assert!(!validate_candidate_addr(
+            &"[ff02::1]:8080".parse().unwrap()
+        ));
+    }
+
+    /// IPv6 unspecified (::) should be rejected
+    #[test]
+    fn test_validate_rejects_ipv6_unspecified() {
+        assert!(!validate_candidate_addr(&"[::]:8080".parse().unwrap()));
+    }
+
+    /// Candidates should sort by priority descending
+    #[test]
+    fn test_candidate_sorting_by_priority() {
+        let mut candidates = vec![
+            Candidate {
+                addr: "8.8.8.8:4433".parse().unwrap(),
+                candidate_type: CandidateType::ServerReflexive,
+                priority: 50,
+            },
+            Candidate {
+                addr: "192.168.1.1:4433".parse().unwrap(),
+                candidate_type: CandidateType::Host,
+                priority: 100,
+            },
+            Candidate {
+                addr: "1.2.3.4:4433".parse().unwrap(),
+                candidate_type: CandidateType::UPnP,
+                priority: 30,
+            },
+        ];
+        candidates.sort_by(|a, b| b.priority.cmp(&a.priority));
+        assert_eq!(candidates[0].priority, 100); // Host first
+        assert_eq!(candidates[1].priority, 50); // SRFLX second
+        assert_eq!(candidates[2].priority, 30); // UPnP last
+    }
+
+    /// Test gather_candidates returns at least host candidate on systems with a NIC.
+    /// STUN may fail without internet, but host discovery should work.
+    #[tokio::test]
+    async fn test_gather_candidates_returns_host() {
+        let candidates = gather_candidates(0).await;
+        // On most systems with a network interface, we get at least a host candidate.
+        // STUN may fail (no internet) but host should work.
+        // We don't assert non-empty because CI may lack a NIC.
+        for c in &candidates {
+            assert!(c.priority > 0);
+            // All candidates should have a valid port (or 0 if we passed 0)
+            // and a valid IP address
+            assert!(!c.addr.ip().is_loopback() || c.addr.port() == 0);
+        }
+    }
+
+    /// Decode rejects completely empty input
+    #[test]
+    fn test_decode_empty_input() {
+        assert!(decode_socket_addr(&[]).is_err());
+    }
+
+    /// Decode rejects input of wrong sizes (not 6 or 18)
+    #[test]
+    fn test_decode_invalid_sizes() {
+        assert!(decode_socket_addr(&[1]).is_err());
+        assert!(decode_socket_addr(&[1, 2]).is_err());
+        assert!(decode_socket_addr(&[1, 2, 3, 4, 5]).is_err()); // one short of IPv4
+        assert!(decode_socket_addr(&[1, 2, 3, 4, 5, 6, 7]).is_err()); // one over IPv4
+        assert!(decode_socket_addr(&[0u8; 17]).is_err()); // one short of IPv6
+        assert!(decode_socket_addr(&[0u8; 19]).is_err()); // one over IPv6
+    }
+
+    /// Port encoding is big-endian
+    #[test]
+    fn test_encode_port_big_endian() {
+        let addr: SocketAddr = "1.2.3.4:8080".parse().unwrap(); // 8080 = 0x1F90
+        let encoded = encode_socket_addr(addr);
+        // Bytes 4-5 should be port in BE: 0x1F, 0x90
+        assert_eq!(encoded[4], 0x1F);
+        assert_eq!(encoded[5], 0x90);
+    }
 }

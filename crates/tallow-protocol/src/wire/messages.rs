@@ -587,6 +587,104 @@ mod tests {
         assert_eq!(bytes[0], 38, "DirectFailed discriminant must be 38");
     }
 
+    /// Verify all P2P signaling message variants round-trip correctly through postcard
+    #[test]
+    fn test_p2p_message_roundtrip() {
+        let msgs = vec![
+            Message::CandidateOffer {
+                candidate_type: 0,
+                addr: vec![192, 168, 1, 42, 0x1F, 0x90], // 192.168.1.42:8080
+                priority: 100,
+            },
+            Message::CandidateOffer {
+                candidate_type: 1,
+                addr: vec![8, 8, 8, 8, 0x11, 0x51], // 8.8.8.8:4433
+                priority: 50,
+            },
+            Message::CandidateOffer {
+                candidate_type: 2,
+                addr: vec![10, 0, 0, 1, 0x00, 0x50], // 10.0.0.1:80
+                priority: 30,
+            },
+            Message::CandidatesDone,
+            Message::DirectConnected,
+            Message::DirectFailed,
+        ];
+
+        for msg in &msgs {
+            let bytes = postcard::to_stdvec(msg).unwrap();
+            let decoded: Message = postcard::from_bytes(&bytes).unwrap();
+            assert_eq!(&decoded, msg, "P2P round-trip failed for {:?}", msg);
+        }
+    }
+
+    /// Verify pre-Phase-20 variants are unchanged after appending P2P variants
+    #[test]
+    fn test_old_variants_stable_after_phase20() {
+        let old_messages = vec![
+            Message::Ping,
+            Message::Pong,
+            Message::ChatEnd,
+            Message::RoomJoinMulti {
+                room_id: vec![0; 32],
+                password_hash: None,
+                requested_capacity: 5,
+            },
+            Message::RoomPeerCount {
+                count: 3,
+                capacity: 10,
+            },
+            Message::HandshakeInit {
+                protocol_version: 1,
+                kem_capabilities: vec![0],
+                cpace_public: [0xCC; 32],
+                nonce: [0xDD; 16],
+            },
+            Message::FileOffer {
+                transfer_id: [1u8; 16],
+                manifest: vec![0, 1, 2, 3],
+            },
+        ];
+        for msg in &old_messages {
+            let bytes = postcard::to_stdvec(msg).unwrap();
+            let decoded: Message = postcard::from_bytes(&bytes).unwrap();
+            assert_eq!(
+                &decoded, msg,
+                "backward compat failed after Phase 20 for {:?}",
+                msg
+            );
+        }
+    }
+
+    /// Verify CandidateOffer with empty addr round-trips (edge case)
+    #[test]
+    fn test_candidate_offer_empty_addr() {
+        let msg = Message::CandidateOffer {
+            candidate_type: 0,
+            addr: vec![],
+            priority: 0,
+        };
+        let bytes = postcard::to_stdvec(&msg).unwrap();
+        let decoded: Message = postcard::from_bytes(&bytes).unwrap();
+        assert_eq!(decoded, msg);
+    }
+
+    /// Verify CandidateOffer with IPv6-sized addr (18 bytes) round-trips
+    #[test]
+    fn test_candidate_offer_ipv6_addr() {
+        let msg = Message::CandidateOffer {
+            candidate_type: 0,
+            addr: vec![
+                0x20, 0x01, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x01, 0x11, 0x51,
+            ],
+            priority: 100,
+        };
+        let bytes = postcard::to_stdvec(&msg).unwrap();
+        let decoded: Message = postcard::from_bytes(&bytes).unwrap();
+        assert_eq!(decoded, msg);
+    }
+
     /// Verify a Targeted broadcast (to_peer = 0xFF) with inner ChatEnd.
     #[test]
     fn test_targeted_broadcast_chat_end() {

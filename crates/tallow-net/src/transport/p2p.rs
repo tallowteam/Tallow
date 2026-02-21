@@ -428,12 +428,23 @@ async fn attempt_as_server(listener: &DirectListener) -> Result<DirectConnection
 #[cfg(feature = "quic")]
 mod tests {
     use super::*;
+    use crate::transport::direct::{connect_direct, DirectListener};
+    use crate::transport::PeerChannel;
 
     #[test]
     fn test_negotiation_result_debug() {
         let fallback = NegotiationResult::FallbackToRelay("test".to_string());
         let debug = format!("{:?}", fallback);
         assert!(debug.contains("FallbackToRelay"));
+    }
+
+    #[test]
+    fn test_negotiation_result_variants() {
+        let fallback = NegotiationResult::FallbackToRelay("test reason".to_string());
+        assert!(matches!(fallback, NegotiationResult::FallbackToRelay(_)));
+        let debug = format!("{:?}", fallback);
+        assert!(debug.contains("FallbackToRelay"));
+        assert!(debug.contains("test reason"));
     }
 
     #[test]
@@ -466,6 +477,60 @@ mod tests {
         assert_eq!(parsed_addr, candidate.addr);
     }
 
+    /// Test binary encoding roundtrip for ServerReflexive candidate type
+    #[test]
+    fn test_candidate_offer_encoding_srflx() {
+        let candidate = Candidate {
+            addr: "8.8.8.8:4433".parse().unwrap(),
+            candidate_type: CandidateType::ServerReflexive,
+            priority: 50,
+        };
+
+        let addr_bytes = encode_socket_addr(candidate.addr);
+        let addr_len = addr_bytes.len();
+
+        let mut buf = Vec::with_capacity(7 + addr_len);
+        buf.push(TAG_CANDIDATE_OFFER);
+        buf.push(candidate.candidate_type as u8);
+        buf.extend_from_slice(&candidate.priority.to_be_bytes());
+        buf.push(addr_len as u8);
+        buf.extend_from_slice(&addr_bytes);
+
+        assert_eq!(buf[0], TAG_CANDIDATE_OFFER);
+        assert_eq!(buf[1], 1); // ServerReflexive
+        let priority = u32::from_be_bytes([buf[2], buf[3], buf[4], buf[5]]);
+        assert_eq!(priority, 50);
+        let parsed_addr_len = buf[6] as usize;
+        let parsed_addr = decode_socket_addr(&buf[7..7 + parsed_addr_len]).unwrap();
+        assert_eq!(parsed_addr, candidate.addr);
+    }
+
+    /// Test binary encoding roundtrip for IPv6 candidate
+    #[test]
+    fn test_candidate_offer_encoding_ipv6() {
+        let candidate = Candidate {
+            addr: "[2001:db8::1]:4433".parse().unwrap(),
+            candidate_type: CandidateType::Host,
+            priority: 100,
+        };
+
+        let addr_bytes = encode_socket_addr(candidate.addr);
+        let addr_len = addr_bytes.len();
+        assert_eq!(addr_len, 18); // IPv6: 16 octets + 2 port
+
+        let mut buf = Vec::with_capacity(7 + addr_len);
+        buf.push(TAG_CANDIDATE_OFFER);
+        buf.push(candidate.candidate_type as u8);
+        buf.extend_from_slice(&candidate.priority.to_be_bytes());
+        buf.push(addr_len as u8);
+        buf.extend_from_slice(&addr_bytes);
+
+        let parsed_addr_len = buf[6] as usize;
+        assert_eq!(parsed_addr_len, 18);
+        let parsed_addr = decode_socket_addr(&buf[7..7 + parsed_addr_len]).unwrap();
+        assert_eq!(parsed_addr, candidate.addr);
+    }
+
     #[test]
     fn test_signal_tags_unique() {
         let tags = [
@@ -481,11 +546,235 @@ mod tests {
         }
     }
 
+    /// Test that signal tags have the expected values (binary protocol stability)
+    #[test]
+    fn test_signal_tag_values() {
+        assert_eq!(TAG_CANDIDATE_OFFER, 0x01);
+        assert_eq!(TAG_CANDIDATES_DONE, 0x02);
+        assert_eq!(TAG_DIRECT_FAILED, 0x03);
+        assert_eq!(TAG_DIRECT_CONNECTED, 0x04);
+    }
+
+    /// Test single-byte message encoding for CandidatesDone
+    #[test]
+    fn test_candidates_done_encoding() {
+        let msg = [TAG_CANDIDATES_DONE];
+        assert_eq!(msg.len(), 1);
+        assert_eq!(msg[0], 0x02);
+    }
+
+    /// Test single-byte message encoding for DirectFailed
+    #[test]
+    fn test_direct_failed_encoding() {
+        let msg = [TAG_DIRECT_FAILED];
+        assert_eq!(msg.len(), 1);
+        assert_eq!(msg[0], 0x03);
+    }
+
+    /// Test single-byte message encoding for DirectConnected
+    #[test]
+    fn test_direct_connected_encoding() {
+        let msg = [TAG_DIRECT_CONNECTED];
+        assert_eq!(msg.len(), 1);
+        assert_eq!(msg[0], 0x04);
+    }
+
     #[test]
     fn test_no_p2p_guard() {
         // Test that no_p2p flag returns FallbackToRelay immediately
         // (cannot do full async test without a channel, but we test the sync path)
         let result = NegotiationResult::FallbackToRelay("P2P suppressed (no_p2p flag)".to_string());
         assert!(matches!(result, NegotiationResult::FallbackToRelay(_)));
+    }
+
+    /// Test that no_p2p guard returns FallbackToRelay via negotiate_p2p (async path)
+    #[tokio::test]
+    async fn test_negotiate_p2p_no_p2p_guard() {
+        // MockChannel just needs to exist; it won't be called because no_p2p=true
+        // short-circuits before any channel use
+        struct MockChannel;
+        impl PeerChannel for MockChannel {
+            async fn send_message(&mut self, _data: &[u8]) -> crate::Result<()> {
+                panic!("should not be called when no_p2p=true");
+            }
+            async fn receive_message(&mut self, _buf: &mut [u8]) -> crate::Result<usize> {
+                panic!("should not be called when no_p2p=true");
+            }
+            async fn close(&mut self) {}
+            fn transport_description(&self) -> String {
+                "mock".to_string()
+            }
+        }
+
+        let mut channel = MockChannel;
+        let result = negotiate_p2p(&mut channel, true, true).await;
+        assert!(
+            matches!(result, NegotiationResult::FallbackToRelay(ref reason) if reason.contains("no_p2p")),
+            "Expected FallbackToRelay with no_p2p reason, got {:?}",
+            result
+        );
+    }
+
+    /// Test that two local peers can establish a direct QUIC connection.
+    ///
+    /// This tests the DirectListener (server) + connect_direct (client) path
+    /// that negotiate_p2p uses internally for hole punching.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_local_p2p_connection() {
+        // Server: bind a listener on loopback
+        let listener =
+            DirectListener::bind_to("127.0.0.1:0".parse().unwrap()).unwrap();
+        let server_addr = listener.local_addr();
+
+        // Spawn server accept
+        let server_handle = tokio::spawn(async move {
+            let mut server = listener
+                .accept_peer(Duration::from_secs(5))
+                .await
+                .unwrap();
+
+            // Receive a test message
+            let mut buf = vec![0u8; 1024];
+            let n = server.receive_message(&mut buf).await.unwrap();
+            assert_eq!(&buf[..n], b"p2p-test-data");
+
+            // Echo back
+            server.send_message(b"p2p-test-ack").await.unwrap();
+            server
+        });
+
+        // Client: connect to server
+        let mut client = connect_direct(server_addr, Duration::from_secs(5))
+            .await
+            .unwrap();
+
+        // Send test data
+        client.send_message(b"p2p-test-data").await.unwrap();
+
+        // Receive ack
+        let mut buf = vec![0u8; 1024];
+        let n = client.receive_message(&mut buf).await.unwrap();
+        assert_eq!(&buf[..n], b"p2p-test-ack");
+
+        // Verify transport description mentions "direct"
+        let desc = client.transport_description();
+        assert!(
+            desc.contains("direct"),
+            "Transport description should mention 'direct': {}",
+            desc
+        );
+
+        let mut server = server_handle.await.unwrap();
+        client.close().await;
+        server.close().await;
+    }
+
+    /// Test that connect_to reuses the endpoint (hole punch pattern).
+    ///
+    /// The initiator uses DirectListener::connect_to() (not connect_direct) to
+    /// send from the SAME port the listener is bound to. This tests the hole
+    /// punch client path.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_hole_punch_connect_to() {
+        // Server: bind on loopback
+        let server_listener =
+            DirectListener::bind_to("127.0.0.1:0".parse().unwrap()).unwrap();
+        let server_addr = server_listener.local_addr();
+
+        // Client: another listener (simulating hole punch initiator)
+        let mut client_listener =
+            DirectListener::bind_to("127.0.0.1:0".parse().unwrap()).unwrap();
+
+        // Spawn server accept
+        let server_handle = tokio::spawn(async move {
+            let mut conn = server_listener
+                .accept_peer(Duration::from_secs(5))
+                .await
+                .unwrap();
+
+            let mut buf = vec![0u8; 1024];
+            let n = conn.receive_message(&mut buf).await.unwrap();
+            assert_eq!(&buf[..n], b"hole-punch-test");
+            conn.send_message(b"hole-punch-ack").await.unwrap();
+            conn
+        });
+
+        // Client connects via connect_to (reusing its listener endpoint)
+        let mut client = client_listener
+            .connect_to(server_addr, Duration::from_secs(5))
+            .await
+            .unwrap();
+
+        client.send_message(b"hole-punch-test").await.unwrap();
+
+        let mut buf = vec![0u8; 1024];
+        let n = client.receive_message(&mut buf).await.unwrap();
+        assert_eq!(&buf[..n], b"hole-punch-ack");
+
+        let mut server = server_handle.await.unwrap();
+        client.close().await;
+        server.close().await;
+    }
+
+    /// Test timeout behavior: attempting to connect to unreachable address
+    #[tokio::test]
+    async fn test_hole_punch_timeout() {
+        // Use TEST-NET-1 (192.0.2.0/24, RFC 5737): should not route
+        let result = connect_direct(
+            "192.0.2.1:1234".parse().unwrap(),
+            Duration::from_millis(500),
+        )
+        .await;
+        assert!(
+            result.is_err(),
+            "Connection to unreachable address should fail"
+        );
+    }
+
+    /// Test that candidate offer encoding works for zero priority
+    #[test]
+    fn test_candidate_offer_zero_priority() {
+        let candidate = Candidate {
+            addr: "10.0.0.1:1".parse().unwrap(),
+            candidate_type: CandidateType::UPnP,
+            priority: 0,
+        };
+
+        let addr_bytes = encode_socket_addr(candidate.addr);
+        let addr_len = addr_bytes.len();
+
+        let mut buf = Vec::with_capacity(7 + addr_len);
+        buf.push(TAG_CANDIDATE_OFFER);
+        buf.push(candidate.candidate_type as u8);
+        buf.extend_from_slice(&candidate.priority.to_be_bytes());
+        buf.push(addr_len as u8);
+        buf.extend_from_slice(&addr_bytes);
+
+        assert_eq!(buf[1], 2); // UPnP
+        let priority = u32::from_be_bytes([buf[2], buf[3], buf[4], buf[5]]);
+        assert_eq!(priority, 0);
+    }
+
+    /// Test candidate offer encoding with maximum priority
+    #[test]
+    fn test_candidate_offer_max_priority() {
+        let candidate = Candidate {
+            addr: "10.0.0.1:65535".parse().unwrap(),
+            candidate_type: CandidateType::Host,
+            priority: u32::MAX,
+        };
+
+        let addr_bytes = encode_socket_addr(candidate.addr);
+        let addr_len = addr_bytes.len();
+
+        let mut buf = Vec::with_capacity(7 + addr_len);
+        buf.push(TAG_CANDIDATE_OFFER);
+        buf.push(candidate.candidate_type as u8);
+        buf.extend_from_slice(&candidate.priority.to_be_bytes());
+        buf.push(addr_len as u8);
+        buf.extend_from_slice(&addr_bytes);
+
+        let priority = u32::from_be_bytes([buf[2], buf[3], buf[4], buf[5]]);
+        assert_eq!(priority, u32::MAX);
     }
 }
