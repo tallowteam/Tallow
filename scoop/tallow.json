@@ -6,7 +6,7 @@
     "architecture": {
         "64bit": {
             "url": "https://github.com/tallowteam/Tallow/releases/download/v0.1.0/tallow-v0.1.0-x86_64-pc-windows-msvc.zip",
-            "hash": "PLACEHOLDER_SHA256"
+            "hash": "143556E7A01C21173E31D2E80C6C08526CE66AD19149AF22D837BF39BA49F011"
         }
     },
     "bin": [
