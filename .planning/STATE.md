@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Files transfer securely between two parties where the relay never sees plaintext, with post-quantum cryptography protecting against future quantum attacks.
-**Current focus:** Phase 20 - WebRTC P2P Direct Connection
+**Current focus:** Phase 21 - Web UI / Browser Client
 
 ## Current Position
 
-Phase: 20 (WebRTC P2P Direct)
-Plan: 3 of 3
-Status: Phase 20 COMPLETE (all 3 plans done)
-Last activity: 2026-02-21 — Phase 20 Plan 03 (P2P Testing) complete
+Phase: 21 (Web UI / Browser Client)
+Plan: 0 of 5
+Status: Phase 21 PLANNED (5 plans in 4 waves, ready for execution)
+Last activity: 2026-02-21 — Phase 21 plans created
 
-Progress: [##########] 100% (3/3 plans)
+Progress: [..........] 0% (0/5 plans)
 
 ## Performance Metrics
 
@@ -79,5 +79,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 20-03-PLAN.md (Phase 20 complete)
+Stopped at: Phase 21 planning complete — 5 plans in 4 waves created
 Resume file: None
