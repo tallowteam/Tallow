@@ -149,8 +149,9 @@ async fn execute_send(args: &ClipArgs, json: bool) -> io::Result<()> {
     }
 
     // Build transfer pipeline
-    let session_key = tallow_protocol::kex::derive_session_key_from_phrase(&code_phrase, &room_id);
     let transfer_id: [u8; 16] = rand::random();
+    let session_key =
+        tallow_protocol::kex::derive_session_key_with_salt(&code_phrase, &room_id, &transfer_id);
 
     let mut pipeline =
         tallow_protocol::transfer::SendPipeline::new(transfer_id, *session_key.as_bytes());
@@ -369,7 +370,6 @@ async fn execute_receive(
     }
 
     let room_id = tallow_protocol::room::code::derive_room_id(code);
-    let session_key = tallow_protocol::kex::derive_session_key_from_phrase(code, &room_id);
 
     if !json {
         output::color::info("Connecting with code:");
@@ -407,14 +407,6 @@ async fn execute_receive(
         output::color::success("Peer connected!");
     }
 
-    if args.verify {
-        if json {
-            output::verify::display_verification_json(session_key.as_bytes());
-        } else {
-            output::verify::display_verification(session_key.as_bytes(), true);
-        }
-    }
-
     let mut codec = TallowCodec::new();
     let mut recv_buf = vec![0u8; RECV_BUF_SIZE];
     let mut encode_buf = BytesMut::new();
@@ -441,6 +433,18 @@ async fn execute_receive(
             return Err(io::Error::other(msg));
         }
     };
+
+    // Derive session key using transfer_id as per-transfer salt
+    let session_key =
+        tallow_protocol::kex::derive_session_key_with_salt(code, &room_id, &transfer_id);
+
+    if args.verify {
+        if json {
+            output::verify::display_verification_json(session_key.as_bytes());
+        } else {
+            output::verify::display_verification(session_key.as_bytes(), true);
+        }
+    }
 
     let mut pipeline = tallow_protocol::transfer::ReceivePipeline::new(
         transfer_id,

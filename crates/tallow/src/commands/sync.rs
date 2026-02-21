@@ -56,8 +56,9 @@ pub async fn execute(args: SyncArgs, json: bool) -> io::Result<()> {
     );
 
     // Scan local directory to build manifest
-    let session_key = tallow_protocol::kex::derive_session_key_from_phrase(&code_phrase, &room_id);
     let transfer_id: [u8; 16] = rand::random();
+    let session_key =
+        tallow_protocol::kex::derive_session_key_with_salt(&code_phrase, &room_id, &transfer_id);
 
     let mut pipeline =
         tallow_protocol::transfer::SendPipeline::new(transfer_id, *session_key.as_bytes())

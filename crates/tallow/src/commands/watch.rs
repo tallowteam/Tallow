@@ -118,8 +118,6 @@ pub async fn execute(args: WatchArgs, json: bool) -> io::Result<()> {
         args.git,
     );
 
-    let session_key = tallow_protocol::kex::derive_session_key_from_phrase(&code_phrase, &room_id);
-
     let mut codec = TallowCodec::new();
     let mut encode_buf = BytesMut::new();
     let mut recv_buf = vec![0u8; 256 * 1024];
@@ -155,6 +153,11 @@ pub async fn execute(args: WatchArgs, json: bool) -> io::Result<()> {
 
         // Build and send a mini transfer for this batch
         let transfer_id: [u8; 16] = rand::random();
+        let session_key = tallow_protocol::kex::derive_session_key_with_salt(
+            &code_phrase,
+            &room_id,
+            &transfer_id,
+        );
         let mut pipeline =
             tallow_protocol::transfer::SendPipeline::new(transfer_id, *session_key.as_bytes());
 

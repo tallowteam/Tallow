@@ -65,9 +65,8 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
         tracing::warn!("Identity initialization failed: {}", e);
     }
 
-    // Derive room ID and session key
+    // Derive room ID (session key derived after FileOffer provides transfer_id)
     let room_id = tallow_protocol::room::code::derive_room_id(&code_phrase);
-    let session_key = tallow_protocol::kex::derive_session_key_from_phrase(&code_phrase, &room_id);
 
     if json {
         println!(
@@ -145,15 +144,6 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
         output::color::success("Peer connected!");
     }
 
-    // Display verification string for MITM detection (opt-in via --verify)
-    if args.verify {
-        if json {
-            output::verify::display_verification_json(session_key.as_bytes());
-        } else {
-            output::verify::display_verification(session_key.as_bytes(), true);
-        }
-    }
-
     // Create codec and receive buffer
     let mut codec = TallowCodec::new();
     let mut recv_buf = vec![0u8; RECV_BUF_SIZE];
@@ -181,6 +171,20 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
             return Err(io::Error::other(msg));
         }
     };
+
+    // Derive session key using transfer_id as per-transfer salt.
+    // This prevents nonce reuse when the same code phrase is used for multiple transfers.
+    let session_key =
+        tallow_protocol::kex::derive_session_key_with_salt(&code_phrase, &room_id, &transfer_id);
+
+    // Display verification string for MITM detection (opt-in via --verify)
+    if args.verify {
+        if json {
+            output::verify::display_verification_json(session_key.as_bytes());
+        } else {
+            output::verify::display_verification(session_key.as_bytes(), true);
+        }
+    }
 
     // Initialize receive pipeline
     let mut pipeline = tallow_protocol::transfer::ReceivePipeline::new(

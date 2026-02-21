@@ -49,6 +49,32 @@ pub fn derive_session_key_from_phrase(code_phrase: &str, room_id: &[u8; 32]) -> 
     SessionKey { key }
 }
 
+/// Derive a unique session key using a per-transfer random salt
+///
+/// Unlike [`derive_session_key_from_phrase`], this includes the random
+/// `transfer_id` in the derivation input, ensuring that reusing the same
+/// code phrase produces a **different** session key each time. This
+/// prevents catastrophic AES-GCM nonce reuse.
+///
+/// # Arguments
+///
+/// * `code_phrase` - Shared code phrase
+/// * `room_id` - BLAKE3 hash of the code phrase (domain separation)
+/// * `transfer_id` - Random 16-byte per-transfer salt (sent in FileOffer)
+pub fn derive_session_key_with_salt(
+    code_phrase: &str,
+    room_id: &[u8; 32],
+    transfer_id: &[u8; 16],
+) -> SessionKey {
+    let mut input = Vec::with_capacity(code_phrase.len() + 32 + 16);
+    input.extend_from_slice(code_phrase.as_bytes());
+    input.extend_from_slice(room_id);
+    input.extend_from_slice(transfer_id);
+
+    let key = tallow_crypto::hash::blake3::derive_key("tallow-session-key-v2", &input);
+    SessionKey { key }
+}
+
 /// Perform CPace-based key exchange
 ///
 /// Both peers use the code phrase to derive a shared secret
@@ -147,6 +173,37 @@ mod tests {
         let key2 = complete_cpace(resp_state, &init_pub_arr).unwrap();
 
         assert_eq!(key1.as_bytes(), key2.as_bytes());
+    }
+
+    #[test]
+    fn test_derive_session_key_with_salt_unique() {
+        let room_id = crate::room::code::derive_room_id("test-phrase");
+        let salt1: [u8; 16] = [1u8; 16];
+        let salt2: [u8; 16] = [2u8; 16];
+        let key1 = derive_session_key_with_salt("test-phrase", &room_id, &salt1);
+        let key2 = derive_session_key_with_salt("test-phrase", &room_id, &salt2);
+        // Same phrase but different salts must produce different keys
+        assert_ne!(key1.as_bytes(), key2.as_bytes());
+    }
+
+    #[test]
+    fn test_derive_session_key_with_salt_deterministic() {
+        let room_id = crate::room::code::derive_room_id("test-phrase");
+        let salt: [u8; 16] = [42u8; 16];
+        let key1 = derive_session_key_with_salt("test-phrase", &room_id, &salt);
+        let key2 = derive_session_key_with_salt("test-phrase", &room_id, &salt);
+        // Same inputs must produce the same key
+        assert_eq!(key1.as_bytes(), key2.as_bytes());
+    }
+
+    #[test]
+    fn test_derive_session_key_with_salt_differs_from_unsalted() {
+        let room_id = crate::room::code::derive_room_id("test-phrase");
+        let salt: [u8; 16] = [0u8; 16];
+        let unsalted = derive_session_key_from_phrase("test-phrase", &room_id);
+        let salted = derive_session_key_with_salt("test-phrase", &room_id, &salt);
+        // v1 (unsalted) and v2 (salted) use different domain strings
+        assert_ne!(unsalted.as_bytes(), salted.as_bytes());
     }
 
     #[test]

@@ -201,8 +201,9 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
     }
 
     // Build the transfer manifest
-    let session_key = tallow_protocol::kex::derive_session_key_from_phrase(&code_phrase, &room_id);
     let transfer_id: [u8; 16] = rand::random();
+    let session_key =
+        tallow_protocol::kex::derive_session_key_with_salt(&code_phrase, &room_id, &transfer_id);
 
     // Select compression algorithm
     let compression = match args.compress.as_str() {
