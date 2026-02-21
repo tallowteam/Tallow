@@ -46,18 +46,19 @@ FORMULA="homebrew/Formula/tallow.rb"
 if [ -f "$FORMULA" ]; then
     echo "Updating $FORMULA..."
     sed -i.bak "s/version \".*\"/version \"${VERSION_NUM}\"/" "$FORMULA"
-    sed -i.bak "s/PLACEHOLDER_AARCH64_DARWIN_SHA256/${HASH_ARM_DARWIN}/" "$FORMULA"
-    sed -i.bak "s/PLACEHOLDER_X86_64_DARWIN_SHA256/${HASH_X86_DARWIN}/" "$FORMULA"
-    sed -i.bak "s/PLACEHOLDER_AARCH64_LINUX_SHA256/${HASH_ARM_LINUX}/" "$FORMULA"
-    sed -i.bak "s/PLACEHOLDER_X86_64_LINUX_SHA256/${HASH_X86_LINUX}/" "$FORMULA"
+    # Replace any existing sha256 on the line following the aarch64-apple-darwin URL
+    sed -i.bak "/aarch64-apple-darwin/{ n; s/sha256 \"[^\"]*\"/sha256 \"${HASH_ARM_DARWIN}\"/; }" "$FORMULA"
+    sed -i.bak "/x86_64-apple-darwin/{ n; s/sha256 \"[^\"]*\"/sha256 \"${HASH_X86_DARWIN}\"/; }" "$FORMULA"
+    sed -i.bak "/aarch64-unknown-linux-gnu/{ n; s/sha256 \"[^\"]*\"/sha256 \"${HASH_ARM_LINUX}\"/; }" "$FORMULA"
+    sed -i.bak "/x86_64-unknown-linux-gnu/{ n; s/sha256 \"[^\"]*\"/sha256 \"${HASH_X86_LINUX}\"/; }" "$FORMULA"
     rm -f "${FORMULA}.bak"
 fi
 
 MANIFEST="scoop/tallow.json"
 if [ -f "$MANIFEST" ]; then
     echo "Updating $MANIFEST..."
-    sed -i.bak "s/\"version\": \".*\"/\"version\": \"${VERSION_NUM}\"/" "$MANIFEST"
-    sed -i.bak "s/PLACEHOLDER_SHA256/${HASH_X86_WINDOWS}/" "$MANIFEST"
+    sed -i.bak "s/\"version\": \"[^\"]*\"/\"version\": \"${VERSION_NUM}\"/" "$MANIFEST"
+    sed -i.bak "s/\"hash\": \"[^\"]*\"/\"hash\": \"${HASH_X86_WINDOWS}\"/" "$MANIFEST"
     rm -f "${MANIFEST}.bak"
 fi
 

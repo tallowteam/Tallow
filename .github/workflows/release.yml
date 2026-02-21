@@ -3,6 +3,11 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v0.1.0)"
+        required: true
 
 permissions:
   contents: write
@@ -35,6 +40,8 @@ jobs:
             archive: zip
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -46,6 +53,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu
 
+      - name: Set release tag
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "RELEASE_TAG=${{ github.event.inputs.tag }}" >> "$GITHUB_ENV"
+          else
+            echo "RELEASE_TAG=${GITHUB_REF#refs/tags/}" >> "$GITHUB_ENV"
+          fi
+
       - name: Set build metadata
         shell: bash
         run: |
@@ -53,10 +69,20 @@ jobs:
           echo "TALLOW_BUILD_DATE=$(date -u +%Y-%m-%d)" >> "$GITHUB_ENV"
 
       - name: Build release binary
-        run: cargo build --release --target ${{ matrix.target }} --bin tallow
+        shell: bash
+        run: |
+          if [ "${{ matrix.target }}" = "aarch64-unknown-linux-gnu" ]; then
+            export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+          fi
+          cargo build --release --target ${{ matrix.target }} --bin tallow
 
       - name: Build relay binary
-        run: cargo build --release --target ${{ matrix.target }} --bin tallow-relay
+        shell: bash
+        run: |
+          if [ "${{ matrix.target }}" = "aarch64-unknown-linux-gnu" ]; then
+            export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+          fi
+          cargo build --release --target ${{ matrix.target }} --bin tallow-relay
 
       - name: Generate shell completions
         if: matrix.target == 'x86_64-unknown-linux-gnu'
@@ -73,7 +99,7 @@ jobs:
           mkdir -p dist
           cp target/${{ matrix.target }}/release/tallow dist/
           cp target/${{ matrix.target }}/release/tallow-relay dist/
-          cd dist && tar czf ../tallow-${{ github.ref_name }}-${{ matrix.target }}.tar.gz *
+          cd dist && tar czf ../tallow-${{ env.RELEASE_TAG }}-${{ matrix.target }}.tar.gz *
 
       - name: Package (Windows)
         if: matrix.archive == 'zip'
@@ -82,19 +108,19 @@ jobs:
           New-Item -ItemType Directory -Force -Path dist
           Copy-Item target/${{ matrix.target }}/release/tallow.exe dist/
           Copy-Item target/${{ matrix.target }}/release/tallow-relay.exe dist/
-          Compress-Archive -Path dist/* -DestinationPath tallow-${{ github.ref_name }}-${{ matrix.target }}.zip
+          Compress-Archive -Path dist/* -DestinationPath tallow-${{ env.RELEASE_TAG }}-${{ matrix.target }}.zip
 
       - name: Generate checksums
         shell: bash
         run: |
-          for f in tallow-*; do
+          for f in tallow-${{ env.RELEASE_TAG }}-*; do
             sha256sum "$f" > "$f.sha256"
           done
 
       - uses: actions/upload-artifact@v4
         with:
           name: tallow-${{ matrix.target }}
-          path: tallow-${{ github.ref_name }}-${{ matrix.target }}.*
+          path: tallow-${{ env.RELEASE_TAG }}-${{ matrix.target }}.*
 
       - name: Upload completions artifact
         if: matrix.target == 'x86_64-unknown-linux-gnu'
@@ -131,8 +157,17 @@ jobs:
             tar czf artifacts/tallow-completions.tar.gz -C completions .
           fi
 
+      - name: Set release tag
+        run: |
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "RELEASE_TAG=${{ github.event.inputs.tag }}" >> "$GITHUB_ENV"
+          else
+            echo "RELEASE_TAG=${GITHUB_REF#refs/tags/}" >> "$GITHUB_ENV"
+          fi
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.RELEASE_TAG }}
           files: artifacts/tallow-*
           generate_release_notes: true

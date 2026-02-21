@@ -15,7 +15,7 @@ detect_platform() {
         Darwin)  PLATFORM="apple-darwin" ;;
         MINGW*|MSYS*|CYGWIN*)
             echo "Error: Use Scoop on Windows:"
-            echo "  scoop bucket add tallow https://github.com/tallowteam/scoop-tallow"
+            echo "  scoop bucket add tallow https://github.com/tallowteam/Tallow"
             echo "  scoop install tallow"
             exit 1 ;;
         *)
