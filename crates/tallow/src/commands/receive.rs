@@ -122,7 +122,7 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
     }
 
     // Establish connection: proxy-aware relay or direct LAN with fallback
-    let (mut channel, is_direct) = if let Some(ref proxy) = proxy_config {
+    let (mut channel, mut is_direct) = if let Some(ref proxy) = proxy_config {
         // Proxy active: resolve via DoH/hostname, skip LAN discovery entirely
         let resolved = tallow_net::relay::resolve_relay_proxy(&args.relay, proxy_config.as_ref())
             .await
@@ -309,6 +309,63 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
             output::verify::display_verification(session_key.as_bytes(), true);
         }
     }
+
+    // --- P2P Direct Connection Upgrade ---
+    // Attempt to upgrade from relay to direct P2P QUIC after handshake.
+    // Skip when: proxy active, --no-p2p set, already direct (LAN)
+    if !is_direct && proxy_config.is_none() && !args.no_p2p {
+        if !json {
+            output::color::info("Attempting P2P direct connection...");
+        }
+
+        // Receiver = responder (QUIC server role)
+        // Pass the combined suppression flag as defense-in-depth guard.
+        let suppress_p2p = proxy_config.is_some() || args.no_p2p;
+        match tallow_net::transport::negotiate_p2p(&mut channel, false, suppress_p2p).await {
+            tallow_net::transport::NegotiationResult::Direct(direct_conn) => {
+                if json {
+                    println!(
+                        "{}",
+                        serde_json::json!({
+                            "event": "p2p_upgrade",
+                            "remote_addr": direct_conn.remote_addr().to_string(),
+                        })
+                    );
+                } else {
+                    output::color::success(&format!(
+                        "Upgraded to direct P2P connection ({})",
+                        direct_conn.remote_addr()
+                    ));
+                }
+                channel = tallow_net::transport::ConnectionResult::Direct(direct_conn);
+                is_direct = true;
+                tracing::info!("Transport upgraded: is_direct={}", is_direct);
+            }
+            tallow_net::transport::NegotiationResult::FallbackToRelay(reason) => {
+                if json {
+                    println!(
+                        "{}",
+                        serde_json::json!({
+                            "event": "p2p_fallback",
+                            "reason": reason,
+                        })
+                    );
+                } else {
+                    output::color::info(&format!(
+                        "P2P direct connection unavailable ({}), continuing via relay",
+                        reason
+                    ));
+                }
+            }
+        }
+    } else if proxy_config.is_some() || args.no_p2p {
+        tracing::debug!(
+            "P2P disabled: proxy={}, no_p2p={}",
+            proxy_config.is_some(),
+            args.no_p2p
+        );
+    }
+    // --- End P2P Upgrade ---
 
     // Receive FileOffer
     let n = channel
