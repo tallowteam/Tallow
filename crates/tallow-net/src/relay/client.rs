@@ -171,6 +171,74 @@ impl RelayClient {
         }
     }
 
+    /// Connect to the relay server with a raw join payload.
+    ///
+    /// Establishes the transport, sends the provided bytes (e.g. a
+    /// postcard-serialized `RoomJoinMulti`), and returns the raw response.
+    /// The caller is responsible for serializing the join message and
+    /// interpreting the response.
+    ///
+    /// Returns `Err(AuthenticationFailed)` if the relay rejects authentication.
+    pub async fn connect_raw(&mut self, join_payload: &[u8]) -> Result<Vec<u8>> {
+        use crate::Transport;
+
+        if let Some(ref proxy) = self.proxy_config {
+            let mut transport = crate::transport::ProxiedTcpTlsTransport::new(
+                proxy,
+                self.relay_hostname.clone(),
+                self.relay_addr.port(),
+            );
+            transport.connect(self.relay_addr).await?;
+            info!(
+                "connected to relay via SOCKS5 proxy at {}",
+                proxy.socks5_addr
+            );
+
+            transport.send(join_payload).await?;
+
+            let mut buf = vec![0u8; 16384];
+            let n = transport.receive(&mut buf).await?;
+
+            if n >= 1 && buf[0] == 0xFF {
+                transport.close().await?;
+                return Err(NetworkError::AuthenticationFailed);
+            }
+
+            buf.truncate(n);
+            self.transport = Some(RelayTransport::Proxied(Box::new(transport)));
+            Ok(buf)
+        } else {
+            #[cfg(feature = "quic")]
+            {
+                let mut transport = crate::transport::QuicTransport::new();
+                transport.connect(self.relay_addr).await?;
+                info!("connected to relay at {}", self.relay_addr);
+
+                transport.send(join_payload).await?;
+
+                let mut buf = vec![0u8; 16384];
+                let n = transport.receive(&mut buf).await?;
+
+                if n >= 1 && buf[0] == 0xFF {
+                    transport.close().await;
+                    return Err(NetworkError::AuthenticationFailed);
+                }
+
+                buf.truncate(n);
+                self.transport = Some(RelayTransport::Quic(transport));
+                Ok(buf)
+            }
+
+            #[cfg(not(feature = "quic"))]
+            {
+                Err(NetworkError::ConnectionFailed(
+                    "no transport available: QUIC feature disabled and no proxy configured"
+                        .to_string(),
+                ))
+            }
+        }
+    }
+
     /// Wait for the peer to arrive (blocks until PeerArrived notification)
     pub async fn wait_for_peer(&mut self) -> Result<()> {
         if self.peer_present {

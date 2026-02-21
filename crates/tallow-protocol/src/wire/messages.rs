@@ -195,6 +195,54 @@ pub enum Message {
     },
     /// Graceful chat session termination
     ChatEnd,
+
+    // --- Phase 19: Multi-Peer Room variants (DO NOT reorder; postcard ordinal) ---
+    /// Multi-peer room join request
+    RoomJoinMulti {
+        /// Room ID (BLAKE3 hash of code phrase, 32 bytes)
+        room_id: Vec<u8>,
+        /// BLAKE3 hash of relay password. None = no auth attempted.
+        password_hash: Option<Vec<u8>>,
+        /// Requested room capacity (0 = use server default)
+        requested_capacity: u8,
+    },
+    /// Multi-peer room joined response with peer ID assignment
+    RoomJoinedMulti {
+        /// This peer's assigned ID in the room
+        peer_id: u8,
+        /// List of already-present peer IDs
+        existing_peers: Vec<u8>,
+    },
+    /// A new peer has joined the room (broadcast to existing peers)
+    PeerJoinedRoom {
+        /// The new peer's assigned ID
+        peer_id: u8,
+    },
+    /// A peer has left the room (broadcast to remaining peers)
+    PeerLeftRoom {
+        /// The departing peer's ID
+        peer_id: u8,
+    },
+    /// Targeted message envelope for multi-peer routing
+    ///
+    /// The relay reads `to_peer` to route and overwrites `from_peer`
+    /// with the actual sender's ID (anti-spoofing). Payload is opaque
+    /// E2E encrypted bytes.
+    Targeted {
+        /// Sender's peer ID (set/overwritten by relay)
+        from_peer: u8,
+        /// Target peer ID (0xFF = broadcast to all)
+        to_peer: u8,
+        /// Opaque payload (E2E encrypted message bytes)
+        payload: Vec<u8>,
+    },
+    /// Room peer count response
+    RoomPeerCount {
+        /// Current number of peers in the room
+        count: u8,
+        /// Room capacity
+        capacity: u8,
+    },
 }
 
 #[cfg(test)]
@@ -309,6 +357,41 @@ mod tests {
                 message_ids: vec![[0xCC; 16], [0xDD; 16]],
             },
             Message::ChatEnd,
+            // Phase 19: Multi-peer variants
+            Message::RoomJoinMulti {
+                room_id: vec![0u8; 32],
+                password_hash: Some(vec![0xAB; 32]),
+                requested_capacity: 10,
+            },
+            Message::RoomJoinMulti {
+                room_id: vec![0u8; 32],
+                password_hash: None,
+                requested_capacity: 0,
+            },
+            Message::RoomJoinedMulti {
+                peer_id: 0,
+                existing_peers: vec![],
+            },
+            Message::RoomJoinedMulti {
+                peer_id: 3,
+                existing_peers: vec![0, 1, 2],
+            },
+            Message::PeerJoinedRoom { peer_id: 5 },
+            Message::PeerLeftRoom { peer_id: 2 },
+            Message::Targeted {
+                from_peer: 0,
+                to_peer: 1,
+                payload: vec![0xDE, 0xAD],
+            },
+            Message::Targeted {
+                from_peer: 0,
+                to_peer: 0xFF,
+                payload: vec![],
+            },
+            Message::RoomPeerCount {
+                count: 5,
+                capacity: 10,
+            },
         ];
 
         for msg in &messages {
@@ -371,5 +454,113 @@ mod tests {
             "ChatEnd should be compact, got {} bytes",
             bytes.len()
         );
+    }
+
+    #[test]
+    fn test_discriminant_stability_chat_end() {
+        // ChatEnd was the last variant before Phase 19 additions.
+        // Its encoded discriminant must not change when new variants are appended.
+        let bytes = postcard::to_stdvec(&Message::ChatEnd).unwrap();
+        // ChatEnd is variant index 28 (0-indexed). Postcard encodes this as varint 28.
+        assert_eq!(bytes[0], 28, "ChatEnd discriminant must remain 28");
+    }
+
+    /// Verify a Targeted message can carry an inner ChatText through
+    /// nested postcard serialization (the multi-peer envelope pattern).
+    #[test]
+    fn test_targeted_with_inner_chat_text() {
+        let inner = Message::ChatText {
+            message_id: [0xAA; 16],
+            sequence: 5,
+            ciphertext: vec![0xDE, 0xAD, 0xBE, 0xEF],
+            nonce: [0xBB; 12],
+        };
+        let inner_bytes = postcard::to_stdvec(&inner).unwrap();
+
+        let targeted = Message::Targeted {
+            from_peer: 0,
+            to_peer: 1,
+            payload: inner_bytes,
+        };
+
+        let encoded = postcard::to_stdvec(&targeted).unwrap();
+        let decoded: Message = postcard::from_bytes(&encoded).unwrap();
+
+        if let Message::Targeted {
+            from_peer,
+            to_peer,
+            payload,
+        } = decoded
+        {
+            assert_eq!(from_peer, 0);
+            assert_eq!(to_peer, 1);
+            let inner_decoded: Message = postcard::from_bytes(&payload).unwrap();
+            assert_eq!(inner_decoded, inner);
+        } else {
+            panic!("Expected Targeted");
+        }
+    }
+
+    /// Verify pre-Phase-19 variants still round-trip correctly after
+    /// appending the new multi-peer variants (backward compatibility).
+    #[test]
+    fn test_old_variants_stable_after_phase19() {
+        let old_messages = vec![
+            Message::Ping,
+            Message::Pong,
+            Message::RoomJoin {
+                room_id: vec![0; 32],
+                password_hash: None,
+            },
+            Message::RoomJoined { peer_present: true },
+            Message::ChatEnd,
+            Message::ChatText {
+                message_id: [0xAA; 16],
+                sequence: 1,
+                ciphertext: vec![0xDE, 0xAD],
+                nonce: [0xBB; 12],
+            },
+            Message::HandshakeInit {
+                protocol_version: 1,
+                kem_capabilities: vec![0],
+                cpace_public: [0xCC; 32],
+                nonce: [0xDD; 16],
+            },
+        ];
+        for msg in &old_messages {
+            let bytes = postcard::to_stdvec(msg).unwrap();
+            let decoded: Message = postcard::from_bytes(&bytes).unwrap();
+            assert_eq!(&decoded, msg, "backward compat failed for {:?}", msg);
+        }
+    }
+
+    /// Verify a Targeted broadcast (to_peer = 0xFF) with inner ChatEnd.
+    #[test]
+    fn test_targeted_broadcast_chat_end() {
+        let inner = Message::ChatEnd;
+        let inner_bytes = postcard::to_stdvec(&inner).unwrap();
+
+        let broadcast = Message::Targeted {
+            from_peer: 2,
+            to_peer: 0xFF,
+            payload: inner_bytes,
+        };
+
+        let encoded = postcard::to_stdvec(&broadcast).unwrap();
+        let decoded: Message = postcard::from_bytes(&encoded).unwrap();
+
+        if let Message::Targeted {
+            from_peer,
+            to_peer,
+            payload,
+        } = decoded
+        {
+            assert_eq!(from_peer, 2);
+            assert_eq!(to_peer, 0xFF);
+            let inner_decoded: Message = postcard::from_bytes(&payload).unwrap();
+            assert_eq!(inner_decoded, Message::ChatEnd);
+        } else {
+            panic!("Expected Targeted");
+        }
     }
 }

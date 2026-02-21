@@ -44,6 +44,10 @@ enum Commands {
         #[arg(long, default_value = "60")]
         room_timeout: u64,
 
+        /// Maximum peers per multi-peer room (default: 10, max: 20)
+        #[arg(long, default_value = "10")]
+        max_peers_per_room: u8,
+
         /// Relay password (use TALLOW_RELAY_PASS env var for production)
         #[arg(long = "pass", env = "TALLOW_RELAY_PASS", hide_env_values = true)]
         pass: Option<String>,
@@ -70,6 +74,7 @@ async fn main() -> anyhow::Result<()> {
             config,
             max_rooms,
             room_timeout,
+            max_peers_per_room,
             pass,
         } => {
             let mut relay_config = if let Some(cfg_path) = config {
@@ -83,6 +88,7 @@ async fn main() -> anyhow::Result<()> {
             relay_config.bind_addr = addr;
             relay_config.max_rooms = max_rooms;
             relay_config.room_timeout_secs = room_timeout;
+            relay_config.max_peers_per_room = max_peers_per_room.min(20);
 
             // Warn if running as open relay
             if pass.is_none() && relay_config.password.is_empty() {

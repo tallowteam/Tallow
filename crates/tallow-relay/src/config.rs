@@ -19,9 +19,16 @@ pub struct RelayConfig {
     pub tls_cert: Option<String>,
     /// TLS key path (optional)
     pub tls_key: Option<String>,
+    /// Maximum peers per multi-peer room (default: 10, max: 20)
+    #[serde(default = "default_max_peers_per_room")]
+    pub max_peers_per_room: u8,
     /// Relay password (empty = open relay, no authentication required)
     #[serde(default)]
     pub password: String,
+}
+
+fn default_max_peers_per_room() -> u8 {
+    10
 }
 
 impl Default for RelayConfig {
@@ -34,6 +41,7 @@ impl Default for RelayConfig {
             room_timeout_secs: 60,
             tls_cert: None,
             tls_key: None,
+            max_peers_per_room: 10,
             password: String::new(),
         }
     }

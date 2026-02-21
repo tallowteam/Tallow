@@ -448,6 +448,14 @@ pub struct ChatArgs {
     /// Do not copy join command to clipboard
     #[arg(long)]
     pub no_clipboard: bool,
+
+    /// Enable multi-peer room (3+ participants)
+    #[arg(long)]
+    pub multi: bool,
+
+    /// Maximum room capacity for multi-peer mode (default: 10)
+    #[arg(long, default_value = "10")]
+    pub capacity: u8,
 }
 
 #[derive(Args)]

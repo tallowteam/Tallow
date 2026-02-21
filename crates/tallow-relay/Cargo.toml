@@ -11,6 +11,7 @@ path = "src/main.rs"
 
 [dependencies]
 tallow-net = { path = "../tallow-net", features = ["quic"] }
+tallow-protocol = { path = "../tallow-protocol" }
 
 # CLI
 clap = { version = "4", features = ["derive", "env"] }
@@ -26,6 +27,7 @@ rustls = "0.23"
 rcgen = "0.13"
 
 # Serialization
+postcard.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 bincode.workspace = true

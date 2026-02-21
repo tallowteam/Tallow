@@ -10,6 +10,7 @@ pub mod compression;
 pub mod error;
 pub mod kex;
 pub mod metadata;
+pub mod multi;
 pub mod room;
 pub mod transfer;
 pub mod wire;
