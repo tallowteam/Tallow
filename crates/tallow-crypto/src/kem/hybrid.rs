@@ -60,7 +60,16 @@ pub struct Ciphertext {
 /// Hybrid shared secret
 #[derive(Clone, Zeroize)]
 #[zeroize(drop)]
-pub struct SharedSecret(pub [u8; 32]);
+pub struct SharedSecret(pub(crate) [u8; 32]);
+
+impl SharedSecret {
+    /// Access the raw secret bytes
+    ///
+    /// Callers are responsible for zeroizing any copies they make.
+    pub fn expose_secret(&self) -> &[u8; 32] {
+        &self.0
+    }
+}
 
 /// Hybrid KEM operations
 pub struct HybridKem;

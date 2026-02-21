@@ -29,8 +29,6 @@ pub struct Room {
     pub peer_a: Option<RoomPeer>,
     /// Second peer (the one who joined second)
     pub peer_b: Option<RoomPeer>,
-    /// When this room was created
-    pub created_at: Instant,
     /// Last time any activity occurred (join, data forwarded)
     pub last_activity: Instant,
 }
@@ -42,7 +40,6 @@ impl Room {
         Self {
             peer_a: Some(peer),
             peer_b: None,
-            created_at: now,
             last_activity: now,
         }
     }
@@ -50,11 +47,6 @@ impl Room {
     /// Update last activity timestamp (call on data forwarding)
     pub fn touch(&mut self) {
         self.last_activity = Instant::now();
-    }
-
-    /// Check if the room has both peers
-    pub fn is_paired(&self) -> bool {
-        self.peer_a.is_some() && self.peer_b.is_some()
     }
 
     /// Check if the room is empty (both peers left)
@@ -84,7 +76,7 @@ impl RoomManager {
         }
     }
 
-    /// Join a room. Returns a receiver for data from the other peer.
+    /// Join a room with per-IP tracking.
     ///
     /// If the room doesn't exist, creates it and the peer waits.
     /// If the room exists with one peer, the peer is paired.
@@ -93,11 +85,6 @@ impl RoomManager {
     /// Note: the room count check happens before acquiring the entry lock
     /// to avoid a DashMap deadlock (len() cannot be called while holding
     /// an entry write lock on the same map).
-    pub fn join(&self, room_id: RoomId) -> Result<(PeerReceiver, PeerSender, bool), RoomError> {
-        self.join_with_ip(room_id, None)
-    }
-
-    /// Join a room with per-IP tracking
     pub fn join_with_ip(
         &self,
         room_id: RoomId,
@@ -150,11 +137,14 @@ impl RoomManager {
                     *self.ip_room_counts.entry(ip).or_insert(0) += 1;
                 }
 
-                // No peer present yet — caller will wait
-                // The sender returned here is a dummy; the real peer_b sender
-                // will be available when the second peer joins.
-                let (dummy_tx, _dummy_rx) = mpsc::channel(1);
-                Ok((rx, dummy_tx, false))
+                // No peer present yet — caller will wait for peer_b.
+                // The PeerSender returned here is a non-functional placeholder:
+                // the receiver side is immediately dropped, so any send on this
+                // channel will fail. The actual peer_b sender becomes available
+                // via `get_peer_sender()` once the second peer joins the room.
+                // Channel capacity is 1 (minimum allowed by mpsc::channel).
+                let (placeholder_tx, _drop_rx) = mpsc::channel(1);
+                Ok((rx, placeholder_tx, false))
             }
         }
     }
@@ -175,11 +165,6 @@ impl RoomManager {
         if let Some(mut room) = self.rooms.get_mut(room_id) {
             room.touch();
         }
-    }
-
-    /// Remove a room and decrement the per-IP room count
-    pub fn remove_room(&self, room_id: &RoomId) {
-        self.rooms.remove(room_id);
     }
 
     /// Notify that a peer from a given IP has disconnected from a room.
@@ -240,13 +225,9 @@ impl RoomManager {
     }
 
     /// Get the number of active rooms
+    #[cfg(test)]
     pub fn room_count(&self) -> usize {
         self.rooms.len()
-    }
-
-    /// Get a shared reference to the rooms map (for iteration)
-    pub fn rooms(&self) -> &DashMap<RoomId, Room> {
-        &self.rooms
     }
 }
 
@@ -283,12 +264,12 @@ mod tests {
         let room_id = [1u8; 32];
 
         // First peer joins — creates room
-        let (_, _, peer_present) = manager.join(room_id).unwrap();
+        let (_, _, peer_present) = manager.join_with_ip(room_id, None).unwrap();
         assert!(!peer_present);
         assert_eq!(manager.room_count(), 1);
 
         // Second peer joins — room is paired
-        let (_, _, peer_present) = manager.join(room_id).unwrap();
+        let (_, _, peer_present) = manager.join_with_ip(room_id, None).unwrap();
         assert!(peer_present);
     }
 
@@ -297,28 +278,28 @@ mod tests {
         let manager = RoomManager::new(100);
         let room_id = [1u8; 32];
 
-        manager.join(room_id).unwrap();
-        manager.join(room_id).unwrap();
+        manager.join_with_ip(room_id, None).unwrap();
+        manager.join_with_ip(room_id, None).unwrap();
 
         // Third peer should fail
-        assert!(manager.join(room_id).is_err());
+        assert!(manager.join_with_ip(room_id, None).is_err());
     }
 
     #[test]
     fn test_room_limit() {
         let manager = RoomManager::new(2);
 
-        manager.join([1u8; 32]).unwrap();
-        manager.join([2u8; 32]).unwrap();
+        manager.join_with_ip([1u8; 32], None).unwrap();
+        manager.join_with_ip([2u8; 32], None).unwrap();
 
         // Third room should fail
-        assert!(manager.join([3u8; 32]).is_err());
+        assert!(manager.join_with_ip([3u8; 32], None).is_err());
     }
 
     #[test]
     fn test_cleanup_stale() {
         let manager = RoomManager::new(100);
-        manager.join([1u8; 32]).unwrap();
+        manager.join_with_ip([1u8; 32], None).unwrap();
 
         // Rooms just created should not be cleaned up
         let removed = manager.cleanup_stale(60);
@@ -327,13 +308,14 @@ mod tests {
     }
 
     #[test]
-    fn test_remove_room() {
+    fn test_peer_disconnect_removes_empty_room() {
         let manager = RoomManager::new(100);
         let room_id = [1u8; 32];
-        manager.join(room_id).unwrap();
+        manager.join_with_ip(room_id, None).unwrap();
         assert_eq!(manager.room_count(), 1);
 
-        manager.remove_room(&room_id);
+        // Disconnect the only peer — room should be removed
+        manager.peer_disconnected(&room_id, None);
         assert_eq!(manager.room_count(), 0);
     }
 }

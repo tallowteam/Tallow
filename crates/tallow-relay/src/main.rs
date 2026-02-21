@@ -5,21 +5,16 @@
 
 #![forbid(unsafe_code)]
 
-#[allow(dead_code)]
 mod auth;
 mod config;
 mod rate_limit;
-#[allow(dead_code)]
 mod room;
-#[allow(dead_code)]
 mod server;
-#[allow(dead_code)]
-mod signaling;
 
 use clap::{Parser, Subcommand};
 use config::RelayConfig;
 use server::RelayServer;
-use tracing::info;
+use tracing::{info, warn};
 
 #[derive(Parser)]
 #[command(name = "tallow-relay")]
@@ -88,6 +83,15 @@ async fn main() -> anyhow::Result<()> {
             relay_config.bind_addr = addr;
             relay_config.max_rooms = max_rooms;
             relay_config.room_timeout_secs = room_timeout;
+
+            // Warn if running as open relay
+            if pass.is_none() && relay_config.password.is_empty() {
+                warn!(
+                    "No relay password configured — running as OPEN relay. \
+                     Set --pass or TALLOW_RELAY_PASS to require authentication."
+                );
+            }
+
             relay_config.password = pass.unwrap_or_default();
 
             let server = RelayServer::new(relay_config);

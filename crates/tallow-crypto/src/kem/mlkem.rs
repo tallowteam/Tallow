@@ -34,7 +34,16 @@ pub struct Ciphertext(Vec<u8>);
 /// ML-KEM-1024 shared secret
 #[derive(Clone, Zeroize)]
 #[zeroize(drop)]
-pub struct SharedSecret(pub [u8; 32]);
+pub struct SharedSecret(pub(crate) [u8; 32]);
+
+impl SharedSecret {
+    /// Access the raw secret bytes
+    ///
+    /// Callers are responsible for zeroizing any copies they make.
+    pub fn expose_secret(&self) -> &[u8; 32] {
+        &self.0
+    }
+}
 
 impl PublicKey {
     /// Get the raw bytes of the public key

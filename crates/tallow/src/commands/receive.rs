@@ -498,7 +498,8 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
                 match std::str::from_utf8(&content) {
                     Ok(text) => {
                         println!();
-                        println!("{}", text);
+                        let safe_text = tallow_protocol::transfer::sanitize::sanitize_display(text);
+                        println!("{}", safe_text);
                     }
                     Err(_) => {
                         output::color::warning(

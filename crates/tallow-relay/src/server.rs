@@ -9,9 +9,15 @@ use crate::rate_limit::RateLimiter;
 use crate::room::{RoomId, RoomManager};
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::Mutex;
 use tracing::{info, warn};
 use zeroize::Zeroize;
+
+/// Timeout for the initial handshake (room join message).
+/// Prevents slowloris-style attacks where a client opens a connection
+/// and never sends data, holding the spawned task indefinitely.
+const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// Relay server
 pub struct RelayServer {
@@ -68,8 +74,26 @@ impl RelayServer {
             }
         });
 
-        // Accept connections
-        while let Some(incoming) = endpoint.accept().await {
+        // Accept connections with graceful shutdown on Ctrl+C / SIGTERM
+        let shutdown = async {
+            let _ = tokio::signal::ctrl_c().await;
+            info!("shutdown signal received, stopping accept loop");
+        };
+        tokio::pin!(shutdown);
+
+        loop {
+            let incoming = tokio::select! {
+                incoming = endpoint.accept() => {
+                    match incoming {
+                        Some(i) => i,
+                        None => break,
+                    }
+                }
+                _ = &mut shutdown => {
+                    info!("graceful shutdown: no longer accepting new connections");
+                    break;
+                }
+            };
             let remote_addr = incoming.remote_address();
 
             // Rate limiting
@@ -111,11 +135,6 @@ impl RelayServer {
         info!("relay server shutting down");
         Ok(())
     }
-
-    /// Get the room manager (for monitoring/testing)
-    pub fn room_manager(&self) -> &RoomManager {
-        &self.room_manager
-    }
 }
 
 /// Handle a single QUIC connection
@@ -128,30 +147,35 @@ async fn handle_connection(
     mut password: String,
     client_ip: std::net::IpAddr,
 ) -> anyhow::Result<()> {
-    // Accept bidirectional stream from client
-    let (mut send, mut recv) = connection
-        .accept_bi()
-        .await
-        .map_err(|e| anyhow::anyhow!("accept_bi failed: {}", e))?;
+    // Accept bidirectional stream from client with handshake timeout.
+    // Prevents slowloris attacks where a client connects but never sends data.
+    let (mut send, mut recv, join) = tokio::time::timeout(HANDSHAKE_TIMEOUT, async {
+        let (send, mut recv) = connection
+            .accept_bi()
+            .await
+            .map_err(|e| anyhow::anyhow!("accept_bi failed: {}", e))?;
 
-    // Read the first message (expect RoomJoin)
-    let mut len_buf = [0u8; 4];
-    recv.read_exact(&mut len_buf)
-        .await
-        .map_err(|e| anyhow::anyhow!("read room join length failed: {}", e))?;
+        // Read the first message (expect RoomJoin)
+        let mut len_buf = [0u8; 4];
+        recv.read_exact(&mut len_buf)
+            .await
+            .map_err(|e| anyhow::anyhow!("read room join length failed: {}", e))?;
 
-    let msg_len = u32::from_be_bytes(len_buf) as usize;
-    if msg_len > 1024 {
-        anyhow::bail!("room join message too large: {} bytes", msg_len);
-    }
+        let msg_len = u32::from_be_bytes(len_buf) as usize;
+        if msg_len > 1024 {
+            anyhow::bail!("room join message too large: {} bytes", msg_len);
+        }
 
-    let mut msg_buf = vec![0u8; msg_len];
-    recv.read_exact(&mut msg_buf)
-        .await
-        .map_err(|e| anyhow::anyhow!("read room join message failed: {}", e))?;
+        let mut msg_buf = vec![0u8; msg_len];
+        recv.read_exact(&mut msg_buf)
+            .await
+            .map_err(|e| anyhow::anyhow!("read room join message failed: {}", e))?;
 
-    // Parse room ID and optional password hash from the join message
-    let join = parse_room_join(&msg_buf)?;
+        let join = parse_room_join(&msg_buf)?;
+        Ok::<_, anyhow::Error>((send, recv, join))
+    })
+    .await
+    .map_err(|_| anyhow::anyhow!("handshake timeout ({}s)", HANDSHAKE_TIMEOUT.as_secs()))??;
 
     // Verify password authentication
     if !auth::verify_relay_password(join.password_hash.as_ref(), &password) {
@@ -359,20 +383,9 @@ fn encode_peer_arrived() -> anyhow::Result<Vec<u8>> {
     Ok(msg)
 }
 
-/// Format a room ID as a short hex string for logging
-fn hex_short(id: &[u8; 32]) -> String {
-    format!("{:02x}{:02x}..{:02x}{:02x}", id[0], id[1], id[30], id[31])
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_hex_short() {
-        let id = [0xABu8; 32];
-        assert_eq!(hex_short(&id), "abab..abab");
-    }
 
     #[test]
     fn test_encode_room_joined() {
