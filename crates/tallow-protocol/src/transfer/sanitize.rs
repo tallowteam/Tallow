@@ -228,11 +228,71 @@ fn truncate_to_byte_len(s: &str, max_bytes: usize) -> &str {
 
 /// Strip ANSI escape sequences from a string.
 ///
-/// Uses the `strip-ansi-escapes` crate to remove CSI, OSC, and other
-/// terminal escape sequences that could manipulate terminal display.
+/// On native builds, uses the `strip-ansi-escapes` crate with its VTE parser.
+/// On WASM builds, uses a lightweight state machine that handles CSI, OSC,
+/// and single-character escape sequences.
+#[cfg(feature = "full")]
 fn strip_ansi(input: &str) -> String {
     let stripped = strip_ansi_escapes::strip(input);
     String::from_utf8_lossy(&stripped).into_owned()
+}
+
+/// WASM-compatible ANSI escape stripping using a simple state machine.
+///
+/// Handles the most common escape sequences:
+/// - CSI sequences: `ESC [ ... final_byte`
+/// - OSC sequences: `ESC ] ... (BEL | ST)`
+/// - Two-character escapes: `ESC X` where X is a single character
+#[cfg(not(feature = "full"))]
+fn strip_ansi(input: &str) -> String {
+    let mut result = String::with_capacity(input.len());
+    let mut chars = input.chars().peekable();
+
+    while let Some(c) = chars.next() {
+        if c == '\x1b' {
+            // ESC detected — determine sequence type
+            match chars.peek() {
+                Some('[') => {
+                    // CSI sequence: ESC [ ... (0x40-0x7E final byte)
+                    chars.next(); // consume '['
+                    while let Some(&next) = chars.peek() {
+                        chars.next();
+                        if ('\x40'..='\x7e').contains(&next) {
+                            break;
+                        }
+                    }
+                }
+                Some(']') => {
+                    // OSC sequence: ESC ] ... (BEL or ST)
+                    chars.next(); // consume ']'
+                    while let Some(&next) = chars.peek() {
+                        chars.next();
+                        if next == '\x07' {
+                            break; // BEL terminates OSC
+                        }
+                        if next == '\x1b' {
+                            // ST = ESC + backslash
+                            if chars.peek() == Some(&'\\') {
+                                chars.next();
+                            }
+                            break;
+                        }
+                    }
+                }
+                Some(_) => {
+                    // Two-character escape: ESC + single char
+                    chars.next();
+                }
+                None => {
+                    // Trailing ESC at end of string — discard
+                }
+            }
+        } else {
+            result.push(c);
+        }
+    }
+
+    result
 }
 
 /// Strip ANSI escape sequences and control characters from a display string.
@@ -253,14 +313,24 @@ fn strip_ansi(input: &str) -> String {
 /// assert_eq!(sanitize_display("line1\nline2\ttab"), "line1\nline2\ttab");
 /// ```
 pub fn sanitize_display(input: &str) -> String {
-    // strip_ansi_escapes uses a VTE parser that consumes ALL C0 control
-    // characters including \t and \n. Protect the ones we want to keep
-    // by substituting with Unicode private-use-area placeholders.
-    let protected = input.replace('\t', "\u{F0001}").replace('\n', "\u{F0002}");
-    let stripped = strip_ansi(&protected);
-    stripped
+    // On native builds with strip-ansi-escapes, the VTE parser consumes ALL
+    // C0 control characters including \t and \n. Protect the ones we want to
+    // keep by substituting with Unicode private-use-area placeholders.
+    #[cfg(feature = "full")]
+    let input_for_strip = input.replace('\t', "\u{F0001}").replace('\n', "\u{F0002}");
+    #[cfg(feature = "full")]
+    let stripped = strip_ansi(&input_for_strip);
+    #[cfg(feature = "full")]
+    let after_restore = stripped
         .replace('\u{F0001}', "\t")
-        .replace('\u{F0002}', "\n")
+        .replace('\u{F0002}', "\n");
+
+    // On WASM builds, our state machine does not eat tabs/newlines, so no
+    // PUA placeholder dance is needed.
+    #[cfg(not(feature = "full"))]
+    let after_restore = strip_ansi(input);
+
+    after_restore
         .chars()
         .filter(|c| !c.is_control() || *c == '\n' || *c == '\t')
         .collect()

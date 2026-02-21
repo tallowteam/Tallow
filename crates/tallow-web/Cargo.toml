@@ -1,0 +1,31 @@
+[package]
+name = "tallow-web"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "WebAssembly browser client for Tallow file transfers"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+tallow-crypto = { path = "../tallow-crypto" }
+tallow-protocol = { path = "../tallow-protocol", default-features = false, features = ["wasm"] }
+
+# WASM bindings
+wasm-bindgen = "0.2"
+web-sys = { version = "0.3", features = ["console"] }
+js-sys = "0.3"
+wasm-bindgen-futures = "0.4"
+console_error_panic_hook = "0.1"
+
+# Serialization (WASM-compatible, no std)
+serde = { version = "1", features = ["derive"] }
+postcard = { version = "1.1", default-features = false, features = ["alloc"] }
+
+# Crypto randomness in browser — CRITICAL: "js" feature wires crypto.getRandomValues()
+# This is getrandom 0.2 — the feature name is "js" (NOT "wasm_js" which is 0.3+)
+getrandom = { version = "0.2", features = ["js"] }
+
+# Serde-JsValue bridge
+serde-wasm-bindgen = "0.6"
