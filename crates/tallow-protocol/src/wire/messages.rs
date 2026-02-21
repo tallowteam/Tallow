@@ -243,6 +243,23 @@ pub enum Message {
         /// Room capacity
         capacity: u8,
     },
+
+    // --- Phase 20: P2P Direct signaling variants (DO NOT reorder; postcard ordinal) ---
+    /// Candidate address for P2P direct connection attempt
+    CandidateOffer {
+        /// Candidate type: 0 = host, 1 = server-reflexive (STUN), 2 = UPnP
+        candidate_type: u8,
+        /// Socket address encoded as bytes: 6 bytes (IPv4 u32 BE + port u16 BE) or 18 bytes (IPv6)
+        addr: Vec<u8>,
+        /// Priority (higher = preferred). Host=100, SRFLX=50, UPnP=30.
+        priority: u32,
+    },
+    /// All candidates have been sent; peer may begin connection attempts
+    CandidatesDone,
+    /// Direct P2P connection established -- notify relay to stop forwarding
+    DirectConnected,
+    /// Direct P2P connection failed -- continue via relay
+    DirectFailed,
 }
 
 #[cfg(test)]
@@ -392,6 +409,20 @@ mod tests {
                 count: 5,
                 capacity: 10,
             },
+            // Phase 20: P2P Direct signaling variants
+            Message::CandidateOffer {
+                candidate_type: 0,
+                addr: vec![192, 168, 1, 42, 0x1F, 0x90],
+                priority: 100,
+            },
+            Message::CandidateOffer {
+                candidate_type: 1,
+                addr: vec![],
+                priority: 50,
+            },
+            Message::CandidatesDone,
+            Message::DirectConnected,
+            Message::DirectFailed,
         ];
 
         for msg in &messages {
@@ -532,6 +563,28 @@ mod tests {
             let decoded: Message = postcard::from_bytes(&bytes).unwrap();
             assert_eq!(&decoded, msg, "backward compat failed for {:?}", msg);
         }
+    }
+
+    #[test]
+    fn test_discriminant_stability_p2p_variants() {
+        // RoomPeerCount was variant index 34 (the last pre-Phase-20 variant).
+        // CandidateOffer must be 35, CandidatesDone 36, DirectConnected 37, DirectFailed 38.
+        let bytes = postcard::to_stdvec(&Message::CandidateOffer {
+            candidate_type: 0,
+            addr: vec![],
+            priority: 0,
+        })
+        .unwrap();
+        assert_eq!(bytes[0], 35, "CandidateOffer discriminant must be 35");
+
+        let bytes = postcard::to_stdvec(&Message::CandidatesDone).unwrap();
+        assert_eq!(bytes[0], 36, "CandidatesDone discriminant must be 36");
+
+        let bytes = postcard::to_stdvec(&Message::DirectConnected).unwrap();
+        assert_eq!(bytes[0], 37, "DirectConnected discriminant must be 37");
+
+        let bytes = postcard::to_stdvec(&Message::DirectFailed).unwrap();
+        assert_eq!(bytes[0], 38, "DirectFailed discriminant must be 38");
     }
 
     /// Verify a Targeted broadcast (to_peer = 0xFF) with inner ChatEnd.

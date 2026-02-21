@@ -63,6 +63,55 @@ impl StunClient {
         Ok(Self { server: addr })
     }
 
+    /// Discover public address using STUN, binding from a specific local port.
+    ///
+    /// This is critical for hole punching: the STUN-discovered mapped address
+    /// must correspond to the same NAT binding that quinn will use. If we discover
+    /// from a different port, the NAT maps to a different external port and the
+    /// candidate is useless.
+    pub async fn discover_from_port(&self, local_port: u16) -> Result<StunResult> {
+        let bind_addr: SocketAddr = SocketAddr::new(
+            std::net::IpAddr::V4(std::net::Ipv4Addr::UNSPECIFIED),
+            local_port,
+        );
+        let socket = UdpSocket::bind(bind_addr).await.map_err(|e| {
+            NetworkError::NatTraversal(format!(
+                "Failed to bind UDP socket to port {}: {}",
+                local_port, e
+            ))
+        })?;
+
+        let local_addr = socket.local_addr().map_err(|e| {
+            NetworkError::NatTraversal(format!("Failed to get local address: {}", e))
+        })?;
+
+        // Build STUN Binding Request
+        let transaction_id: [u8; 12] = rand::random();
+        let request = build_binding_request(&transaction_id);
+
+        // Send request
+        socket.send_to(&request, self.server).await.map_err(|e| {
+            NetworkError::NatTraversal(format!("Failed to send STUN request: {}", e))
+        })?;
+
+        // Wait for response (3 second timeout)
+        let mut buf = [0u8; 576];
+        let (len, _) = timeout(Duration::from_secs(3), socket.recv_from(&mut buf))
+            .await
+            .map_err(|_| NetworkError::Timeout)?
+            .map_err(|e| {
+                NetworkError::NatTraversal(format!("Failed to receive STUN response: {}", e))
+            })?;
+
+        // Parse response
+        let mapped_addr = parse_binding_response(&buf[..len], &transaction_id)?;
+
+        Ok(StunResult {
+            mapped_addr,
+            local_addr,
+        })
+    }
+
     /// Discover public address via STUN Binding Request
     pub async fn discover_public_address(&self) -> Result<StunResult> {
         let socket = UdpSocket::bind("0.0.0.0:0")
