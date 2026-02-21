@@ -32,6 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 18: Encrypted Chat Over Relay** - Real-time E2E encrypted text chat between peers using existing relay rooms, chat sessions, message history, typing indicators, read receipts
 - [x] **Phase 19: Multi-Peer Rooms** - Group transfers and chat with 3+ peers in a single room, fan-out message delivery, per-peer KEM handshakes, group key agreement, presence notifications, room capacity management
 - [x] **Phase 20: WebRTC / P2P Direct** - Browser-based peer-to-peer transfers using WebRTC data channels, signaling via relay server, STUN/TURN NAT traversal, direct peer connections without relay forwarding, fallback to relay when P2P fails (completed 2026-02-21)
+- [ ] **Phase 21: Web UI / Browser Client** - Browser-based sender/receiver using WebAssembly + WebCrypto, no install needed — users visit a URL, enter a code phrase, and send/receive files with the same E2E encryption as the CLI
 
 ## Phase Details
 
@@ -279,10 +280,30 @@ Plans:
 - [ ] 20-02-PLAN.md — P2P negotiation module (p2p.rs), connection upgrade in send/receive commands
 - [ ] 20-03-PLAN.md — Integration tests, candidate edge cases, discriminant stability, final verification
 
+### Phase 21: Web UI / Browser Client
+**Goal**: Browser-based sender/receiver using WebAssembly + WebCrypto — no install needed. Users visit a URL, enter a code phrase, and send/receive files, share clipboard contents, and chat with E2E encryption — all interoperable with the CLI. WASM-compiled tallow-crypto for consistent cryptography, WebSocket transport to relay, drag-and-drop file UI, clipboard read/write via Clipboard API, real-time encrypted chat, progressive web app capability.
+**Depends on**: Phase 20
+**Requirements**: WEB-01 through WEB-18
+**Success Criteria** (what must be TRUE):
+  1. A user visits the Tallow web app, enters a code phrase, and can send/receive files with a CLI peer — the browser and CLI interoperate seamlessly
+  2. tallow-crypto compiles to WebAssembly and performs ML-KEM-1024 + X25519 hybrid key exchange, AES-256-GCM encryption, and BLAKE3 hashing identically to the native build
+  3. File transfer uses the same wire protocol as the CLI — browser ↔ CLI, browser ↔ browser transfers both work
+  4. The web UI provides drag-and-drop file selection, real-time progress bars, and transfer speed display
+  5. All cryptography runs client-side in WASM/WebCrypto — the server never sees plaintext, keys, or unencrypted metadata
+  6. Browser clipboard integration: paste text/images to send, received clipboard content auto-copies to clipboard via Clipboard API — interoperable with `tallow clip` on CLI
+  7. Browser chat: real-time E2E encrypted messaging in-browser, interoperable with `tallow chat` on CLI, with message history, typing indicators, and sanitized display
+**Plans**: 5 plans
+Plans:
+- [ ] 21-01-PLAN.md — WASM crate (tallow-web) + feature-gate tallow-protocol + crypto/codec wasm-bindgen wrappers
+- [ ] 21-02-PLAN.md — Relay WebSocket listener (axum), WS-to-QUIC bridge, CORS, dual-transport server
+- [ ] 21-03-PLAN.md — Browser file transfer UI: WebSocket transport, handshake, drag-drop send/receive, progress bars
+- [ ] 21-04-PLAN.md — Browser clipboard sharing + encrypted chat: Clipboard API, chat UI, typing indicators, sanitization
+- [ ] 21-05-PLAN.md — PWA manifest/service worker, WASM crypto verification tests, relay WebSocket tests, deployment
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → ... → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 18 → 19 → 20
+Phases execute in numeric order: 1 → 2 → ... → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 18 → 19 → 20 → 21
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -306,3 +327,4 @@ Phases execute in numeric order: 1 → 2 → ... → 10 → 11 → 12 → 13 →
 | 18. Encrypted Chat Over Relay | - | Complete | 2026-02-21 |
 | 19. Multi-Peer Rooms | - | Complete | 2026-02-21 |
 | 20. QUIC Hole Punching / P2P Direct | 3/3 | Complete    | 2026-02-21 |
+| 21. Web UI / Browser Client | - | Not Started | - |
