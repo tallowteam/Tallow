@@ -241,6 +241,58 @@ impl DirectListener {
         ))
     }
 
+    /// Initiate an outbound QUIC connection to a peer using this listener's endpoint.
+    ///
+    /// This reuses the same UDP socket (and port) that the listener is bound to.
+    /// Quinn natively supports both `accept()` and `connect()` on the same Endpoint.
+    /// This is critical for hole punching: the outbound connection uses the same
+    /// local port that STUN discovered, ensuring the NAT pinhole is reused.
+    pub async fn connect_to(
+        &mut self,
+        peer_addr: SocketAddr,
+        timeout_dur: Duration,
+    ) -> Result<DirectConnection> {
+        // Add client config to the endpoint so it can initiate connections.
+        // The endpoint already has a server config from bind().
+        let client_config = super::tls_config::quinn_client_config()?;
+        let mut lan_client_config = client_config;
+        lan_client_config.transport_config(Arc::new(lan_transport_config()));
+        self.endpoint.set_default_client_config(lan_client_config);
+
+        let connection = tokio::time::timeout(
+            timeout_dur,
+            self.endpoint
+                .connect(peer_addr, "localhost")
+                .map_err(|e| {
+                    NetworkError::ConnectionFailed(format!(
+                        "direct connect initiation failed: {}",
+                        e
+                    ))
+                })?,
+        )
+        .await
+        .map_err(|_| NetworkError::Timeout)?
+        .map_err(|e| {
+            NetworkError::ConnectionFailed(format!("direct QUIC connection failed: {}", e))
+        })?;
+
+        let remote_addr = connection.remote_address();
+        tracing::info!("Direct P2P connection established to {}", remote_addr);
+
+        // Open a bidirectional stream (client role opens, server role accepts)
+        let (send, recv) = connection.open_bi().await.map_err(|e| {
+            NetworkError::ConnectionFailed(format!("direct open_bi failed: {}", e))
+        })?;
+
+        Ok(DirectConnection::new(
+            self.endpoint.clone(),
+            connection,
+            send,
+            recv,
+            remote_addr,
+        ))
+    }
+
     /// Close the listener endpoint.
     pub fn close(&self) {
         self.endpoint.close(0u32.into(), b"shutdown");

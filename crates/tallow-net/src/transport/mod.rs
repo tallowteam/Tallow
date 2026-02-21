@@ -12,6 +12,7 @@ pub mod connection;
 pub mod direct;
 pub mod fallback;
 pub mod negotiation;
+pub mod p2p;
 pub mod peer_channel;
 pub mod proxied;
 pub mod quic;
@@ -27,6 +28,8 @@ pub use connection::{
 };
 #[cfg(feature = "quic")]
 pub use direct::{connect_direct, DirectConnection, DirectListener};
+#[cfg(feature = "quic")]
+pub use p2p::{negotiate_p2p, NegotiationResult};
 pub use fallback::{ActiveTransport, FallbackTransport};
 pub use peer_channel::PeerChannel;
 pub use proxied::ProxiedTcpTlsTransport;
