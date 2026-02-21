@@ -21,11 +21,23 @@ pub fn compress(data: &[u8], _preset: u32) -> Result<Vec<u8>> {
     Ok(output)
 }
 
+/// Maximum decompressed output size (256 MiB) to prevent decompression bombs
+const MAX_DECOMPRESS_SIZE: usize = 256 * 1024 * 1024;
+
 /// Decompress LZMA data
+///
+/// Limits output to [`MAX_DECOMPRESS_SIZE`] to prevent decompression bombs.
 pub fn decompress(data: &[u8]) -> Result<Vec<u8>> {
     let mut output = Vec::new();
     lzma_rs::lzma_decompress(&mut &data[..], &mut output)
         .map_err(|e| ProtocolError::CompressionError(format!("lzma decompress failed: {}", e)))?;
+    if output.len() > MAX_DECOMPRESS_SIZE {
+        return Err(ProtocolError::CompressionError(format!(
+            "decompressed size {} exceeds limit of {} bytes",
+            output.len(),
+            MAX_DECOMPRESS_SIZE
+        )));
+    }
     Ok(output)
 }
 

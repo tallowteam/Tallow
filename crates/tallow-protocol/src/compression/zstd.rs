@@ -16,10 +16,23 @@ pub fn compress(data: &[u8], level: i32) -> Result<Vec<u8>> {
         .map_err(|e| ProtocolError::CompressionError(format!("zstd compress failed: {}", e)))
 }
 
+/// Maximum decompressed output size (256 MiB) to prevent decompression bombs
+const MAX_DECOMPRESS_SIZE: usize = 256 * 1024 * 1024;
+
 /// Decompress Zstandard data
+///
+/// Limits output to [`MAX_DECOMPRESS_SIZE`] to prevent decompression bombs.
 pub fn decompress(data: &[u8]) -> Result<Vec<u8>> {
-    zstd::decode_all(data)
-        .map_err(|e| ProtocolError::CompressionError(format!("zstd decompress failed: {}", e)))
+    let result = zstd::decode_all(data)
+        .map_err(|e| ProtocolError::CompressionError(format!("zstd decompress failed: {}", e)))?;
+    if result.len() > MAX_DECOMPRESS_SIZE {
+        return Err(ProtocolError::CompressionError(format!(
+            "decompressed size {} exceeds limit of {} bytes",
+            result.len(),
+            MAX_DECOMPRESS_SIZE
+        )));
+    }
+    Ok(result)
 }
 
 /// Compress with default level (3)

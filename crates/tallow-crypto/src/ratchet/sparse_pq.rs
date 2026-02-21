@@ -32,18 +32,27 @@ impl Drop for SparsePqRatchet {
 
 impl SparsePqRatchet {
     /// Create a new sparse PQ ratchet
+    ///
+    /// # Panics
+    ///
+    /// Never panics. A `rekey_interval` of 0 disables PQ rekeying.
     pub fn new(initial_secret: [u8; 32], rekey_interval: u64) -> Self {
         Self {
             current_secret: initial_secret,
             keypair: None,
             step_count: 0,
-            rekey_interval,
+            // Clamp to prevent div-by-zero in is_multiple_of
+            rekey_interval: if rekey_interval == 0 {
+                u64::MAX
+            } else {
+                rekey_interval
+            },
         }
     }
 
     /// Perform a ratchet step
     pub fn step(&mut self) -> Result<Option<PublicKey>> {
-        self.step_count += 1;
+        self.step_count = self.step_count.saturating_add(1);
 
         if self.step_count.is_multiple_of(self.rekey_interval) {
             // Time to rekey
@@ -66,6 +75,9 @@ impl SparsePqRatchet {
             input.extend_from_slice(&shared_secret.0);
 
             self.current_secret = blake3::hash(&input);
+
+            // Zeroize temporary key material
+            input.zeroize();
 
             // Clear used keypair
             self.keypair = None;

@@ -34,9 +34,10 @@ pub async fn execute(args: WatchArgs, json: bool) -> io::Result<()> {
             .map_err(|e| io::Error::other(format!("Failed to start watcher: {}", e)))?;
 
     // Generate code phrase
-    let code_phrase = args.code.clone().unwrap_or_else(|| {
-        tallow_protocol::room::code::generate_code_phrase(4)
-    });
+    let code_phrase = args
+        .code
+        .clone()
+        .unwrap_or_else(|| tallow_protocol::room::code::generate_code_phrase(4));
 
     let room_id = tallow_protocol::room::code::derive_room_id(&code_phrase);
 
@@ -67,9 +68,7 @@ pub async fn execute(args: WatchArgs, json: bool) -> io::Result<()> {
         use std::net::ToSocketAddrs;
         args.relay
             .to_socket_addrs()
-            .map_err(|e| {
-                io::Error::other(format!("Cannot resolve relay: {}", e))
-            })?
+            .map_err(|e| io::Error::other(format!("Cannot resolve relay: {}", e)))?
             .next()
             .ok_or_else(|| io::Error::other("No addresses for relay"))
     })?;
@@ -81,9 +80,10 @@ pub async fn execute(args: WatchArgs, json: bool) -> io::Result<()> {
     }
 
     // Hash relay password for authentication (if provided)
-    let password_hash: Option<[u8; 32]> = args.relay_pass.as_ref().map(|pass| {
-        blake3::hash(pass.as_bytes()).into()
-    });
+    let password_hash: Option<[u8; 32]> = args
+        .relay_pass
+        .as_ref()
+        .map(|pass| blake3::hash(pass.as_bytes()).into());
     let pw_ref = password_hash.as_ref();
 
     if args.relay_pass.is_some() && std::env::var("TALLOW_RELAY_PASS").is_err() {
@@ -118,8 +118,7 @@ pub async fn execute(args: WatchArgs, json: bool) -> io::Result<()> {
         args.git,
     );
 
-    let session_key =
-        tallow_protocol::kex::derive_session_key_from_phrase(&code_phrase, &room_id);
+    let session_key = tallow_protocol::kex::derive_session_key_from_phrase(&code_phrase, &room_id);
 
     let mut codec = TallowCodec::new();
     let mut encode_buf = BytesMut::new();
@@ -156,10 +155,8 @@ pub async fn execute(args: WatchArgs, json: bool) -> io::Result<()> {
 
         // Build and send a mini transfer for this batch
         let transfer_id: [u8; 16] = rand::random();
-        let mut pipeline = tallow_protocol::transfer::SendPipeline::new(
-            transfer_id,
-            *session_key.as_bytes(),
-        );
+        let mut pipeline =
+            tallow_protocol::transfer::SendPipeline::new(transfer_id, *session_key.as_bytes());
 
         let offer_messages = match pipeline.prepare(&files_to_send).await {
             Ok(msgs) => msgs,
@@ -201,29 +198,21 @@ pub async fn execute(args: WatchArgs, json: bool) -> io::Result<()> {
                 // Send chunks
                 let mut chunk_index: u64 = 0;
                 for file in &files_to_send {
-                    let chunk_messages =
-                        match pipeline.chunk_file(file, chunk_index).await {
-                            Ok(msgs) => msgs,
-                            Err(e) => {
-                                tracing::warn!(
-                                    "Chunk failed for {}: {}",
-                                    file.display(),
-                                    e
-                                );
-                                continue;
-                            }
-                        };
+                    let chunk_messages = match pipeline.chunk_file(file, chunk_index).await {
+                        Ok(msgs) => msgs,
+                        Err(e) => {
+                            tracing::warn!("Chunk failed for {}: {}", file.display(), e);
+                            continue;
+                        }
+                    };
 
                     for chunk_msg in &chunk_messages {
                         if throttle_bps > 0 {
                             if let Message::Chunk { ref data, .. } = chunk_msg {
-                                let delay_ms =
-                                    (data.len() as u64 * 1000) / throttle_bps;
+                                let delay_ms = (data.len() as u64 * 1000) / throttle_bps;
                                 if delay_ms > 0 {
-                                    tokio::time::sleep(
-                                        std::time::Duration::from_millis(delay_ms),
-                                    )
-                                    .await;
+                                    tokio::time::sleep(std::time::Duration::from_millis(delay_ms))
+                                        .await;
                                 }
                             }
                         }
@@ -272,7 +261,8 @@ pub async fn execute(args: WatchArgs, json: bool) -> io::Result<()> {
                 }
             }
             Ok(Some(Message::FileReject { reason, .. })) => {
-                tracing::warn!("Watch batch rejected: {}", reason);
+                let safe_reason = tallow_protocol::transfer::sanitize::sanitize_display(&reason);
+                tracing::warn!("Watch batch rejected: {}", safe_reason);
             }
             _ => {
                 tracing::warn!("Unexpected response during watch");

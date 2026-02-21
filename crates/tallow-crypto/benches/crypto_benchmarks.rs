@@ -86,7 +86,7 @@ fn bench_x25519(c: &mut Criterion) {
     let bob = X25519KeyPair::generate();
 
     group.bench_function("diffie-hellman", |b| {
-        b.iter(|| alice.diffie_hellman(black_box(bob.public_key())));
+        b.iter(|| alice.diffie_hellman(black_box(bob.public_key())).unwrap());
     });
 
     group.finish();

@@ -102,9 +102,10 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
     }
 
     // Hash relay password for authentication (if provided)
-    let password_hash: Option<[u8; 32]> = args.relay_pass.as_ref().map(|pass| {
-        blake3::hash(pass.as_bytes()).into()
-    });
+    let password_hash: Option<[u8; 32]> = args
+        .relay_pass
+        .as_ref()
+        .map(|pass| blake3::hash(pass.as_bytes()).into());
     let pw_ref = password_hash.as_ref();
 
     if args.relay_pass.is_some() && std::env::var("TALLOW_RELAY_PASS").is_err() {
@@ -293,10 +294,8 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
                 println!("  {}", path.display());
             }
             if !args.yes && !args.auto_accept {
-                let overwrite = output::prompts::confirm_with_default(
-                    "Overwrite existing files?",
-                    false,
-                )?;
+                let overwrite =
+                    output::prompts::confirm_with_default("Overwrite existing files?", false)?;
                 if !overwrite {
                     let reject_msg = Message::FileReject {
                         transfer_id,
@@ -446,8 +445,7 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
             }
             Some(Message::TransferError { error, .. }) => {
                 progress.finish();
-                let safe_error =
-                    tallow_protocol::transfer::sanitize::sanitize_display(&error);
+                let safe_error = tallow_protocol::transfer::sanitize::sanitize_display(&error);
                 let msg = format!("Transfer error from sender: {}", safe_error);
                 relay.close().await;
                 return Err(io::Error::other(msg));

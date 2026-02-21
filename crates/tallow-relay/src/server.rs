@@ -11,6 +11,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::{info, warn};
+use zeroize::Zeroize;
 
 /// Relay server
 pub struct RelayServer {
@@ -92,15 +93,16 @@ impl RelayServer {
             tokio::spawn(async move {
                 match incoming.await {
                     Ok(connection) => {
-                        info!("accepted connection from {}", remote_addr);
+                        tracing::debug!("accepted connection from {}", remote_addr);
                         if let Err(e) =
-                            handle_connection(connection, room_manager, password).await
+                            handle_connection(connection, room_manager, password, remote_addr.ip())
+                                .await
                         {
-                            warn!("connection handler error for {}: {}", remote_addr, e);
+                            warn!("connection handler error: {}", e);
                         }
                     }
                     Err(e) => {
-                        warn!("failed to accept connection from {}: {}", remote_addr, e);
+                        warn!("failed to accept connection: {}", e);
                     }
                 }
             });
@@ -123,7 +125,8 @@ impl RelayServer {
 async fn handle_connection(
     connection: quinn::Connection,
     room_manager: Arc<RoomManager>,
-    password: String,
+    mut password: String,
+    client_ip: std::net::IpAddr,
 ) -> anyhow::Result<()> {
     // Accept bidirectional stream from client
     let (mut send, mut recv) = connection
@@ -152,20 +155,23 @@ async fn handle_connection(
 
     // Verify password authentication
     if !auth::verify_relay_password(join.password_hash.as_ref(), &password) {
-        warn!("authentication failed for room {:?}", hex_short(&join.room_id));
+        warn!("authentication failed");
         // Send rejection: length-prefixed [0xFF]
         let reject = encode_auth_rejection();
         let _ = send.write_all(&reject).await;
         return Ok(());
     }
 
+    // Zeroize password after authentication check
+    password.zeroize();
+
     let room_id = join.room_id;
 
-    info!("peer joining room {:?}", hex_short(&room_id));
+    tracing::debug!("peer joining room");
 
-    // Join the room
+    // Join the room with per-IP tracking
     let (mut peer_rx, _peer_tx, peer_present) = room_manager
-        .join(room_id)
+        .join_with_ip(room_id, Some(client_ip))
         .map_err(|e| anyhow::anyhow!("room join failed: {}", e))?;
 
     let is_peer_a = !peer_present;
@@ -184,7 +190,7 @@ async fn handle_connection(
         }
     } else {
         // We're peer_a — wait for peer_b to arrive
-        info!("waiting for peer in room {:?}", hex_short(&room_id));
+        tracing::debug!("waiting for peer in room");
     }
 
     // Forward data bidirectionally
@@ -238,10 +244,10 @@ async fn handle_connection(
         _ = forward_from_peer => {}
     }
 
-    info!("peer disconnected from room {:?}", hex_short(&room_id));
+    tracing::debug!("peer disconnected from room");
 
-    // Don't remove the room immediately — the other peer may still be transferring
-    // The stale room cleanup will handle it
+    // Clean up room and decrement per-IP counter
+    room_manager.peer_disconnected(&room_id, Some(client_ip));
 
     Ok(())
 }

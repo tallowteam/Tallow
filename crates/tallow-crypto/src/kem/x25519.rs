@@ -44,16 +44,31 @@ impl X25519KeyPair {
 
     /// Perform Diffie-Hellman key exchange
     ///
+    /// Rejects low-order points that produce an all-zero shared secret,
+    /// which would indicate the peer sent a malicious public key.
+    ///
     /// # Arguments
     ///
     /// * `their_public` - The other party's public key
     ///
     /// # Returns
     ///
-    /// The shared secret
-    pub fn diffie_hellman(&self, their_public: &PublicKey) -> SharedSecret {
+    /// The shared secret, or an error if the peer's key is a low-order point
+    pub fn diffie_hellman(
+        &self,
+        their_public: &PublicKey,
+    ) -> std::result::Result<SharedSecret, crate::error::CryptoError> {
         let shared = self.secret.diffie_hellman(their_public);
-        SharedSecret(*shared.as_bytes())
+        let bytes = *shared.as_bytes();
+
+        // Reject all-zero shared secret (indicates low-order point attack)
+        if bytes.iter().all(|&b| b == 0) {
+            return Err(crate::error::CryptoError::InvalidKey(
+                "X25519 DH produced all-zero output (low-order point)".into(),
+            ));
+        }
+
+        Ok(SharedSecret(bytes))
     }
 
     /// Create a keypair from a secret key
@@ -121,8 +136,8 @@ mod tests {
         let alice = X25519KeyPair::generate();
         let bob = X25519KeyPair::generate();
 
-        let alice_shared = alice.diffie_hellman(bob.public_key());
-        let bob_shared = bob.diffie_hellman(alice.public_key());
+        let alice_shared = alice.diffie_hellman(bob.public_key()).unwrap();
+        let bob_shared = bob.diffie_hellman(alice.public_key()).unwrap();
 
         assert_eq!(alice_shared.0, bob_shared.0);
     }
@@ -143,5 +158,15 @@ mod tests {
         let kp2 = X25519KeyPair::from_bytes(secret_bytes);
 
         assert_eq!(kp1.public_bytes(), kp2.public_bytes());
+    }
+
+    #[test]
+    fn test_x25519_low_order_point_rejected() {
+        // The all-zero public key is a low-order point on Curve25519
+        // DH with it produces an all-zero shared secret, which we reject
+        let kp = X25519KeyPair::generate();
+        let zero_pk = PublicKey::from([0u8; 32]);
+        let result = kp.diffie_hellman(&zero_pk);
+        assert!(result.is_err(), "DH with all-zero public key should fail");
     }
 }

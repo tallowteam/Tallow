@@ -4,7 +4,7 @@
 set -eu
 
 VERSION="${1:?Usage: $0 <version-tag>}"
-REPO="AamirAlam/tallow"
+REPO="tallowteam/Tallow"
 VERSION_NUM="${VERSION#v}"
 
 echo "Updating manifests for $VERSION..."

@@ -290,9 +290,8 @@ impl TransferQueue {
 
     /// Collect status snapshots of all entries (pending, active, completed).
     fn snapshot_all(&self) -> Vec<TransferStatus> {
-        let mut statuses = Vec::with_capacity(
-            self.pending.len() + self.active.len() + self.completed.len(),
-        );
+        let mut statuses =
+            Vec::with_capacity(self.pending.len() + self.active.len() + self.completed.len());
         for entry in &self.pending {
             statuses.push(entry.status());
         }
@@ -361,7 +360,10 @@ mod tests {
         assert_eq!(pending.len(), 1, "one transfer should be pending");
         assert_eq!(active.len(), 1, "one transfer should be active");
         assert_eq!(active[0].id, [1u8; 16], "first enqueued should be active");
-        assert_eq!(pending[0].id, [2u8; 16], "second enqueued should be pending");
+        assert_eq!(
+            pending[0].id, [2u8; 16],
+            "second enqueued should be pending"
+        );
 
         handle.shutdown().await.unwrap();
         queue_task.await.unwrap();
@@ -453,7 +455,10 @@ mod tests {
             .filter(|s| s.state == TransferState::Transferring)
             .collect();
         assert_eq!(active.len(), 1);
-        assert_eq!(active[0].id, [2u8; 16], "pending transfer should be promoted");
+        assert_eq!(
+            active[0].id, [2u8; 16],
+            "pending transfer should be promoted"
+        );
 
         handle.shutdown().await.unwrap();
         queue_task.await.unwrap();

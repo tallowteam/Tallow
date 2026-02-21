@@ -94,12 +94,46 @@ impl TofuStore {
     }
 
     /// Update trust level for a peer
+    ///
+    /// Prevents accidental trust downgrades: you cannot lower trust from
+    /// `Verified` or `Trusted` to a weaker level unless `force` is true.
     pub fn update_trust(&mut self, peer_id: &str, level: TrustLevel) -> Result<()> {
+        self.update_trust_inner(peer_id, level, false)
+    }
+
+    /// Update trust level with explicit downgrade permission
+    pub fn update_trust_force(&mut self, peer_id: &str, level: TrustLevel) -> Result<()> {
+        self.update_trust_inner(peer_id, level, true)
+    }
+
+    /// Inner trust update with optional downgrade guard
+    fn update_trust_inner(&mut self, peer_id: &str, level: TrustLevel, force: bool) -> Result<()> {
         if let Some(record) = self.records.get_mut(peer_id) {
+            // Block accidental downgrades from Verified/Trusted
+            if !force && Self::is_downgrade(record.trust_level, level) {
+                return Err(StoreError::TrustError(format!(
+                    "Refusing to downgrade peer '{}' from {:?} to {:?}. \
+                     Use update_trust_force() to override.",
+                    peer_id, record.trust_level, level
+                )));
+            }
             record.trust_level = level;
             self.save()?;
         }
         Ok(())
+    }
+
+    /// Check if changing from `old` to `new` is a trust downgrade
+    fn is_downgrade(old: TrustLevel, new: TrustLevel) -> bool {
+        let rank = |t: TrustLevel| -> u8 {
+            match t {
+                TrustLevel::Unknown => 0,
+                TrustLevel::Seen => 1,
+                TrustLevel::Trusted => 2,
+                TrustLevel::Verified => 3,
+            }
+        };
+        rank(new) < rank(old)
     }
 
     /// Get trust level for a peer
@@ -133,7 +167,15 @@ impl TofuStore {
             let data = serde_json::to_string_pretty(&self.records).map_err(|e| {
                 StoreError::SerializationError(format!("Failed to serialize trust store: {}", e))
             })?;
-            std::fs::write(path, data)?;
+            std::fs::write(path, &data)?;
+
+            // Restrict file permissions to owner-only on Unix (0o600)
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                let perms = std::fs::Permissions::from_mode(0o600);
+                let _ = std::fs::set_permissions(path, perms);
+            }
         }
         Ok(())
     }
@@ -216,5 +258,36 @@ mod tests {
 
         let peers = store.list_peers();
         assert_eq!(peers.len(), 2);
+    }
+
+    #[test]
+    fn test_trust_downgrade_blocked() {
+        let mut store = TofuStore::new();
+        store
+            .record_first_contact("peer-1".to_string(), vec![1, 2, 3])
+            .unwrap();
+        store.update_trust("peer-1", TrustLevel::Verified).unwrap();
+
+        // Downgrade from Verified to Seen should fail
+        let result = store.update_trust("peer-1", TrustLevel::Seen);
+        assert!(result.is_err(), "Downgrade should be blocked");
+
+        // Trust should remain Verified
+        assert_eq!(store.get_trust("peer-1"), TrustLevel::Verified);
+    }
+
+    #[test]
+    fn test_trust_force_downgrade() {
+        let mut store = TofuStore::new();
+        store
+            .record_first_contact("peer-1".to_string(), vec![1, 2, 3])
+            .unwrap();
+        store.update_trust("peer-1", TrustLevel::Verified).unwrap();
+
+        // Force downgrade should succeed
+        store
+            .update_trust_force("peer-1", TrustLevel::Seen)
+            .unwrap();
+        assert_eq!(store.get_trust("peer-1"), TrustLevel::Seen);
     }
 }

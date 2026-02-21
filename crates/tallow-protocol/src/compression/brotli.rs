@@ -25,13 +25,32 @@ pub fn compress(data: &[u8], quality: u32) -> Result<Vec<u8>> {
     Ok(output)
 }
 
+/// Maximum decompressed output size (256 MiB) to prevent decompression bombs
+const MAX_DECOMPRESS_SIZE: usize = 256 * 1024 * 1024;
+
 /// Decompress Brotli data
+///
+/// Limits output to [`MAX_DECOMPRESS_SIZE`] to prevent decompression bombs.
 pub fn decompress(data: &[u8]) -> Result<Vec<u8>> {
     let mut output = Vec::new();
     let mut decoder = brotli::Decompressor::new(data, BUFFER_SIZE);
-    decoder
-        .read_to_end(&mut output)
-        .map_err(|e| ProtocolError::CompressionError(format!("brotli decompress failed: {}", e)))?;
+    // Read in chunks to enforce size limit without reading everything first
+    let mut buf = [0u8; 65536];
+    loop {
+        let n = decoder.read(&mut buf).map_err(|e| {
+            ProtocolError::CompressionError(format!("brotli decompress failed: {}", e))
+        })?;
+        if n == 0 {
+            break;
+        }
+        output.extend_from_slice(&buf[..n]);
+        if output.len() > MAX_DECOMPRESS_SIZE {
+            return Err(ProtocolError::CompressionError(format!(
+                "decompressed size exceeds limit of {} bytes",
+                MAX_DECOMPRESS_SIZE
+            )));
+        }
+    }
     Ok(output)
 }
 

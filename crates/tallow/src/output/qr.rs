@@ -11,10 +11,7 @@ pub fn display_receive_qr(code_phrase: &str) -> std::io::Result<()> {
     // Check terminal width -- QR codes need ~41+ columns minimum
     let (width, _) = crossterm::terminal::size().unwrap_or((80, 24));
     if width < 41 {
-        tracing::debug!(
-            "Terminal too narrow ({} cols) for QR code; skipping",
-            width
-        );
+        tracing::debug!("Terminal too narrow ({} cols) for QR code; skipping", width);
         return Ok(());
     }
 

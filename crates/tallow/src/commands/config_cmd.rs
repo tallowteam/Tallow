@@ -170,11 +170,7 @@ fn config_alias(command: AliasCommands, json: bool) -> io::Result<()> {
                     })
                 );
             } else {
-                crate::output::color::success(&format!(
-                    "Alias '{}' -> {}",
-                    name,
-                    path.display()
-                ));
+                crate::output::color::success(&format!("Alias '{}' -> {}", name, path.display()));
             }
         }
         AliasCommands::Remove { name } => {
@@ -194,10 +190,7 @@ fn config_alias(command: AliasCommands, json: bool) -> io::Result<()> {
             } else {
                 let msg = format!("Alias '{}' not found", name);
                 if json {
-                    println!(
-                        "{}",
-                        serde_json::json!({"event": "error", "message": msg})
-                    );
+                    println!("{}", serde_json::json!({"event": "error", "message": msg}));
                 } else {
                     crate::output::color::error(&msg);
                 }

@@ -35,6 +35,9 @@ toml = "0.8"
 blake3.workspace = true
 subtle.workspace = true
 
+# Security
+zeroize.workspace = true
+
 # Utilities
 tracing.workspace = true
 tracing-subscriber.workspace = true

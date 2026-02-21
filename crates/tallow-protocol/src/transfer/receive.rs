@@ -13,6 +13,9 @@ use crate::{ProtocolError, Result};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
+/// Maximum number of chunks to buffer in memory (prevents OOM)
+const MAX_BUFFERED_CHUNKS: usize = 65_536;
+
 /// Receive pipeline for file transfers
 pub struct ReceivePipeline {
     /// Transfer ID
@@ -31,6 +34,8 @@ pub struct ReceivePipeline {
     resume: Option<ResumeState>,
     /// Compression algorithm used by sender
     compression: CompressionAlgorithm,
+    /// Expected total chunks (from manifest, validated on each chunk)
+    expected_total_chunks: Option<u64>,
 }
 
 impl Drop for ReceivePipeline {
@@ -61,6 +66,7 @@ impl ReceivePipeline {
             progress: None,
             resume: None,
             compression: CompressionAlgorithm::Zstd,
+            expected_total_chunks: None,
         }
     }
 
@@ -97,6 +103,7 @@ impl ReceivePipeline {
             };
         }
 
+        self.expected_total_chunks = Some(manifest.total_chunks);
         self.manifest = Some(manifest);
         self.manifest
             .as_ref()
@@ -108,8 +115,36 @@ impl ReceivePipeline {
         &mut self,
         index: u64,
         data: &[u8],
-        _total: Option<u64>,
+        total: Option<u64>,
     ) -> Result<Option<Message>> {
+        // Validate total chunk count matches manifest
+        if let (Some(expected), Some(claimed)) = (self.expected_total_chunks, total) {
+            if claimed != expected {
+                return Err(ProtocolError::TransferFailed(format!(
+                    "chunk total mismatch: manifest says {}, chunk header says {}",
+                    expected, claimed
+                )));
+            }
+        }
+
+        // Validate chunk index is within expected range
+        if let Some(expected_total) = self.expected_total_chunks {
+            if index >= expected_total {
+                return Err(ProtocolError::TransferFailed(format!(
+                    "chunk index {} exceeds expected total {}",
+                    index, expected_total
+                )));
+            }
+        }
+
+        // Reject if too many chunks buffered (OOM protection)
+        if self.received_chunks.len() >= MAX_BUFFERED_CHUNKS {
+            return Err(ProtocolError::TransferFailed(format!(
+                "too many buffered chunks ({} max)",
+                MAX_BUFFERED_CHUNKS
+            )));
+        }
+
         // Check if already received (resume scenario)
         if let Some(ref resume) = self.resume {
             if resume.is_verified(index) {

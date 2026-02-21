@@ -1,9 +1,9 @@
 #!/bin/sh
 # install.sh -- Install tallow
-# Usage: curl -sSf https://raw.githubusercontent.com/AamirAlam/tallow/master/scripts/install.sh | sh
+# Usage: curl -sSf https://raw.githubusercontent.com/tallowteam/Tallow/master/scripts/install.sh | sh
 set -eu
 
-REPO="AamirAlam/tallow"
+REPO="tallowteam/Tallow"
 INSTALL_DIR="${TALLOW_INSTALL_DIR:-/usr/local/bin}"
 BINARY_NAME="tallow"
 
@@ -15,7 +15,7 @@ detect_platform() {
         Darwin)  PLATFORM="apple-darwin" ;;
         MINGW*|MSYS*|CYGWIN*)
             echo "Error: Use Scoop on Windows:"
-            echo "  scoop bucket add tallow https://github.com/AamirAlam/scoop-tallow"
+            echo "  scoop bucket add tallow https://github.com/tallowteam/scoop-tallow"
             echo "  scoop install tallow"
             exit 1 ;;
         *)

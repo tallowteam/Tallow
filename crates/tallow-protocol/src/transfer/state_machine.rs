@@ -101,7 +101,10 @@ mod tests {
         let mut sm = TransferStateMachine::new();
         sm.transition(TransferState::Queued).unwrap();
         let result = sm.transition(TransferState::Transferring);
-        assert!(result.is_err(), "Queued -> Transferring must go through Connecting");
+        assert!(
+            result.is_err(),
+            "Queued -> Transferring must go through Connecting"
+        );
     }
 
     #[test]

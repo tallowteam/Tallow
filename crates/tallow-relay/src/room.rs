@@ -67,6 +67,10 @@ impl Room {
 pub struct RoomManager {
     rooms: Arc<DashMap<RoomId, Room>>,
     max_rooms: usize,
+    /// Per-IP room count tracking to prevent single-IP exhaustion
+    ip_room_counts: Arc<DashMap<std::net::IpAddr, usize>>,
+    /// Maximum rooms per IP
+    max_rooms_per_ip: usize,
 }
 
 impl RoomManager {
@@ -75,6 +79,8 @@ impl RoomManager {
         Self {
             rooms: Arc::new(DashMap::new()),
             max_rooms,
+            ip_room_counts: Arc::new(DashMap::new()),
+            max_rooms_per_ip: 50,
         }
     }
 
@@ -88,6 +94,22 @@ impl RoomManager {
     /// to avoid a DashMap deadlock (len() cannot be called while holding
     /// an entry write lock on the same map).
     pub fn join(&self, room_id: RoomId) -> Result<(PeerReceiver, PeerSender, bool), RoomError> {
+        self.join_with_ip(room_id, None)
+    }
+
+    /// Join a room with per-IP tracking
+    pub fn join_with_ip(
+        &self,
+        room_id: RoomId,
+        client_ip: Option<std::net::IpAddr>,
+    ) -> Result<(PeerReceiver, PeerSender, bool), RoomError> {
+        // Per-IP room limit check
+        if let Some(ip) = client_ip {
+            let ip_count = self.ip_room_counts.get(&ip).map(|v| *v).unwrap_or(0);
+            if ip_count >= self.max_rooms_per_ip && !self.rooms.contains_key(&room_id) {
+                return Err(RoomError::TooManyRoomsPerIp);
+            }
+        }
         use dashmap::mapref::entry::Entry;
 
         // Check room limit BEFORE entering the entry API to avoid deadlock:
@@ -123,6 +145,11 @@ impl RoomManager {
             Entry::Vacant(entry) => {
                 entry.insert(Room::new(peer));
 
+                // Track per-IP room creation
+                if let Some(ip) = client_ip {
+                    *self.ip_room_counts.entry(ip).or_insert(0) += 1;
+                }
+
                 // No peer present yet — caller will wait
                 // The sender returned here is a dummy; the real peer_b sender
                 // will be available when the second peer joins.
@@ -150,15 +177,48 @@ impl RoomManager {
         }
     }
 
-    /// Remove a room
+    /// Remove a room and decrement the per-IP room count
     pub fn remove_room(&self, room_id: &RoomId) {
         self.rooms.remove(room_id);
+    }
+
+    /// Notify that a peer from a given IP has disconnected from a room.
+    /// Decrements the per-IP room count.
+    pub fn peer_disconnected(&self, room_id: &RoomId, client_ip: Option<std::net::IpAddr>) {
+        // Remove peer from room; if room is now empty, remove it
+        let should_remove = if let Some(mut room) = self.rooms.get_mut(room_id) {
+            // Mark one peer slot as empty
+            if room.peer_b.is_some() {
+                room.peer_b = None;
+            } else if room.peer_a.is_some() {
+                room.peer_a = None;
+            }
+            room.is_empty()
+        } else {
+            false
+        };
+
+        if should_remove {
+            self.rooms.remove(room_id);
+        }
+
+        // Decrement per-IP counter
+        if let Some(ip) = client_ip {
+            if let Some(mut count) = self.ip_room_counts.get_mut(&ip) {
+                *count = count.saturating_sub(1);
+                if *count == 0 {
+                    drop(count);
+                    self.ip_room_counts.remove(&ip);
+                }
+            }
+        }
     }
 
     /// Clean up stale rooms that have been idle longer than the given duration
     ///
     /// Uses `last_activity` (not `created_at`) so that active transfers
     /// are not interrupted while completed/abandoned rooms are cleaned up.
+    /// Also prunes stale per-IP counters.
     pub fn cleanup_stale(&self, max_idle_secs: u64) -> usize {
         let now = Instant::now();
         let mut removed = 0;
@@ -172,6 +232,9 @@ impl RoomManager {
                 true
             }
         });
+
+        // Prune stale per-IP counters (entries with 0 rooms)
+        self.ip_room_counts.retain(|_ip, count| *count > 0);
 
         removed
     }
@@ -194,6 +257,8 @@ pub enum RoomError {
     RoomFull,
     /// Too many concurrent rooms
     TooManyRooms,
+    /// Too many rooms from a single IP address
+    TooManyRoomsPerIp,
 }
 
 impl std::fmt::Display for RoomError {
@@ -201,6 +266,7 @@ impl std::fmt::Display for RoomError {
         match self {
             Self::RoomFull => write!(f, "room is full (maximum 2 peers)"),
             Self::TooManyRooms => write!(f, "server at room capacity"),
+            Self::TooManyRoomsPerIp => write!(f, "too many rooms from this IP"),
         }
     }
 }

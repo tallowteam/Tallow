@@ -103,7 +103,7 @@ impl HybridKem {
 
         // Generate ephemeral X25519 keypair and compute DH
         let ephemeral_kp = x25519::X25519KeyPair::generate();
-        let x25519_ss = ephemeral_kp.diffie_hellman(&pk.x25519);
+        let x25519_ss = ephemeral_kp.diffie_hellman(&pk.x25519)?;
 
         // Combine both shared secrets using BLAKE3
         let combined = Self::combine_secrets(&mlkem_ss.0, &x25519_ss.0)?;
@@ -131,7 +131,7 @@ impl HybridKem {
         let mlkem_ss = mlkem::MlKem::decapsulate(&sk.mlkem, &ct.mlkem)?;
 
         // Compute X25519 DH
-        let x25519_ss = sk.x25519.diffie_hellman(&ct.x25519_public);
+        let x25519_ss = sk.x25519.diffie_hellman(&ct.x25519_public)?;
 
         // Combine both shared secrets
         let combined = Self::combine_secrets(&mlkem_ss.0, &x25519_ss.0)?;

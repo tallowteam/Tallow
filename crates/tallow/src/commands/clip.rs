@@ -19,9 +19,10 @@ const RECV_BUF_SIZE: usize = 256 * 1024;
 /// Execute the clip command, dispatching to the appropriate subcommand
 pub async fn execute(args: ClipArgs, json: bool) -> io::Result<()> {
     match args.command {
-        Some(ClipCommands::Receive { ref code, ref output }) => {
-            execute_receive(&args, code, output.clone(), json).await
-        }
+        Some(ClipCommands::Receive {
+            ref code,
+            ref output,
+        }) => execute_receive(&args, code, output.clone(), json).await,
         Some(ClipCommands::Watch { debounce }) => execute_watch(&args, debounce, json).await,
         Some(ClipCommands::History { count, search }) => execute_history(count, search, json),
         Some(ClipCommands::Clear) => execute_clear(json),
@@ -90,7 +91,11 @@ async fn execute_send(args: &ClipArgs, json: bool) -> io::Result<()> {
             })
         );
     } else {
-        output::color::info(&format!("Clipboard: {} ({})", content_type, output::format_size(payload.len() as u64)));
+        output::color::info(&format!(
+            "Clipboard: {} ({})",
+            content_type,
+            output::format_size(payload.len() as u64)
+        ));
         if !matches!(content_type, ContentType::Image { .. }) {
             output::color::section(&format!("  {}", preview_str));
         }
@@ -166,9 +171,10 @@ async fn execute_send(args: &ClipArgs, json: bool) -> io::Result<()> {
         output::color::info(&format!("Connecting to relay {}...", args.relay));
     }
 
-    let password_hash: Option<[u8; 32]> = args.relay_pass.as_ref().map(|pass| {
-        blake3::hash(pass.as_bytes()).into()
-    });
+    let password_hash: Option<[u8; 32]> = args
+        .relay_pass
+        .as_ref()
+        .map(|pass| blake3::hash(pass.as_bytes()).into());
 
     let peer_present = relay
         .connect(&room_id, password_hash.as_ref())
@@ -282,7 +288,8 @@ async fn execute_send(args: &ClipArgs, json: bool) -> io::Result<()> {
             }
             Some(Message::TransferError { error, .. }) => {
                 progress.finish();
-                let msg = format!("Transfer error: {}", error);
+                let safe_error = tallow_protocol::transfer::sanitize::sanitize_display(&error);
+                let msg = format!("Transfer error: {}", safe_error);
                 relay.close().await;
                 return Err(io::Error::other(msg));
             }
@@ -335,12 +342,7 @@ async fn execute_send(args: &ClipArgs, json: bool) -> io::Result<()> {
         if let Some(ref img) = image_data {
             let fmt = detect::detect_image_format(img);
             let img_pv = preview::generate_image_preview(&fmt, img.len() as u64);
-            log_to_history(
-                img,
-                &ContentType::Image { format: fmt },
-                &img_pv,
-                Some(img),
-            );
+            log_to_history(img, &ContentType::Image { format: fmt }, &img_pv, Some(img));
         }
     }
 
@@ -381,9 +383,10 @@ async fn execute_receive(
         output::color::info(&format!("Connecting to relay {}...", args.relay));
     }
 
-    let password_hash: Option<[u8; 32]> = args.relay_pass.as_ref().map(|pass| {
-        blake3::hash(pass.as_bytes()).into()
-    });
+    let password_hash: Option<[u8; 32]> = args
+        .relay_pass
+        .as_ref()
+        .map(|pass| blake3::hash(pass.as_bytes()).into());
 
     let peer_present = relay
         .connect(&room_id, password_hash.as_ref())
@@ -525,8 +528,9 @@ async fn execute_receive(
             }
             Some(Message::TransferError { error, .. }) => {
                 progress.finish();
+                let safe_error = tallow_protocol::transfer::sanitize::sanitize_display(&error);
                 relay.close().await;
-                return Err(io::Error::other(format!("Transfer error: {}", error)));
+                return Err(io::Error::other(format!("Transfer error: {}", safe_error)));
             }
             other => {
                 tracing::warn!("Unexpected message: {:?}", other);
@@ -590,9 +594,7 @@ async fn execute_receive(
             let pv = preview::generate_image_preview(&img_format, content.len() as u64);
             log_to_history(
                 &content,
-                &ContentType::Image {
-                    format: img_format,
-                },
+                &ContentType::Image { format: img_format },
                 &pv,
                 Some(&content),
             );
@@ -633,7 +635,10 @@ async fn execute_receive(
 
                 if !json {
                     output::color::transfer_complete(total_size, transfer_start.elapsed());
-                    output::color::success(&format!("Binary data saved to: {}", save_path.display()));
+                    output::color::success(&format!(
+                        "Binary data saved to: {}",
+                        save_path.display()
+                    ));
                 }
             }
         }
@@ -690,12 +695,7 @@ async fn execute_watch(_args: &ClipArgs, debounce_secs: u64, json: bool) -> io::
                 }
 
                 // Log to history
-                log_to_history(
-                    text.as_bytes(),
-                    &ct,
-                    &pv,
-                    None,
-                );
+                log_to_history(text.as_bytes(), &ct, &pv, None);
             }
         }
 
@@ -718,19 +718,11 @@ async fn execute_watch(_args: &ClipArgs, debounce_secs: u64, json: bool) -> io::
                         })
                     );
                 } else {
-                    output::color::info(&format!(
-                        "Clipboard image changed: {}",
-                        pv
-                    ));
+                    output::color::info(&format!("Clipboard image changed: {}", pv));
                 }
 
                 // Log image to history
-                log_to_history(
-                    &img,
-                    &ContentType::Image { format: fmt },
-                    &pv,
-                    Some(&img),
-                );
+                log_to_history(&img, &ContentType::Image { format: fmt }, &pv, Some(&img));
             }
         }
     }

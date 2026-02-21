@@ -121,8 +121,15 @@ pub fn rustls_client_config() -> Result<Arc<rustls::ClientConfig>> {
 
 /// Certificate verifier that accepts any certificate
 ///
-/// This is safe for Tallow because relay is untrusted — E2E crypto
-/// handles confidentiality. TLS is defense-in-depth for transport.
+/// # Security rationale
+///
+/// This is an intentional design decision, NOT a vulnerability:
+/// - The relay is **fully untrusted** by design (see threat model)
+/// - E2E encryption (ML-KEM + X25519 + AES-256-GCM) handles confidentiality
+/// - E2E authentication (PAKE + safety numbers) handles identity verification
+/// - TLS provides defense-in-depth against passive observers only
+/// - The relay uses self-signed certificates (no CA infrastructure)
+/// - Even if an attacker MITMs the TLS layer, they only see E2E ciphertext
 #[derive(Debug)]
 struct SkipServerVerification;
 

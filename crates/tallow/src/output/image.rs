@@ -50,9 +50,7 @@ pub fn read_clipboard_image() -> Option<(usize, usize, Vec<u8>)> {
 /// Returns the PNG file bytes ready for storage or transfer.
 pub fn encode_rgba_as_png(width: usize, height: usize, rgba: &[u8]) -> Option<Vec<u8>> {
     // Validate dimensions with overflow protection
-    let expected_len = width
-        .checked_mul(height)
-        .and_then(|n| n.checked_mul(4));
+    let expected_len = width.checked_mul(height).and_then(|n| n.checked_mul(4));
     match expected_len {
         Some(len) if width > 0 && height > 0 && rgba.len() == len => {}
         _ => {
@@ -116,7 +114,10 @@ pub fn encode_rgba_as_png(width: usize, height: usize, rgba: &[u8]) -> Option<Ve
 /// # Panics
 /// Panics if `data.len()` exceeds `u32::MAX` (PNG spec chunk limit).
 fn write_png_chunk(buf: &mut Vec<u8>, chunk_type: &[u8; 4], data: &[u8]) {
-    assert!(data.len() <= u32::MAX as usize, "PNG chunk exceeds u32::MAX");
+    assert!(
+        data.len() <= u32::MAX as usize,
+        "PNG chunk exceeds u32::MAX"
+    );
     #[allow(clippy::cast_possible_truncation)]
     let len = data.len() as u32;
     buf.extend_from_slice(&len.to_be_bytes());
@@ -231,8 +232,8 @@ fn decode_png_rgba(data: &[u8]) -> Option<(usize, usize, Vec<u8>)> {
     let mut idat_data = Vec::new();
     let mut pos = 8;
     while pos + 12 <= data.len() {
-        let chunk_len = u32::from_be_bytes([data[pos], data[pos + 1], data[pos + 2], data[pos + 3]])
-            as usize;
+        let chunk_len =
+            u32::from_be_bytes([data[pos], data[pos + 1], data[pos + 2], data[pos + 3]]) as usize;
         let chunk_type = &data[pos + 4..pos + 8];
 
         if pos + 8 + chunk_len > data.len() {

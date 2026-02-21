@@ -129,6 +129,12 @@ pub struct ClipboardEntry {
 ///
 /// Entries are unlimited in count. Image data is stored as separate files
 /// in `data_dir()/clipboard_images/` to keep the JSON file small.
+///
+/// **Security note**: Text content is stored in plaintext JSON on disk.
+/// File permissions are restricted to owner-only (0o600 on Unix), but the
+/// data is not encrypted at rest because no passphrase is available for
+/// clipboard operations. Users should use `tallow clip clear` to remove
+/// sensitive clipboard history.
 #[derive(Debug)]
 pub struct ClipboardHistory {
     entries: Vec<ClipboardEntry>,
@@ -242,7 +248,15 @@ impl ClipboardHistory {
                     e
                 ))
             })?;
-            std::fs::write(path, data)?;
+            std::fs::write(path, &data)?;
+
+            // Restrict file permissions to owner-only on Unix (0o600)
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                let perms = std::fs::Permissions::from_mode(0o600);
+                let _ = std::fs::set_permissions(path, perms);
+            }
         }
         Ok(())
     }

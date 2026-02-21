@@ -23,9 +23,10 @@ pub async fn execute(args: SyncArgs, json: bool) -> io::Result<()> {
     }
 
     // Generate code phrase
-    let code_phrase = args.code.clone().unwrap_or_else(|| {
-        tallow_protocol::room::code::generate_code_phrase(4)
-    });
+    let code_phrase = args
+        .code
+        .clone()
+        .unwrap_or_else(|| tallow_protocol::room::code::generate_code_phrase(4));
 
     let room_id = tallow_protocol::room::code::derive_room_id(&code_phrase);
 
@@ -55,8 +56,7 @@ pub async fn execute(args: SyncArgs, json: bool) -> io::Result<()> {
     );
 
     // Scan local directory to build manifest
-    let session_key =
-        tallow_protocol::kex::derive_session_key_from_phrase(&code_phrase, &room_id);
+    let session_key = tallow_protocol::kex::derive_session_key_from_phrase(&code_phrase, &room_id);
     let transfer_id: [u8; 16] = rand::random();
 
     let mut pipeline =
@@ -92,16 +92,9 @@ pub async fn execute(args: SyncArgs, json: bool) -> io::Result<()> {
         use std::net::ToSocketAddrs;
         args.relay
             .to_socket_addrs()
-            .map_err(|e| {
-                io::Error::other(format!(
-                    "Cannot resolve relay '{}': {}",
-                    args.relay, e
-                ))
-            })?
+            .map_err(|e| io::Error::other(format!("Cannot resolve relay '{}': {}", args.relay, e)))?
             .next()
-            .ok_or_else(|| {
-                io::Error::other(format!("No addresses for relay '{}'", args.relay))
-            })
+            .ok_or_else(|| io::Error::other(format!("No addresses for relay '{}'", args.relay)))
     })?;
 
     let mut relay = tallow_net::relay::RelayClient::new(relay_addr);
@@ -111,9 +104,10 @@ pub async fn execute(args: SyncArgs, json: bool) -> io::Result<()> {
     }
 
     // Hash relay password for authentication (if provided)
-    let password_hash: Option<[u8; 32]> = args.relay_pass.as_ref().map(|pass| {
-        blake3::hash(pass.as_bytes()).into()
-    });
+    let password_hash: Option<[u8; 32]> = args
+        .relay_pass
+        .as_ref()
+        .map(|pass| blake3::hash(pass.as_bytes()).into());
     let pw_ref = password_hash.as_ref();
 
     if args.relay_pass.is_some() && std::env::var("TALLOW_RELAY_PASS").is_err() {
@@ -195,10 +189,11 @@ pub async fn execute(args: SyncArgs, json: bool) -> io::Result<()> {
             .await?;
         }
         Some(Message::FileReject { reason, .. }) => {
+            let safe_reason = tallow_protocol::transfer::sanitize::sanitize_display(&reason);
             relay.close().await;
             return Err(io::Error::other(format!(
                 "Sync rejected by peer: {}",
-                reason
+                safe_reason
             )));
         }
         other => {
@@ -236,10 +231,8 @@ async fn handle_manifest_exchange(
             .map_err(|e| io::Error::other(format!("Invalid remote manifest: {}", e)))?;
 
     // Compute diff
-    let diff = tallow_protocol::transfer::sync::compute_sync_diff(
-        &manifest.files,
-        &remote_manifest,
-    );
+    let diff =
+        tallow_protocol::transfer::sync::compute_sync_diff(&manifest.files, &remote_manifest);
 
     if diff.is_empty() {
         if json {
@@ -277,18 +270,14 @@ async fn handle_manifest_exchange(
     }
 
     // Safety check: warn if >50% of remote files would be deleted
-    if args.delete
-        && diff.deletion_fraction(remote_manifest.files.len()) > 0.5
-        && !json
-    {
+    if args.delete && diff.deletion_fraction(remote_manifest.files.len()) > 0.5 && !json {
         output::color::warning(&format!(
             "Warning: {} of {} remote files ({:.0}%) would be deleted",
             diff.deleted_files.len(),
             remote_manifest.files.len(),
             diff.deletion_fraction(remote_manifest.files.len()) * 100.0,
         ));
-        let confirm =
-            output::prompts::confirm_with_default("Continue with sync?", false)?;
+        let confirm = output::prompts::confirm_with_default("Continue with sync?", false)?;
         if !confirm {
             output::color::info("Sync cancelled.");
             relay.close().await;
@@ -306,10 +295,8 @@ async fn handle_manifest_exchange(
 
     if !files_to_send.is_empty() {
         // Prepare a new pipeline for just the delta files
-        let mut delta_pipeline = tallow_protocol::transfer::SendPipeline::new(
-            transfer_id,
-            *session_key.as_bytes(),
-        );
+        let mut delta_pipeline =
+            tallow_protocol::transfer::SendPipeline::new(transfer_id, *session_key.as_bytes());
 
         let offer_messages = delta_pipeline
             .prepare(&files_to_send)
@@ -343,21 +330,18 @@ async fn handle_manifest_exchange(
                 tracing::info!("Receiver accepted sync transfer");
             }
             Some(Message::FileReject { reason, .. }) => {
+                let safe_reason = tallow_protocol::transfer::sanitize::sanitize_display(&reason);
                 relay.close().await;
-                return Err(io::Error::other(format!("Sync rejected: {}", reason)));
+                return Err(io::Error::other(format!("Sync rejected: {}", safe_reason)));
             }
             other => {
                 relay.close().await;
-                return Err(io::Error::other(format!(
-                    "Unexpected: {:?}",
-                    other
-                )));
+                return Err(io::Error::other(format!("Unexpected: {:?}", other)));
             }
         }
 
         // Send chunks
-        let progress =
-            output::TransferProgressBar::new(delta_pipeline.manifest().total_size);
+        let progress = output::TransferProgressBar::new(delta_pipeline.manifest().total_size);
         let mut total_sent: u64 = 0;
         let mut chunk_index: u64 = 0;
 
@@ -374,10 +358,7 @@ async fn handle_manifest_exchange(
                     if let Message::Chunk { ref data, .. } = chunk_msg {
                         let delay_ms = (data.len() as u64 * 1000) / throttle_bps;
                         if delay_ms > 0 {
-                            tokio::time::sleep(std::time::Duration::from_millis(
-                                delay_ms,
-                            ))
-                            .await;
+                            tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
                         }
                     }
                 }
@@ -394,15 +375,11 @@ async fn handle_manifest_exchange(
                 let n = relay
                     .receive(recv_buf)
                     .await
-                    .map_err(|e| {
-                        io::Error::other(format!("Receive ack failed: {}", e))
-                    })?;
+                    .map_err(|e| io::Error::other(format!("Receive ack failed: {}", e)))?;
                 let mut ack_buf = BytesMut::from(&recv_buf[..n]);
                 if let Some(Message::Ack { .. }) = codec
                     .decode_msg(&mut ack_buf)
-                    .map_err(|e| {
-                        io::Error::other(format!("Decode ack failed: {}", e))
-                    })?
+                    .map_err(|e| io::Error::other(format!("Decode ack failed: {}", e)))?
                 {
                     if let Message::Chunk { ref data, .. } = chunk_msg {
                         total_sent += data.len() as u64;
@@ -430,15 +407,11 @@ async fn handle_manifest_exchange(
         encode_buf.clear();
         codec
             .encode_msg(&delete_msg, encode_buf)
-            .map_err(|e| {
-                io::Error::other(format!("Encode delete list failed: {}", e))
-            })?;
+            .map_err(|e| io::Error::other(format!("Encode delete list failed: {}", e)))?;
         relay
             .forward(encode_buf)
             .await
-            .map_err(|e| {
-                io::Error::other(format!("Send delete list failed: {}", e))
-            })?;
+            .map_err(|e| io::Error::other(format!("Send delete list failed: {}", e)))?;
     }
 
     // Send completion
@@ -472,10 +445,7 @@ async fn handle_manifest_exchange(
             output::format_size(diff.transfer_bytes()),
         ));
         if args.delete && !diff.deleted_files.is_empty() {
-            println!(
-                "  {} file(s) deleted on remote",
-                diff.deleted_files.len()
-            );
+            println!("  {} file(s) deleted on remote", diff.deleted_files.len());
         }
     }
 

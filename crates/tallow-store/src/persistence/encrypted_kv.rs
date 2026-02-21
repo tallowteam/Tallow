@@ -22,10 +22,13 @@ struct EncryptedEntry {
 #[derive(Serialize, Deserialize, Default)]
 struct StoreData {
     entries: HashMap<String, EncryptedEntry>,
+    /// Random salt for master key derivation (added in v2)
+    /// Absent in legacy stores; generated on first save.
+    #[serde(default)]
+    master_salt: Option<[u8; 16]>,
 }
 
 /// Encrypted key-value store
-#[derive(Debug)]
 pub struct EncryptedKv {
     /// In-memory decrypted cache
     cache: HashMap<String, Vec<u8>>,
@@ -33,6 +36,8 @@ pub struct EncryptedKv {
     path: PathBuf,
     /// Master key (derived from passphrase)
     master_key: [u8; 32],
+    /// Random salt used for master key derivation (persisted in store file)
+    master_salt: [u8; 16],
 }
 
 impl EncryptedKv {
@@ -42,44 +47,47 @@ impl EncryptedKv {
             cache: HashMap::new(),
             path: PathBuf::new(),
             master_key: [0u8; 32],
+            master_salt: [0u8; 16],
         }
     }
 
     /// Open a store at the given path with a master passphrase
     pub fn open(path: PathBuf, passphrase: &str) -> Result<Self> {
-        // Derive master key from passphrase using Argon2id (memory-hard KDF)
-        // Uses a fixed domain-separation salt for the KV store
-        let kv_salt: [u8; 16] = {
-            let h = blake3::hash(b"tallow-encrypted-kv-v1");
-            let mut s = [0u8; 16];
-            s.copy_from_slice(&h.as_bytes()[..16]);
-            s
+        // Load existing data to get the stored salt (if any)
+        let existing_data = if path.exists() {
+            let data = std::fs::read(&path)?;
+            Some(bincode::deserialize::<StoreData>(&data).map_err(|e| {
+                StoreError::PersistenceError(format!("Failed to parse store: {}", e))
+            })?)
+        } else {
+            None
         };
-        let master_key: [u8; 32] =
-            match tallow_crypto::kdf::argon2::derive_key(passphrase.as_bytes(), &kv_salt, 32) {
-                Ok(derived) => {
-                    let mut key = [0u8; 32];
-                    key.copy_from_slice(&derived[..32]);
-                    key
-                }
-                Err(_) => {
-                    // Fallback to BLAKE3 KDF if Argon2 unavailable
-                    tallow_crypto::hash::blake3::derive_key(
-                        "tallow-encrypted-kv-v1",
-                        passphrase.as_bytes(),
-                    )
-                }
-            };
+
+        // Use stored random salt, or generate a new one for fresh stores
+        let kv_salt: [u8; 16] = existing_data
+            .as_ref()
+            .and_then(|d| d.master_salt)
+            .unwrap_or_else(rand::random);
+
+        // Derive master key from passphrase using Argon2id (memory-hard KDF)
+        let mut derived =
+            tallow_crypto::kdf::argon2::derive_key(passphrase.as_bytes(), &kv_salt, 32).map_err(
+                |e| StoreError::PersistenceError(format!("Argon2id key derivation failed: {}", e)),
+            )?;
+        let mut master_key = [0u8; 32];
+        master_key.copy_from_slice(&derived[..32]);
+        derived.zeroize();
 
         let mut store = Self {
             cache: HashMap::new(),
             path,
             master_key,
+            master_salt: kv_salt,
         };
 
-        // Load existing data if file exists
-        if store.path.exists() {
-            store.load_from_disk()?;
+        // Load and decrypt existing entries
+        if let Some(store_data) = existing_data {
+            store.decrypt_entries(store_data)?;
         }
 
         Ok(store)
@@ -107,12 +115,8 @@ impl EncryptedKv {
         self.cache.keys().map(|k| k.as_str()).collect()
     }
 
-    /// Load and decrypt all entries from disk
-    fn load_from_disk(&mut self) -> Result<()> {
-        let data = std::fs::read(&self.path)?;
-        let store_data: StoreData = bincode::deserialize(&data)
-            .map_err(|e| StoreError::PersistenceError(format!("Failed to parse store: {}", e)))?;
-
+    /// Decrypt all entries from a loaded StoreData
+    fn decrypt_entries(&mut self, store_data: StoreData) -> Result<()> {
         self.cache.clear();
         for (key, entry) in store_data.entries {
             let plaintext = tallow_crypto::symmetric::aes_decrypt(
@@ -130,13 +134,16 @@ impl EncryptedKv {
         Ok(())
     }
 
-    /// Encrypt all entries and save to disk
+    /// Encrypt all entries and save to disk atomically
     fn save_to_disk(&self) -> Result<()> {
         if let Some(parent) = self.path.parent() {
             std::fs::create_dir_all(parent)?;
         }
 
-        let mut store_data = StoreData::default();
+        let mut store_data = StoreData {
+            master_salt: Some(self.master_salt),
+            ..Default::default()
+        };
 
         for (key, value) in &self.cache {
             let nonce: [u8; 12] = rand::random();
@@ -166,7 +173,19 @@ impl EncryptedKv {
             StoreError::SerializationError(format!("Failed to serialize store: {}", e))
         })?;
 
-        std::fs::write(&self.path, data)?;
+        // Atomic write: write to temp file then rename
+        let tmp_path = self.path.with_extension("tmp");
+        std::fs::write(&tmp_path, &data)?;
+        std::fs::rename(&tmp_path, &self.path)?;
+
+        // Restrict file permissions to owner-only on Unix (0o600)
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let perms = std::fs::Permissions::from_mode(0o600);
+            let _ = std::fs::set_permissions(&self.path, perms);
+        }
+
         Ok(())
     }
 }

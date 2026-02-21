@@ -99,7 +99,9 @@ impl DoubleRatchet {
 
         let ciphertext = chacha_encrypt(&message_key, &nonce, plaintext, &[])?;
 
-        self.send_counter += 1;
+        self.send_counter = self.send_counter.checked_add(1).ok_or_else(|| {
+            CryptoError::Encryption("send counter overflow — session must be re-established".into())
+        })?;
 
         Ok(ciphertext)
     }
@@ -144,7 +146,9 @@ impl DoubleRatchet {
                 self.skipped_keys
                     .insert((dh_pub.clone(), self.recv_counter), mk);
                 self.recv_chain_key = blake3::derive_key("chain_advance", &self.recv_chain_key);
-                self.recv_counter += 1;
+                self.recv_counter = self.recv_counter.checked_add(1).ok_or_else(|| {
+                    CryptoError::Decryption("recv counter overflow during skip".into())
+                })?;
             }
         }
 
@@ -160,7 +164,9 @@ impl DoubleRatchet {
 
         let plaintext = chacha_decrypt(&message_key, &nonce, ciphertext, &[])?;
 
-        self.recv_counter += 1;
+        self.recv_counter = self.recv_counter.checked_add(1).ok_or_else(|| {
+            CryptoError::Decryption("recv counter overflow — session must be re-established".into())
+        })?;
 
         // Prune oldest skipped keys if cache is too large
         self.prune_skipped_keys();
@@ -169,8 +175,12 @@ impl DoubleRatchet {
     }
 
     /// Perform DH ratchet step
-    pub fn ratchet_step(&mut self, their_public: &x25519_dalek::PublicKey) {
-        let dh_output = self.ephemeral_keypair.diffie_hellman(their_public);
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the peer's public key is a low-order point.
+    pub fn ratchet_step(&mut self, their_public: &x25519_dalek::PublicKey) -> Result<()> {
+        let dh_output = self.ephemeral_keypair.diffie_hellman(their_public)?;
 
         // KDF with root key and DH output
         let mut input = Vec::new();
@@ -181,12 +191,17 @@ impl DoubleRatchet {
         self.send_chain_key = blake3::derive_key("send_chain", &self.root_key);
         self.recv_chain_key = blake3::derive_key("recv_chain", &self.root_key);
 
+        // Zeroize temporary key material
+        input.zeroize();
+
         // Reset counters for new ratchet epoch
         self.send_counter = 0;
         self.recv_counter = 0;
 
         // Generate new ephemeral keypair
         self.ephemeral_keypair = X25519KeyPair::generate();
+
+        Ok(())
     }
 
     /// Mix a post-quantum shared secret into the root key via HKDF
@@ -203,6 +218,9 @@ impl DoubleRatchet {
         // Derive new chain keys from the updated root
         self.send_chain_key = blake3::derive_key("send_chain", &self.root_key);
         self.recv_chain_key = blake3::derive_key("recv_chain", &self.root_key);
+
+        // Zeroize temporary key material
+        input.zeroize();
     }
 
     /// Prune skipped keys cache if it exceeds twice the max skip limit

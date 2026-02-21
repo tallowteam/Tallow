@@ -133,7 +133,15 @@ impl TransferLog {
             let data = serde_json::to_string_pretty(&self.entries).map_err(|e| {
                 StoreError::SerializationError(format!("Failed to serialize history: {}", e))
             })?;
-            std::fs::write(path, data)?;
+            std::fs::write(path, &data)?;
+
+            // Restrict file permissions to owner-only on Unix (0o600)
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                let perms = std::fs::Permissions::from_mode(0o600);
+                let _ = std::fs::set_permissions(path, perms);
+            }
         }
         Ok(())
     }

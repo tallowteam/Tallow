@@ -29,8 +29,21 @@ fn determine_source(args: &SendArgs) -> io::Result<SendSource> {
 
     // Check for piped stdin (not a terminal) when no files given
     if args.files.is_empty() && !args.ignore_stdin && !std::io::stdin().is_terminal() {
+        // Cap stdin reads at 256 MiB to prevent OOM from unbounded input
+        const MAX_STDIN_SIZE: usize = 256 * 1024 * 1024;
         let mut buf = Vec::new();
-        std::io::stdin().read_to_end(&mut buf)?;
+        std::io::stdin()
+            .take(MAX_STDIN_SIZE as u64 + 1)
+            .read_to_end(&mut buf)?;
+        if buf.len() > MAX_STDIN_SIZE {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!(
+                    "Stdin exceeds maximum size of {} MiB. Use file mode instead.",
+                    MAX_STDIN_SIZE / (1024 * 1024)
+                ),
+            ));
+        }
         if buf.is_empty() {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
@@ -89,7 +102,12 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
                 } else {
                     println!("Found {} peer(s) on LAN:", peers.len());
                     for peer in &peers {
-                        println!("  {} - {} ({})", peer.id, peer.name, peer.addr);
+                        // Sanitize network-sourced strings to prevent ANSI injection
+                        let safe_id =
+                            tallow_protocol::transfer::sanitize::sanitize_display(&peer.id);
+                        let safe_name =
+                            tallow_protocol::transfer::sanitize::sanitize_display(&peer.name);
+                        println!("  {} - {} ({})", safe_id, safe_name, peer.addr);
                     }
                 }
             } else if !json {
@@ -133,9 +151,7 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
             ));
         }
         if custom_code.len() < 8 && !json {
-            output::color::warning(
-                "Short custom code -- security depends on code phrase entropy",
-            );
+            output::color::warning("Short custom code -- security depends on code phrase entropy");
         }
         custom_code.clone()
     } else if let Some(room) = &args.room {
@@ -221,7 +237,10 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
                     let ct = tallow_store::clipboard::detect::detect_content_type(text);
                     match ct {
                         tallow_store::clipboard::ContentType::Url => {
-                            output::color::info(&format!("Sending URL: {}", tallow_store::clipboard::preview::generate_preview(text, 80)));
+                            output::color::info(&format!(
+                                "Sending URL: {}",
+                                tallow_store::clipboard::preview::generate_preview(text, 80)
+                            ));
                         }
                         tallow_store::clipboard::ContentType::Code => {
                             output::color::info("Sending code snippet");
@@ -308,9 +327,10 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
     }
 
     // Hash relay password for authentication (if provided)
-    let password_hash: Option<[u8; 32]> = args.relay_pass.as_ref().map(|pass| {
-        blake3::hash(pass.as_bytes()).into()
-    });
+    let password_hash: Option<[u8; 32]> = args
+        .relay_pass
+        .as_ref()
+        .map(|pass| blake3::hash(pass.as_bytes()).into());
     let pw_ref = password_hash.as_ref();
 
     if args.relay_pass.is_some() && std::env::var("TALLOW_RELAY_PASS").is_err() {
@@ -393,8 +413,7 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
             tracing::info!("Receiver accepted the transfer");
         }
         Some(Message::FileReject { reason, .. }) => {
-            let safe_reason =
-                tallow_protocol::transfer::sanitize::sanitize_display(&reason);
+            let safe_reason = tallow_protocol::transfer::sanitize::sanitize_display(&reason);
             let msg = format!("Transfer rejected: {}", safe_reason);
             if json {
                 println!(
@@ -469,7 +488,9 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
                     }
                     Some(Message::TransferError { error, .. }) => {
                         progress.finish();
-                        let msg = format!("Transfer error from receiver: {}", error);
+                        let safe_error =
+                            tallow_protocol::transfer::sanitize::sanitize_display(&error);
+                        let msg = format!("Transfer error from receiver: {}", safe_error);
                         relay.close().await;
                         return Err(io::Error::other(msg));
                     }
@@ -481,12 +502,9 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
         }
         SendSource::Files(_) => {
             for file in &source_files {
-                let chunk_messages = pipeline
-                    .chunk_file(file, chunk_index)
-                    .await
-                    .map_err(|e| {
-                        io::Error::other(format!("Failed to chunk {}: {}", file.display(), e))
-                    })?;
+                let chunk_messages = pipeline.chunk_file(file, chunk_index).await.map_err(|e| {
+                    io::Error::other(format!("Failed to chunk {}: {}", file.display(), e))
+                })?;
 
                 for chunk_msg in &chunk_messages {
                     // Apply bandwidth throttle if configured
@@ -530,7 +548,9 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
                         }
                         Some(Message::TransferError { error, .. }) => {
                             progress.finish();
-                            let msg = format!("Transfer error from receiver: {}", error);
+                            let safe_error =
+                                tallow_protocol::transfer::sanitize::sanitize_display(&error);
+                            let msg = format!("Transfer error from receiver: {}", safe_error);
                             relay.close().await;
                             return Err(io::Error::other(msg));
                         }

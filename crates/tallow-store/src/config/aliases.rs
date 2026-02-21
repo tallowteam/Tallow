@@ -14,7 +14,12 @@ use std::path::{Path, PathBuf};
 pub fn resolve_alias(input: &str, aliases: &HashMap<String, PathBuf>) -> PathBuf {
     if let Some((alias, remainder)) = input.split_once(':') {
         // Avoid matching Windows drive letters (e.g., "C:")
-        if alias.len() == 1 && alias.chars().next().is_some_and(|c| c.is_ascii_alphabetic()) {
+        if alias.len() == 1
+            && alias
+                .chars()
+                .next()
+                .is_some_and(|c| c.is_ascii_alphabetic())
+        {
             return PathBuf::from(input);
         }
         if let Some(base) = aliases.get(alias) {
@@ -38,10 +43,12 @@ pub fn validate_alias_name(name: &str) -> Result<()> {
             "Single-letter alias names conflict with Windows drive letters".into(),
         ));
     }
-    if !name.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_') {
+    if !name
+        .chars()
+        .all(|c| c.is_alphanumeric() || c == '-' || c == '_')
+    {
         return Err(StoreError::ConfigError(
-            "Alias names may only contain alphanumeric characters, hyphens, and underscores"
-                .into(),
+            "Alias names may only contain alphanumeric characters, hyphens, and underscores".into(),
         ));
     }
     Ok(())
@@ -72,11 +79,7 @@ pub fn validate_alias_target(target: &Path) -> Result<()> {
 ///
 /// Validates both the name and target before inserting. If an alias with
 /// the same name already exists, it is overwritten.
-pub fn add_alias(
-    aliases: &mut HashMap<String, PathBuf>,
-    name: &str,
-    target: &Path,
-) -> Result<()> {
+pub fn add_alias(aliases: &mut HashMap<String, PathBuf>, name: &str, target: &Path) -> Result<()> {
     validate_alias_name(name)?;
     validate_alias_target(target)?;
     aliases.insert(name.to_string(), target.to_path_buf());

@@ -32,16 +32,18 @@ impl MerkleTree {
         let mut nodes = Vec::new();
         let mut current_level = leaves.clone();
 
-        // Build tree bottom-up
+        // Build tree bottom-up with domain separation to prevent
+        // second-preimage attacks (0x01 prefix for internal nodes)
         while current_level.len() > 1 {
             let mut next_level = Vec::new();
 
             for chunk in current_level.chunks(2) {
                 let combined = if chunk.len() == 2 {
-                    // Hash parent = Hash(left || right)
-                    let mut data = [0u8; 64];
-                    data[..32].copy_from_slice(&chunk[0]);
-                    data[32..].copy_from_slice(&chunk[1]);
+                    // Hash parent = Hash(0x01 || left || right)
+                    let mut data = [0u8; 65];
+                    data[0] = 0x01; // internal node domain tag
+                    data[1..33].copy_from_slice(&chunk[0]);
+                    data[33..65].copy_from_slice(&chunk[1]);
                     hash(&data)
                 } else {
                     // Odd number of nodes, promote the single node
@@ -112,13 +114,14 @@ impl MerkleTree {
                 proof_hashes.push(current_level[sibling_index]);
             }
 
-            // Move up to next level
+            // Move up to next level (with domain separation)
             let mut next_level = Vec::new();
             for chunk in current_level.chunks(2) {
                 let combined = if chunk.len() == 2 {
-                    let mut data = [0u8; 64];
-                    data[..32].copy_from_slice(&chunk[0]);
-                    data[32..].copy_from_slice(&chunk[1]);
+                    let mut data = [0u8; 65];
+                    data[0] = 0x01; // internal node domain tag
+                    data[1..33].copy_from_slice(&chunk[0]);
+                    data[33..65].copy_from_slice(&chunk[1]);
                     hash(&data)
                 } else {
                     chunk[0]
@@ -157,15 +160,16 @@ impl MerkleTree {
         let mut current_index = proof.leaf_index;
 
         for sibling in &proof.proof_hashes {
-            let mut data = [0u8; 64];
+            let mut data = [0u8; 65];
+            data[0] = 0x01; // internal node domain tag
             if current_index.is_multiple_of(2) {
                 // Current is left child
-                data[..32].copy_from_slice(&current_hash);
-                data[32..].copy_from_slice(sibling);
+                data[1..33].copy_from_slice(&current_hash);
+                data[33..65].copy_from_slice(sibling);
             } else {
                 // Current is right child
-                data[..32].copy_from_slice(sibling);
-                data[32..].copy_from_slice(&current_hash);
+                data[1..33].copy_from_slice(sibling);
+                data[33..65].copy_from_slice(&current_hash);
             }
             current_hash = hash(&data);
             current_index /= 2;

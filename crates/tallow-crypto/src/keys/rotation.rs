@@ -49,7 +49,9 @@ impl KeyRotationRecord {
             .map_err(|e| CryptoError::KeyGeneration(format!("system clock error: {}", e)))?
             .as_secs();
 
+        // Domain-separated message to prevent cross-context signature reuse
         let mut message = Vec::new();
+        message.extend_from_slice(b"tallow-key-rotation-v1:");
         message.extend_from_slice(&old_key_id);
         message.extend_from_slice(&new_key_id);
         message.extend_from_slice(&timestamp.to_le_bytes());
@@ -67,6 +69,7 @@ impl KeyRotationRecord {
     /// Verify the rotation record signature
     pub fn verify(&self) -> crate::error::Result<()> {
         let mut message = Vec::new();
+        message.extend_from_slice(b"tallow-key-rotation-v1:");
         message.extend_from_slice(&self.old_key_id);
         message.extend_from_slice(&self.new_key_id);
         message.extend_from_slice(&self.timestamp.to_le_bytes());

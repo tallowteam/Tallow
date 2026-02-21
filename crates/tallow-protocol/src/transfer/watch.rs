@@ -89,11 +89,13 @@ pub fn start_watcher(config: WatchConfig) -> Result<(mpsc::Receiver<WatchEvent>,
         // Channel for raw notify events
         let (raw_tx, raw_rx) = std_mpsc::channel();
 
-        let mut watcher = match notify::recommended_watcher(move |res: std::result::Result<notify::Event, notify::Error>| {
-            if let Ok(event) = res {
-                let _ = raw_tx.send(event);
-            }
-        }) {
+        let mut watcher = match notify::recommended_watcher(
+            move |res: std::result::Result<notify::Event, notify::Error>| {
+                if let Ok(event) = res {
+                    let _ = raw_tx.send(event);
+                }
+            },
+        ) {
             Ok(w) => w,
             Err(_) => return,
         };

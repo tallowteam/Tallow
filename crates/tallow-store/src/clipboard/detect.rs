@@ -64,8 +64,7 @@ pub fn detect_image_format(bytes: &[u8]) -> ImageFormat {
     }
 
     // TIFF: "II\x2A\x00" (little-endian) or "MM\x00\x2A" (big-endian)
-    if bytes.starts_with(&[0x49, 0x49, 0x2A, 0x00])
-        || bytes.starts_with(&[0x4D, 0x4D, 0x00, 0x2A])
+    if bytes.starts_with(&[0x49, 0x49, 0x2A, 0x00]) || bytes.starts_with(&[0x4D, 0x4D, 0x00, 0x2A])
     {
         return ImageFormat::Tiff;
     }
@@ -117,14 +116,29 @@ fn is_html(text: &str) -> bool {
 /// Check if text looks like source code
 fn is_code(text: &str) -> bool {
     let indicators = [
-        "fn ", "pub fn ", "pub struct ", "impl ", "mod ", // Rust
-        "def ", "class ", "import ", "from ",  // Python
-        "function ", "const ", "let ", "var ",  // JS/TS
-        "func ", "package ",                     // Go
-        "#include", "int main",                  // C/C++
-        "public class ", "private ",             // Java/C#
-        "SELECT ", "INSERT ", "UPDATE ",         // SQL
-        "#!/",                                   // Shebang
+        "fn ",
+        "pub fn ",
+        "pub struct ",
+        "impl ",
+        "mod ", // Rust
+        "def ",
+        "class ",
+        "import ",
+        "from ", // Python
+        "function ",
+        "const ",
+        "let ",
+        "var ", // JS/TS
+        "func ",
+        "package ", // Go
+        "#include",
+        "int main", // C/C++
+        "public class ",
+        "private ", // Java/C#
+        "SELECT ",
+        "INSERT ",
+        "UPDATE ", // SQL
+        "#!/",     // Shebang
     ];
 
     let syntax_patterns: &[&str] = &["{", "}", "=>", "->", "&&", "||", "!=", "=="];
@@ -151,10 +165,7 @@ mod tests {
             detect_content_type("https://github.com/tallowteam/Tallow"),
             ContentType::Url
         );
-        assert_eq!(
-            detect_content_type("http://example.com"),
-            ContentType::Url
-        );
+        assert_eq!(detect_content_type("http://example.com"), ContentType::Url);
         assert_eq!(
             detect_content_type("ftp://files.example.com/data"),
             ContentType::Url

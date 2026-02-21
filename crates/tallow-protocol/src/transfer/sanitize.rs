@@ -48,8 +48,7 @@ pub enum SanitizeError {
 /// instead of normal file operations.
 const WINDOWS_RESERVED: &[&str] = &[
     "CON", "PRN", "AUX", "NUL", "COM0", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7",
-    "COM8", "COM9", "LPT0", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8",
-    "LPT9",
+    "COM8", "COM9", "LPT0", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
 ];
 
 /// Maximum length for a single path component (bytes).
@@ -257,9 +256,7 @@ pub fn sanitize_display(input: &str) -> String {
     // strip_ansi_escapes uses a VTE parser that consumes ALL C0 control
     // characters including \t and \n. Protect the ones we want to keep
     // by substituting with Unicode private-use-area placeholders.
-    let protected = input
-        .replace('\t', "\u{F0001}")
-        .replace('\n', "\u{F0002}");
+    let protected = input.replace('\t', "\u{F0001}").replace('\n', "\u{F0002}");
     let stripped = strip_ansi(&protected);
     stripped
         .replace('\u{F0001}', "\t")
@@ -573,8 +570,7 @@ mod tests {
 
     #[test]
     fn test_deeply_nested_path() {
-        let result =
-            sanitize_filename("a/b/c/d/e/f/g/h/i/j/file.txt", &output_dir()).unwrap();
+        let result = sanitize_filename("a/b/c/d/e/f/g/h/i/j/file.txt", &output_dir()).unwrap();
         assert!(result.starts_with(&output_dir()));
     }
 }

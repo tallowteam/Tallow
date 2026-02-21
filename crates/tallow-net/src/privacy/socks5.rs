@@ -52,6 +52,11 @@ impl Socks5Connector {
     }
 
     /// Connect to a target address through the SOCKS5 proxy
+    ///
+    /// **WARNING**: This method takes a pre-resolved `SocketAddr`, meaning
+    /// DNS resolution already happened on the local machine. For Tor usage,
+    /// prefer [`connect_hostname`] which sends the hostname to the proxy so
+    /// DNS resolution happens inside the Tor network (no DNS leak).
     pub async fn connect(&self, target: SocketAddr) -> Result<TcpStream> {
         let stream = if let (Some(user), Some(pass)) = (&self.username, &self.password) {
             Socks5Stream::connect_with_password(self.proxy_addr, target, user, pass)

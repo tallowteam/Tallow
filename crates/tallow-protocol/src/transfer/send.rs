@@ -158,11 +158,7 @@ impl SendPipeline {
             let files = self.exclusion.walk_directory(base)?;
             for file_path in files {
                 let data = tokio::fs::read(&file_path).await.map_err(|e| {
-                    ProtocolError::TransferFailed(format!(
-                        "read {}: {}",
-                        file_path.display(),
-                        e
-                    ))
+                    ProtocolError::TransferFailed(format!("read {}: {}", file_path.display(), e))
                 })?;
                 let hash: [u8; 32] = blake3::hash(&data).into();
                 let relative = file_path
@@ -277,11 +273,8 @@ impl SendPipeline {
         let hash: [u8; 32] = blake3::hash(text).into();
 
         self.manifest.transfer_type = TransferType::Text;
-        self.manifest.add_file(
-            PathBuf::from("_tallow_text_"),
-            text.len() as u64,
-            hash,
-        );
+        self.manifest
+            .add_file(PathBuf::from("_tallow_text_"), text.len() as u64, hash);
 
         self.manifest.finalize()?;
         self.manifest.compression = Some(match self.compression {
@@ -304,11 +297,7 @@ impl SendPipeline {
     ///
     /// Works identically to `chunk_file` but operates on a byte slice
     /// rather than reading from disk.
-    pub async fn chunk_data(
-        &self,
-        data: &[u8],
-        start_chunk_index: u64,
-    ) -> Result<Vec<Message>> {
+    pub async fn chunk_data(&self, data: &[u8], start_chunk_index: u64) -> Result<Vec<Message>> {
         // Compress
         let compressed = compression::pipeline::compress(data, self.compression)?;
 

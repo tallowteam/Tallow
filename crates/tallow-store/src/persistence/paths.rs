@@ -53,11 +53,18 @@ pub fn clipboard_images_dir() -> PathBuf {
     data_dir().join("clipboard_images")
 }
 
-/// Ensure all required directories exist
+/// Ensure all required directories exist with restrictive permissions
 pub fn ensure_dirs() -> std::io::Result<()> {
-    std::fs::create_dir_all(config_dir())?;
-    std::fs::create_dir_all(data_dir())?;
-    std::fs::create_dir_all(cache_dir())?;
+    for dir in [config_dir(), data_dir(), cache_dir()] {
+        std::fs::create_dir_all(&dir)?;
+        // Restrict directory permissions to owner-only on Unix (0o700)
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let perms = std::fs::Permissions::from_mode(0o700);
+            let _ = std::fs::set_permissions(&dir, perms);
+        }
+    }
     Ok(())
 }
 

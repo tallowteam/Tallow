@@ -59,11 +59,8 @@ impl SyncDiff {
 /// `remote_manifest` by relative path and BLAKE3 hash. Files present
 /// only in the remote are marked as deleted.
 pub fn compute_sync_diff(local_files: &[FileEntry], remote_manifest: &FileManifest) -> SyncDiff {
-    let remote_map: HashMap<&PathBuf, &FileEntry> = remote_manifest
-        .files
-        .iter()
-        .map(|f| (&f.path, f))
-        .collect();
+    let remote_map: HashMap<&PathBuf, &FileEntry> =
+        remote_manifest.files.iter().map(|f| (&f.path, f)).collect();
 
     let mut new_files = Vec::new();
     let mut changed_files = Vec::new();
@@ -127,10 +124,7 @@ mod tests {
 
     #[test]
     fn identical_manifests_produce_empty_diff() {
-        let files = vec![
-            entry("a.txt", 100, 0xAA),
-            entry("b.txt", 200, 0xBB),
-        ];
+        let files = vec![entry("a.txt", 100, 0xAA), entry("b.txt", 200, 0xBB)];
         let remote = manifest_from(files.clone());
 
         let diff = compute_sync_diff(&files, &remote);
@@ -144,10 +138,7 @@ mod tests {
 
     #[test]
     fn all_new_files() {
-        let local = vec![
-            entry("new1.txt", 100, 0x01),
-            entry("new2.txt", 200, 0x02),
-        ];
+        let local = vec![entry("new1.txt", 100, 0x01), entry("new2.txt", 200, 0x02)];
         let remote = manifest_from(vec![]);
 
         let diff = compute_sync_diff(&local, &remote);
@@ -188,13 +179,13 @@ mod tests {
     fn mixed_new_changed_deleted() {
         let local = vec![
             entry("unchanged.txt", 100, 0xAA), // same hash on both sides
-            entry("changed.txt", 300, 0x02),    // hash differs
-            entry("brand_new.txt", 500, 0x03),  // only local
+            entry("changed.txt", 300, 0x02),   // hash differs
+            entry("brand_new.txt", 500, 0x03), // only local
         ];
         let remote = manifest_from(vec![
             entry("unchanged.txt", 100, 0xAA),
             entry("changed.txt", 200, 0xBB), // different hash
-            entry("gone.txt", 400, 0xCC),     // only remote
+            entry("gone.txt", 400, 0xCC),    // only remote
         ]);
 
         let diff = compute_sync_diff(&local, &remote);
@@ -268,10 +259,7 @@ mod tests {
         let diff = SyncDiff {
             new_files: vec![],
             changed_files: vec![],
-            deleted_files: vec![
-                entry("a.txt", 100, 0x01),
-                entry("b.txt", 200, 0x02),
-            ],
+            deleted_files: vec![entry("a.txt", 100, 0x01), entry("b.txt", 200, 0x02)],
         };
         assert!((diff.deletion_fraction(2) - 1.0).abs() < f64::EPSILON);
     }
@@ -293,10 +281,7 @@ mod tests {
     fn transfer_bytes_sums_new_and_changed() {
         let diff = SyncDiff {
             new_files: vec![entry("n.txt", 1000, 0x01)],
-            changed_files: vec![
-                entry("c1.txt", 2000, 0x02),
-                entry("c2.txt", 3000, 0x03),
-            ],
+            changed_files: vec![entry("c1.txt", 2000, 0x02), entry("c2.txt", 3000, 0x03)],
             deleted_files: vec![entry("d.txt", 9999, 0x04)],
         };
         // Deleted files are NOT counted in transfer_bytes
