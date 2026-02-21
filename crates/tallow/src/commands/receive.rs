@@ -591,8 +591,26 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
                     break;
                 }
             }
-            Some(Message::TransferComplete { .. }) => {
+            Some(Message::TransferComplete { merkle_root, .. }) => {
                 tracing::info!("Received TransferComplete from sender");
+
+                // Verify Merkle root if provided
+                if let Some(sender_root) = merkle_root {
+                    if let Some(receiver_root) = pipeline.merkle_root() {
+                        if !tallow_crypto::mem::constant_time::ct_eq(
+                            &sender_root,
+                            &receiver_root,
+                        ) {
+                            progress.finish();
+                            channel.close().await;
+                            return Err(io::Error::other(
+                                "Merkle root mismatch: transfer integrity verification failed",
+                            ));
+                        }
+                        tracing::info!("Merkle root verified successfully");
+                    }
+                }
+
                 break;
             }
             Some(Message::TransferError { error, .. }) => {

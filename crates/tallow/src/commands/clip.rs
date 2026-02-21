@@ -448,6 +448,7 @@ async fn execute_send(args: &ClipArgs, json: bool) -> io::Result<()> {
             .manifest_hash
             .as_ref()
             .unwrap_or(&[0u8; 32]),
+        merkle_root: None,
     };
     encode_buf.clear();
     codec

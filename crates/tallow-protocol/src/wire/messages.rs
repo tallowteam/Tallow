@@ -82,8 +82,10 @@ pub enum Message {
     TransferComplete {
         /// Transfer ID
         transfer_id: [u8; 16],
-        /// BLAKE3 hash of complete file
+        /// BLAKE3 hash of the manifest
         hash: [u8; 32],
+        /// Merkle root of chunk hashes (for integrity verification)
+        merkle_root: Option<[u8; 32]>,
     },
     /// Error during transfer
     TransferError {
@@ -150,6 +152,18 @@ pub enum Message {
         /// Receiver's key confirmation tag (BLAKE3 keyed MAC, 32 bytes)
         confirmation: [u8; 32],
     },
+    /// Resume information (receiver -> sender after FileAccept)
+    ///
+    /// Sent when the receiver has a checkpoint from a previous interrupted
+    /// transfer. The sender skips chunks in the verified_chunks set.
+    ResumeInfo {
+        /// Transfer ID
+        transfer_id: [u8; 16],
+        /// BLAKE3 hash of the manifest (to verify same transfer)
+        manifest_hash: [u8; 32],
+        /// Set of chunk indices already verified by the receiver
+        verified_chunks: Vec<u64>,
+    },
     /// Handshake failure (either direction)
     ///
     /// The reason string MUST NOT distinguish PAKE failure from KEM failure
@@ -212,6 +226,12 @@ mod tests {
             Message::TransferComplete {
                 transfer_id: [1u8; 16],
                 hash: [0xABu8; 32],
+                merkle_root: None,
+            },
+            Message::TransferComplete {
+                transfer_id: [1u8; 16],
+                hash: [0xABu8; 32],
+                merkle_root: Some([0xCDu8; 32]),
             },
             Message::TransferError {
                 transfer_id: [1u8; 16],
@@ -224,6 +244,11 @@ mod tests {
             Message::SyncDeleteList {
                 transfer_id: [2u8; 16],
                 paths: vec!["old/file.txt".to_string(), "removed.log".to_string()],
+            },
+            Message::ResumeInfo {
+                transfer_id: [3u8; 16],
+                manifest_hash: [0xFFu8; 32],
+                verified_chunks: vec![0, 1, 5, 10],
             },
             Message::Ping,
             Message::Pong,

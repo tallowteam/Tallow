@@ -5,8 +5,11 @@
 
 use serde::{Deserialize, Serialize};
 
-/// Default chunk size (64 KB)
-pub const DEFAULT_CHUNK_SIZE: usize = 64 * 1024;
+/// Default chunk size (256 KB)
+///
+/// Larger chunks reduce per-chunk overhead (AAD, nonce, AES-GCM tag) and
+/// improve throughput on high-latency links by sending more data per round trip.
+pub const DEFAULT_CHUNK_SIZE: usize = 256 * 1024;
 
 /// Minimum chunk size (16 KB)
 pub const MIN_CHUNK_SIZE: usize = 16 * 1024;

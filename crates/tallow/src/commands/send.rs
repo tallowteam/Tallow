@@ -587,141 +587,229 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
         }
     }
 
-    // Create progress bar and send chunks
+    // Create progress bar and send chunks with sliding window
     let transfer_start = std::time::Instant::now();
     let progress = output::TransferProgressBar::new(total_size);
     let mut total_sent: u64 = 0;
     let mut chunk_index: u64 = 0;
 
+    /// Sliding window size: send up to N chunks before draining acks.
+    /// At 256 KB chunks and ~80ms RTT, 64-chunk windows yield ~200 MB/s ceiling.
+    const WINDOW_SIZE: usize = 64;
+
+    // Collect BLAKE3 hashes of encrypted chunks for Merkle tree
+    let mut chunk_hashes: Vec<[u8; 32]> = Vec::new();
+
+    /// Send a batch of chunks with sliding window and drain their acks.
+    #[allow(clippy::too_many_arguments)]
+    async fn send_batch_and_drain(
+        batch: &[Message],
+        channel: &mut tallow_net::transport::ConnectionResult,
+        codec: &mut TallowCodec,
+        encode_buf: &mut BytesMut,
+        recv_buf: &mut [u8],
+        progress: &output::TransferProgressBar,
+        total_sent: &mut u64,
+        total_size: u64,
+        throttle_bps: u64,
+        chunk_hashes: &mut Vec<[u8; 32]>,
+    ) -> io::Result<()> {
+        // Phase 1: Send up to WINDOW_SIZE chunks
+        for chunk_msg in batch {
+            // Apply bandwidth throttle if configured
+            if throttle_bps > 0 {
+                if let Message::Chunk { ref data, .. } = chunk_msg {
+                    let delay_ms = (data.len() as u64 * 1000) / throttle_bps;
+                    if delay_ms > 0 {
+                        tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
+                    }
+                }
+            }
+
+            // Record chunk hash for Merkle tree
+            if let Message::Chunk { ref data, .. } = chunk_msg {
+                chunk_hashes.push(blake3::hash(data).into());
+            }
+
+            encode_buf.clear();
+            codec
+                .encode_msg(chunk_msg, encode_buf)
+                .map_err(|e| io::Error::other(format!("Encode chunk failed: {}", e)))?;
+            channel
+                .send_message(encode_buf)
+                .await
+                .map_err(|e| io::Error::other(format!("Send chunk failed: {}", e)))?;
+        }
+
+        // Phase 2: Drain all acks
+        for _ in 0..batch.len() {
+            let n = channel
+                .receive_message(recv_buf)
+                .await
+                .map_err(|e| io::Error::other(format!("Receive ack failed: {}", e)))?;
+
+            let mut ack_buf = BytesMut::from(&recv_buf[..n]);
+            let ack = codec
+                .decode_msg(&mut ack_buf)
+                .map_err(|e| io::Error::other(format!("Decode ack failed: {}", e)))?;
+
+            match ack {
+                Some(Message::Ack { .. }) => {
+                    // Count acked bytes (approximate from chunk data sizes)
+                }
+                Some(Message::TransferError { error, .. }) => {
+                    progress.finish();
+                    let safe_error =
+                        tallow_protocol::transfer::sanitize::sanitize_display(&error);
+                    return Err(io::Error::other(format!(
+                        "Transfer error from receiver: {}",
+                        safe_error
+                    )));
+                }
+                other => {
+                    tracing::warn!("Unexpected message during transfer: {:?}", other);
+                }
+            }
+        }
+
+        // Update progress based on total batch data size
+        let batch_bytes: u64 = batch
+            .iter()
+            .map(|m| {
+                if let Message::Chunk { ref data, .. } = m {
+                    data.len() as u64
+                } else {
+                    0
+                }
+            })
+            .sum();
+        *total_sent += batch_bytes;
+        progress.update((*total_sent).min(total_size));
+
+        Ok(())
+    }
+
     match &source {
         SendSource::Text(data) => {
+            // Text/stdin: small data, use in-memory chunking
             let chunk_messages = pipeline
                 .chunk_data(data, 0)
                 .await
                 .map_err(|e| io::Error::other(format!("Failed to chunk text: {}", e)))?;
 
-            for chunk_msg in &chunk_messages {
-                // Apply bandwidth throttle if configured
-                if throttle_bps > 0 {
-                    let chunk_size = if let Message::Chunk { ref data, .. } = chunk_msg {
-                        data.len() as u64
-                    } else {
-                        0
-                    };
-                    let delay_ms = (chunk_size * 1000) / throttle_bps;
-                    if delay_ms > 0 {
-                        tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
-                    }
-                }
-
-                encode_buf.clear();
-                codec
-                    .encode_msg(chunk_msg, &mut encode_buf)
-                    .map_err(|e| io::Error::other(format!("Encode chunk failed: {}", e)))?;
-                channel
-                    .send_message(&encode_buf)
-                    .await
-                    .map_err(|e| io::Error::other(format!("Send chunk failed: {}", e)))?;
-
-                let n = channel
-                    .receive_message(&mut recv_buf)
-                    .await
-                    .map_err(|e| io::Error::other(format!("Receive ack failed: {}", e)))?;
-
-                let mut ack_buf = BytesMut::from(&recv_buf[..n]);
-                let ack = codec
-                    .decode_msg(&mut ack_buf)
-                    .map_err(|e| io::Error::other(format!("Decode ack failed: {}", e)))?;
-
-                match ack {
-                    Some(Message::Ack { .. }) => {
-                        if let Message::Chunk { ref data, .. } = chunk_msg {
-                            total_sent += data.len() as u64;
-                            progress.update(total_sent.min(total_size));
-                        }
-                    }
-                    Some(Message::TransferError { error, .. }) => {
-                        progress.finish();
-                        let safe_error =
-                            tallow_protocol::transfer::sanitize::sanitize_display(&error);
-                        let msg = format!("Transfer error from receiver: {}", safe_error);
-                        channel.close().await;
-                        return Err(io::Error::other(msg));
-                    }
-                    other => {
-                        tracing::warn!("Unexpected message during transfer: {:?}", other);
-                    }
-                }
+            // Send in sliding window batches
+            for batch in chunk_messages.chunks(WINDOW_SIZE) {
+                send_batch_and_drain(
+                    batch,
+                    &mut channel,
+                    &mut codec,
+                    &mut encode_buf,
+                    &mut recv_buf,
+                    &progress,
+                    &mut total_sent,
+                    total_size,
+                    throttle_bps,
+                    &mut chunk_hashes,
+                )
+                .await?;
             }
         }
         SendSource::Files(_) => {
+            // File mode: streaming I/O with per-chunk compress+encrypt
             for file in &source_files {
-                let chunk_messages = pipeline.chunk_file(file, chunk_index).await.map_err(|e| {
-                    io::Error::other(format!("Failed to chunk {}: {}", file.display(), e))
-                })?;
+                let mut reader = pipeline
+                    .open_file_reader(file)
+                    .await
+                    .map_err(|e| {
+                        io::Error::other(format!(
+                            "Failed to open {}: {}",
+                            file.display(),
+                            e
+                        ))
+                    })?;
 
-                for chunk_msg in &chunk_messages {
-                    // Apply bandwidth throttle if configured
-                    if throttle_bps > 0 {
-                        let chunk_size = if let Message::Chunk { ref data, .. } = chunk_msg {
-                            data.len() as u64
-                        } else {
-                            0
-                        };
-                        let delay_ms = (chunk_size * 1000) / throttle_bps;
-                        if delay_ms > 0 {
-                            tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
-                        }
-                    }
+                // Find this file's chunk count from the manifest
+                let file_name = file.file_name().map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_default();
+                let _file_chunk_count = pipeline
+                    .manifest()
+                    .files
+                    .iter()
+                    .find(|f| f.path.to_string_lossy() == file_name)
+                    .map(|f| f.chunk_count)
+                    .unwrap_or(1);
+                let mut batch: Vec<Message> = Vec::with_capacity(WINDOW_SIZE);
 
-                    encode_buf.clear();
-                    codec
-                        .encode_msg(chunk_msg, &mut encode_buf)
-                        .map_err(|e| io::Error::other(format!("Encode chunk failed: {}", e)))?;
-                    channel
-                        .send_message(&encode_buf)
-                        .await
-                        .map_err(|e| io::Error::other(format!("Send chunk failed: {}", e)))?;
+                while let Some(raw_chunk) = reader.next_chunk().await.map_err(|e| {
+                    io::Error::other(format!("Read chunk from {}: {}", file.display(), e))
+                })? {
+                    let is_last_chunk_overall =
+                        chunk_index + 1 == total_chunks;
 
-                    let n = channel
-                        .receive_message(&mut recv_buf)
-                        .await
-                        .map_err(|e| io::Error::other(format!("Receive ack failed: {}", e)))?;
+                    let msg = pipeline
+                        .encrypt_chunk(
+                            &raw_chunk,
+                            chunk_index,
+                            total_chunks,
+                            is_last_chunk_overall,
+                        )
+                        .map_err(|e| {
+                            io::Error::other(format!("Encrypt chunk failed: {}", e))
+                        })?;
 
-                    let mut ack_buf = BytesMut::from(&recv_buf[..n]);
-                    let ack = codec
-                        .decode_msg(&mut ack_buf)
-                        .map_err(|e| io::Error::other(format!("Decode ack failed: {}", e)))?;
+                    batch.push(msg);
+                    chunk_index += 1;
 
-                    match ack {
-                        Some(Message::Ack { .. }) => {
-                            if let Message::Chunk { ref data, .. } = chunk_msg {
-                                total_sent += data.len() as u64;
-                                progress.update(total_sent.min(total_size));
-                            }
-                        }
-                        Some(Message::TransferError { error, .. }) => {
-                            progress.finish();
-                            let safe_error =
-                                tallow_protocol::transfer::sanitize::sanitize_display(&error);
-                            let msg = format!("Transfer error from receiver: {}", safe_error);
-                            channel.close().await;
-                            return Err(io::Error::other(msg));
-                        }
-                        other => {
-                            tracing::warn!("Unexpected message during transfer: {:?}", other);
-                        }
+                    // Send batch when window is full
+                    if batch.len() >= WINDOW_SIZE {
+                        send_batch_and_drain(
+                            &batch,
+                            &mut channel,
+                            &mut codec,
+                            &mut encode_buf,
+                            &mut recv_buf,
+                            &progress,
+                            &mut total_sent,
+                            total_size,
+                            throttle_bps,
+                            &mut chunk_hashes,
+                        )
+                        .await?;
+                        batch.clear();
                     }
                 }
 
-                chunk_index += chunk_messages.len() as u64;
+                // Send remaining chunks in the partial batch
+                if !batch.is_empty() {
+                    send_batch_and_drain(
+                        &batch,
+                        &mut channel,
+                        &mut codec,
+                        &mut encode_buf,
+                        &mut recv_buf,
+                        &progress,
+                        &mut total_sent,
+                        total_size,
+                        throttle_bps,
+                        &mut chunk_hashes,
+                    )
+                    .await?;
+                }
             }
         }
     }
 
     progress.finish();
 
-    // Send TransferComplete
+    // Build Merkle tree from chunk hashes for integrity verification
+    let merkle_root = if !chunk_hashes.is_empty() {
+        let tree = tallow_crypto::hash::MerkleTree::build(chunk_hashes);
+        Some(tree.root())
+    } else {
+        None
+    };
+
+    // Send TransferComplete with Merkle root
     let complete_msg = Message::TransferComplete {
         transfer_id,
         hash: *pipeline
@@ -729,6 +817,7 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
             .manifest_hash
             .as_ref()
             .unwrap_or(&[0u8; 32]),
+        merkle_root,
     };
     encode_buf.clear();
     codec

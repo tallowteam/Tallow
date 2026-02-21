@@ -2,6 +2,9 @@
 //!
 //! Reads files, builds manifest, chunks, compresses, encrypts,
 //! and sends via the wire protocol.
+//!
+//! Supports streaming I/O for large files — files are read, compressed,
+//! and encrypted one chunk at a time to avoid loading entire files into memory.
 
 use crate::compression::{self, CompressionAlgorithm};
 use crate::transfer::chunking::{self, ChunkConfig};
@@ -11,6 +14,7 @@ use crate::transfer::progress::TransferProgress;
 use crate::wire::Message;
 use crate::{ProtocolError, Result};
 use std::path::{Path, PathBuf};
+use tokio::io::AsyncReadExt;
 
 /// Send pipeline for file transfers
 pub struct SendPipeline {
@@ -55,6 +59,59 @@ mod hex {
             .iter()
             .map(|b| format!("{:02x}", b))
             .collect()
+    }
+}
+
+/// Reader for streaming file chunks without loading the entire file into memory.
+///
+/// Each call to `next_chunk` reads up to `chunk_size` bytes from the file.
+pub struct FileChunkReader {
+    file: tokio::io::BufReader<tokio::fs::File>,
+    chunk_size: usize,
+    buffer: Vec<u8>,
+    done: bool,
+}
+
+impl FileChunkReader {
+    /// Open a file for streaming chunk reads
+    async fn open(path: &Path, chunk_size: usize) -> Result<Self> {
+        let file = tokio::fs::File::open(path).await.map_err(|e| {
+            ProtocolError::TransferFailed(format!("open {}: {}", path.display(), e))
+        })?;
+        Ok(Self {
+            file: tokio::io::BufReader::with_capacity(chunk_size, file),
+            chunk_size,
+            buffer: vec![0u8; chunk_size],
+            done: false,
+        })
+    }
+
+    /// Read the next chunk of raw data from the file.
+    ///
+    /// Returns `None` when the file is fully read.
+    pub async fn next_chunk(&mut self) -> Result<Option<Vec<u8>>> {
+        if self.done {
+            return Ok(None);
+        }
+
+        let mut total_read = 0;
+        // Read exactly chunk_size bytes (or less at EOF)
+        while total_read < self.chunk_size {
+            let n = self.file.read(&mut self.buffer[total_read..]).await.map_err(|e| {
+                ProtocolError::TransferFailed(format!("read chunk: {}", e))
+            })?;
+            if n == 0 {
+                self.done = true;
+                break;
+            }
+            total_read += n;
+        }
+
+        if total_read == 0 {
+            return Ok(None);
+        }
+
+        Ok(Some(self.buffer[..total_read].to_vec()))
     }
 }
 
@@ -103,6 +160,8 @@ impl SendPipeline {
 
     /// Prepare files for transfer — scan, hash, build manifest
     ///
+    /// Uses streaming BLAKE3 hashing so large files are not loaded into memory.
+    ///
     /// # Arguments
     ///
     /// * `paths` - Files or directories to send
@@ -118,6 +177,7 @@ impl SendPipeline {
         }
 
         self.manifest.finalize()?;
+        self.manifest.per_chunk_compression = true;
         self.manifest.compression = Some(match self.compression {
             CompressionAlgorithm::Zstd => "zstd".to_string(),
             CompressionAlgorithm::Lz4 => "lz4".to_string(),
@@ -137,18 +197,36 @@ impl SendPipeline {
         Ok(messages)
     }
 
-    /// Scan a path and add it to the manifest
+    /// Compute BLAKE3 hash of a file using streaming reads (O(chunk_size) memory)
+    async fn hash_file_streaming(path: &Path, chunk_size: usize) -> Result<[u8; 32]> {
+        let file = tokio::fs::File::open(path).await.map_err(|e| {
+            ProtocolError::TransferFailed(format!("open for hash {}: {}", path.display(), e))
+        })?;
+        let mut reader = tokio::io::BufReader::with_capacity(chunk_size, file);
+        let mut hasher = blake3::Hasher::new();
+        let mut buf = vec![0u8; chunk_size];
+
+        loop {
+            let n = reader.read(&mut buf).await.map_err(|e| {
+                ProtocolError::TransferFailed(format!("read for hash {}: {}", path.display(), e))
+            })?;
+            if n == 0 {
+                break;
+            }
+            hasher.update(&buf[..n]);
+        }
+
+        Ok(hasher.finalize().into())
+    }
+
+    /// Scan a path and add it to the manifest (streaming hash — no full file load)
     async fn scan_path(&mut self, path: &Path) -> Result<()> {
         let metadata = tokio::fs::metadata(path).await.map_err(|e| {
             ProtocolError::TransferFailed(format!("cannot read {}: {}", path.display(), e))
         })?;
 
         if metadata.is_file() {
-            let data = tokio::fs::read(path).await.map_err(|e| {
-                ProtocolError::TransferFailed(format!("read failed {}: {}", path.display(), e))
-            })?;
-
-            let hash: [u8; 32] = blake3::hash(&data).into();
+            let hash = Self::hash_file_streaming(path, self.chunk_config.size).await?;
             let relative_path = path
                 .file_name()
                 .map(PathBuf::from)
@@ -168,15 +246,16 @@ impl SendPipeline {
         if self.exclusion.is_active() && dir == base {
             let files = self.exclusion.walk_directory(base)?;
             for file_path in files {
-                let data = tokio::fs::read(&file_path).await.map_err(|e| {
-                    ProtocolError::TransferFailed(format!("read {}: {}", file_path.display(), e))
+                let metadata = tokio::fs::metadata(&file_path).await.map_err(|e| {
+                    ProtocolError::TransferFailed(format!("stat {}: {}", file_path.display(), e))
                 })?;
-                let hash: [u8; 32] = blake3::hash(&data).into();
+                let hash =
+                    Self::hash_file_streaming(&file_path, self.chunk_config.size).await?;
                 let relative = file_path
                     .strip_prefix(base)
                     .unwrap_or(&file_path)
                     .to_path_buf();
-                self.manifest.add_file(relative, data.len() as u64, hash);
+                self.manifest.add_file(relative, metadata.len(), hash);
             }
             return Ok(());
         }
@@ -198,14 +277,15 @@ impl SendPipeline {
                 .map_err(|e| ProtocolError::TransferFailed(format!("file_type: {}", e)))?;
 
             if file_type.is_file() {
-                let data = tokio::fs::read(&path).await.map_err(|e| {
-                    ProtocolError::TransferFailed(format!("read {}: {}", path.display(), e))
-                })?;
-
-                let hash: [u8; 32] = blake3::hash(&data).into();
+                let metadata = entry
+                    .metadata()
+                    .await
+                    .map_err(|e| ProtocolError::TransferFailed(format!("stat: {}", e)))?;
+                let hash =
+                    Self::hash_file_streaming(&path, self.chunk_config.size).await?;
                 let relative = path.strip_prefix(base).unwrap_or(&path).to_path_buf();
 
-                self.manifest.add_file(relative, data.len() as u64, hash);
+                self.manifest.add_file(relative, metadata.len(), hash);
             } else if file_type.is_dir() {
                 Box::pin(self.scan_directory(base, &path)).await?;
             }
@@ -214,10 +294,57 @@ impl SendPipeline {
         Ok(())
     }
 
-    /// Generate chunk messages for a specific file
+    /// Open a file for streaming chunk reads.
     ///
-    /// Reads the file, compresses, encrypts each chunk, and returns
-    /// a sequence of Chunk messages ready for sending.
+    /// Use with `encrypt_chunk()` to process files without loading them
+    /// entirely into memory.
+    pub async fn open_file_reader(&self, file_path: &Path) -> Result<FileChunkReader> {
+        FileChunkReader::open(file_path, self.chunk_config.size).await
+    }
+
+    /// Compress and encrypt a single raw chunk of file data.
+    ///
+    /// Used with `open_file_reader()` for streaming chunk generation.
+    /// Each chunk is independently compressed then encrypted with AES-256-GCM.
+    ///
+    /// # Arguments
+    ///
+    /// * `raw_data` - Uncompressed chunk data (up to chunk_size bytes)
+    /// * `global_index` - Global chunk index across all files
+    /// * `total_chunks` - Total chunks across all files (set on final chunk only)
+    /// * `is_last` - Whether this is the last chunk of the transfer
+    pub fn encrypt_chunk(
+        &self,
+        raw_data: &[u8],
+        global_index: u64,
+        total_chunks: u64,
+        is_last: bool,
+    ) -> Result<Message> {
+        // Compress this chunk independently
+        let compressed = compression::pipeline::compress(raw_data, self.compression)?;
+
+        // Build AAD and nonce
+        let aad = chunking::build_chunk_aad(&self.transfer_id, global_index);
+        let nonce = chunking::build_chunk_nonce(global_index);
+
+        // Encrypt with AES-256-GCM
+        let encrypted =
+            tallow_crypto::symmetric::aes_encrypt(&self.session_key, &nonce, &compressed, &aad)
+                .map_err(|e| {
+                    ProtocolError::TransferFailed(format!("chunk encryption failed: {}", e))
+                })?;
+
+        Ok(Message::Chunk {
+            transfer_id: self.transfer_id,
+            index: global_index,
+            total: if is_last { Some(total_chunks) } else { None },
+            data: encrypted,
+        })
+    }
+
+    /// Generate chunk messages for a specific file (legacy — loads entire file)
+    ///
+    /// For large files, prefer `open_file_reader()` + `encrypt_chunk()` instead.
     pub async fn chunk_file(
         &self,
         file_path: &Path,
@@ -227,43 +354,7 @@ impl SendPipeline {
             ProtocolError::TransferFailed(format!("read {}: {}", file_path.display(), e))
         })?;
 
-        // Compress
-        let compressed = compression::pipeline::compress(&data, self.compression)?;
-
-        // Split into chunks
-        let chunks = chunking::split_into_chunks(&compressed, self.chunk_config.size);
-        let num_chunks = chunks.len() as u64;
-        let total = start_chunk_index + num_chunks;
-
-        let mut messages = Vec::with_capacity(chunks.len());
-
-        for chunk in chunks {
-            let global_index = start_chunk_index + chunk.index;
-
-            // Build AAD and nonce for this chunk
-            let aad = chunking::build_chunk_aad(&self.transfer_id, global_index);
-            let nonce = chunking::build_chunk_nonce(global_index);
-
-            // Encrypt with AES-256-GCM
-            let encrypted =
-                tallow_crypto::symmetric::aes_encrypt(&self.session_key, &nonce, &chunk.data, &aad)
-                    .map_err(|e| {
-                        ProtocolError::TransferFailed(format!("chunk encryption failed: {}", e))
-                    })?;
-
-            messages.push(Message::Chunk {
-                transfer_id: self.transfer_id,
-                index: global_index,
-                total: if chunk.index + 1 == num_chunks {
-                    Some(total)
-                } else {
-                    None
-                },
-                data: encrypted,
-            });
-        }
-
-        Ok(messages)
+        self.chunk_data(&data, start_chunk_index).await
     }
 
     /// Get the manifest
@@ -274,6 +365,11 @@ impl SendPipeline {
     /// Get the transfer ID
     pub fn transfer_id(&self) -> &[u8; 16] {
         &self.transfer_id
+    }
+
+    /// Get chunk size
+    pub fn chunk_size(&self) -> usize {
+        self.chunk_config.size
     }
 
     /// Prepare a text payload for transfer as a virtual file.
@@ -288,6 +384,7 @@ impl SendPipeline {
             .add_file(PathBuf::from("_tallow_text_"), text.len() as u64, hash);
 
         self.manifest.finalize()?;
+        self.manifest.per_chunk_compression = true;
         self.manifest.compression = Some(match self.compression {
             CompressionAlgorithm::Zstd => "zstd".to_string(),
             CompressionAlgorithm::Lz4 => "lz4".to_string(),
@@ -306,40 +403,22 @@ impl SendPipeline {
 
     /// Generate chunk messages for in-memory data (text or stdin).
     ///
-    /// Works identically to `chunk_file` but operates on a byte slice
-    /// rather than reading from disk.
+    /// Uses per-chunk compression: each chunk is independently compressed
+    /// and encrypted.
     pub async fn chunk_data(&self, data: &[u8], start_chunk_index: u64) -> Result<Vec<Message>> {
-        // Compress
-        let compressed = compression::pipeline::compress(data, self.compression)?;
-
-        // Split into chunks
-        let chunks = chunking::split_into_chunks(&compressed, self.chunk_config.size);
-        let num_chunks = chunks.len() as u64;
+        let chunk_size = self.chunk_config.size;
+        let raw_chunks: Vec<&[u8]> = data.chunks(chunk_size).collect();
+        let num_chunks = raw_chunks.len() as u64;
         let total = start_chunk_index + num_chunks;
 
-        let mut messages = Vec::with_capacity(chunks.len());
+        let mut messages = Vec::with_capacity(raw_chunks.len());
 
-        for chunk in chunks {
-            let global_index = start_chunk_index + chunk.index;
-            let aad = chunking::build_chunk_aad(&self.transfer_id, global_index);
-            let nonce = chunking::build_chunk_nonce(global_index);
+        for (i, raw_chunk) in raw_chunks.iter().enumerate() {
+            let global_index = start_chunk_index + i as u64;
+            let is_last = i as u64 + 1 == num_chunks;
 
-            let encrypted =
-                tallow_crypto::symmetric::aes_encrypt(&self.session_key, &nonce, &chunk.data, &aad)
-                    .map_err(|e| {
-                        ProtocolError::TransferFailed(format!("chunk encryption failed: {}", e))
-                    })?;
-
-            messages.push(Message::Chunk {
-                transfer_id: self.transfer_id,
-                index: global_index,
-                total: if chunk.index + 1 == num_chunks {
-                    Some(total)
-                } else {
-                    None
-                },
-                data: encrypted,
-            });
+            let msg = self.encrypt_chunk(raw_chunk, global_index, total, is_last)?;
+            messages.push(msg);
         }
 
         Ok(messages)

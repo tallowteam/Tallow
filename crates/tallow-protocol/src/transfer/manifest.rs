@@ -53,6 +53,10 @@ pub struct FileManifest {
     /// Type of transfer (files or text)
     #[serde(default)]
     pub transfer_type: TransferType,
+    /// Whether compression is applied per-chunk (true) or whole-file (false).
+    /// Per-chunk compression enables streaming I/O for large files.
+    #[serde(default)]
+    pub per_chunk_compression: bool,
 }
 
 impl FileManifest {
@@ -66,6 +70,7 @@ impl FileManifest {
             compression: None,
             manifest_hash: None,
             transfer_type: TransferType::default(),
+            per_chunk_compression: true,
         }
     }
 
@@ -138,7 +143,7 @@ impl FileManifest {
 
 impl Default for FileManifest {
     fn default() -> Self {
-        Self::new(64 * 1024)
+        Self::new(crate::transfer::chunking::DEFAULT_CHUNK_SIZE)
     }
 }
 

@@ -117,6 +117,7 @@ mod tests {
             compression: None,
             manifest_hash: None,
             transfer_type: Default::default(),
+            per_chunk_compression: true,
         }
     }
 

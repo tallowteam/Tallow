@@ -558,6 +558,7 @@ async fn handle_manifest_exchange(
     let complete_msg = Message::TransferComplete {
         transfer_id,
         hash: *manifest.manifest_hash.as_ref().unwrap_or(&[0u8; 32]),
+        merkle_root: None,
     };
     encode_buf.clear();
     codec

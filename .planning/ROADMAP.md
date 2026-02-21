@@ -22,11 +22,13 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 8: Advanced Transfer** - Exclude patterns, gitignore, throttle, transfer queue, sync, watch, path aliases, tab completion
 - [x] **Phase 9: Security Hardening & Relay Auth** - Filename sanitization, ANSI stripping, env vars, relay password, verification strings, Docker relay
 - [x] **Phase 10: Distribution & Polish** - Homebrew, Scoop, curl installer, shell completions in release, human-readable output, smart errors
-- [ ] **Phase 11: Real KEM Key Exchange** - Wire ML-KEM-1024 + X25519 hybrid handshake into transfer pipeline, replacing code-phrase-derived keys with actual cryptographic key exchange
-- [ ] **Phase 12: TUI Integration** - Wire Ratatui widgets into working dashboard with live transfers, peer list, progress bars, overlay system
-- [ ] **Phase 13: LAN Discovery & Direct Transfer** - mDNS peer discovery, direct P2P transfer without relay, automatic fallback to relay
-- [ ] **Phase 14: Tor/SOCKS5 Privacy** - Wire SOCKS5 proxy into relay connections, DNS leak prevention, anonymous transfer mode
-- [ ] **Phase 15: End-to-End Testing & Hardening** - Integration tests with real relay, cross-platform smoke tests, transfer resume, large file stress tests
+- [x] **Phase 11: Real KEM Key Exchange** - Wire ML-KEM-1024 + X25519 hybrid handshake into transfer pipeline, replacing code-phrase-derived keys with actual cryptographic key exchange
+- [x] **Phase 12: TUI Integration** - Wire Ratatui widgets into working dashboard with live transfers, peer list, progress bars, overlay system
+- [x] **Phase 13: LAN Discovery & Direct Transfer** - mDNS peer discovery, direct P2P transfer without relay, automatic fallback to relay
+- [x] **Phase 14: Tor/SOCKS5 Privacy** - Wire SOCKS5 proxy into relay connections, DNS leak prevention, anonymous transfer mode
+- [x] **Phase 15: End-to-End Testing & Hardening** - Integration tests with real relay, cross-platform smoke tests, transfer resume, large file stress tests
+- [x] **Phase 16: Rich Clipboard Sharing** - `tallow clip` command for text/image/URL clipboard sharing, content type detection, clipboard watch mode, unlimited searchable history, arboard integration
+- [x] **Phase 17: Real E2E Transfer Pipeline** - Streaming I/O, per-chunk compression, sliding window sender (8-chunk batches), Merkle tree integrity verification, resume negotiation, stress tests (10GB/100GB/1TB)
 
 ## Phase Details
 
@@ -210,10 +212,34 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. `cargo test --workspace` passes on Linux, macOS, and Windows CI — no platform-specific failures
 **Plans**: TBD
 
+### Phase 16: Rich Clipboard Sharing
+**Goal**: `tallow clip` command enables sharing clipboard contents (text, URLs, code, images) between peers with E2E encryption, automatic content type detection, clipboard watch mode for live sharing, and unlimited searchable clipboard history.
+**Depends on**: Phase 15
+**Requirements**: CLIP-01 through CLIP-08
+**Success Criteria** (what must be TRUE):
+  1. `tallow clip` reads the current clipboard (text or image) and sends it E2E encrypted through the relay — the receiver gets it pasted to their clipboard automatically
+  2. Content type is auto-detected (URL, code, HTML, plain text, image format via magic bytes) and displayed to both sender and receiver
+  3. `tallow clip watch` monitors the clipboard and auto-sends on changes (BLAKE3 hash dedup) — enabling live clipboard sharing sessions
+  4. `tallow clip history` shows unlimited searchable clipboard history; `tallow clip history --search <keyword>` finds matching entries
+  5. Image clipboard sharing works for all common formats (PNG, JPEG, GIF, BMP, WebP) — images are encoded as PNG for transfer and saved to disk on receive
+**Plans**: TBD
+
+### Phase 17: Real E2E Transfer Pipeline
+**Goal**: Wire the complete transfer pipeline so two machines can actually send files to each other — the KEM handshake happens over the relay, session keys are derived from real key exchange (not just code phrase), files are chunked and encrypted with AES-256-GCM, progress is tracked live, and interrupted transfers can resume. This is the "make it actually work" phase that connects all the individual pieces (crypto, transport, protocol, relay) into a functioning tool.
+**Depends on**: Phase 16
+**Requirements**: E2E-XFER-01 through E2E-XFER-10
+**Success Criteria** (what must be TRUE):
+  1. `tallow send file.txt` on Machine A generates a code phrase, connects to the relay, and waits; `tallow receive <code>` on Machine B connects, completes the KEM handshake, and receives the file byte-for-byte identical (verified by BLAKE3)
+  2. The session key is derived from ML-KEM-1024 + X25519 hybrid key exchange, NOT from the code phrase — the code phrase only authenticates (PAKE), it doesn't derive encryption keys
+  3. Files >1GB transfer successfully with chunked encryption (64KB chunks, counter-based AES-256-GCM nonces) and the receiver can verify integrity via Merkle tree
+  4. Progress displays speed (MB/s), percentage, ETA, and updates at least once per second during transfer
+  5. Killing the sender mid-transfer and restarting with the same code picks up from the last acknowledged chunk — no data re-sent
+**Plans**: TBD
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → ... → 10 → 11 → 12 → 13 → 14 → 15
+Phases execute in numeric order: 1 → 2 → ... → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -227,8 +253,10 @@ Phases execute in numeric order: 1 → 2 → ... → 10 → 11 → 12 → 13 →
 | 8. Advanced Transfer | - | Complete | 2026-02-20 |
 | 9. Security Hardening & Relay Auth | - | Complete | 2026-02-20 |
 | 10. Distribution & Polish | - | Complete | 2026-02-20 |
-| 11. Real KEM Key Exchange | 0/? | Planned | - |
-| 12. TUI Integration | 0/? | Planned | - |
-| 13. LAN Discovery & Direct Transfer | 0/? | Planned | - |
-| 14. Tor/SOCKS5 Privacy | 0/? | Planned | - |
-| 15. End-to-End Testing & Hardening | 0/? | Planned | - |
+| 11. Real KEM Key Exchange | - | Complete | 2026-02-20 |
+| 12. TUI Integration | - | Complete | 2026-02-20 |
+| 13. LAN Discovery & Direct Transfer | - | Complete | 2026-02-20 |
+| 14. Tor/SOCKS5 Privacy | - | Complete | 2026-02-20 |
+| 15. End-to-End Testing & Hardening | - | Complete | 2026-02-20 |
+| 16. Rich Clipboard Sharing | - | Complete | 2026-02-20 |
+| 17. Real E2E Transfer Pipeline | 0/? | Planned | - |
