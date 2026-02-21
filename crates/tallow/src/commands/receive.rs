@@ -5,6 +5,7 @@ use crate::output;
 use bytes::BytesMut;
 use std::io::{self, IsTerminal, Write};
 use std::path::PathBuf;
+use tallow_net::transport::reconnect::{self, ReconnectConfig};
 use tallow_net::transport::PeerChannel;
 use tallow_protocol::transfer::manifest::TransferType;
 use tallow_protocol::wire::{codec::TallowCodec, Message};
@@ -14,6 +15,10 @@ const RECV_BUF_SIZE: usize = 256 * 1024;
 
 /// Execute receive command
 pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
+    // Load config for hooks
+    let config = tallow_store::config::load_config().unwrap_or_default();
+    let hook_runner = crate::hooks::HookRunner::from_config(&config.hooks, !args.no_hooks);
+
     // Build proxy config from CLI flags
     let proxy_config =
         crate::commands::proxy::build_proxy_config(args.tor, &args.proxy, json).await?;
@@ -80,6 +85,18 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
     let output_dir = args.output.unwrap_or_else(|| PathBuf::from("."));
     if !output_dir.exists() {
         std::fs::create_dir_all(&output_dir)?;
+    }
+
+    // Run pre_receive hook
+    {
+        let hook_env = crate::hooks::HookEnv {
+            code_phrase: Some(code_phrase.clone()),
+            direction: "receive".to_string(),
+            ..Default::default()
+        };
+        hook_runner
+            .run_hook(crate::hooks::HookType::PreReceive, &hook_env)
+            .await?;
     }
 
     // Load or generate identity
@@ -191,6 +208,12 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
     let mut codec = TallowCodec::new();
     let mut recv_buf = vec![0u8; RECV_BUF_SIZE];
     let mut encode_buf = BytesMut::new();
+
+    // Build reconnect config from CLI args
+    let reconnect_config = ReconnectConfig {
+        max_retries: args.max_retries,
+        ..Default::default()
+    };
 
     // --- KEM Handshake ---
     let mut handshake = tallow_protocol::kex::ReceiverHandshake::new(&code_phrase, &room_id);
@@ -525,6 +548,67 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
         }
     }
 
+    // --- Per-file selection or whole-transfer accept/reject ---
+    // Determine which file indices the receiver wants.
+    // `selected_indices` is None when all files are accepted (no FileSelection sent).
+    let selected_indices: Option<Vec<u32>> =
+        if args.per_file && !is_text_transfer && file_count > 1 && !json {
+            // Interactive per-file selection via multi-select prompt
+            let file_labels: Vec<String> = manifest
+                .files
+                .iter()
+                .map(|f| {
+                    let safe_name = tallow_protocol::transfer::sanitize::sanitize_display(
+                        &f.path.display().to_string(),
+                    );
+                    format!("{} ({})", safe_name, output::format_size(f.size))
+                })
+                .collect();
+
+            let defaults: Vec<bool> = vec![true; file_labels.len()];
+            let chosen = dialoguer::MultiSelect::new()
+                .with_prompt("Select files to receive (Space to toggle, Enter to confirm)")
+                .items(&file_labels)
+                .defaults(&defaults)
+                .interact()
+                .map_err(|e| io::Error::other(format!("File selection prompt failed: {}", e)))?;
+
+            if chosen.is_empty() {
+                // User deselected everything -- reject transfer
+                let reject_msg = Message::FileReject {
+                    transfer_id,
+                    reason: "receiver selected no files".to_string(),
+                };
+                encode_buf.clear();
+                codec
+                    .encode_msg(&reject_msg, &mut encode_buf)
+                    .map_err(|e| io::Error::other(format!("Encode FileReject failed: {}", e)))?;
+                channel
+                    .send_message(&encode_buf)
+                    .await
+                    .map_err(|e| io::Error::other(format!("Send FileReject failed: {}", e)))?;
+                channel.close().await;
+                output::color::info("No files selected. Transfer declined.");
+                return Ok(());
+            }
+
+            let indices: Vec<u32> = chosen.iter().map(|&i| i as u32).collect();
+
+            if indices.len() == file_count {
+                // All files selected -- no need for FileSelection message
+                None
+            } else {
+                output::color::info(&format!(
+                    "Selected {}/{} file(s)",
+                    indices.len(),
+                    file_count
+                ));
+                Some(indices)
+            }
+        } else {
+            None
+        };
+
     // Prompt for confirmation unless --yes or --auto-accept
     let accepted = if args.yes || args.auto_accept {
         true
@@ -534,6 +618,9 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
             io::ErrorKind::InvalidInput,
             "JSON mode requires --yes flag to accept transfers",
         ));
+    } else if selected_indices.is_some() {
+        // Per-file mode: user already chose files, skip extra confirmation
+        true
     } else {
         output::prompts::confirm_with_default(
             &format!(
@@ -570,6 +657,22 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
         return Ok(());
     }
 
+    // Send FileSelection if the receiver chose a subset, then FileAccept
+    if let Some(ref indices) = selected_indices {
+        let selection_msg = Message::FileSelection {
+            transfer_id,
+            selected_indices: indices.clone(),
+        };
+        encode_buf.clear();
+        codec
+            .encode_msg(&selection_msg, &mut encode_buf)
+            .map_err(|e| io::Error::other(format!("Encode FileSelection failed: {}", e)))?;
+        channel
+            .send_message(&encode_buf)
+            .await
+            .map_err(|e| io::Error::other(format!("Send FileSelection failed: {}", e)))?;
+    }
+
     // Send FileAccept
     let accept_msg = Message::FileAccept { transfer_id };
     encode_buf.clear();
@@ -582,7 +685,11 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
         .map_err(|e| io::Error::other(format!("Send FileAccept failed: {}", e)))?;
 
     if !json {
-        output::color::info("Transfer accepted. Receiving...");
+        if selected_indices.is_some() {
+            output::color::info("Partial transfer accepted. Receiving selected files...");
+        } else {
+            output::color::info("Transfer accepted. Receiving...");
+        }
     }
 
     // Create progress bar
@@ -590,10 +697,9 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
     let progress = output::TransferProgressBar::new(total_size);
     let mut bytes_received: u64 = 0;
 
-    // Receive chunks
+    // Receive chunks (with auto-reconnect on transient failures)
     loop {
-        let n = channel
-            .receive_message(&mut recv_buf)
+        let n = reconnect::receive_with_retry(&mut channel, &mut recv_buf, &reconnect_config)
             .await
             .map_err(|e| io::Error::other(format!("Receive chunk failed: {}", e)))?;
 
@@ -613,14 +719,13 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
                     io::Error::other(format!("Process chunk {} failed: {}", index, e))
                 })?;
 
-                // Send acknowledgment
+                // Send acknowledgment (with retry)
                 if let Some(ack_msg) = ack {
                     encode_buf.clear();
                     codec
                         .encode_msg(&ack_msg, &mut encode_buf)
                         .map_err(|e| io::Error::other(format!("Encode ack failed: {}", e)))?;
-                    channel
-                        .send_message(&encode_buf)
+                    reconnect::send_with_retry(&mut channel, &encode_buf, &reconnect_config)
                         .await
                         .map_err(|e| io::Error::other(format!("Send ack failed: {}", e)))?;
                 }
@@ -655,10 +760,13 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
                     if let Some(receiver_root) = pipeline.merkle_root() {
                         if !tallow_crypto::mem::constant_time::ct_eq(&sender_root, &receiver_root) {
                             progress.finish();
+                            let msg =
+                                "Merkle root mismatch: transfer integrity verification failed";
+                            if args.notify && !json {
+                                output::notifications::notify_transfer_failed(msg);
+                            }
                             channel.close().await;
-                            return Err(io::Error::other(
-                                "Merkle root mismatch: transfer integrity verification failed",
-                            ));
+                            return Err(io::Error::other(msg));
                         }
                         tracing::info!("Merkle root verified successfully");
                     }
@@ -670,6 +778,9 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
                 progress.finish();
                 let safe_error = tallow_protocol::transfer::sanitize::sanitize_display(&error);
                 let msg = format!("Transfer error from sender: {}", safe_error);
+                if args.notify && !json {
+                    output::notifications::notify_transfer_failed(&msg);
+                }
                 channel.close().await;
                 return Err(io::Error::other(msg));
             }
@@ -764,6 +875,15 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
         }
     }
 
+    // Desktop notification (opt-in via --notify, suppressed in JSON mode)
+    if args.notify && !json {
+        output::notifications::notify_transfer_complete(
+            file_count,
+            total_size,
+            transfer_start.elapsed().as_secs_f64(),
+        );
+    }
+
     // Log to transfer history
     if let Ok(mut history) = tallow_store::history::TransferLog::open() {
         let _ = history.append(tallow_store::history::TransferEntry {
@@ -777,8 +897,25 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
                 .unwrap_or_default()
                 .as_secs(),
             status: tallow_store::history::TransferStatus::Completed,
-            filenames,
+            filenames: filenames.clone(),
         });
+    }
+
+    // Run post_receive hook
+    {
+        let hook_env = crate::hooks::HookEnv {
+            files: written_files
+                .iter()
+                .map(|f| f.display().to_string())
+                .collect(),
+            total_size,
+            direction: "receive".to_string(),
+            code_phrase: Some(code_phrase.clone()),
+            ..Default::default()
+        };
+        hook_runner
+            .run_hook(crate::hooks::HookType::PostReceive, &hook_env)
+            .await?;
     }
 
     Ok(())

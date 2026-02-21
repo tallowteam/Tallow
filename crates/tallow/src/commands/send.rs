@@ -5,6 +5,7 @@ use crate::output;
 use bytes::BytesMut;
 use std::io::{self, IsTerminal, Read};
 use std::path::PathBuf;
+use tallow_net::transport::reconnect::{self, ReconnectConfig};
 use tallow_net::transport::PeerChannel;
 use tallow_protocol::wire::{codec::TallowCodec, Message};
 
@@ -69,6 +70,10 @@ fn determine_source(args: &SendArgs) -> io::Result<SendSource> {
 
 /// Execute send command
 pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
+    // Load config for hooks
+    let config = tallow_store::config::load_config().unwrap_or_default();
+    let hook_runner = crate::hooks::HookRunner::from_config(&config.hooks, !args.no_hooks);
+
     // Build proxy config from CLI flags
     let proxy_config =
         crate::commands::proxy::build_proxy_config(args.tor, &args.proxy, json).await?;
@@ -156,6 +161,22 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
                 return Err(io::Error::new(io::ErrorKind::NotFound, msg));
             }
         }
+    }
+
+    // Run pre_send hook
+    {
+        let hook_files: Vec<String> = match &source {
+            SendSource::Files(files) => files.iter().map(|f| f.display().to_string()).collect(),
+            SendSource::Text(_) => vec!["<text>".to_string()],
+        };
+        let hook_env = crate::hooks::HookEnv {
+            files: hook_files,
+            direction: "send".to_string(),
+            ..Default::default()
+        };
+        hook_runner
+            .run_hook(crate::hooks::HookType::PreSend, &hook_env)
+            .await?;
     }
 
     // Load or generate identity
@@ -293,15 +314,10 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
         }
     };
 
-    let manifest = pipeline.manifest();
+    let manifest = pipeline.manifest().clone();
     let total_size = manifest.total_size;
     let total_chunks = manifest.total_chunks;
     let file_count = manifest.files.len();
-    let filenames: Vec<String> = manifest
-        .files
-        .iter()
-        .map(|f| f.path.display().to_string())
-        .collect();
 
     if json {
         println!(
@@ -315,6 +331,52 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
         );
     } else {
         output::color::transfer_summary(file_count, total_size);
+    }
+
+    // --dry-run: display file summary and exit without connecting
+    if args.dry_run {
+        let compression_name = manifest.compression.as_deref().unwrap_or("none");
+
+        if json {
+            let file_list: Vec<serde_json::Value> = manifest
+                .files
+                .iter()
+                .map(|f| {
+                    serde_json::json!({
+                        "path": f.path.display().to_string(),
+                        "size": f.size,
+                        "chunks": f.chunk_count,
+                    })
+                })
+                .collect();
+            println!(
+                "{}",
+                serde_json::json!({
+                    "event": "dry_run",
+                    "total_files": file_count,
+                    "total_bytes": total_size,
+                    "total_chunks": total_chunks,
+                    "compression": compression_name,
+                    "chunk_size": manifest.chunk_size,
+                    "files": file_list,
+                })
+            );
+        } else {
+            output::color::section("Dry run -- no connection will be made");
+            println!();
+            output::color::section("Files:");
+            for entry in &manifest.files {
+                output::color::file_entry(&entry.path.display().to_string(), entry.size);
+            }
+            println!();
+            output::color::info(&format!("Total chunks: {}", total_chunks));
+            output::color::info(&format!(
+                "Chunk size: {}",
+                output::format_size(manifest.chunk_size as u64)
+            ));
+            output::color::info(&format!("Compression: {}", compression_name));
+        }
+        return Ok(());
     }
 
     // --ask: prompt sender for confirmation before starting transfer
@@ -422,6 +484,12 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
     let mut codec = TallowCodec::new();
     let mut encode_buf = BytesMut::new();
     let mut recv_buf = vec![0u8; RECV_BUF_SIZE];
+
+    // Build reconnect config from CLI args
+    let reconnect_config = ReconnectConfig {
+        max_retries: args.max_retries,
+        ..Default::default()
+    };
 
     // --- KEM Handshake ---
     let mut handshake = tallow_protocol::kex::SenderHandshake::new(&code_phrase, &room_id);
@@ -611,11 +679,13 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
             .map_err(|e| io::Error::other(format!("Send FileOffer failed: {}", e)))?;
     }
 
-    // Wait for FileAccept
+    // Wait for FileAccept (possibly preceded by FileSelection for per-file mode)
+    let mut selected_file_indices: Option<Vec<u32>> = None;
+
     let n = channel
         .receive_message(&mut recv_buf)
         .await
-        .map_err(|e| io::Error::other(format!("Receive FileAccept failed: {}", e)))?;
+        .map_err(|e| io::Error::other(format!("Receive response failed: {}", e)))?;
 
     let mut decode_buf = BytesMut::from(&recv_buf[..n]);
     let response = codec
@@ -623,6 +693,66 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
         .map_err(|e| io::Error::other(format!("Decode response failed: {}", e)))?;
 
     match response {
+        Some(Message::FileSelection {
+            selected_indices, ..
+        }) => {
+            // Receiver sent per-file selection -- store indices, then wait for FileAccept
+            tracing::info!(
+                "Receiver selected {} of {} file(s)",
+                selected_indices.len(),
+                file_count
+            );
+            if !json {
+                output::color::info(&format!(
+                    "Receiver selected {}/{} file(s)",
+                    selected_indices.len(),
+                    file_count
+                ));
+            } else {
+                println!(
+                    "{}",
+                    serde_json::json!({
+                        "event": "file_selection",
+                        "selected_count": selected_indices.len(),
+                        "total_files": file_count,
+                        "selected_indices": selected_indices,
+                    })
+                );
+            }
+            selected_file_indices = Some(selected_indices);
+
+            // Now wait for the FileAccept that follows
+            let n = channel
+                .receive_message(&mut recv_buf)
+                .await
+                .map_err(|e| io::Error::other(format!("Receive FileAccept failed: {}", e)))?;
+
+            let mut decode_buf = BytesMut::from(&recv_buf[..n]);
+            let accept_response = codec
+                .decode_msg(&mut decode_buf)
+                .map_err(|e| io::Error::other(format!("Decode FileAccept failed: {}", e)))?;
+
+            match accept_response {
+                Some(Message::FileAccept { .. }) => {
+                    tracing::info!("Receiver accepted the partial transfer");
+                }
+                Some(Message::FileReject { reason, .. }) => {
+                    let safe_reason =
+                        tallow_protocol::transfer::sanitize::sanitize_display(&reason);
+                    let msg = format!("Transfer rejected: {}", safe_reason);
+                    if !json {
+                        output::color::error(&msg);
+                    }
+                    channel.close().await;
+                    return Err(io::Error::other(msg));
+                }
+                other => {
+                    let msg = format!("Expected FileAccept after FileSelection, got: {:?}", other);
+                    channel.close().await;
+                    return Err(io::Error::other(msg));
+                }
+            }
+        }
         Some(Message::FileAccept { .. }) => {
             tracing::info!("Receiver accepted the transfer");
         }
@@ -637,6 +767,9 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
             } else {
                 output::color::error(&msg);
             }
+            if args.notify && !json {
+                output::notifications::notify_transfer_failed(&msg);
+            }
             channel.close().await;
             return Err(io::Error::other(msg));
         }
@@ -647,9 +780,56 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
         }
     }
 
+    // Filter source files based on per-file selection (if any)
+    let effective_source_files: Vec<PathBuf> = if let Some(ref indices) = selected_file_indices {
+        // Only send the files at the selected indices
+        let selected_set: std::collections::HashSet<u32> = indices.iter().copied().collect();
+        source_files
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| selected_set.contains(&(*i as u32)))
+            .map(|(_, f)| f.clone())
+            .collect()
+    } else {
+        source_files.clone()
+    };
+
+    // Recalculate totals for progress if selection reduced the file set
+    let effective_total_size: u64 = if selected_file_indices.is_some() {
+        let selected_set: std::collections::HashSet<u32> = selected_file_indices
+            .as_ref()
+            .map(|v| v.iter().copied().collect())
+            .unwrap_or_default();
+        manifest
+            .files
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| selected_set.contains(&(*i as u32)))
+            .map(|(_, f)| f.size)
+            .sum()
+    } else {
+        total_size
+    };
+
+    let effective_total_chunks: u64 = if selected_file_indices.is_some() {
+        let selected_set: std::collections::HashSet<u32> = selected_file_indices
+            .as_ref()
+            .map(|v| v.iter().copied().collect())
+            .unwrap_or_default();
+        manifest
+            .files
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| selected_set.contains(&(*i as u32)))
+            .map(|(_, f)| f.chunk_count)
+            .sum()
+    } else {
+        total_chunks
+    };
+
     // Create progress bar and send chunks with sliding window
     let transfer_start = std::time::Instant::now();
-    let progress = output::TransferProgressBar::new(total_size);
+    let progress = output::TransferProgressBar::new(effective_total_size);
     let mut total_sent: u64 = 0;
     let mut chunk_index: u64 = 0;
 
@@ -662,6 +842,8 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
     let mut chunk_hashes: Vec<[u8; 32]> = Vec::new();
 
     /// Send a batch of chunks with sliding window and drain their acks.
+    ///
+    /// Uses auto-reconnect with exponential backoff on transient network failures.
     #[allow(clippy::too_many_arguments)]
     async fn send_batch_and_drain(
         batch: &[Message],
@@ -674,6 +856,7 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
         total_size: u64,
         throttle_bps: u64,
         chunk_hashes: &mut Vec<[u8; 32]>,
+        retry_config: &ReconnectConfig,
     ) -> io::Result<()> {
         // Phase 1: Send up to WINDOW_SIZE chunks
         for chunk_msg in batch {
@@ -696,16 +879,14 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
             codec
                 .encode_msg(chunk_msg, encode_buf)
                 .map_err(|e| io::Error::other(format!("Encode chunk failed: {}", e)))?;
-            channel
-                .send_message(encode_buf)
+            reconnect::send_with_retry(channel, encode_buf, retry_config)
                 .await
                 .map_err(|e| io::Error::other(format!("Send chunk failed: {}", e)))?;
         }
 
         // Phase 2: Drain all acks
         for _ in 0..batch.len() {
-            let n = channel
-                .receive_message(recv_buf)
+            let n = reconnect::receive_with_retry(channel, recv_buf, retry_config)
                 .await
                 .map_err(|e| io::Error::other(format!("Receive ack failed: {}", e)))?;
 
@@ -767,16 +948,17 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
                     &mut recv_buf,
                     &progress,
                     &mut total_sent,
-                    total_size,
+                    effective_total_size,
                     throttle_bps,
                     &mut chunk_hashes,
+                    &reconnect_config,
                 )
                 .await?;
             }
         }
         SendSource::Files(_) => {
             // File mode: streaming I/O with per-chunk compress+encrypt
-            for file in &source_files {
+            for file in &effective_source_files {
                 let mut reader = pipeline.open_file_reader(file).await.map_err(|e| {
                     io::Error::other(format!("Failed to open {}: {}", file.display(), e))
                 })?;
@@ -798,10 +980,15 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
                 while let Some(raw_chunk) = reader.next_chunk().await.map_err(|e| {
                     io::Error::other(format!("Read chunk from {}: {}", file.display(), e))
                 })? {
-                    let is_last_chunk_overall = chunk_index + 1 == total_chunks;
+                    let is_last_chunk_overall = chunk_index + 1 == effective_total_chunks;
 
                     let msg = pipeline
-                        .encrypt_chunk(&raw_chunk, chunk_index, total_chunks, is_last_chunk_overall)
+                        .encrypt_chunk(
+                            &raw_chunk,
+                            chunk_index,
+                            effective_total_chunks,
+                            is_last_chunk_overall,
+                        )
                         .map_err(|e| io::Error::other(format!("Encrypt chunk failed: {}", e)))?;
 
                     batch.push(msg);
@@ -817,9 +1004,10 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
                             &mut recv_buf,
                             &progress,
                             &mut total_sent,
-                            total_size,
+                            effective_total_size,
                             throttle_bps,
                             &mut chunk_hashes,
+                            &reconnect_config,
                         )
                         .await?;
                         batch.clear();
@@ -836,9 +1024,10 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
                         &mut recv_buf,
                         &progress,
                         &mut total_sent,
-                        total_size,
+                        effective_total_size,
                         throttle_bps,
                         &mut chunk_hashes,
+                        &reconnect_config,
                     )
                     .await?;
                 }
@@ -878,17 +1067,29 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
     // Close connection
     channel.close().await;
 
+    let effective_file_count = effective_source_files.len();
+
     if json {
         println!(
             "{}",
             serde_json::json!({
                 "event": "transfer_complete",
-                "total_bytes": total_size,
-                "total_chunks": total_chunks,
+                "total_bytes": effective_total_size,
+                "total_chunks": effective_total_chunks,
+                "files_sent": effective_file_count,
             })
         );
     } else {
-        output::color::transfer_complete(total_size, transfer_start.elapsed());
+        output::color::transfer_complete(effective_total_size, transfer_start.elapsed());
+    }
+
+    // Desktop notification (opt-in via --notify, suppressed in JSON mode)
+    if args.notify && !json {
+        output::notifications::notify_transfer_complete(
+            effective_file_count,
+            effective_total_size,
+            transfer_start.elapsed().as_secs_f64(),
+        );
     }
 
     // Log to transfer history
@@ -897,15 +1098,34 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
             id: hex::encode(transfer_id),
             peer_id: "unknown".to_string(),
             direction: tallow_store::history::TransferDirection::Sent,
-            file_count,
-            total_bytes: total_size,
+            file_count: effective_file_count,
+            total_bytes: effective_total_size,
             timestamp: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap_or_default()
                 .as_secs(),
             status: tallow_store::history::TransferStatus::Completed,
-            filenames,
+            filenames: effective_source_files
+                .iter()
+                .map(|f| f.display().to_string())
+                .collect(),
         });
+    }
+
+    // Run post_send hook
+    {
+        let hook_env = crate::hooks::HookEnv {
+            files: effective_source_files
+                .iter()
+                .map(|f| f.display().to_string())
+                .collect(),
+            total_size: effective_total_size,
+            direction: "send".to_string(),
+            ..Default::default()
+        };
+        hook_runner
+            .run_hook(crate::hooks::HookType::PostSend, &hook_env)
+            .await?;
     }
 
     Ok(())

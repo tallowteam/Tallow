@@ -1,11 +1,15 @@
 //! Tallow CLI - Secure P2P file transfer
 
-#![forbid(unsafe_code)]
+// deny(unsafe_code) rather than forbid to allow the targeted #[allow(unsafe_code)]
+// exception in sandbox.rs for prctl(PR_SET_DUMPABLE, 0) on Linux.
+// All other unsafe usage will still cause a compile error.
+#![deny(unsafe_code)]
 
 mod cli;
 mod commands;
 #[allow(dead_code)]
 mod exit_codes;
+pub mod hooks;
 #[allow(dead_code)]
 mod logging;
 #[allow(dead_code)]
@@ -75,6 +79,11 @@ async fn main() {
             commands::version::execute(json_output);
             Ok(())
         }
+        cli::Commands::SpeedTest(args) => commands::speed_test::execute(args, json_output).await,
+        cli::Commands::SshSetup(args) => commands::ssh_setup::execute(args, json_output).await,
+        cli::Commands::DropBox(args) => commands::drop_box::execute(args, json_output).await,
+        cli::Commands::History(args) => commands::history::execute(args, json_output).await,
+        cli::Commands::ManPages { out_dir } => commands::man_pages::execute(&out_dir),
         cli::Commands::CompleteCode { prefix } => {
             // Tab completion for code phrase words
             let prefix_lower = prefix.to_lowercase();

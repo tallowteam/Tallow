@@ -11,12 +11,13 @@ name = "tallow"
 path = "src/main.rs"
 
 [features]
-default = ["tui", "quic"]
+default = ["tui", "quic", "notifications"]
 tui = ["dep:tallow-tui"]
 quic = ["tallow-net/quic"]
 aegis = ["tallow-crypto/aegis"]
 onion = ["tallow-net/onion"]
-full = ["tui", "quic", "aegis", "onion"]
+notifications = ["notify-rust"]
+full = ["tui", "quic", "aegis", "onion", "notifications"]
 
 [dependencies]
 tallow-crypto = { path = "../tallow-crypto" }
@@ -72,12 +73,21 @@ thiserror.workspace = true
 # Timestamps
 chrono.workspace = true
 
+# Desktop notifications
+notify-rust = { version = "4", optional = true, default-features = false }
+
 # Directories
 dirs = "5"
 
 # File exclusion and size parsing
 ignore = "0.4"
 bytesize = { version = "2", features = ["serde"] }
+
+# Linux sandbox (Landlock + Seccomp)
+[target.'cfg(target_os = "linux")'.dependencies]
+landlock = "0.4"
+seccompiler = "0.4"
+libc = "0.2"
 
 [dev-dependencies]
 assert_cmd = "2"

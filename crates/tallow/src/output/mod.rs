@@ -5,6 +5,7 @@ pub mod color;
 pub mod errors;
 pub mod image;
 pub mod json;
+pub mod notifications;
 pub mod progress;
 pub mod prompts;
 pub mod qr;

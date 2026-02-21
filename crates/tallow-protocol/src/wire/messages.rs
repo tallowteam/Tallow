@@ -260,6 +260,20 @@ pub enum Message {
     DirectConnected,
     /// Direct P2P connection failed -- continue via relay
     DirectFailed,
+
+    // --- Feature 35: Per-file accept/reject (DO NOT reorder; postcard ordinal) ---
+    /// Receiver's per-file selection (sent after FileOffer, before chunks).
+    ///
+    /// Contains the indices of files from the manifest that the receiver
+    /// wants to receive. If all indices are selected, the full transfer
+    /// proceeds as normal (backward-compatible). Sent instead of FileAccept
+    /// when the receiver uses `--per-file` mode.
+    FileSelection {
+        /// Transfer ID
+        transfer_id: [u8; 16],
+        /// Indices of files from the manifest that the receiver wants (0-based)
+        selected_indices: Vec<u32>,
+    },
 }
 
 #[cfg(test)]
@@ -423,6 +437,15 @@ mod tests {
             Message::CandidatesDone,
             Message::DirectConnected,
             Message::DirectFailed,
+            // Feature 35: Per-file selection
+            Message::FileSelection {
+                transfer_id: [1u8; 16],
+                selected_indices: vec![0, 2, 5],
+            },
+            Message::FileSelection {
+                transfer_id: [2u8; 16],
+                selected_indices: vec![],
+            },
         ];
 
         for msg in &messages {
@@ -712,6 +735,79 @@ mod tests {
             assert_eq!(inner_decoded, Message::ChatEnd);
         } else {
             panic!("Expected Targeted");
+        }
+    }
+
+    // --- Feature 35: FileSelection tests ---
+
+    #[test]
+    fn test_file_selection_roundtrip() {
+        let messages = vec![
+            Message::FileSelection {
+                transfer_id: [0xAA; 16],
+                selected_indices: vec![0, 1, 2, 3],
+            },
+            Message::FileSelection {
+                transfer_id: [0xBB; 16],
+                selected_indices: vec![],
+            },
+            Message::FileSelection {
+                transfer_id: [0xCC; 16],
+                selected_indices: vec![0],
+            },
+            Message::FileSelection {
+                transfer_id: [0xDD; 16],
+                selected_indices: vec![u32::MAX],
+            },
+        ];
+
+        for msg in &messages {
+            let bytes = postcard::to_stdvec(msg).unwrap();
+            let decoded: Message = postcard::from_bytes(&bytes).unwrap();
+            assert_eq!(
+                &decoded, msg,
+                "FileSelection round-trip failed for {:?}",
+                msg
+            );
+        }
+    }
+
+    #[test]
+    fn test_discriminant_stability_file_selection() {
+        // FileSelection is the variant after DirectFailed (index 38).
+        // It must be discriminant 39.
+        let bytes = postcard::to_stdvec(&Message::FileSelection {
+            transfer_id: [0; 16],
+            selected_indices: vec![],
+        })
+        .unwrap();
+        assert_eq!(bytes[0], 39, "FileSelection discriminant must be 39");
+    }
+
+    #[test]
+    fn test_old_variants_stable_after_file_selection() {
+        // Verify that appending FileSelection does not shift existing discriminants
+        let old_messages = vec![
+            Message::Ping,
+            Message::Pong,
+            Message::ChatEnd,
+            Message::DirectFailed,
+            Message::FileOffer {
+                transfer_id: [1u8; 16],
+                manifest: vec![0, 1, 2, 3],
+            },
+            Message::FileAccept {
+                transfer_id: [1u8; 16],
+            },
+        ];
+        for msg in &old_messages {
+            let bytes = postcard::to_stdvec(msg).unwrap();
+            let decoded: Message = postcard::from_bytes(&bytes).unwrap();
+            assert_eq!(
+                &decoded, msg,
+                "backward compat failed after FileSelection for {:?}",
+                msg
+            );
         }
     }
 }

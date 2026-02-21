@@ -471,9 +471,9 @@ impl ReceivePipeline {
         let mut offset = 0usize;
 
         for entry in &manifest.files {
-            let end = offset.checked_add(entry.size as usize).ok_or_else(|| {
-                ProtocolError::TransferFailed("file offset overflow".to_string())
-            })?;
+            let end = offset
+                .checked_add(entry.size as usize)
+                .ok_or_else(|| ProtocolError::TransferFailed("file offset overflow".to_string()))?;
             if end > decompressed.len() {
                 return Err(ProtocolError::TransferFailed(format!(
                     "data too short for file {}",

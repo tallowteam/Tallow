@@ -79,6 +79,26 @@ pub enum Commands {
     /// Share clipboard content with a peer (text, images, links)
     Clip(ClipArgs),
 
+    /// View transfer history
+    History(HistoryArgs),
+
+    /// Test network speed to relay server
+    SpeedTest(SpeedTestArgs),
+
+    /// Exchange SSH public keys securely
+    SshSetup(SshSetupArgs),
+
+    /// Persistent receive mode (drop box) -- auto-accept from trusted contacts
+    DropBox(DropBoxArgs),
+
+    /// Generate man pages (hidden, for packaging)
+    #[command(hide = true)]
+    ManPages {
+        /// Output directory for man pages
+        #[arg(long)]
+        out_dir: String,
+    },
+
     /// Internal: complete code phrase words (used by shell completion scripts)
     #[command(hide = true)]
     CompleteCode {
@@ -276,6 +296,22 @@ pub struct SendArgs {
     /// Automatically enabled when --tor or --proxy is active.
     #[arg(long)]
     pub no_p2p: bool,
+
+    /// Show what would be transferred without actually sending
+    #[arg(long)]
+    pub dry_run: bool,
+
+    /// Show desktop notification on transfer complete
+    #[arg(long)]
+    pub notify: bool,
+
+    /// Maximum reconnection attempts on transient network failure (0 to disable)
+    #[arg(long, default_value = "5")]
+    pub max_retries: u32,
+
+    /// Disable hook execution (skip pre_send, post_send, on_error hooks)
+    #[arg(long)]
+    pub no_hooks: bool,
 }
 
 #[derive(Args)]
@@ -337,6 +373,22 @@ pub struct ReceiveArgs {
     /// Automatically enabled when --tor or --proxy is active.
     #[arg(long)]
     pub no_p2p: bool,
+
+    /// Show desktop notification on transfer complete
+    #[arg(long)]
+    pub notify: bool,
+
+    /// Select which files to receive individually (per-file accept/reject)
+    #[arg(long)]
+    pub per_file: bool,
+
+    /// Maximum reconnection attempts on transient network failure (0 to disable)
+    #[arg(long, default_value = "5")]
+    pub max_retries: u32,
+
+    /// Disable hook execution (skip pre_receive, post_receive, on_error hooks)
+    #[arg(long)]
+    pub no_hooks: bool,
 }
 
 #[derive(Args)]
@@ -670,4 +722,112 @@ pub struct CompletionsArgs {
     /// Shell type
     #[arg(value_enum)]
     pub shell: clap_complete::Shell,
+}
+
+#[derive(Args)]
+pub struct HistoryArgs {
+    /// Maximum number of entries to display
+    #[arg(short = 'n', long, default_value = "20")]
+    pub limit: usize,
+
+    /// Clear all transfer history
+    #[arg(long)]
+    pub clear: bool,
+}
+
+#[derive(Args)]
+pub struct SpeedTestArgs {
+    /// Test data size in MB (default: 10)
+    #[arg(long, default_value = "10")]
+    pub size_mb: u64,
+
+    /// Relay server address
+    #[arg(long, env = "TALLOW_RELAY", default_value = "129.146.114.5:4433")]
+    pub relay: String,
+
+    /// Relay password
+    #[arg(long, env = "TALLOW_RELAY_PASS", hide_env_values = true)]
+    pub relay_pass: Option<String>,
+
+    /// SOCKS5 proxy address
+    #[arg(long, env = "TALLOW_PROXY")]
+    pub proxy: Option<String>,
+
+    /// Route through Tor
+    #[arg(long)]
+    pub tor: bool,
+}
+
+#[derive(Args)]
+pub struct SshSetupArgs {
+    /// Code phrase to join (if receiving keys)
+    pub code: Option<String>,
+
+    /// Path to SSH public key (default: auto-detect ~/.ssh/id_*.pub)
+    #[arg(long)]
+    pub key: Option<String>,
+
+    /// Accept incoming SSH key (receive mode)
+    #[arg(long)]
+    pub accept: bool,
+
+    /// Relay server address
+    #[arg(long, env = "TALLOW_RELAY", default_value = "129.146.114.5:4433")]
+    pub relay: String,
+
+    /// Relay password
+    #[arg(long, env = "TALLOW_RELAY_PASS", hide_env_values = true)]
+    pub relay_pass: Option<String>,
+}
+
+/// Arguments for the `drop-box` persistent receive command
+#[derive(Args)]
+pub struct DropBoxArgs {
+    /// Fixed code phrase for persistent room
+    #[arg(long)]
+    pub code: Option<String>,
+
+    /// Only accept from contacts in the trust database
+    #[arg(long)]
+    pub trusted_only: bool,
+
+    /// Output directory for received files
+    #[arg(short, long, default_value = ".")]
+    pub output: PathBuf,
+
+    /// Maximum transfers before exiting (0 = unlimited)
+    #[arg(long, default_value = "0")]
+    pub max_transfers: u64,
+
+    /// Auto-accept all incoming transfers without prompting
+    #[arg(short = 'y', long)]
+    pub yes: bool,
+
+    /// Relay server address (also reads TALLOW_RELAY env var)
+    #[arg(long, default_value = "129.146.114.5:4433", env = "TALLOW_RELAY")]
+    pub relay: String,
+
+    /// Relay password (also reads TALLOW_RELAY_PASS env var)
+    #[arg(long = "relay-pass", env = "TALLOW_RELAY_PASS", hide_env_values = true)]
+    pub relay_pass: Option<String>,
+
+    /// SOCKS5 proxy address (also reads TALLOW_PROXY env var)
+    #[arg(long, env = "TALLOW_PROXY")]
+    pub proxy: Option<String>,
+
+    /// Route through Tor (shortcut for --proxy socks5://127.0.0.1:9050)
+    #[arg(long)]
+    pub tor: bool,
+
+    /// Disable P2P direct connection (always use relay)
+    #[arg(long)]
+    pub no_p2p: bool,
+
+    /// Show desktop notification on transfer complete
+    #[arg(long)]
+    pub notify: bool,
+
+    /// Display verification string after key exchange for MITM detection
+    #[arg(long)]
+    pub verify: bool,
 }

@@ -15,6 +15,9 @@ pub struct TallowConfig {
     pub privacy: PrivacyConfig,
     /// UI settings
     pub ui: UiConfig,
+    /// Hook commands to run before/after transfers
+    #[serde(default)]
+    pub hooks: HookConfig,
     /// Path aliases for quick directory access
     #[serde(default)]
     pub aliases: HashMap<String, PathBuf>,
@@ -90,4 +93,29 @@ pub struct UiConfig {
     pub show_notifications: bool,
     /// Language code
     pub language: String,
+}
+
+/// Hook configuration for pre/post transfer commands
+///
+/// Shell commands that run at various points during the transfer lifecycle.
+/// Each hook is a shell command string executed via the system shell.
+/// Environment variables (TALLOW_FILES, TALLOW_SIZE, etc.) are set
+/// before execution. Empty strings mean "no hook".
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct HookConfig {
+    /// Command to run before sending files
+    #[serde(default)]
+    pub pre_send: String,
+    /// Command to run after sending files successfully
+    #[serde(default)]
+    pub post_send: String,
+    /// Command to run before receiving files
+    #[serde(default)]
+    pub pre_receive: String,
+    /// Command to run after receiving files successfully
+    #[serde(default)]
+    pub post_receive: String,
+    /// Command to run when a transfer error occurs
+    #[serde(default)]
+    pub on_error: String,
 }

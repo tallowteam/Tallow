@@ -16,6 +16,7 @@ pub mod p2p;
 pub mod peer_channel;
 pub mod proxied;
 pub mod quic;
+pub mod reconnect;
 pub mod tcp_tls;
 pub mod tls_config;
 
@@ -35,6 +36,7 @@ pub use peer_channel::PeerChannel;
 pub use proxied::ProxiedTcpTlsTransport;
 #[cfg(feature = "quic")]
 pub use quic::QuicTransport;
+pub use reconnect::ReconnectConfig;
 pub use tcp_tls::TcpTlsTransport;
 
 /// Transport layer abstraction

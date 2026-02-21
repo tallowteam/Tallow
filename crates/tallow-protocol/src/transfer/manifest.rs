@@ -164,18 +164,15 @@ impl FileManifest {
                 )));
             }
             computed_size = computed_size.checked_add(entry.size).ok_or_else(|| {
-                crate::ProtocolError::TransferFailed(
-                    "manifest total_size overflow".to_string(),
-                )
+                crate::ProtocolError::TransferFailed("manifest total_size overflow".to_string())
             })?;
-            computed_chunks =
-                computed_chunks
-                    .checked_add(entry.chunk_count)
-                    .ok_or_else(|| {
-                        crate::ProtocolError::TransferFailed(
-                            "manifest total_chunks overflow".to_string(),
-                        )
-                    })?;
+            computed_chunks = computed_chunks
+                .checked_add(entry.chunk_count)
+                .ok_or_else(|| {
+                    crate::ProtocolError::TransferFailed(
+                        "manifest total_chunks overflow".to_string(),
+                    )
+                })?;
         }
 
         Ok(())
