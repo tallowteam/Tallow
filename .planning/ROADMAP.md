@@ -31,7 +31,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 17: Real E2E Transfer Pipeline** - Streaming I/O, per-chunk compression, sliding window sender (8-chunk batches), Merkle tree integrity verification, resume negotiation, stress tests (10GB/100GB/1TB)
 - [x] **Phase 18: Encrypted Chat Over Relay** - Real-time E2E encrypted text chat between peers using existing relay rooms, chat sessions, message history, typing indicators, read receipts
 - [x] **Phase 19: Multi-Peer Rooms** - Group transfers and chat with 3+ peers in a single room, fan-out message delivery, per-peer KEM handshakes, group key agreement, presence notifications, room capacity management
-- [ ] **Phase 20: WebRTC / P2P Direct** - Browser-based peer-to-peer transfers using WebRTC data channels, signaling via relay server, STUN/TURN NAT traversal, direct peer connections without relay forwarding, fallback to relay when P2P fails
+- [x] **Phase 20: WebRTC / P2P Direct** - Browser-based peer-to-peer transfers using WebRTC data channels, signaling via relay server, STUN/TURN NAT traversal, direct peer connections without relay forwarding, fallback to relay when P2P fails (completed 2026-02-21)
 
 ## Phase Details
 
@@ -305,4 +305,4 @@ Phases execute in numeric order: 1 → 2 → ... → 10 → 11 → 12 → 13 →
 | 17. Real E2E Transfer Pipeline | - | Complete | 2026-02-20 |
 | 18. Encrypted Chat Over Relay | - | Complete | 2026-02-21 |
 | 19. Multi-Peer Rooms | - | Complete | 2026-02-21 |
-| 20. QUIC Hole Punching / P2P Direct | 2/3 | In Progress|  |
+| 20. QUIC Hole Punching / P2P Direct | 3/3 | Complete   | 2026-02-21 |
