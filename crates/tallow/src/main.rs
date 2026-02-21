@@ -16,6 +16,7 @@ pub mod sandbox;
 
 use clap::Parser;
 use cli::Cli;
+use std::io;
 
 #[tokio::main]
 async fn main() {
@@ -26,6 +27,9 @@ async fn main() {
         eprintln!("Failed to initialize logging: {}", e);
         std::process::exit(exit_codes::ERROR);
     }
+
+    // Disable core dumps to prevent key material from being written to disk
+    sandbox::disable_core_dumps();
 
     // Ensure storage directories exist
     if let Err(e) = tallow_store::persistence::ensure_dirs() {
@@ -83,7 +87,7 @@ async fn main() {
         }
     };
 
-    // Handle result
+    // Handle result with granular exit codes
     match result {
         Ok(()) => std::process::exit(exit_codes::SUCCESS),
         Err(e) => {
@@ -101,7 +105,29 @@ async fn main() {
                     eprintln!("{}", hint);
                 }
             }
-            std::process::exit(exit_codes::ERROR);
+
+            // Map error kinds to specific exit codes
+            let code = match e.kind() {
+                io::ErrorKind::NotFound => exit_codes::FILE_NOT_FOUND,
+                io::ErrorKind::PermissionDenied => exit_codes::PERMISSION_DENIED,
+                io::ErrorKind::ConnectionRefused
+                | io::ErrorKind::ConnectionReset
+                | io::ErrorKind::ConnectionAborted
+                | io::ErrorKind::TimedOut => exit_codes::NETWORK_ERROR,
+                io::ErrorKind::Interrupted => exit_codes::CANCELLED,
+                _ => {
+                    // Check error message for further classification
+                    let msg = format!("{}", e);
+                    if msg.contains("auth") || msg.contains("password") || msg.contains("denied") {
+                        exit_codes::AUTH_FAILURE
+                    } else if msg.contains("config") {
+                        exit_codes::CONFIG_ERROR
+                    } else {
+                        exit_codes::ERROR
+                    }
+                }
+            };
+            std::process::exit(code);
         }
     }
 }

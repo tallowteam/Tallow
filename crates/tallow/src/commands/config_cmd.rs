@@ -111,7 +111,7 @@ fn config_edit(_json: bool) -> io::Result<()> {
     // Ensure config file exists
     let _ = tallow_store::config::load_config();
 
-    let editor = std::env::var("EDITOR")
+    let editor_str = std::env::var("EDITOR")
         .or_else(|_| std::env::var("VISUAL"))
         .unwrap_or_else(|_| {
             if cfg!(windows) {
@@ -121,12 +121,18 @@ fn config_edit(_json: bool) -> io::Result<()> {
             }
         });
 
-    println!("Opening {} in {}...", path.display(), editor);
+    // Split on whitespace to support multi-word editors like "nano -w" or "code --wait"
+    let mut parts = editor_str.split_whitespace();
+    let editor_cmd = parts.next().unwrap_or("vi");
+    let editor_args: Vec<&str> = parts.collect();
 
-    std::process::Command::new(&editor)
+    println!("Opening {} in {}...", path.display(), editor_cmd);
+
+    std::process::Command::new(editor_cmd)
+        .args(&editor_args)
         .arg(&path)
         .status()
-        .map_err(|e| io::Error::other(format!("Failed to open editor '{}': {}", editor, e)))?;
+        .map_err(|e| io::Error::other(format!("Failed to open editor '{}': {}", editor_str, e)))?;
 
     Ok(())
 }

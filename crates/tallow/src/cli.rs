@@ -128,6 +128,10 @@ pub struct ClipArgs {
     /// Display verification string after key exchange for MITM detection
     #[arg(long)]
     pub verify: bool,
+
+    /// Auto-accept incoming clipboard transfers without prompting
+    #[arg(short, long)]
+    pub yes: bool,
 }
 
 #[derive(Subcommand)]

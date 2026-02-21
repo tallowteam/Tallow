@@ -141,15 +141,19 @@ impl HybridKem {
 
     /// Combine two shared secrets using BLAKE3 KDF
     fn combine_secrets(mlkem_ss: &[u8; 32], x25519_ss: &[u8; 32]) -> Result<[u8; 32]> {
+        use zeroize::Zeroize;
+
         let mut combined_input = [0u8; 64];
         combined_input[..32].copy_from_slice(mlkem_ss);
         combined_input[32..].copy_from_slice(x25519_ss);
 
         // Use BLAKE3 with domain separation to combine
-        Ok(blake3::derive_key(
-            domain::DOMAIN_HYBRID_COMBINE,
-            &combined_input,
-        ))
+        let result = blake3::derive_key(domain::DOMAIN_HYBRID_COMBINE, &combined_input);
+
+        // Zeroize temporary that held both shared secrets
+        combined_input.zeroize();
+
+        Ok(result)
     }
 }
 

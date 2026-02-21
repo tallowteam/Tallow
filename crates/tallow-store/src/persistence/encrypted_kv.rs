@@ -29,6 +29,9 @@ struct StoreData {
 }
 
 /// Encrypted key-value store
+///
+/// Manual `Debug` impl redacts `master_key` and `cache` to prevent
+/// secret material from appearing in logs, panics, or `{:?}` formatting.
 pub struct EncryptedKv {
     /// In-memory decrypted cache
     cache: HashMap<String, Vec<u8>>,
@@ -38,6 +41,20 @@ pub struct EncryptedKv {
     master_key: [u8; 32],
     /// Random salt used for master key derivation (persisted in store file)
     master_salt: [u8; 16],
+}
+
+impl std::fmt::Debug for EncryptedKv {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("EncryptedKv")
+            .field("path", &self.path)
+            .field(
+                "cache",
+                &format!("[{} entries, REDACTED]", self.cache.len()),
+            )
+            .field("master_key", &"[REDACTED]")
+            .field("master_salt", &self.master_salt)
+            .finish()
+    }
 }
 
 impl EncryptedKv {

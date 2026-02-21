@@ -14,7 +14,6 @@ use rand_core::OsRng;
 const CPACE_DOMAIN: &str = "tallow-cpace-v1";
 
 /// CPace initiator
-#[derive(Clone)]
 pub struct CpaceInitiator {
     scalar: Scalar,
     /// Generator point derived from code phrase (retained for key confirmation)

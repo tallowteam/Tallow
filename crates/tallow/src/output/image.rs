@@ -44,13 +44,21 @@ pub fn read_clipboard_image() -> Option<(usize, usize, Vec<u8>)> {
     }
 }
 
+/// Maximum pixel count to prevent OOM during PNG encoding (64 MiB RGBA)
+const MAX_ENCODE_PIXELS: usize = 4096 * 4096;
+
+/// Maximum decompressed PNG data size (256 MiB) to prevent decompression bombs
+const MAX_DECODE_BYTES: usize = 256 * 1024 * 1024;
+
 /// Encode raw RGBA pixel data as PNG bytes.
 ///
 /// Uses a minimal PNG encoder — no external image crate needed.
 /// Returns the PNG file bytes ready for storage or transfer.
+/// Rejects images larger than 4096x4096 (16M pixels) to prevent OOM.
 pub fn encode_rgba_as_png(width: usize, height: usize, rgba: &[u8]) -> Option<Vec<u8>> {
     // Validate dimensions with overflow protection
-    let expected_len = width.checked_mul(height).and_then(|n| n.checked_mul(4));
+    let pixel_count = width.checked_mul(height);
+    let expected_len = pixel_count.and_then(|n| n.checked_mul(4));
     match expected_len {
         Some(len) if width > 0 && height > 0 && rgba.len() == len => {}
         _ => {
@@ -62,6 +70,18 @@ pub fn encode_rgba_as_png(width: usize, height: usize, rgba: &[u8]) -> Option<Ve
             );
             return None;
         }
+    }
+
+    // Reject oversized images to prevent OOM
+    if pixel_count.unwrap_or(usize::MAX) > MAX_ENCODE_PIXELS {
+        tracing::debug!(
+            "Image too large for PNG encoding: {}x{} ({} pixels, max {})",
+            width,
+            height,
+            pixel_count.unwrap_or(0),
+            MAX_ENCODE_PIXELS,
+        );
+        return None;
     }
 
     // Validate dimensions fit in u32 (PNG spec limit)
@@ -247,12 +267,36 @@ fn decode_png_rgba(data: &[u8]) -> Option<(usize, usize, Vec<u8>)> {
         pos += 12 + chunk_len;
     }
 
-    // Decompress
+    // Compute expected decompressed size from IHDR dimensions
+    // (width * 4 bytes per pixel + 1 filter byte) * height
+    let row_len = width * 4;
+    let expected_len = match height.checked_mul(1 + row_len) {
+        Some(len) if len <= MAX_DECODE_BYTES => len,
+        _ => {
+            tracing::debug!(
+                "PNG dimensions too large for decoding: {}x{} (would decompress to {} bytes)",
+                width,
+                height,
+                height as u128 * (1 + row_len) as u128,
+            );
+            return None;
+        }
+    };
+
+    // Decompress with size limit based on expected dimensions
     let decompressed = miniz_oxide::inflate::decompress_to_vec_zlib(&idat_data).ok()?;
 
+    // Verify decompressed size does not exceed expected (prevents decompression bombs)
+    if decompressed.len() > expected_len.saturating_mul(2) {
+        tracing::debug!(
+            "PNG decompression bomb detected: got {} bytes, expected ~{}",
+            decompressed.len(),
+            expected_len,
+        );
+        return None;
+    }
+
     // Reconstruct RGBA pixels (filter type 0 = None only for simplicity)
-    let row_len = width * 4;
-    let expected_len = height * (1 + row_len);
     if decompressed.len() != expected_len {
         tracing::debug!(
             "PNG data size mismatch: got {}, expected {}",

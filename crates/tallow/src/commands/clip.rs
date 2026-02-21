@@ -469,7 +469,40 @@ async fn execute_receive(
         ));
     }
 
-    // Auto-accept clipboard transfers
+    // Prompt for confirmation unless --yes flag is set
+    let accepted = if args.yes || json {
+        true
+    } else {
+        output::prompts::confirm_with_default(
+            &format!(
+                "Accept clipboard transfer ({})?",
+                output::format_size(total_size)
+            ),
+            true,
+        )?
+    };
+
+    if !accepted {
+        let reject_msg = Message::FileReject {
+            transfer_id,
+            reason: "declined by receiver".to_string(),
+        };
+        encode_buf.clear();
+        codec
+            .encode_msg(&reject_msg, &mut encode_buf)
+            .map_err(|e| io::Error::other(format!("Encode reject failed: {}", e)))?;
+        relay
+            .forward(&encode_buf)
+            .await
+            .map_err(|e| io::Error::other(format!("Send reject failed: {}", e)))?;
+        relay.close().await;
+        if !json {
+            output::color::info("Clipboard transfer declined.");
+        }
+        return Ok(());
+    }
+
+    // Accept clipboard transfer
     let accept_msg = Message::FileAccept { transfer_id };
     encode_buf.clear();
     codec
