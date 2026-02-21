@@ -305,4 +305,4 @@ Phases execute in numeric order: 1 → 2 → ... → 10 → 11 → 12 → 13 →
 | 17. Real E2E Transfer Pipeline | - | Complete | 2026-02-20 |
 | 18. Encrypted Chat Over Relay | - | Complete | 2026-02-21 |
 | 19. Multi-Peer Rooms | - | Complete | 2026-02-21 |
-| 20. QUIC Hole Punching / P2P Direct | 3/3 | Complete   | 2026-02-21 |
+| 20. QUIC Hole Punching / P2P Direct | 3/3 | Complete    | 2026-02-21 |

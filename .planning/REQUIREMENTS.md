@@ -155,9 +155,19 @@ Deferred to future release. Tracked but not in current roadmap.
 - **APRIV-03**: Traffic timing obfuscation
 - **APRIV-04**: File size padding to nearest 1MB
 
+### P2P Direct Transfer (P2P) — Phase 20
+- [x] **P2P-01**: ICE candidate exchange via relay signaling (CandidateOffer/CandidatesDone wire messages)
+- [x] **P2P-02**: QUIC hole punching via DirectListener::connect_to() endpoint reuse
+- [x] **P2P-03**: Automatic relay fallback when hole punch fails (symmetric NAT, firewall, timeout)
+- [x] **P2P-04**: --no-p2p CLI flag to disable hole punching for privacy-sensitive users
+- [x] **P2P-05**: Auto-disable P2P when --tor or --proxy is active (IP leak prevention)
+- [x] **P2P-06**: NAT type detection skips hole punch for symmetric NAT
+- [x] **P2P-07**: Connection upgrade wired into send.rs and receive.rs after KEM handshake
+- [x] **P2P-08**: STUN port-binding via discover_from_port() for correct NAT mapping
+
 ### Advanced Networking
-- **ANET-01**: UDP hole punching for direct P2P
-- **ANET-02**: TURN relay fallback
+- [x] **ANET-01**: UDP hole punching for direct P2P *(done — Phase 20)*
+- [x] **ANET-02**: TURN relay fallback *(done — Phase 20, relay serves as fallback)*
 - **ANET-03**: Connection migration (WiFi to cellular)
 
 ### Advanced TUI
@@ -279,11 +289,24 @@ Deferred to future release. Tracked but not in current roadmap.
 | DISC-02 | Phase 5 | Done |
 | DISC-03 | Phase 5 | Done |
 
+| P2P-01 | Phase 20 | Done |
+| P2P-02 | Phase 20 | Done |
+| P2P-03 | Phase 20 | Done |
+| P2P-04 | Phase 20 | Done |
+| P2P-05 | Phase 20 | Done |
+| P2P-06 | Phase 20 | Done |
+| P2P-07 | Phase 20 | Done |
+| P2P-08 | Phase 20 | Done |
+| ANET-01 | Phase 20 | Done |
+| ANET-02 | Phase 20 | Done |
+
 **Coverage:**
 - v1 requirements: 87 total
-- Mapped to phases: 87
-- Unmapped: 0 (corrected from prior count of 78 which undercounted WIRE, XPORT, RELAY, DISC categories)
+- v1+ Phase 20 requirements: 8 (P2P-01..P2P-08)
+- v2-deferred completed: 2 (ANET-01, ANET-02)
+- Mapped to phases: 97
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-19*
-*Last updated: 2026-02-19 after roadmap creation (coverage count corrected to 87)*
+*Last updated: 2026-02-21 after Phase 20 (QUIC Hole Punching / P2P Direct)*
