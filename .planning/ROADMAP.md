@@ -30,7 +30,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 16: Rich Clipboard Sharing** - `tallow clip` command for text/image/URL clipboard sharing, content type detection, clipboard watch mode, unlimited searchable history, arboard integration
 - [x] **Phase 17: Real E2E Transfer Pipeline** - Streaming I/O, per-chunk compression, sliding window sender (8-chunk batches), Merkle tree integrity verification, resume negotiation, stress tests (10GB/100GB/1TB)
 - [x] **Phase 18: Encrypted Chat Over Relay** - Real-time E2E encrypted text chat between peers using existing relay rooms, chat sessions, message history, typing indicators, read receipts
-- [ ] **Phase 19: Multi-Peer Rooms** - Group transfers and chat with 3+ peers in a single room, fan-out message delivery, per-peer KEM handshakes, group key agreement, presence notifications, room capacity management
+- [x] **Phase 19: Multi-Peer Rooms** - Group transfers and chat with 3+ peers in a single room, fan-out message delivery, per-peer KEM handshakes, group key agreement, presence notifications, room capacity management
+- [ ] **Phase 20: WebRTC / P2P Direct** - Browser-based peer-to-peer transfers using WebRTC data channels, signaling via relay server, STUN/TURN NAT traversal, direct peer connections without relay forwarding, fallback to relay when P2P fails
 
 ## Phase Details
 
@@ -238,10 +239,50 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. Killing the sender mid-transfer and restarting with the same code picks up from the last acknowledged chunk — no data re-sent
 **Plans**: TBD
 
+### Phase 18: Encrypted Chat Over Relay
+**Goal**: Real-time E2E encrypted text chat between peers using existing relay rooms — chat sessions with message history, AES-256-GCM per-message encryption, sanitized display.
+**Depends on**: Phase 17
+**Requirements**: CHAT-01 through CHAT-06
+**Success Criteria** (what must be TRUE):
+  1. `tallow chat` starts a chat session, connects to relay, and exchanges E2E encrypted messages in real-time
+  2. Messages are encrypted with AES-256-GCM using per-session keys derived from KEM handshake
+  3. All received text is sanitized (ANSI stripped, length limited) before display
+  4. Chat sessions support multiple message exchanges without re-handshaking
+  5. `/quit` cleanly ends the session and notifies the peer
+**Plans**: TBD
+
+### Phase 19: Multi-Peer Rooms
+**Goal**: Group transfers and chat with 3+ peers in a single room — fan-out message delivery via Targeted envelopes, pairwise KEM handshakes between all peer pairs, presence notifications, room capacity management.
+**Depends on**: Phase 18
+**Requirements**: MULTI-01 through MULTI-08
+**Success Criteria** (what must be TRUE):
+  1. `tallow chat --multi --capacity 5` creates a multi-peer room that accepts up to 5 peers
+  2. Each peer pair performs independent KEM handshakes — peer A's messages to peer B use different keys than A's messages to peer C
+  3. The relay routes Targeted messages only to the intended recipient (anti-spoofing: relay overwrites `from_peer` field)
+  4. Late-joining peers perform handshakes with all existing peers without disrupting ongoing conversations
+  5. PeerLeftRoom notifications are broadcast when a peer disconnects
+**Plans**: TBD
+
+### Phase 20: QUIC Hole Punching / P2P Direct
+**Goal**: Direct peer-to-peer QUIC connections via NAT hole punching coordinated through the existing relay — eliminating relay forwarding overhead for ~70% of network configurations, with automatic relay fallback when direct connection fails.
+**Depends on**: Phase 19
+**Requirements**: P2P-01 through P2P-08
+**Success Criteria** (what must be TRUE):
+  1. After KEM handshake via relay, peers exchange ICE candidates (STUN-discovered public addresses) and attempt QUIC hole punching
+  2. On successful hole punch, file transfer proceeds directly between peers without relay forwarding — verified by checking relay sees no data traffic after upgrade
+  3. When hole punching fails (symmetric NAT, firewall), transfer falls back to relay transparently with a user-visible message
+  4. `--no-p2p` flag disables hole punching (always use relay) for privacy-sensitive users
+  5. P2P mode is automatically disabled when `--tor` or `--proxy` is active to prevent IP leaks
+**Plans**: 3 plans
+Plans:
+- [ ] 20-01-PLAN.md — Wire protocol P2P signaling variants, candidate gathering, STUN port-binding, --no-p2p CLI flag
+- [ ] 20-02-PLAN.md — P2P negotiation module (p2p.rs), connection upgrade in send/receive commands
+- [ ] 20-03-PLAN.md — Integration tests, candidate edge cases, discriminant stability, final verification
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → ... → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17
+Phases execute in numeric order: 1 → 2 → ... → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 18 → 19 → 20
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -261,4 +302,7 @@ Phases execute in numeric order: 1 → 2 → ... → 10 → 11 → 12 → 13 →
 | 14. Tor/SOCKS5 Privacy | - | Complete | 2026-02-20 |
 | 15. End-to-End Testing & Hardening | - | Complete | 2026-02-20 |
 | 16. Rich Clipboard Sharing | - | Complete | 2026-02-20 |
-| 17. Real E2E Transfer Pipeline | 0/? | Planned | - |
+| 17. Real E2E Transfer Pipeline | - | Complete | 2026-02-20 |
+| 18. Encrypted Chat Over Relay | - | Complete | 2026-02-21 |
+| 19. Multi-Peer Rooms | - | Complete | 2026-02-21 |
+| 20. QUIC Hole Punching / P2P Direct | 0/3 | Planned | - |
