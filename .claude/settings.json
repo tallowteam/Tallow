@@ -108,6 +108,10 @@
     "variant-analysis@trailofbits": true,
     "semgrep-rule-creator@trailofbits": true,
     "playwright@claude-plugins-official": true,
-    "yara-authoring@trailofbits": true
+    "yara-authoring@trailofbits": true,
+    "modern-python@trailofbits": true,
+    "episodic-memory@superpowers-marketplace": true,
+    "superpowers@superpowers-marketplace": true,
+    "double-shot-latte@superpowers-marketplace": true
   }
 }

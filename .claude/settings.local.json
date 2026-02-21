@@ -54,7 +54,22 @@
       "WebFetch(domain:github.com)",
       "Bash(git -C /e/Tallow branch -a)",
       "Bash(git -C /e/Tallow rev-parse master)",
-      "Bash(git -C /e/Tallow rev-parse origin/master)"
+      "Bash(git -C /e/Tallow rev-parse origin/master)",
+      "WebFetch(domain:p2panda.org)",
+      "WebFetch(domain:blog.quarkslab.com)",
+      "WebFetch(domain:blog.trailofbits.com)",
+      "WebFetch(domain:webrtc.rs)",
+      "WebFetch(domain:seemann.io)",
+      "WebFetch(domain:arxiv.org)",
+      "WebFetch(domain:www.iroh.computer)",
+      "WebFetch(domain:docs.iroh.computer)",
+      "WebFetch(domain:tailscale.com)",
+      "Skill(gsd:plan-phase)",
+      "Skill(gsd:execute-phase)",
+      "Skill(rust-security-audit)",
+      "Skill(constant-time-analysis:ct-check)",
+      "Skill(insecure-defaults:insecure-defaults)",
+      "Skill(sharp-edges:sharp-edges)"
     ]
   }
 }
