@@ -82,7 +82,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path dist
           Copy-Item target/${{ matrix.target }}/release/tallow.exe dist/
           Copy-Item target/${{ matrix.target }}/release/tallow-relay.exe dist/
-          Compress-Archive -Path dist/* -DestinationPath tallow-${{ env:GITHUB_REF_NAME }}-${{ matrix.target }}.zip
+          Compress-Archive -Path dist/* -DestinationPath tallow-${{ github.ref_name }}-${{ matrix.target }}.zip
 
       - name: Generate checksums
         shell: bash
