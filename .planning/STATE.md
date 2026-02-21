@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-19)
 ## Current Position
 
 Phase: 20 (WebRTC P2P Direct)
-Plan: 2 of 3
-Status: Plan 01 complete, executing Plan 02
-Last activity: 2026-02-21 — Phase 20 Plan 01 (P2P Foundation) complete
+Plan: 3 of 3
+Status: Plan 02 complete, executing Plan 03
+Last activity: 2026-02-21 — Phase 20 Plan 02 (P2P Negotiation) complete
 
-Progress: [###-------] 33% (1/3 plans)
+Progress: [######----] 67% (2/3 plans)
 
 ## Performance Metrics
 
@@ -33,9 +33,10 @@ Progress: [###-------] 33% (1/3 plans)
 | 4 | 3/3 | ~35m | ~12 min |
 | 5 | 3/3 | ~30m | ~10 min |
 | 6 | 1/1 | ~15m | ~15 min |
-| 20 | 1/3 | ~17m | ~17 min |
+| 20 | 2/3 | ~32m | ~16 min |
 
 **Recent Trend:**
+- Phase 20 Plan 02 complete (P2P negotiation module)
 - Phase 20 Plan 01 complete (P2P foundation)
 - Trend: Active
 
@@ -58,6 +59,8 @@ Recent decisions affecting current work:
 - [Phase 6]: Platform-gated sandbox (Landlock+Seccomp on Linux, pledge+unveil on OpenBSD), core dump prevention, sensitive field redaction
 - [Phase 20-01]: Corrected discriminant values to 35-38 (plan specified 36-39); moved discover_from_port() to Task 1 for compilation
 - [Phase 20-01]: Added --no-p2p to all 6 command structs with proxy/tor flags
+- [Phase 20-02]: Lightweight binary protocol for P2P signaling in tallow-net (avoids circular dep with tallow-protocol)
+- [Phase 20-02]: Quinn endpoint reuse for hole punching (single UDP socket for both accept and connect)
 
 ### Pending Todos
 
@@ -72,5 +75,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 20-01-PLAN.md
+Stopped at: Completed 20-02-PLAN.md
 Resume file: None
