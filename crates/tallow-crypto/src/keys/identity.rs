@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 
 /// Identity key pair (hybrid signature)
-#[derive(Clone, Zeroize, Serialize, Deserialize)]
+#[derive(Zeroize, Serialize, Deserialize)]
 #[zeroize(drop)]
 pub struct IdentityKeyPair {
     signer: HybridSigner,

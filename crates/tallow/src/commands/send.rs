@@ -656,6 +656,7 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
     /// Sliding window size: send up to N chunks before draining acks.
     /// At 256 KB chunks and ~80ms RTT, 64-chunk windows yield ~200 MB/s ceiling.
     const WINDOW_SIZE: usize = 64;
+    const _: () = assert!(WINDOW_SIZE > 0, "WINDOW_SIZE must be > 0");
 
     // Collect BLAKE3 hashes of encrypted chunks for Merkle tree
     let mut chunk_hashes: Vec<[u8; 32]> = Vec::new();

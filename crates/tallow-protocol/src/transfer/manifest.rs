@@ -103,11 +103,82 @@ impl FileManifest {
         })
     }
 
-    /// Deserialize a manifest from bytes
+    /// Maximum total chunks allowed per transfer (DoS protection).
+    /// At 256 KB per chunk, 1M chunks = 256 GB max transfer.
+    const MAX_TOTAL_CHUNKS: u64 = 1_000_000;
+
+    /// Maximum total transfer size in bytes (DoS protection): 10 TB
+    const MAX_TOTAL_SIZE: u64 = 10_000_000_000_000;
+
+    /// Maximum number of files in a single manifest
+    const MAX_FILE_COUNT: usize = 1_000_000;
+
+    /// Maximum individual file size in bytes: 1 TB
+    const MAX_FILE_SIZE: u64 = 1_000_000_000_000;
+
+    /// Deserialize a manifest from bytes, with validation against DoS limits
     pub fn from_bytes(data: &[u8]) -> crate::Result<Self> {
-        postcard::from_bytes(data).map_err(|e| {
+        let manifest: Self = postcard::from_bytes(data).map_err(|e| {
             crate::ProtocolError::DecodingError(format!("manifest decode failed: {}", e))
-        })
+        })?;
+
+        manifest.validate()?;
+        Ok(manifest)
+    }
+
+    /// Validate manifest fields against DoS limits
+    fn validate(&self) -> crate::Result<()> {
+        if self.total_chunks > Self::MAX_TOTAL_CHUNKS {
+            return Err(crate::ProtocolError::TransferFailed(format!(
+                "manifest total_chunks {} exceeds limit {}",
+                self.total_chunks,
+                Self::MAX_TOTAL_CHUNKS
+            )));
+        }
+
+        if self.total_size > Self::MAX_TOTAL_SIZE {
+            return Err(crate::ProtocolError::TransferFailed(format!(
+                "manifest total_size {} exceeds limit {}",
+                self.total_size,
+                Self::MAX_TOTAL_SIZE
+            )));
+        }
+
+        if self.files.len() > Self::MAX_FILE_COUNT {
+            return Err(crate::ProtocolError::TransferFailed(format!(
+                "manifest file count {} exceeds limit {}",
+                self.files.len(),
+                Self::MAX_FILE_COUNT
+            )));
+        }
+
+        // Validate individual files
+        let mut computed_size: u64 = 0;
+        let mut computed_chunks: u64 = 0;
+        for entry in &self.files {
+            if entry.size > Self::MAX_FILE_SIZE {
+                return Err(crate::ProtocolError::TransferFailed(format!(
+                    "file size {} exceeds limit {}",
+                    entry.size,
+                    Self::MAX_FILE_SIZE
+                )));
+            }
+            computed_size = computed_size.checked_add(entry.size).ok_or_else(|| {
+                crate::ProtocolError::TransferFailed(
+                    "manifest total_size overflow".to_string(),
+                )
+            })?;
+            computed_chunks =
+                computed_chunks
+                    .checked_add(entry.chunk_count)
+                    .ok_or_else(|| {
+                        crate::ProtocolError::TransferFailed(
+                            "manifest total_chunks overflow".to_string(),
+                        )
+                    })?;
+        }
+
+        Ok(())
     }
 
     /// Get total number of files

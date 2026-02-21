@@ -99,6 +99,7 @@ async fn main() -> anyhow::Result<()> {
             }
 
             relay_config.password = pass.unwrap_or_default();
+            relay_config.validate();
 
             let server = RelayServer::new(relay_config);
             server.start().await?;

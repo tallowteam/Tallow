@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 
 /// Ephemeral key pair (X25519)
-#[derive(Clone, Zeroize, Serialize, Deserialize)]
+#[derive(Zeroize, Serialize, Deserialize)]
 #[zeroize(drop)]
 pub struct EphemeralKeyPair {
     inner: X25519KeyPair,

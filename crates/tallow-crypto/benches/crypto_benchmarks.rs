@@ -79,7 +79,7 @@ fn bench_x25519(c: &mut Criterion) {
     let mut group = c.benchmark_group("kem/x25519");
 
     group.bench_function("keygen", |b| {
-        b.iter(|| X25519KeyPair::generate());
+        b.iter(X25519KeyPair::generate);
     });
 
     let alice = X25519KeyPair::generate();

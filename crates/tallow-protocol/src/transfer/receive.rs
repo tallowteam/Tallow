@@ -139,8 +139,16 @@ impl ReceivePipeline {
             self.temp_dir = Some(temp_dir);
         }
 
-        // Pre-allocate chunk hash tracking for Merkle verification
-        self.chunk_hashes = vec![None; manifest.total_chunks as usize];
+        // Pre-allocate chunk hash tracking for Merkle verification.
+        // Manifest validation caps total_chunks, but guard the usize conversion too.
+        let total = manifest.total_chunks as usize;
+        if total > 1_000_000 {
+            return Err(ProtocolError::TransferFailed(format!(
+                "total_chunks {} exceeds receive limit",
+                total
+            )));
+        }
+        self.chunk_hashes = vec![None; total];
 
         self.expected_total_chunks = Some(manifest.total_chunks);
         self.manifest = Some(manifest);
@@ -402,8 +410,10 @@ impl ReceivePipeline {
                     .map_err(|e| ProtocolError::TransferFailed(format!("mkdir failed: {}", e)))?;
             }
 
-            // Reassemble file from in-memory chunks
-            let mut file_data = Vec::with_capacity(entry.size as usize);
+            // Reassemble file from in-memory chunks.
+            // Cap allocation — this path is only reached for small transfers (< STREAMING_THRESHOLD).
+            let cap = (entry.size as usize).min(STREAMING_THRESHOLD as usize);
+            let mut file_data = Vec::with_capacity(cap);
             for _ in 0..entry.chunk_count {
                 let chunk = self.received_chunks.get(&chunk_index).ok_or_else(|| {
                     ProtocolError::TransferFailed(format!("missing chunk {}", chunk_index))
@@ -461,7 +471,9 @@ impl ReceivePipeline {
         let mut offset = 0usize;
 
         for entry in &manifest.files {
-            let end = offset + entry.size as usize;
+            let end = offset.checked_add(entry.size as usize).ok_or_else(|| {
+                ProtocolError::TransferFailed("file offset overflow".to_string())
+            })?;
             if end > decompressed.len() {
                 return Err(ProtocolError::TransferFailed(format!(
                     "data too short for file {}",

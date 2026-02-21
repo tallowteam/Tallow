@@ -31,6 +31,19 @@ fn default_max_peers_per_room() -> u8 {
     10
 }
 
+impl RelayConfig {
+    /// Minimum room timeout in seconds (prevents accidental zero = never-expire)
+    const MIN_ROOM_TIMEOUT: u64 = 10;
+
+    /// Validate and clamp configuration values
+    pub fn validate(&mut self) {
+        if self.room_timeout_secs < Self::MIN_ROOM_TIMEOUT {
+            self.room_timeout_secs = Self::MIN_ROOM_TIMEOUT;
+        }
+        self.max_peers_per_room = self.max_peers_per_room.min(20);
+    }
+}
+
 impl Default for RelayConfig {
     fn default() -> Self {
         Self {
