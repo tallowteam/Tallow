@@ -2,10 +2,18 @@
 //!
 //! QUIC (primary), TCP+TLS (fallback), and the FallbackTransport that
 //! tries QUIC first and falls back to TCP+TLS automatically.
+//!
+//! The `PeerChannel` trait provides a unified abstraction for both relay
+//! and direct LAN connections, allowing the transfer pipeline to be
+//! transport-agnostic.
 
 pub mod bandwidth;
+pub mod connection;
+pub mod direct;
 pub mod fallback;
 pub mod negotiation;
+pub mod peer_channel;
+pub mod proxied;
 pub mod quic;
 pub mod tcp_tls;
 pub mod tls_config;
@@ -14,9 +22,15 @@ use crate::Result;
 use std::net::SocketAddr;
 
 pub use fallback::{ActiveTransport, FallbackTransport};
+pub use peer_channel::PeerChannel;
+pub use proxied::ProxiedTcpTlsTransport;
 #[cfg(feature = "quic")]
 pub use quic::QuicTransport;
 pub use tcp_tls::TcpTlsTransport;
+#[cfg(feature = "quic")]
+pub use direct::{DirectConnection, DirectListener, connect_direct};
+#[cfg(feature = "quic")]
+pub use connection::{establish_sender_connection, establish_receiver_connection, ConnectionResult};
 
 /// Transport layer abstraction
 ///

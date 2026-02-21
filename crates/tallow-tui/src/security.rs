@@ -1,6 +1,14 @@
 //! Security utilities for TUI
 //!
 //! Ensures no sensitive data remains visible on screen after exit or panic.
+//!
+//! ## Terminal cleanup paths
+//!
+//! 1. **Normal exit**: Main loop breaks, `TerminalGuard` drops, terminal restored.
+//! 2. **Error return**: `?` propagation causes `TerminalGuard` to drop, terminal restored.
+//! 3. **Panic**: Panic hook fires and calls `restore_terminal()` + `wipe_screen()`,
+//!    then `TerminalGuard::drop()` fires again. Double-restore is safe because
+//!    `disable_raw_mode()` and `LeaveAlternateScreen` are idempotent.
 
 /// Wipe the screen buffer (security feature)
 ///

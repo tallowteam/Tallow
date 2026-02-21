@@ -21,6 +21,10 @@ pub enum ProtocolError {
     InvalidStateTransition { from: String, to: String },
     /// IO error
     Io(std::io::Error),
+    /// Handshake failed (generic -- MUST NOT leak whether PAKE or KEM caused it)
+    HandshakeFailed(String),
+    /// Key confirmation mismatch
+    KeyConfirmationFailed,
 }
 
 impl fmt::Display for ProtocolError {
@@ -38,6 +42,10 @@ impl fmt::Display for ProtocolError {
                 write!(f, "Invalid state transition: {} -> {}", from, to)
             }
             Self::Io(err) => write!(f, "IO error: {}", err),
+            Self::HandshakeFailed(msg) => write!(f, "Handshake failed: {}", msg),
+            Self::KeyConfirmationFailed => {
+                write!(f, "Handshake failed: key confirmation mismatch")
+            }
         }
     }
 }

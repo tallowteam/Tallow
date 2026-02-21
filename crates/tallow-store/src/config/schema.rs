@@ -76,6 +76,9 @@ pub struct PrivacyConfig {
     pub enable_onion_routing: bool,
     /// Use DoH for DNS
     pub use_doh: bool,
+    /// Default SOCKS5 proxy address (e.g., "socks5://127.0.0.1:9050")
+    #[serde(default)]
+    pub default_proxy: String,
 }
 
 /// UI configuration

@@ -18,6 +18,7 @@ color-eyre = "0.6"
 
 # Async
 tokio.workspace = true
+futures.workspace = true
 
 # Screen clearing
 clearscreen = "3"

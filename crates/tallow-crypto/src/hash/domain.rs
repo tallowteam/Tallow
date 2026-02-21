@@ -59,3 +59,15 @@ pub const DOMAIN_PASSWORD: &str = "tallow.password.v1";
 
 /// Domain separator for SAS (Short Authentication String) generation
 pub const DOMAIN_SAS: &str = "tallow.sas.v1";
+
+/// Domain separator for handshake transcript hashing
+pub const DOMAIN_HANDSHAKE_TRANSCRIPT: &str = "tallow.handshake.transcript.v1";
+
+/// Domain separator for session key derivation from KEM + PAKE
+pub const DOMAIN_SESSION_KEY_KEM_PAKE: &str = "tallow.session_key.kem_pake.v3";
+
+/// Domain separator for sender key confirmation tag
+pub const DOMAIN_KEY_CONFIRM_SENDER: &str = "tallow.key_confirm.sender.v1";
+
+/// Domain separator for receiver key confirmation tag
+pub const DOMAIN_KEY_CONFIRM_RECEIVER: &str = "tallow.key_confirm.receiver.v1";

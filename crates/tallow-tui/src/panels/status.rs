@@ -9,6 +9,11 @@ use ratatui::Frame;
 
 /// Render the status panel
 pub fn render(frame: &mut Frame, area: Rect, app: &App) {
+    // Zero-size guard
+    if area.width < 10 || area.height < 3 {
+        return;
+    }
+
     let is_focused = app.focused_panel == FocusedPanel::Status;
 
     let border_color = if is_focused {
@@ -17,10 +22,41 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
         Color::DarkGray
     };
 
+    let spinner_text = app.spinner.display_text();
     let connection_indicator = if app.connected {
-        Span::styled(" Connected ", Style::default().fg(Color::Green))
+        Line::from(Span::styled(
+            " Connected ",
+            Style::default().fg(Color::Green),
+        ))
     } else {
-        Span::styled(" Disconnected ", Style::default().fg(Color::Red))
+        Line::from(vec![
+            Span::raw(" "),
+            Span::styled(
+                spinner_text.as_str(),
+                Style::default().fg(Color::Yellow),
+            ),
+            Span::styled("Disconnected", Style::default().fg(Color::Red)),
+        ])
+    };
+
+    let identity_line = match &app.identity_fingerprint {
+        Some(fp) => {
+            let display_len = 16.min(fp.len());
+            Line::from(vec![
+                Span::styled("  ID:    ", Style::default().fg(Color::Yellow)),
+                Span::styled(
+                    fp[..display_len].to_string(),
+                    Style::default()
+                        .fg(Color::Magenta)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::styled("...", Style::default().fg(Color::DarkGray)),
+            ])
+        }
+        None => Line::from(Span::styled(
+            "  ID:    (no identity)",
+            Style::default().fg(Color::DarkGray),
+        )),
     };
 
     let relay_line = match &app.relay_addr {
@@ -69,8 +105,9 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
     ]);
 
     let lines = vec![
-        Line::from(connection_indicator),
+        connection_indicator,
         Line::from(""),
+        identity_line,
         relay_line,
         room_line,
         Line::from(""),

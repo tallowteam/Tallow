@@ -41,6 +41,7 @@ tracing.workspace = true
 thiserror.workspace = true
 blake3.workspace = true
 zeroize.workspace = true
+subtle.workspace = true
 
 # Metadata stripping
 img-parts = "0.3"

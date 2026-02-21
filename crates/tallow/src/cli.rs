@@ -113,9 +113,13 @@ pub struct ClipArgs {
     #[arg(long = "relay-pass", env = "TALLOW_RELAY_PASS", hide_env_values = true)]
     pub relay_pass: Option<String>,
 
-    /// SOCKS5 proxy address (e.g., socks5://127.0.0.1:9050)
-    #[arg(long)]
+    /// SOCKS5 proxy address (e.g., socks5://127.0.0.1:9050, also reads TALLOW_PROXY env var)
+    #[arg(long, env = "TALLOW_PROXY")]
     pub proxy: Option<String>,
+
+    /// Route through Tor (shortcut for --proxy socks5://127.0.0.1:9050)
+    #[arg(long)]
+    pub tor: bool,
 
     /// Display QR code for the receive command
     #[arg(long)]
@@ -226,9 +230,13 @@ pub struct SendArgs {
     #[arg(long = "relay-pass", env = "TALLOW_RELAY_PASS", hide_env_values = true)]
     pub relay_pass: Option<String>,
 
-    /// SOCKS5 proxy address (e.g., socks5://127.0.0.1:9050)
-    #[arg(long)]
+    /// SOCKS5 proxy address (e.g., socks5://127.0.0.1:9050, also reads TALLOW_PROXY env var)
+    #[arg(long, env = "TALLOW_PROXY")]
     pub proxy: Option<String>,
+
+    /// Route through Tor (shortcut for --proxy socks5://127.0.0.1:9050)
+    #[arg(long)]
+    pub tor: bool,
 
     /// Discover peers on LAN via mDNS
     #[arg(long)]
@@ -253,6 +261,11 @@ pub struct SendArgs {
     /// Display verification string after key exchange for MITM detection
     #[arg(long)]
     pub verify: bool,
+
+    /// Use direct LAN transfer (mDNS discovery, no relay)
+    /// Falls back to relay if direct connection fails
+    #[arg(long)]
+    pub local: bool,
 }
 
 #[derive(Args)]
@@ -285,9 +298,13 @@ pub struct ReceiveArgs {
     #[arg(long = "relay-pass", env = "TALLOW_RELAY_PASS", hide_env_values = true)]
     pub relay_pass: Option<String>,
 
-    /// SOCKS5 proxy address
-    #[arg(long)]
+    /// SOCKS5 proxy address (also reads TALLOW_PROXY env var)
+    #[arg(long, env = "TALLOW_PROXY")]
     pub proxy: Option<String>,
+
+    /// Route through Tor (shortcut for --proxy socks5://127.0.0.1:9050)
+    #[arg(long)]
+    pub tor: bool,
 
     /// Advertise on LAN via mDNS for peer discovery
     #[arg(long)]
@@ -300,6 +317,11 @@ pub struct ReceiveArgs {
     /// Display verification string after key exchange for MITM detection
     #[arg(long)]
     pub verify: bool,
+
+    /// Use direct LAN transfer (mDNS discovery, no relay)
+    /// Falls back to relay if direct connection fails
+    #[arg(long)]
+    pub local: bool,
 }
 
 #[derive(Args)]
@@ -335,9 +357,13 @@ pub struct SyncArgs {
     #[arg(long = "relay-pass", env = "TALLOW_RELAY_PASS", hide_env_values = true)]
     pub relay_pass: Option<String>,
 
-    /// SOCKS5 proxy address
-    #[arg(long)]
+    /// SOCKS5 proxy address (also reads TALLOW_PROXY env var)
+    #[arg(long, env = "TALLOW_PROXY")]
     pub proxy: Option<String>,
+
+    /// Route through Tor (shortcut for --proxy socks5://127.0.0.1:9050)
+    #[arg(long)]
+    pub tor: bool,
 }
 
 #[derive(Args)]
@@ -373,9 +399,13 @@ pub struct WatchArgs {
     #[arg(long = "relay-pass", env = "TALLOW_RELAY_PASS", hide_env_values = true)]
     pub relay_pass: Option<String>,
 
-    /// SOCKS5 proxy address
-    #[arg(long)]
+    /// SOCKS5 proxy address (also reads TALLOW_PROXY env var)
+    #[arg(long, env = "TALLOW_PROXY")]
     pub proxy: Option<String>,
+
+    /// Route through Tor (shortcut for --proxy socks5://127.0.0.1:9050)
+    #[arg(long)]
+    pub tor: bool,
 }
 
 #[derive(Args)]

@@ -132,6 +132,19 @@ impl IdentityStore {
             .map(|pk| super::fingerprint::fingerprint_hex(pk))
     }
 
+    /// Return the first `n` hex characters of the identity fingerprint.
+    ///
+    /// Used for mDNS advertisement -- enough for disambiguation but not
+    /// full identification (privacy-preserving truncation).
+    pub fn fingerprint_prefix(&self, hex_chars: usize) -> String {
+        self.public_key()
+            .map(|pk| {
+                let short = super::fingerprint::fingerprint_short(pk);
+                short.chars().take(hex_chars).collect()
+            })
+            .unwrap_or_default()
+    }
+
     /// Get the full identity keypair (for signing)
     pub fn keypair(&self) -> Option<&tallow_crypto::keys::IdentityKeyPair> {
         self.keypair.as_ref()

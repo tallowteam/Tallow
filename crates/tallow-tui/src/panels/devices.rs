@@ -9,6 +9,11 @@ use ratatui::Frame;
 
 /// Render the devices panel
 pub fn render(frame: &mut Frame, area: Rect, app: &App) {
+    // Zero-size guard
+    if area.width < 10 || area.height < 3 {
+        return;
+    }
+
     let is_focused = app.focused_panel == FocusedPanel::Devices;
 
     let border_color = if is_focused {

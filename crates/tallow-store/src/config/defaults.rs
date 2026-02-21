@@ -37,6 +37,7 @@ impl Default for PrivacyConfig {
             encrypt_filenames: false,
             enable_onion_routing: false,
             use_doh: false,
+            default_proxy: String::new(),
         }
     }
 }

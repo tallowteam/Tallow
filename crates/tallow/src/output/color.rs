@@ -120,3 +120,29 @@ pub fn code_phrase(code: &str) {
         println!("  {}", code);
     }
 }
+
+/// Display that a direct LAN connection was established
+pub fn direct_connection() {
+    if color_enabled() {
+        println!(
+            "{} {}",
+            "OK:".green().bold(),
+            "Direct LAN connection established!".bold()
+        );
+    } else {
+        println!("OK: Direct LAN connection established!");
+    }
+}
+
+/// Display that the transfer fell back to relay after LAN attempt failed
+pub fn fallback_to_relay(relay: &str) {
+    if color_enabled() {
+        eprintln!(
+            "{} LAN peer not found, connected via relay ({})",
+            "Warning:".yellow().bold(),
+            relay
+        );
+    } else {
+        eprintln!("Warning: LAN peer not found, connected via relay ({})", relay);
+    }
+}

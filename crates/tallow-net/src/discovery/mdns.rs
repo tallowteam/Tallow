@@ -173,3 +173,9 @@ impl MdnsDiscovery {
         self.peers.lock().unwrap_or_else(|e| e.into_inner()).clone()
     }
 }
+
+impl Drop for MdnsDiscovery {
+    fn drop(&mut self) {
+        let _ = self.stop();
+    }
+}

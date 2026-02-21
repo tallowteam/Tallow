@@ -110,6 +110,54 @@ pub enum Message {
     Ping,
     /// Pong (keepalive response)
     Pong,
+    /// Handshake initiation (sender -> receiver)
+    ///
+    /// Carries CPace initiator public message, KEM capability negotiation,
+    /// and a random nonce for session ID binding.
+    HandshakeInit {
+        /// Protocol version for this handshake (2 = KEM handshake)
+        protocol_version: u32,
+        /// Serialized KemCapabilities (supported algorithms)
+        kem_capabilities: Vec<u8>,
+        /// CPace initiator public message (Ristretto255 point, 32 bytes)
+        cpace_public: [u8; 32],
+        /// Random nonce for session ID binding (16 bytes)
+        nonce: [u8; 16],
+    },
+    /// Handshake response (receiver -> sender)
+    ///
+    /// Carries CPace responder public message, selected KEM algorithm,
+    /// the receiver's ephemeral hybrid KEM public key, and a random nonce.
+    HandshakeResponse {
+        /// Selected KEM algorithm discriminant
+        selected_kem: u8,
+        /// CPace responder public message (32 bytes)
+        cpace_public: [u8; 32],
+        /// Serialized hybrid KEM public key
+        kem_public_key: Vec<u8>,
+        /// Random nonce for session ID binding (16 bytes)
+        nonce: [u8; 16],
+    },
+    /// KEM encapsulation + sender key confirmation (sender -> receiver)
+    HandshakeKem {
+        /// Serialized hybrid KEM ciphertext
+        kem_ciphertext: Vec<u8>,
+        /// Sender's key confirmation tag (BLAKE3 keyed MAC, 32 bytes)
+        confirmation: [u8; 32],
+    },
+    /// Handshake completion with receiver key confirmation (receiver -> sender)
+    HandshakeComplete {
+        /// Receiver's key confirmation tag (BLAKE3 keyed MAC, 32 bytes)
+        confirmation: [u8; 32],
+    },
+    /// Handshake failure (either direction)
+    ///
+    /// The reason string MUST NOT distinguish PAKE failure from KEM failure
+    /// to avoid oracle attacks.
+    HandshakeFailed {
+        /// Generic failure reason
+        reason: String,
+    },
 }
 
 #[cfg(test)]
@@ -179,6 +227,28 @@ mod tests {
             },
             Message::Ping,
             Message::Pong,
+            Message::HandshakeInit {
+                protocol_version: 2,
+                kem_capabilities: vec![0, 1, 2],
+                cpace_public: [0xAA; 32],
+                nonce: [0xBB; 16],
+            },
+            Message::HandshakeResponse {
+                selected_kem: 2,
+                cpace_public: [0xCC; 32],
+                kem_public_key: vec![0xDD; 128],
+                nonce: [0xEE; 16],
+            },
+            Message::HandshakeKem {
+                kem_ciphertext: vec![0xFF; 256],
+                confirmation: [0x11; 32],
+            },
+            Message::HandshakeComplete {
+                confirmation: [0x22; 32],
+            },
+            Message::HandshakeFailed {
+                reason: "handshake failed".to_string(),
+            },
         ];
 
         for msg in &messages {

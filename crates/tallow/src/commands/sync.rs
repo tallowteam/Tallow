@@ -12,8 +12,25 @@ use std::io;
 use std::path::PathBuf;
 use tallow_protocol::wire::{codec::TallowCodec, Message};
 
+#[allow(clippy::too_many_lines)]
 /// Execute sync command
 pub async fn execute(args: SyncArgs, json: bool) -> io::Result<()> {
+    // Build proxy config from CLI flags
+    let proxy_config = crate::commands::proxy::build_proxy_config(
+        args.tor, &args.proxy, json,
+    ).await?;
+
+    // Log proxy usage
+    if let Some(ref proxy) = proxy_config {
+        if !json {
+            if proxy.tor_mode {
+                output::color::info("Routing through Tor...");
+            } else {
+                output::color::info(&format!("Routing through proxy {}...", proxy.socks5_addr));
+            }
+        }
+    }
+
     // Validate directory exists
     if !args.dir.exists() || !args.dir.is_dir() {
         return Err(io::Error::new(
@@ -56,12 +73,14 @@ pub async fn execute(args: SyncArgs, json: bool) -> io::Result<()> {
     );
 
     // Scan local directory to build manifest
+    // Note: session key is set to a placeholder here; the real key is derived
+    // from the KEM handshake after peer connection. prepare() does not use
+    // the key — only chunk_file/chunk_data do (for AES-256-GCM encryption).
     let transfer_id: [u8; 16] = rand::random();
-    let session_key =
-        tallow_protocol::kex::derive_session_key_with_salt(&code_phrase, &room_id, &transfer_id);
+    let placeholder_key = [0u8; 32];
 
     let mut pipeline =
-        tallow_protocol::transfer::SendPipeline::new(transfer_id, *session_key.as_bytes())
+        tallow_protocol::transfer::SendPipeline::new(transfer_id, placeholder_key)
             .with_exclusion(exclusion);
 
     let _offer = pipeline
@@ -88,17 +107,27 @@ pub async fn execute(args: SyncArgs, json: bool) -> io::Result<()> {
         );
     }
 
-    // Connect to relay and perform sync
-    let relay_addr: std::net::SocketAddr = args.relay.parse().or_else(|_| {
-        use std::net::ToSocketAddrs;
-        args.relay
-            .to_socket_addrs()
-            .map_err(|e| io::Error::other(format!("Cannot resolve relay '{}': {}", args.relay, e)))?
-            .next()
-            .ok_or_else(|| io::Error::other(format!("No addresses for relay '{}'", args.relay)))
-    })?;
+    // Resolve relay address (proxy-aware: avoids DNS leaks)
+    let resolved = tallow_net::relay::resolve_relay_proxy(
+        &args.relay, proxy_config.as_ref(),
+    ).await.map_err(|e| io::Error::other(format!("Relay resolution failed: {}", e)))?;
 
-    let mut relay = tallow_net::relay::RelayClient::new(relay_addr);
+    let mut relay = match resolved {
+        tallow_net::relay::ResolvedRelay::Addr(addr) => {
+            if let Some(ref proxy) = proxy_config {
+                let mut client = tallow_net::relay::RelayClient::new(addr);
+                client.set_proxy(proxy.clone());
+                client
+            } else {
+                tallow_net::relay::RelayClient::new(addr)
+            }
+        }
+        tallow_net::relay::ResolvedRelay::Hostname { ref host, port } => {
+            let proxy = proxy_config.as_ref()
+                .expect("Hostname resolution only returned for proxy mode");
+            tallow_net::relay::RelayClient::new_with_proxy(host, port, proxy.clone())
+        }
+    };
 
     if !json {
         output::color::info(&format!("Connecting to relay {}...", args.relay));
@@ -137,13 +166,124 @@ pub async fn execute(args: SyncArgs, json: bool) -> io::Result<()> {
         output::color::success("Peer connected!");
     }
 
-    // Exchange manifests for diff computation
+    // --- KEM Handshake ---
+    let mut codec = TallowCodec::new();
+    let mut encode_buf = BytesMut::new();
+    let mut recv_buf = vec![0u8; 256 * 1024];
+
+    let mut handshake = tallow_protocol::kex::SenderHandshake::new(&code_phrase, &room_id);
+
+    // Step 1: Send HandshakeInit
+    let init_msg = handshake
+        .init()
+        .map_err(|e| io::Error::other(format!("Handshake init failed: {}", e)))?;
+    encode_buf.clear();
+    codec
+        .encode_msg(&init_msg, &mut encode_buf)
+        .map_err(|e| io::Error::other(format!("Encode HandshakeInit: {}", e)))?;
+    relay
+        .forward(&encode_buf)
+        .await
+        .map_err(|e| io::Error::other(format!("Send HandshakeInit: {}", e)))?;
+
+    // Step 2: Receive HandshakeResponse
+    let n = tokio::time::timeout(
+        std::time::Duration::from_secs(30),
+        relay.receive(&mut recv_buf),
+    )
+    .await
+    .map_err(|_| io::Error::other("Handshake timeout waiting for response"))?
+    .map_err(|e| io::Error::other(format!("Receive HandshakeResponse: {}", e)))?;
+
+    let mut decode_buf = BytesMut::from(&recv_buf[..n]);
+    let resp_msg = codec
+        .decode_msg(&mut decode_buf)
+        .map_err(|e| io::Error::other(format!("Decode HandshakeResponse: {}", e)))?;
+
+    let session_key: tallow_protocol::kex::SessionKey;
+
+    match resp_msg {
+        Some(Message::HandshakeResponse {
+            selected_kem,
+            cpace_public,
+            kem_public_key,
+            nonce,
+        }) => {
+            let (kem_msg, session_key_result) = handshake
+                .process_response(selected_kem, &cpace_public, &kem_public_key, &nonce)
+                .map_err(|e| {
+                    io::Error::other(format!("Handshake response processing failed: {}", e))
+                })?;
+
+            encode_buf.clear();
+            codec
+                .encode_msg(&kem_msg, &mut encode_buf)
+                .map_err(|e| io::Error::other(format!("Encode HandshakeKem: {}", e)))?;
+            relay
+                .forward(&encode_buf)
+                .await
+                .map_err(|e| io::Error::other(format!("Send HandshakeKem: {}", e)))?;
+
+            // Step 4: Receive HandshakeComplete
+            let n = tokio::time::timeout(
+                std::time::Duration::from_secs(30),
+                relay.receive(&mut recv_buf),
+            )
+            .await
+            .map_err(|_| io::Error::other("Handshake timeout waiting for confirmation"))?
+            .map_err(|e| io::Error::other(format!("Receive HandshakeComplete: {}", e)))?;
+
+            let mut decode_buf = BytesMut::from(&recv_buf[..n]);
+            let complete_msg = codec
+                .decode_msg(&mut decode_buf)
+                .map_err(|e| io::Error::other(format!("Decode HandshakeComplete: {}", e)))?;
+
+            match complete_msg {
+                Some(Message::HandshakeComplete { confirmation }) => {
+                    handshake
+                        .verify_receiver_confirmation(&confirmation)
+                        .map_err(|e| {
+                            io::Error::other(format!("Key confirmation failed: {}", e))
+                        })?;
+                }
+                other => {
+                    relay.close().await;
+                    return Err(io::Error::other(format!(
+                        "Expected HandshakeComplete, got: {:?}",
+                        other
+                    )));
+                }
+            }
+
+            session_key = session_key_result;
+        }
+        Some(Message::FileOffer { .. }) => {
+            relay.close().await;
+            return Err(io::Error::other(
+                "Protocol version mismatch: peer uses old key exchange. \
+                 Both sides must upgrade to tallow v2.0+",
+            ));
+        }
+        other => {
+            relay.close().await;
+            return Err(io::Error::other(format!(
+                "Expected HandshakeResponse, got: {:?}",
+                other
+            )));
+        }
+    }
+
+    if !json {
+        output::color::success("Secure session established (KEM handshake complete)");
+    }
+    // --- End handshake ---
+
+    // Set the real session key on the pipeline
+    // Serialize manifest before mutable borrow to avoid conflict with pipeline.manifest() ref
     let manifest_bytes = manifest
         .to_bytes()
         .map_err(|e| io::Error::other(format!("Failed to serialize manifest: {}", e)))?;
-
-    let mut codec = TallowCodec::new();
-    let mut encode_buf = BytesMut::new();
+    pipeline.set_session_key(*session_key.as_bytes());
 
     let exchange_msg = Message::ManifestExchange {
         transfer_id,
@@ -159,7 +299,6 @@ pub async fn execute(args: SyncArgs, json: bool) -> io::Result<()> {
         .map_err(|e| io::Error::other(format!("Send manifest failed: {}", e)))?;
 
     // Wait for peer's manifest exchange response
-    let mut recv_buf = vec![0u8; 256 * 1024];
     let n = relay
         .receive(&mut recv_buf)
         .await

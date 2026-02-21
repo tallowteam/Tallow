@@ -4,7 +4,7 @@ use super::Message;
 use crate::{ProtocolError, Result};
 
 /// Current protocol version
-pub const PROTOCOL_VERSION: u32 = 1;
+pub const PROTOCOL_VERSION: u32 = 2;
 
 /// Minimum supported protocol version
 pub const MIN_PROTOCOL_VERSION: u32 = 1;
@@ -24,7 +24,7 @@ pub fn negotiate_version(local: u32, remote: u32) -> Result<u32> {
 /// Create a version request message for the current protocol
 pub fn version_request() -> Message {
     Message::VersionRequest {
-        supported_versions: vec![PROTOCOL_VERSION],
+        supported_versions: vec![1, PROTOCOL_VERSION],
     }
 }
 
@@ -36,7 +36,7 @@ pub fn process_version_request(their_versions: &[u32]) -> Result<Message> {
     // Find the highest version we both support
     let mut best = None;
     for &v in their_versions {
-        if v >= MIN_PROTOCOL_VERSION && v <= PROTOCOL_VERSION {
+        if (MIN_PROTOCOL_VERSION..=PROTOCOL_VERSION).contains(&v) {
             best = Some(best.map_or(v, |b: u32| b.max(v)));
         }
     }
@@ -60,7 +60,7 @@ mod tests {
 
     #[test]
     fn test_negotiate_same_version() {
-        assert_eq!(negotiate_version(1, 1).unwrap(), 1);
+        assert_eq!(negotiate_version(2, 2).unwrap(), 2);
     }
 
     #[test]
@@ -79,6 +79,7 @@ mod tests {
         match msg {
             Message::VersionRequest { supported_versions } => {
                 assert!(supported_versions.contains(&PROTOCOL_VERSION));
+                assert!(supported_versions.contains(&1));
             }
             _ => panic!("expected VersionRequest"),
         }
@@ -89,7 +90,7 @@ mod tests {
         let response = process_version_request(&[1, 2]).unwrap();
         match response {
             Message::VersionResponse { selected_version } => {
-                assert_eq!(selected_version, 1);
+                assert_eq!(selected_version, 2);
             }
             _ => panic!("expected VersionResponse"),
         }

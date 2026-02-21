@@ -90,6 +90,17 @@ impl SendPipeline {
         self
     }
 
+    /// Replace the session key after construction.
+    ///
+    /// This is used by the KEM handshake flow: the pipeline is created
+    /// with a placeholder key for file scanning, then the real key is
+    /// set after the handshake completes (before any encryption occurs).
+    pub fn set_session_key(&mut self, key: [u8; 32]) {
+        use zeroize::Zeroize;
+        self.session_key.zeroize();
+        self.session_key = key;
+    }
+
     /// Prepare files for transfer — scan, hash, build manifest
     ///
     /// # Arguments

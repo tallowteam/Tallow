@@ -1,6 +1,6 @@
 //! Help overlay
 //!
-//! Note: The help overlay rendering is in render.rs (render_help_overlay)
+//! Note: The help overlay rendering is in render.rs (render_help_overlay_in)
 //! since it needs direct frame access for the Clear widget.
 //! This module provides the help text data.
 
@@ -26,6 +26,10 @@ pub fn entries() -> Vec<HelpEntry> {
         HelpEntry {
             key: "?",
             description: "Toggle this help",
+        },
+        HelpEntry {
+            key: "i",
+            description: "Identity details",
         },
         HelpEntry {
             key: "1",

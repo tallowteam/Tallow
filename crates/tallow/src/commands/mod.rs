@@ -7,6 +7,7 @@ pub mod completions;
 pub mod config_cmd;
 pub mod doctor;
 pub mod identity;
+pub mod proxy;
 pub mod receive;
 pub mod send;
 pub mod sync;

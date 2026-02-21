@@ -37,6 +37,10 @@ pub async fn execute(json: bool) -> io::Result<()> {
     let relay_check = check_relay().await;
     checks.push(relay_check);
 
+    // Check 8: Tor availability (optional)
+    let tor_check = check_tor().await;
+    checks.push(tor_check);
+
     let all_passed = checks.iter().all(|c| c.passed);
 
     if json {
@@ -241,6 +245,30 @@ async fn check_dns() -> DiagCheck {
             passed: false,
             message: "DNS resolution failed".to_string(),
             fix: Some("Check network connectivity and DNS settings".to_string()),
+        },
+    }
+}
+
+async fn check_tor() -> DiagCheck {
+    // Check if Tor is running on default SOCKS5 port
+    let tor_available = tokio::time::timeout(
+        std::time::Duration::from_secs(2),
+        tokio::net::TcpStream::connect("127.0.0.1:9050"),
+    )
+    .await;
+
+    match tor_available {
+        Ok(Ok(_)) => DiagCheck {
+            name: "Tor".to_string(),
+            passed: true,
+            message: "Tor SOCKS port reachable at 127.0.0.1:9050".to_string(),
+            fix: None,
+        },
+        _ => DiagCheck {
+            name: "Tor".to_string(),
+            passed: true, // Not a failure -- Tor is optional
+            message: "Tor not detected (optional -- use --proxy for custom SOCKS5)".to_string(),
+            fix: None,
         },
     }
 }

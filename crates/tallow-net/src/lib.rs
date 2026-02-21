@@ -15,6 +15,7 @@ pub mod transport;
 
 // Re-exports
 pub use error::NetworkError;
+pub use transport::PeerChannel;
 pub use transport::Transport;
 
 /// Result type for network operations

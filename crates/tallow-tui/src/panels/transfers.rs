@@ -1,6 +1,7 @@
 //! Transfers panel — shows active file transfers with progress bars
 
 use crate::app::{App, FocusedPanel, TransferDirection};
+use crate::widgets::speed_indicator::SpeedIndicatorCompact;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
@@ -9,6 +10,11 @@ use ratatui::Frame;
 
 /// Render the transfers panel
 pub fn render(frame: &mut Frame, area: Rect, app: &App) {
+    // Zero-size guard
+    if area.width < 10 || area.height < 3 {
+        return;
+    }
+
     let is_focused = app.focused_panel == FocusedPanel::Transfers;
 
     let border_color = if is_focused {
@@ -108,13 +114,17 @@ fn render_transfer_row(frame: &mut Frame, area: Rect, transfer: &crate::app::Tra
         .label(format!("{}%", pct.min(100)));
     frame.render_widget(gauge, rows[1]);
 
-    // Row 3: speed
-    let speed_line = Line::from(vec![
-        Span::raw("   "),
-        Span::styled(
-            App::format_speed(transfer.speed_bps),
-            Style::default().fg(Color::Yellow),
-        ),
-    ]);
-    frame.render_widget(Paragraph::new(speed_line), rows[2]);
+    // Row 3: speed (using SpeedIndicatorCompact widget)
+    let is_receiving = transfer.direction == TransferDirection::Receive;
+    let speed_widget = SpeedIndicatorCompact::new(transfer.speed_bps, is_receiving);
+    // Indent the speed widget
+    if rows[2].width > 3 {
+        let speed_area = Rect {
+            x: rows[2].x + 3,
+            y: rows[2].y,
+            width: rows[2].width.saturating_sub(3),
+            height: rows[2].height,
+        };
+        frame.render_widget(speed_widget, speed_area);
+    }
 }

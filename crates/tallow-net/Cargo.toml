@@ -29,6 +29,9 @@ hickory-resolver = { version = "0.24", features = ["dns-over-https-rustls"] }
 # Local Discovery
 mdns-sd = "0.11"
 
+# Hex encoding for mDNS TXT records
+hex = "0.4"
+
 # Proxy
 tokio-socks = "0.5"
 

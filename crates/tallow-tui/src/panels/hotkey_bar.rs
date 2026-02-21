@@ -16,6 +16,8 @@ pub fn render(frame: &mut Frame, area: Rect, _app: &App) {
         Span::styled(" Panel ", Style::default().fg(Color::DarkGray)),
         Span::styled("?", Style::default().fg(Color::Yellow)),
         Span::styled(" Help ", Style::default().fg(Color::DarkGray)),
+        Span::styled("i", Style::default().fg(Color::Yellow)),
+        Span::styled(" Identity ", Style::default().fg(Color::DarkGray)),
         Span::styled("1-4", Style::default().fg(Color::Yellow)),
         Span::styled(" Mode ", Style::default().fg(Color::DarkGray)),
         Span::styled("r", Style::default().fg(Color::Yellow)),

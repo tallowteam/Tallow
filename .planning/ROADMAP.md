@@ -18,10 +18,15 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Storage, CLI Commands and Polish** - Persistent identity/config, all CLI commands wired, transfer resume
 - [x] **Phase 5: Privacy, TUI and Discovery** - Tor/SOCKS5, DNS-over-HTTPS, Ratatui dashboard, mDNS, OS sandbox
 - [x] **Phase 6: Sandbox, Hardening and Security Audit** - Landlock, seccomp, structured logging, fuzz targets, full audit sweep
-- [ ] **Phase 7: Core Croc UX** - Text send, QR codes, custom codes, pipe support, clipboard, confirmation prompt, shorter codes, overwrite protection
-- [ ] **Phase 8: Advanced Transfer** - Exclude patterns, gitignore, throttle, transfer queue, sync, watch, path aliases, tab completion
-- [ ] **Phase 9: Security Hardening & Relay Auth** - Filename sanitization, ANSI stripping, env vars, relay password, verification strings, Docker relay
-- [ ] **Phase 10: Distribution & Polish** - Homebrew, Scoop, curl installer, shell completions in release, human-readable output, smart errors
+- [x] **Phase 7: Core Croc UX** - Text send, QR codes, custom codes, pipe support, clipboard, confirmation prompt, shorter codes, overwrite protection
+- [x] **Phase 8: Advanced Transfer** - Exclude patterns, gitignore, throttle, transfer queue, sync, watch, path aliases, tab completion
+- [x] **Phase 9: Security Hardening & Relay Auth** - Filename sanitization, ANSI stripping, env vars, relay password, verification strings, Docker relay
+- [x] **Phase 10: Distribution & Polish** - Homebrew, Scoop, curl installer, shell completions in release, human-readable output, smart errors
+- [ ] **Phase 11: Real KEM Key Exchange** - Wire ML-KEM-1024 + X25519 hybrid handshake into transfer pipeline, replacing code-phrase-derived keys with actual cryptographic key exchange
+- [ ] **Phase 12: TUI Integration** - Wire Ratatui widgets into working dashboard with live transfers, peer list, progress bars, overlay system
+- [ ] **Phase 13: LAN Discovery & Direct Transfer** - mDNS peer discovery, direct P2P transfer without relay, automatic fallback to relay
+- [ ] **Phase 14: Tor/SOCKS5 Privacy** - Wire SOCKS5 proxy into relay connections, DNS leak prevention, anonymous transfer mode
+- [ ] **Phase 15: End-to-End Testing & Hardening** - Integration tests with real relay, cross-platform smoke tests, transfer resume, large file stress tests
 
 ## Phase Details
 
@@ -145,10 +150,70 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. Common errors (connection refused, permission denied, timeout) show actionable guidance
 **Plans**: TBD
 
+### Phase 11: Real KEM Key Exchange
+**Goal**: Replace code-phrase-derived session keys with actual ML-KEM-1024 + X25519 hybrid key exchange over the relay — the crypto primitives exist in tallow-crypto but aren't wired into the transfer pipeline. After this phase, every transfer uses a proper cryptographic handshake with ephemeral keys.
+**Depends on**: Phase 10
+**Requirements**: KEM-01 through KEM-08
+**Success Criteria** (what must be TRUE):
+  1. `tallow send file.txt` performs ML-KEM-1024 + X25519 hybrid key encapsulation with the receiver before any data is encrypted — verified by checking session keys differ even with the same code phrase
+  2. The code phrase is used for PAKE authentication (mutual proof of knowledge) not key derivation — an incorrect code phrase rejects with a clear error, not silent decryption failure
+  3. Ephemeral KEM keys are generated per-transfer and zeroized after use — no long-term key material persists beyond the session
+  4. The handshake completes in under 500ms on a 100ms RTT link — no unnecessary round trips
+  5. Backward compatibility: old-format transfers (code-phrase-derived keys) are detected and rejected with a version mismatch error, not silent corruption
+**Plans**: TBD
+
+### Phase 12: TUI Integration
+**Goal**: Wire the existing Ratatui widget modules in tallow-tui into an actual working dashboard — live transfer progress, peer connection status, identity display, file listing, and overlay system all render and update in real time.
+**Depends on**: Phase 11
+**Requirements**: TUI-01 through TUI-10
+**Success Criteria** (what must be TRUE):
+  1. `tallow tui` launches a multi-panel dashboard showing identity fingerprint, relay connection status, and transfer history
+  2. Starting a send/receive while in TUI mode shows real-time progress bars with speed, ETA, and percentage
+  3. The overlay system works — pressing `?` shows help, `i` shows identity details, overlays stack and dismiss correctly
+  4. Terminal is fully restored on exit (q/Ctrl+C) or crash — no residual artifacts, screen cleared
+  5. TUI renders without panic on terminals from 80x24 to 300x80, gracefully degrading on small sizes
+**Plans**: TBD
+
+### Phase 13: LAN Discovery & Direct Transfer
+**Goal**: Two peers on the same LAN can discover each other via mDNS and transfer files directly without a relay — with automatic fallback to relay when direct connection fails.
+**Depends on**: Phase 12
+**Requirements**: LAN-01 through LAN-08
+**Success Criteria** (what must be TRUE):
+  1. `tallow send --local file.txt` broadcasts mDNS presence; `tallow receive --local` discovers it and completes transfer without any relay traffic
+  2. Direct LAN transfers use the same E2E encryption as relay transfers — the transport changes, not the security
+  3. When mDNS discovery fails or peers are on different networks, the transfer automatically falls back to relay with a user-visible message
+  4. Multiple peers on the same LAN are listed with their identity fingerprints — the user picks which one to connect to
+  5. Direct transfer speed is at least 5x faster than relay transfer for files >10MB on a gigabit LAN
+**Plans**: TBD
+
+### Phase 14: Tor/SOCKS5 Privacy
+**Goal**: Users can route all relay traffic through Tor or any SOCKS5 proxy for anonymous transfers — no DNS leaks, no plaintext metadata exposure.
+**Depends on**: Phase 13
+**Requirements**: TOR-01 through TOR-06
+**Success Criteria** (what must be TRUE):
+  1. `tallow send --proxy socks5://127.0.0.1:9050 file.txt` completes a transfer with all traffic routed through the SOCKS5 proxy
+  2. DNS resolution uses the proxy (no system resolver calls) — verified by network capture showing zero plaintext DNS
+  3. `tallow send --tor file.txt` is a shortcut that defaults to localhost:9050 and checks Tor is running
+  4. The relay address is resolved through the proxy, not leaked to the local network
+  5. Transfer still works E2E encrypted through the proxy — Tor sees only encrypted relay traffic, not file contents
+**Plans**: TBD
+
+### Phase 15: End-to-End Testing & Hardening
+**Goal**: Comprehensive integration tests verify the entire pipeline works — real relay connections, cross-platform behavior, transfer resume after interruption, large file handling, and stress testing under load.
+**Depends on**: Phase 14
+**Requirements**: E2E-01 through E2E-10
+**Success Criteria** (what must be TRUE):
+  1. An integration test sends a 100MB file through the actual Oracle relay and verifies byte-for-byte integrity via BLAKE3
+  2. Transfer resume works: killing the sender mid-transfer and restarting picks up from the last acknowledged chunk
+  3. Concurrent transfers (5 simultaneous send/receive pairs) complete without deadlocks or data corruption
+  4. All commands produce valid JSON when `--json` is passed — a test suite parses every output event with serde_json
+  5. `cargo test --workspace` passes on Linux, macOS, and Windows CI — no platform-specific failures
+**Plans**: TBD
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
+Phases execute in numeric order: 1 → 2 → ... → 10 → 11 → 12 → 13 → 14 → 15
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -158,7 +223,12 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 4. Storage, CLI Commands and Polish | 3/3 | Complete | 2026-02-19 |
 | 5. Privacy, TUI and Discovery | 3/3 | Complete | 2026-02-19 |
 | 6. Sandbox, Hardening and Security Audit | 1/1 | Complete | 2026-02-19 |
-| 7. Core Croc UX | 0/? | Researched | - |
-| 8. Advanced Transfer | 0/? | Researched | - |
-| 9. Security Hardening & Relay Auth | 0/? | Researched | - |
-| 10. Distribution & Polish | 0/? | Researched | - |
+| 7. Core Croc UX | - | Complete | 2026-02-20 |
+| 8. Advanced Transfer | - | Complete | 2026-02-20 |
+| 9. Security Hardening & Relay Auth | - | Complete | 2026-02-20 |
+| 10. Distribution & Polish | - | Complete | 2026-02-20 |
+| 11. Real KEM Key Exchange | 0/? | Planned | - |
+| 12. TUI Integration | 0/? | Planned | - |
+| 13. LAN Discovery & Direct Transfer | 0/? | Planned | - |
+| 14. Tor/SOCKS5 Privacy | 0/? | Planned | - |
+| 15. End-to-End Testing & Hardening | 0/? | Planned | - |
