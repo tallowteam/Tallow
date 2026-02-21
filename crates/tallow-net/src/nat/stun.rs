@@ -356,4 +356,11 @@ mod tests {
         );
         assert_eq!(result.port(), 8080);
     }
+
+    #[test]
+    fn test_stun_client_from_hostname_format() {
+        // Verify that the STUN server constants have the expected host:port format
+        assert!(GOOGLE_STUN.contains(':'));
+        assert!(CLOUDFLARE_STUN.contains(':'));
+    }
 }

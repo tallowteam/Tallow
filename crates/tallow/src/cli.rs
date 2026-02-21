@@ -121,6 +121,11 @@ pub struct ClipArgs {
     #[arg(long)]
     pub tor: bool,
 
+    /// Disable P2P direct connection (always use relay).
+    /// Automatically enabled when --tor or --proxy is active.
+    #[arg(long)]
+    pub no_p2p: bool,
+
     /// Display QR code for the receive command
     #[arg(long)]
     pub qr: bool,
@@ -266,6 +271,11 @@ pub struct SendArgs {
     /// Falls back to relay if direct connection fails
     #[arg(long)]
     pub local: bool,
+
+    /// Disable P2P direct connection (always use relay).
+    /// Automatically enabled when --tor or --proxy is active.
+    #[arg(long)]
+    pub no_p2p: bool,
 }
 
 #[derive(Args)]
@@ -322,6 +332,11 @@ pub struct ReceiveArgs {
     /// Falls back to relay if direct connection fails
     #[arg(long)]
     pub local: bool,
+
+    /// Disable P2P direct connection (always use relay).
+    /// Automatically enabled when --tor or --proxy is active.
+    #[arg(long)]
+    pub no_p2p: bool,
 }
 
 #[derive(Args)]
@@ -364,6 +379,11 @@ pub struct SyncArgs {
     /// Route through Tor (shortcut for --proxy socks5://127.0.0.1:9050)
     #[arg(long)]
     pub tor: bool,
+
+    /// Disable P2P direct connection (always use relay).
+    /// Automatically enabled when --tor or --proxy is active.
+    #[arg(long)]
+    pub no_p2p: bool,
 }
 
 #[derive(Args)]
@@ -406,6 +426,11 @@ pub struct WatchArgs {
     /// Route through Tor (shortcut for --proxy socks5://127.0.0.1:9050)
     #[arg(long)]
     pub tor: bool,
+
+    /// Disable P2P direct connection (always use relay).
+    /// Automatically enabled when --tor or --proxy is active.
+    #[arg(long)]
+    pub no_p2p: bool,
 }
 
 #[derive(Args)]
@@ -436,6 +461,11 @@ pub struct ChatArgs {
     /// Route through Tor (shortcut for --proxy socks5://127.0.0.1:9050)
     #[arg(long)]
     pub tor: bool,
+
+    /// Disable P2P direct connection (always use relay).
+    /// Automatically enabled when --tor or --proxy is active.
+    #[arg(long)]
+    pub no_p2p: bool,
 
     /// Display verification string after key exchange for MITM detection
     #[arg(long)]
