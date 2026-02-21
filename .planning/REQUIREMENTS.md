@@ -155,6 +155,27 @@ Deferred to future release. Tracked but not in current roadmap.
 - **APRIV-03**: Traffic timing obfuscation
 - **APRIV-04**: File size padding to nearest 1MB
 
+### Web UI / Browser Client (WEB) — Phase 21
+
+- [ ] **WEB-01**: tallow-crypto compiles to wasm32-unknown-unknown target without errors
+- [ ] **WEB-02**: tallow-web cdylib crate with wasm-bindgen exports for hybrid KEM, AES-256-GCM, BLAKE3, HKDF
+- [ ] **WEB-03**: tallow-protocol feature-gated (`wasm` feature) so wire module (Message enum + postcard) compiles for WASM without heavy deps (tokio, zstd, etc.)
+- [ ] **WEB-04**: Relay server accepts WebSocket connections alongside QUIC for browser clients
+- [ ] **WEB-05**: WebSocket-to-QUIC message bridging: relay adds/strips 4-byte length prefix when forwarding between transports
+- [ ] **WEB-06**: CORS headers on WebSocket endpoint allow cross-origin browser connections
+- [ ] **WEB-07**: Browser WebSocket transport connects to relay, joins room, and exchanges postcard-encoded messages
+- [ ] **WEB-08**: Browser performs full KEM handshake (HandshakeInit/Response/Kem/Complete) with CLI peer via WASM crypto
+- [ ] **WEB-09**: Browser can send files via drag-and-drop with 64KB chunked AES-256-GCM encryption matching CLI wire format
+- [ ] **WEB-10**: Browser can receive files from CLI peer with progressive decryption and download
+- [ ] **WEB-11**: Browser displays real-time transfer progress (speed, percentage, ETA)
+- [ ] **WEB-12**: Browser clipboard sharing sends text/images E2E encrypted, interoperable with `tallow clip` (uses FileOffer+Chunk pipeline, not a special message variant)
+- [ ] **WEB-13**: Received clipboard content auto-copies to browser clipboard via Clipboard API
+- [ ] **WEB-14**: Browser chat sends/receives E2E encrypted messages interoperable with `tallow chat` using Message::ChatText with AES-256-GCM (nonce: [0u8;4]||counter.to_be_bytes(), AAD: b"tallow-chat-v1", counter increments by 2)
+- [ ] **WEB-15**: All received text sanitized via sanitize_display() before rendering (ANSI stripped, control chars removed)
+- [ ] **WEB-16**: Typing indicators sent/received between browser and CLI chat peers via Message::TypingIndicator
+- [ ] **WEB-17**: Web app installable as PWA (manifest.json, service worker for offline shell caching)
+- [ ] **WEB-18**: WASM crypto produces identical output to native for KEM, AES-GCM, BLAKE3 — verified by cargo test on native target
+
 ### P2P Direct Transfer (P2P) — Phase 20
 - [x] **P2P-01**: ICE candidate exchange via relay signaling (CandidateOffer/CandidatesDone wire messages)
 - [x] **P2P-02**: QUIC hole punching via DirectListener::connect_to() endpoint reuse
@@ -299,14 +320,33 @@ Deferred to future release. Tracked but not in current roadmap.
 | P2P-08 | Phase 20 | Done |
 | ANET-01 | Phase 20 | Done |
 | ANET-02 | Phase 20 | Done |
+| WEB-01 | Phase 21 | Not Started |
+| WEB-02 | Phase 21 | Not Started |
+| WEB-03 | Phase 21 | Not Started |
+| WEB-04 | Phase 21 | Not Started |
+| WEB-05 | Phase 21 | Not Started |
+| WEB-06 | Phase 21 | Not Started |
+| WEB-07 | Phase 21 | Not Started |
+| WEB-08 | Phase 21 | Not Started |
+| WEB-09 | Phase 21 | Not Started |
+| WEB-10 | Phase 21 | Not Started |
+| WEB-11 | Phase 21 | Not Started |
+| WEB-12 | Phase 21 | Not Started |
+| WEB-13 | Phase 21 | Not Started |
+| WEB-14 | Phase 21 | Not Started |
+| WEB-15 | Phase 21 | Not Started |
+| WEB-16 | Phase 21 | Not Started |
+| WEB-17 | Phase 21 | Not Started |
+| WEB-18 | Phase 21 | Not Started |
 
 **Coverage:**
 - v1 requirements: 87 total
 - v1+ Phase 20 requirements: 8 (P2P-01..P2P-08)
+- v1+ Phase 21 requirements: 18 (WEB-01..WEB-18)
 - v2-deferred completed: 2 (ANET-01, ANET-02)
-- Mapped to phases: 97
+- Mapped to phases: 115
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-19*
-*Last updated: 2026-02-21 after Phase 20 (QUIC Hole Punching / P2P Direct)*
+*Last updated: 2026-02-21 after Phase 21 (Web UI / Browser Client) requirements added*
