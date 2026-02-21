@@ -27,26 +27,19 @@ pub enum SandboxError {
 }
 
 /// Sandbox configuration describing allowed filesystem access and capabilities
+///
+/// Note: DNS resolution uses the same syscalls as general networking (socket,
+/// connect, sendto, recvfrom), so it cannot be independently restricted at the
+/// syscall level. DNS is allowed whenever `allow_network` is true.
+/// Default is restrictive: no paths, no network. Callers must opt in.
+#[derive(Default)]
 pub struct SandboxConfig {
     /// Paths that should remain readable
     pub read_paths: Vec<String>,
     /// Paths that should remain writable
     pub write_paths: Vec<String>,
-    /// Whether networking is allowed
+    /// Whether networking (and DNS) is allowed (default: false)
     pub allow_network: bool,
-    /// Whether DNS resolution is allowed
-    pub allow_dns: bool,
-}
-
-impl Default for SandboxConfig {
-    fn default() -> Self {
-        Self {
-            read_paths: vec![],
-            write_paths: vec![],
-            allow_network: true,
-            allow_dns: true,
-        }
-    }
 }
 
 impl SandboxConfig {
@@ -84,7 +77,6 @@ impl SandboxConfig {
             read_paths,
             write_paths,
             allow_network: true,
-            allow_dns: true,
         }
     }
 
@@ -120,7 +112,6 @@ impl SandboxConfig {
             read_paths,
             write_paths,
             allow_network: true,
-            allow_dns: true,
         }
     }
 }
@@ -511,11 +502,9 @@ fn apply_openbsd_sandbox(config: &SandboxConfig) -> Result<(), SandboxError> {
 
 /// Check if the current platform supports sandboxing
 pub fn is_sandbox_supported() -> bool {
-    cfg!(any(
-        target_os = "linux",
-        target_os = "openbsd",
-        target_os = "macos"
-    ))
+    // Only Linux has a real implementation (Landlock + Seccomp).
+    // macOS and OpenBSD paths are stubbed — don't claim support.
+    cfg!(target_os = "linux")
 }
 
 /// Get a human-readable description of the active sandbox
@@ -548,8 +537,7 @@ mod tests {
     #[test]
     fn test_default_config() {
         let config = SandboxConfig::default();
-        assert!(config.allow_network);
-        assert!(config.allow_dns);
+        assert!(!config.allow_network); // Default is restrictive
         assert!(config.read_paths.is_empty());
         assert!(config.write_paths.is_empty());
     }
@@ -626,9 +614,7 @@ mod tests {
             read_paths: vec![],
             write_paths: vec![],
             allow_network: false,
-            allow_dns: false,
         };
         assert!(!config.allow_network);
-        assert!(!config.allow_dns);
     }
 }

@@ -152,6 +152,7 @@ async fn run_hook_command(command: &str, env: &HookEnv) -> io::Result<bool> {
 
     // Set TALLOW_* environment variables
     // NOTE: We intentionally do NOT pass sensitive data like session keys
+    // or code phrases (TALLOW_CODE is omitted — it's an auth secret).
     cmd.env("TALLOW_FILES", env.files.join(","));
     cmd.env("TALLOW_SIZE", env.total_size.to_string());
     cmd.env("TALLOW_DIRECTION", &env.direction);
@@ -160,9 +161,8 @@ async fn run_hook_command(command: &str, env: &HookEnv) -> io::Result<bool> {
         cmd.env("TALLOW_PEER", fingerprint);
     }
 
-    if let Some(ref code) = env.code_phrase {
-        cmd.env("TALLOW_CODE", code);
-    }
+    // TALLOW_CODE intentionally omitted — code phrase is an authentication
+    // secret and must not be leaked to hook scripts or /proc/<pid>/environ.
 
     if let Some(ref error) = env.error {
         cmd.env("TALLOW_ERROR", error);
@@ -174,38 +174,23 @@ async fn run_hook_command(command: &str, env: &HookEnv) -> io::Result<bool> {
     cmd.stdout(std::process::Stdio::piped());
     cmd.stderr(std::process::Stdio::piped());
 
-    let child = cmd.spawn()?;
+    let mut child = cmd.spawn()?;
 
-    // Apply timeout
+    // Apply timeout — use child.wait() so we retain the handle for kill-on-timeout
     let result = tokio::time::timeout(
         std::time::Duration::from_secs(HOOK_TIMEOUT_SECS),
-        child.wait_with_output(),
+        child.wait(),
     )
     .await;
 
     match result {
-        Ok(Ok(output)) => {
-            // Log any output from the hook
-            if !output.stdout.is_empty() {
-                if let Ok(stdout) = std::str::from_utf8(&output.stdout) {
-                    for line in stdout.lines() {
-                        tracing::info!("[hook stdout] {}", line);
-                    }
-                }
-            }
-            if !output.stderr.is_empty() {
-                if let Ok(stderr) = std::str::from_utf8(&output.stderr) {
-                    for line in stderr.lines() {
-                        tracing::warn!("[hook stderr] {}", line);
-                    }
-                }
-            }
-            Ok(output.status.success())
-        }
+        Ok(Ok(status)) => Ok(status.success()),
         Ok(Err(e)) => Err(e),
         Err(_) => {
+            // Timeout fired — actually kill the child process to prevent orphans
+            let _ = child.start_kill();
             tracing::warn!(
-                "Hook timed out after {}s — process will be terminated",
+                "Hook timed out after {}s — process killed",
                 HOOK_TIMEOUT_SECS
             );
             Err(io::Error::new(

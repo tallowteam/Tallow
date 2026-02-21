@@ -696,6 +696,25 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
         Some(Message::FileSelection {
             selected_indices, ..
         }) => {
+            // Validate indices are within range and non-empty
+            if selected_indices.is_empty() {
+                return Err(io::Error::other(
+                    "Receiver sent empty file selection — treating as rejection",
+                ));
+            }
+            if selected_indices.iter().any(|&i| i >= file_count as u32) {
+                return Err(io::Error::other(format!(
+                    "Receiver sent invalid file selection index (max: {})",
+                    file_count - 1
+                )));
+            }
+            // Cap selection size to prevent memory abuse
+            if selected_indices.len() > file_count {
+                return Err(io::Error::other(
+                    "Receiver sent more selections than files in manifest",
+                ));
+            }
+
             // Receiver sent per-file selection -- store indices, then wait for FileAccept
             tracing::info!(
                 "Receiver selected {} of {} file(s)",

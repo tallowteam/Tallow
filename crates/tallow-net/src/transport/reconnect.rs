@@ -47,18 +47,33 @@ impl Default for ReconnectConfig {
 }
 
 impl ReconnectConfig {
+    /// Create a config, clamping `jitter_factor` to `[0.0, 1.0]` and
+    /// ensuring `max_backoff >= initial_backoff`.
+    pub fn new(max_retries: u32, initial: Duration, max: Duration, jitter: f64) -> Self {
+        Self {
+            max_retries,
+            initial_backoff: initial,
+            max_backoff: if max < initial { initial } else { max },
+            jitter_factor: jitter.clamp(0.0, 1.0),
+        }
+    }
+
     /// Calculate the backoff duration for a given attempt number (0-indexed).
     ///
     /// Uses exponential backoff: `initial_backoff * 2^attempt`, capped at `max_backoff`.
     /// Deterministic jitter is added based on the attempt number to avoid
     /// thundering herd while remaining testable (no RNG).
+    ///
+    /// NOTE: Jitter is deterministic (based on attempt number) for testability.
+    /// For true thundering-herd avoidance across multiple independent clients,
+    /// a randomized jitter source would be needed.
     pub fn backoff_for_attempt(&self, attempt: u32) -> Duration {
         let base = self.initial_backoff.as_millis() as u64;
         let exponential = base.saturating_mul(2_u64.saturating_pow(attempt));
         let capped = exponential.min(self.max_backoff.as_millis() as u64);
 
         // Add deterministic jitter based on attempt number
-        let jitter_range = (capped as f64 * self.jitter_factor) as u64;
+        let jitter_range = (capped as f64 * self.jitter_factor.clamp(0.0, 1.0)) as u64;
         let jitter = if jitter_range > 0 {
             // Simple deterministic jitter using attempt number as seed
             (attempt as u64 * 7 + 13) % (jitter_range + 1)

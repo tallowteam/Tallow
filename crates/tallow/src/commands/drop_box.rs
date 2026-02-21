@@ -47,10 +47,10 @@ pub async fn execute(args: DropBoxArgs, json: bool) -> io::Result<()> {
 
     // Generate or use fixed code phrase
     let code_phrase = if let Some(ref code) = args.code {
-        if code.len() < 4 {
+        if code.len() < 8 {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
-                "Custom code must be at least 4 characters for security",
+                "Drop box code must be at least 8 characters (persistent listener needs strong code)",
             ));
         }
         code.clone()
@@ -460,16 +460,15 @@ async fn handle_one_transfer(
         // Auto-accept everything
         true
     } else if args.trusted_only {
-        // Only accept from trusted contacts
-        // For now, accept -- full trust DB integration requires identity exchange
-        // which happens in the handshake. Log a warning about the stub.
-        tracing::info!("--trusted-only: accepting (trust verification stub)");
+        // Trust verification requires full identity exchange in the handshake,
+        // which is not yet implemented. Reject to avoid false security guarantees.
+        tracing::warn!("--trusted-only: rejecting (trust verification not yet implemented)");
         if !json {
-            output::color::info(
-                "Accepting transfer (trust verification pending full identity exchange)",
+            output::color::warning(
+                "Rejecting: --trusted-only requires identity exchange (not yet implemented)",
             );
         }
-        true
+        false
     } else if json {
         // JSON mode with no --yes: reject
         false
