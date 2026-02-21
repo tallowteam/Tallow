@@ -182,9 +182,7 @@ mod tests {
 
     #[test]
     fn test_validate_rejects_loopback() {
-        assert!(!validate_candidate_addr(
-            &"127.0.0.1:1234".parse().unwrap()
-        ));
+        assert!(!validate_candidate_addr(&"127.0.0.1:1234".parse().unwrap()));
         assert!(!validate_candidate_addr(&"[::1]:1234".parse().unwrap()));
     }
 
@@ -204,23 +202,17 @@ mod tests {
 
     #[test]
     fn test_validate_rejects_multicast() {
-        assert!(!validate_candidate_addr(
-            &"224.0.0.1:1234".parse().unwrap()
-        ));
+        assert!(!validate_candidate_addr(&"224.0.0.1:1234".parse().unwrap()));
     }
 
     #[test]
     fn test_validate_rejects_unspecified() {
-        assert!(!validate_candidate_addr(
-            &"0.0.0.0:1234".parse().unwrap()
-        ));
+        assert!(!validate_candidate_addr(&"0.0.0.0:1234".parse().unwrap()));
     }
 
     #[test]
     fn test_validate_rejects_port_zero() {
-        assert!(!validate_candidate_addr(
-            &"192.168.1.1:0".parse().unwrap()
-        ));
+        assert!(!validate_candidate_addr(&"192.168.1.1:0".parse().unwrap()));
     }
 
     #[test]
@@ -228,9 +220,7 @@ mod tests {
         assert!(validate_candidate_addr(
             &"192.168.1.42:8080".parse().unwrap()
         ));
-        assert!(validate_candidate_addr(
-            &"8.8.8.8:4433".parse().unwrap()
-        ));
+        assert!(validate_candidate_addr(&"8.8.8.8:4433".parse().unwrap()));
     }
 
     #[test]
@@ -279,12 +269,8 @@ mod tests {
     /// Private ranges should be valid candidates (LAN peers)
     #[test]
     fn test_validate_accepts_private_ranges() {
-        assert!(validate_candidate_addr(
-            &"10.0.0.1:8080".parse().unwrap()
-        ));
-        assert!(validate_candidate_addr(
-            &"172.16.0.1:8080".parse().unwrap()
-        ));
+        assert!(validate_candidate_addr(&"10.0.0.1:8080".parse().unwrap()));
+        assert!(validate_candidate_addr(&"172.16.0.1:8080".parse().unwrap()));
         assert!(validate_candidate_addr(
             &"192.168.0.1:8080".parse().unwrap()
         ));
@@ -293,17 +279,13 @@ mod tests {
     /// IPv6 link-local (fe80::/10) should be rejected
     #[test]
     fn test_validate_rejects_ipv6_link_local() {
-        assert!(!validate_candidate_addr(
-            &"[fe80::1]:8080".parse().unwrap()
-        ));
+        assert!(!validate_candidate_addr(&"[fe80::1]:8080".parse().unwrap()));
     }
 
     /// IPv6 multicast (ff00::/8) should be rejected
     #[test]
     fn test_validate_rejects_ipv6_multicast() {
-        assert!(!validate_candidate_addr(
-            &"[ff02::1]:8080".parse().unwrap()
-        ));
+        assert!(!validate_candidate_addr(&"[ff02::1]:8080".parse().unwrap()));
     }
 
     /// IPv6 unspecified (::) should be rejected

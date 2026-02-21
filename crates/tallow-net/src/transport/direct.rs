@@ -261,14 +261,9 @@ impl DirectListener {
 
         let connection = tokio::time::timeout(
             timeout_dur,
-            self.endpoint
-                .connect(peer_addr, "localhost")
-                .map_err(|e| {
-                    NetworkError::ConnectionFailed(format!(
-                        "direct connect initiation failed: {}",
-                        e
-                    ))
-                })?,
+            self.endpoint.connect(peer_addr, "localhost").map_err(|e| {
+                NetworkError::ConnectionFailed(format!("direct connect initiation failed: {}", e))
+            })?,
         )
         .await
         .map_err(|_| NetworkError::Timeout)?
@@ -280,9 +275,10 @@ impl DirectListener {
         tracing::info!("Direct P2P connection established to {}", remote_addr);
 
         // Open a bidirectional stream (client role opens, server role accepts)
-        let (send, recv) = connection.open_bi().await.map_err(|e| {
-            NetworkError::ConnectionFailed(format!("direct open_bi failed: {}", e))
-        })?;
+        let (send, recv) = connection
+            .open_bi()
+            .await
+            .map_err(|e| NetworkError::ConnectionFailed(format!("direct open_bi failed: {}", e)))?;
 
         Ok(DirectConnection::new(
             self.endpoint.clone(),

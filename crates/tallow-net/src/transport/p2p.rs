@@ -105,8 +105,11 @@ pub async fn negotiate_p2p(
         return NegotiationResult::FallbackToRelay("P2P suppressed (no_p2p flag)".to_string());
     }
 
-    match tokio::time::timeout(P2P_NEGOTIATION_TIMEOUT, negotiate_inner(channel, is_initiator))
-        .await
+    match tokio::time::timeout(
+        P2P_NEGOTIATION_TIMEOUT,
+        negotiate_inner(channel, is_initiator),
+    )
+    .await
     {
         Ok(Ok(result)) => result,
         Ok(Err(e)) => {
@@ -233,10 +236,7 @@ async fn negotiate_inner(
 
 /// Send a candidate offer through the relay channel.
 #[cfg(feature = "quic")]
-async fn send_candidate_offer(
-    channel: &mut impl PeerChannel,
-    candidate: &Candidate,
-) -> Result<()> {
+async fn send_candidate_offer(channel: &mut impl PeerChannel, candidate: &Candidate) -> Result<()> {
     let addr_bytes = encode_socket_addr(candidate.addr);
     let addr_len = addr_bytes.len();
     if addr_len > 255 {
@@ -364,10 +364,7 @@ async fn receive_remote_candidates(channel: &mut impl PeerChannel) -> Result<Vec
                 break;
             }
             other => {
-                tracing::debug!(
-                    "Unexpected tag during candidate exchange: 0x{:02x}",
-                    other
-                );
+                tracing::debug!("Unexpected tag during candidate exchange: 0x{:02x}", other);
                 // Not a fatal error -- might be keepalive or other traffic
             }
         }
@@ -622,16 +619,12 @@ mod tests {
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn test_local_p2p_connection() {
         // Server: bind a listener on loopback
-        let listener =
-            DirectListener::bind_to("127.0.0.1:0".parse().unwrap()).unwrap();
+        let listener = DirectListener::bind_to("127.0.0.1:0".parse().unwrap()).unwrap();
         let server_addr = listener.local_addr();
 
         // Spawn server accept
         let server_handle = tokio::spawn(async move {
-            let mut server = listener
-                .accept_peer(Duration::from_secs(5))
-                .await
-                .unwrap();
+            let mut server = listener.accept_peer(Duration::from_secs(5)).await.unwrap();
 
             // Receive a test message
             let mut buf = vec![0u8; 1024];
@@ -677,13 +670,11 @@ mod tests {
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn test_hole_punch_connect_to() {
         // Server: bind on loopback
-        let server_listener =
-            DirectListener::bind_to("127.0.0.1:0".parse().unwrap()).unwrap();
+        let server_listener = DirectListener::bind_to("127.0.0.1:0".parse().unwrap()).unwrap();
         let server_addr = server_listener.local_addr();
 
         // Client: another listener (simulating hole punch initiator)
-        let mut client_listener =
-            DirectListener::bind_to("127.0.0.1:0".parse().unwrap()).unwrap();
+        let mut client_listener = DirectListener::bind_to("127.0.0.1:0".parse().unwrap()).unwrap();
 
         // Spawn server accept
         let server_handle = tokio::spawn(async move {

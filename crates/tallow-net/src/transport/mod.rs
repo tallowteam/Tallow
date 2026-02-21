@@ -28,9 +28,9 @@ pub use connection::{
 };
 #[cfg(feature = "quic")]
 pub use direct::{connect_direct, DirectConnection, DirectListener};
+pub use fallback::{ActiveTransport, FallbackTransport};
 #[cfg(feature = "quic")]
 pub use p2p::{negotiate_p2p, NegotiationResult};
-pub use fallback::{ActiveTransport, FallbackTransport};
 pub use peer_channel::PeerChannel;
 pub use proxied::ProxiedTcpTlsTransport;
 #[cfg(feature = "quic")]
