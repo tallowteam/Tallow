@@ -86,7 +86,9 @@ impl ProxiedTcpTlsTransport {
         let tls_stream = tls_connector
             .connect(server_name, tcp_stream)
             .await
-            .map_err(|e| NetworkError::TlsError(format!("TLS handshake via proxy failed: {}", e)))?;
+            .map_err(|e| {
+                NetworkError::TlsError(format!("TLS handshake via proxy failed: {}", e))
+            })?;
 
         info!(
             "connected to relay via SOCKS5 proxy (tor_mode={})",
@@ -193,7 +195,8 @@ mod tests {
     #[test]
     fn test_proxied_transport_new() {
         let config = ProxyConfig::tor_default();
-        let transport = ProxiedTcpTlsTransport::new(&config, Some("relay.example.com".to_string()), 4433);
+        let transport =
+            ProxiedTcpTlsTransport::new(&config, Some("relay.example.com".to_string()), 4433);
         assert!(transport.stream.is_none());
         assert_eq!(transport.relay_port, 4433);
         assert!(transport.use_hostname);

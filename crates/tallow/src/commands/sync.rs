@@ -16,9 +16,8 @@ use tallow_protocol::wire::{codec::TallowCodec, Message};
 /// Execute sync command
 pub async fn execute(args: SyncArgs, json: bool) -> io::Result<()> {
     // Build proxy config from CLI flags
-    let proxy_config = crate::commands::proxy::build_proxy_config(
-        args.tor, &args.proxy, json,
-    ).await?;
+    let proxy_config =
+        crate::commands::proxy::build_proxy_config(args.tor, &args.proxy, json).await?;
 
     // Log proxy usage
     if let Some(ref proxy) = proxy_config {
@@ -79,9 +78,8 @@ pub async fn execute(args: SyncArgs, json: bool) -> io::Result<()> {
     let transfer_id: [u8; 16] = rand::random();
     let placeholder_key = [0u8; 32];
 
-    let mut pipeline =
-        tallow_protocol::transfer::SendPipeline::new(transfer_id, placeholder_key)
-            .with_exclusion(exclusion);
+    let mut pipeline = tallow_protocol::transfer::SendPipeline::new(transfer_id, placeholder_key)
+        .with_exclusion(exclusion);
 
     let _offer = pipeline
         .prepare(std::slice::from_ref(&args.dir))
@@ -108,9 +106,9 @@ pub async fn execute(args: SyncArgs, json: bool) -> io::Result<()> {
     }
 
     // Resolve relay address (proxy-aware: avoids DNS leaks)
-    let resolved = tallow_net::relay::resolve_relay_proxy(
-        &args.relay, proxy_config.as_ref(),
-    ).await.map_err(|e| io::Error::other(format!("Relay resolution failed: {}", e)))?;
+    let resolved = tallow_net::relay::resolve_relay_proxy(&args.relay, proxy_config.as_ref())
+        .await
+        .map_err(|e| io::Error::other(format!("Relay resolution failed: {}", e)))?;
 
     let mut relay = match resolved {
         tallow_net::relay::ResolvedRelay::Addr(addr) => {
@@ -123,7 +121,8 @@ pub async fn execute(args: SyncArgs, json: bool) -> io::Result<()> {
             }
         }
         tallow_net::relay::ResolvedRelay::Hostname { ref host, port } => {
-            let proxy = proxy_config.as_ref()
+            let proxy = proxy_config
+                .as_ref()
                 .expect("Hostname resolution only returned for proxy mode");
             tallow_net::relay::RelayClient::new_with_proxy(host, port, proxy.clone())
         }
@@ -242,9 +241,7 @@ pub async fn execute(args: SyncArgs, json: bool) -> io::Result<()> {
                 Some(Message::HandshakeComplete { confirmation }) => {
                     handshake
                         .verify_receiver_confirmation(&confirmation)
-                        .map_err(|e| {
-                            io::Error::other(format!("Key confirmation failed: {}", e))
-                        })?;
+                        .map_err(|e| io::Error::other(format!("Key confirmation failed: {}", e)))?;
                 }
                 other => {
                     relay.close().await;

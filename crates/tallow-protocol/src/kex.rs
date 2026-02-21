@@ -121,10 +121,7 @@ pub fn derive_session_key_with_salt(
 /// (public_message, CpaceState) -- send public_message to peer,
 /// then call `complete_cpace` with their public_message.
 #[cfg(test)]
-pub(crate) fn start_cpace_initiator(
-    code_phrase: &str,
-    session_id: &[u8],
-) -> (Vec<u8>, CpaceState) {
+pub(crate) fn start_cpace_initiator(code_phrase: &str, session_id: &[u8]) -> (Vec<u8>, CpaceState) {
     let initiator = tallow_crypto::pake::CpaceInitiator::new(code_phrase, session_id);
     let public_bytes = initiator.public_message();
 
@@ -133,10 +130,7 @@ pub(crate) fn start_cpace_initiator(
 
 /// Start CPace as responder
 #[cfg(test)]
-pub(crate) fn start_cpace_responder(
-    code_phrase: &str,
-    session_id: &[u8],
-) -> (Vec<u8>, CpaceState) {
+pub(crate) fn start_cpace_responder(code_phrase: &str, session_id: &[u8]) -> (Vec<u8>, CpaceState) {
     let responder = tallow_crypto::pake::CpaceResponder::new(code_phrase, session_id);
     let public_bytes = responder.public_message();
 
@@ -318,8 +312,7 @@ impl SenderHandshake {
         session_id.extend_from_slice(&self.nonce);
 
         // Create CPace initiator
-        let initiator =
-            tallow_crypto::pake::CpaceInitiator::new(&self.code_phrase, &session_id);
+        let initiator = tallow_crypto::pake::CpaceInitiator::new(&self.code_phrase, &session_id);
         let cpace_public = initiator.public_message();
 
         // Serialize KEM capabilities
@@ -361,12 +354,13 @@ impl SenderHandshake {
         nonce: &[u8; 16],
     ) -> Result<(Message, SessionKey)> {
         // Take CPace state (consumes it -- can't call again)
-        let cpace_state = self.cpace_state.take().ok_or_else(|| {
-            ProtocolError::InvalidStateTransition {
-                from: "no cpace state".to_string(),
-                to: "process_response".to_string(),
-            }
-        })?;
+        let cpace_state =
+            self.cpace_state
+                .take()
+                .ok_or_else(|| ProtocolError::InvalidStateTransition {
+                    from: "no cpace state".to_string(),
+                    to: "process_response".to_string(),
+                })?;
 
         // Complete CPace with responder's public message -> pake_secret
         let mut pake_secret = match cpace_state {
@@ -388,21 +382,20 @@ impl SenderHandshake {
         self.transcript.append(kem_public_key);
 
         // Deserialize the receiver's KEM public key
-        let pk: tallow_crypto::kem::hybrid::PublicKey =
-            postcard::from_bytes(kem_public_key).map_err(|e| {
+        let pk: tallow_crypto::kem::hybrid::PublicKey = postcard::from_bytes(kem_public_key)
+            .map_err(|e| {
                 ProtocolError::HandshakeFailed(format!("handshake authentication failed: {}", e))
             })?;
 
         // Encapsulate to receiver's KEM public key
-        let (ciphertext, kem_shared_secret) =
-            tallow_crypto::kem::HybridKem::encapsulate(&pk).map_err(|_e| {
+        let (ciphertext, kem_shared_secret) = tallow_crypto::kem::HybridKem::encapsulate(&pk)
+            .map_err(|_e| {
                 ProtocolError::HandshakeFailed("handshake authentication failed".to_string())
             })?;
 
         // Serialize ciphertext
-        let kem_ciphertext = postcard::to_stdvec(&ciphertext).map_err(|e| {
-            ProtocolError::EncodingError(format!("KEM ciphertext encoding: {}", e))
-        })?;
+        let kem_ciphertext = postcard::to_stdvec(&ciphertext)
+            .map_err(|e| ProtocolError::EncodingError(format!("KEM ciphertext encoding: {}", e)))?;
 
         // Append ciphertext to transcript
         self.transcript.append(&kem_ciphertext);
@@ -452,12 +445,13 @@ impl SenderHandshake {
             }
         })?;
 
-        let transcript_hash = self.transcript_hash.as_ref().ok_or_else(|| {
-            ProtocolError::InvalidStateTransition {
-                from: "no transcript hash".to_string(),
-                to: "verify_receiver_confirmation".to_string(),
-            }
-        })?;
+        let transcript_hash =
+            self.transcript_hash
+                .as_ref()
+                .ok_or_else(|| ProtocolError::InvalidStateTransition {
+                    from: "no transcript hash".to_string(),
+                    to: "verify_receiver_confirmation".to_string(),
+                })?;
 
         let expected = compute_confirmation(
             session_key_bytes,
@@ -554,8 +548,7 @@ impl ReceiverHandshake {
         session_id.extend_from_slice(sender_nonce);
 
         // Create CPace responder and complete immediately
-        let responder =
-            tallow_crypto::pake::CpaceResponder::new(&self.code_phrase, &session_id);
+        let responder = tallow_crypto::pake::CpaceResponder::new(&self.code_phrase, &session_id);
         let resp_cpace_public = responder.public_message();
         let pake_secret = responder.finish(cpace_public).map_err(|_e| {
             ProtocolError::HandshakeFailed("handshake authentication failed".to_string())
@@ -586,9 +579,8 @@ impl ReceiverHandshake {
         self.kem_secret_key = Some(sk);
 
         // Serialize public key
-        let kem_public_key = postcard::to_stdvec(&pk).map_err(|e| {
-            ProtocolError::EncodingError(format!("KEM public key encoding: {}", e))
-        })?;
+        let kem_public_key = postcard::to_stdvec(&pk)
+            .map_err(|e| ProtocolError::EncodingError(format!("KEM public key encoding: {}", e)))?;
 
         // Append serialized pk to transcript
         self.transcript.append(&kem_public_key);
@@ -617,20 +609,18 @@ impl ReceiverHandshake {
         sender_confirmation: &[u8; 32],
     ) -> Result<(Message, SessionKey)> {
         // Take KEM secret key (consumes it)
-        let sk = self.kem_secret_key.take().ok_or_else(|| {
-            ProtocolError::InvalidStateTransition {
-                from: "no KEM secret key".to_string(),
-                to: "process_kem".to_string(),
-            }
-        })?;
+        let sk =
+            self.kem_secret_key
+                .take()
+                .ok_or_else(|| ProtocolError::InvalidStateTransition {
+                    from: "no KEM secret key".to_string(),
+                    to: "process_kem".to_string(),
+                })?;
 
         // Deserialize ciphertext
-        let ct: tallow_crypto::kem::hybrid::Ciphertext =
-            postcard::from_bytes(kem_ciphertext).map_err(|e| {
-                ProtocolError::HandshakeFailed(format!(
-                    "handshake authentication failed: {}",
-                    e
-                ))
+        let ct: tallow_crypto::kem::hybrid::Ciphertext = postcard::from_bytes(kem_ciphertext)
+            .map_err(|e| {
+                ProtocolError::HandshakeFailed(format!("handshake authentication failed: {}", e))
             })?;
 
         // Decapsulate
@@ -646,12 +636,13 @@ impl ReceiverHandshake {
         let transcript_hash = self.transcript.hash();
 
         // Take PAKE secret
-        let mut pake_secret = self.pake_secret.take().ok_or_else(|| {
-            ProtocolError::InvalidStateTransition {
-                from: "no PAKE secret".to_string(),
-                to: "process_kem".to_string(),
-            }
-        })?;
+        let mut pake_secret =
+            self.pake_secret
+                .take()
+                .ok_or_else(|| ProtocolError::InvalidStateTransition {
+                    from: "no PAKE secret".to_string(),
+                    to: "process_kem".to_string(),
+                })?;
 
         // Derive session key
         let session_key_bytes = derive_handshake_session_key(
@@ -1150,7 +1141,10 @@ mod tests {
         let result = receiver.process_init(1, &[], &[0u8; 32], &[0u8; 16]);
         assert!(result.is_err(), "Version 1 should be rejected");
         match result {
-            Err(ProtocolError::VersionMismatch { local: 2, remote: 1 }) => {}
+            Err(ProtocolError::VersionMismatch {
+                local: 2,
+                remote: 1,
+            }) => {}
             Err(e) => panic!("Expected VersionMismatch, got: {}", e),
             Ok(_) => panic!("Expected error"),
         }

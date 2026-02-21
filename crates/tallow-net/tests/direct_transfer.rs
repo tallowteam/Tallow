@@ -25,10 +25,7 @@ mod direct_transfer_tests {
         let addr = listener.local_addr();
 
         let server_handle = tokio::spawn(async move {
-            let mut server = listener
-                .accept_peer(Duration::from_secs(5))
-                .await
-                .unwrap();
+            let mut server = listener.accept_peer(Duration::from_secs(5)).await.unwrap();
 
             // Verify transport description
             assert!(
@@ -46,9 +43,7 @@ mod direct_transfer_tests {
             server
         });
 
-        let mut client = connect_direct(addr, Duration::from_secs(5))
-            .await
-            .unwrap();
+        let mut client = connect_direct(addr, Duration::from_secs(5)).await.unwrap();
 
         assert!(
             client.transport_description().starts_with("direct LAN"),
@@ -74,10 +69,7 @@ mod direct_transfer_tests {
         let addr = listener.local_addr();
 
         let server_handle = tokio::spawn(async move {
-            let mut server = listener
-                .accept_peer(Duration::from_secs(5))
-                .await
-                .unwrap();
+            let mut server = listener.accept_peer(Duration::from_secs(5)).await.unwrap();
 
             let mut buf = vec![0u8; 4096];
             for i in 0u32..50 {
@@ -93,9 +85,7 @@ mod direct_transfer_tests {
             server
         });
 
-        let mut client = connect_direct(addr, Duration::from_secs(5))
-            .await
-            .unwrap();
+        let mut client = connect_direct(addr, Duration::from_secs(5)).await.unwrap();
 
         // Send 50 messages from client to server
         for i in 0u32..50 {
@@ -114,19 +104,14 @@ mod direct_transfer_tests {
         let addr = listener.local_addr();
 
         let server_handle = tokio::spawn(async move {
-            let mut server = listener
-                .accept_peer(Duration::from_secs(10))
-                .await
-                .unwrap();
+            let mut server = listener.accept_peer(Duration::from_secs(10)).await.unwrap();
 
             let mut buf = vec![0u8; 600_000];
             let n = server.receive_message(&mut buf).await.unwrap();
             (server, n, buf)
         });
 
-        let mut client = connect_direct(addr, Duration::from_secs(5))
-            .await
-            .unwrap();
+        let mut client = connect_direct(addr, Duration::from_secs(5)).await.unwrap();
 
         // Send a 512KB payload
         let payload: Vec<u8> = (0..512 * 1024).map(|i| (i % 256) as u8).collect();

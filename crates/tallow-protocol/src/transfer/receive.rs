@@ -230,10 +230,7 @@ impl ReceivePipeline {
             if let Some(ref temp_dir) = self.temp_dir {
                 let chunk_path = temp_dir.join(format!("{}.chunk", index));
                 std::fs::write(&chunk_path, &chunk_data).map_err(|e| {
-                    ProtocolError::TransferFailed(format!(
-                        "write temp chunk {}: {}",
-                        index, e
-                    ))
+                    ProtocolError::TransferFailed(format!("write temp chunk {}: {}", index, e))
                 })?;
             }
         } else {
@@ -274,11 +271,7 @@ impl ReceivePipeline {
     ///
     /// Used for integrity verification against the sender's Merkle root.
     pub fn merkle_root(&self) -> Option<[u8; 32]> {
-        let hashes: Vec<[u8; 32]> = self
-            .chunk_hashes
-            .iter()
-            .filter_map(|h| *h)
-            .collect();
+        let hashes: Vec<[u8; 32]> = self.chunk_hashes.iter().filter_map(|h| *h).collect();
 
         if hashes.is_empty() || hashes.len() != self.chunk_hashes.len() {
             return None;
@@ -337,11 +330,7 @@ impl ReceivePipeline {
 
             // Create output file and write chunks sequentially
             let file = tokio::fs::File::create(&output_path).await.map_err(|e| {
-                ProtocolError::TransferFailed(format!(
-                    "create {}: {}",
-                    output_path.display(),
-                    e
-                ))
+                ProtocolError::TransferFailed(format!("create {}: {}", output_path.display(), e))
             })?;
             let mut writer = tokio::io::BufWriter::new(file);
             let mut hasher = blake3::Hasher::new();
@@ -354,11 +343,7 @@ impl ReceivePipeline {
 
                 hasher.update(&chunk_data);
                 writer.write_all(&chunk_data).await.map_err(|e| {
-                    ProtocolError::TransferFailed(format!(
-                        "write {}: {}",
-                        output_path.display(),
-                        e
-                    ))
+                    ProtocolError::TransferFailed(format!("write {}: {}", output_path.display(), e))
                 })?;
 
                 // Remove temp chunk after writing
@@ -420,12 +405,9 @@ impl ReceivePipeline {
             // Reassemble file from in-memory chunks
             let mut file_data = Vec::with_capacity(entry.size as usize);
             for _ in 0..entry.chunk_count {
-                let chunk = self
-                    .received_chunks
-                    .get(&chunk_index)
-                    .ok_or_else(|| {
-                        ProtocolError::TransferFailed(format!("missing chunk {}", chunk_index))
-                    })?;
+                let chunk = self.received_chunks.get(&chunk_index).ok_or_else(|| {
+                    ProtocolError::TransferFailed(format!("missing chunk {}", chunk_index))
+                })?;
                 file_data.extend_from_slice(chunk);
                 chunk_index += 1;
             }
@@ -728,8 +710,8 @@ mod tests {
         // Create 3 files of different sizes
         let files = vec![
             ("small.txt", vec![0x41u8; 100]),
-            ("medium.bin", vec![0xBBu8; 70_000]),  // > 1 chunk
-            ("exact.dat", vec![0xCCu8; 65_536]),   // exactly 1 chunk
+            ("medium.bin", vec![0xBBu8; 70_000]), // > 1 chunk
+            ("exact.dat", vec![0xCCu8; 65_536]),  // exactly 1 chunk
         ];
 
         for (name, data) in &files {
@@ -986,7 +968,10 @@ mod tests {
         // Try to send chunk with index 999 (way out of range)
         if let Some(Message::Chunk { data, total, .. }) = chunk_msgs.first() {
             let result = receiver.process_chunk(999, data, *total);
-            assert!(result.is_err(), "Out-of-bounds chunk index must be rejected");
+            assert!(
+                result.is_err(),
+                "Out-of-bounds chunk index must be rejected"
+            );
         }
     }
 
@@ -1042,7 +1027,10 @@ mod tests {
         }) = chunk_msgs.first()
         {
             let result = receiver.process_chunk(*index, data, *total);
-            assert!(result.is_err(), "Wrong session key must cause decryption failure");
+            assert!(
+                result.is_err(),
+                "Wrong session key must cause decryption failure"
+            );
         }
     }
 
@@ -1125,11 +1113,7 @@ mod tests {
 
         // Verify output file size matches
         let meta = tokio::fs::metadata(&paths[0]).await.unwrap();
-        assert_eq!(
-            meta.len(),
-            size as u64,
-            "Output file size must match input"
-        );
+        assert_eq!(meta.len(), size as u64, "Output file size must match input");
     }
 
     #[tokio::test]

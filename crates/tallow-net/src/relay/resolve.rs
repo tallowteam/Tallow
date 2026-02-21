@@ -63,17 +63,11 @@ pub async fn resolve_relay_proxy(
 
         // Branch 3: Generic SOCKS5 -- resolve via DNS-over-HTTPS
         Some(_) => {
-            debug!(
-                "generic SOCKS5: resolving '{}' via DNS-over-HTTPS",
-                host
-            );
+            debug!("generic SOCKS5: resolving '{}' via DNS-over-HTTPS", host);
             let resolver = crate::privacy::DohResolver::cloudflare();
             let addrs = resolver.resolve(host).await?;
             let ip = addrs.into_iter().next().ok_or_else(|| {
-                NetworkError::DnsResolution(format!(
-                    "DoH returned no addresses for '{}'",
-                    host
-                ))
+                NetworkError::DnsResolution(format!("DoH returned no addresses for '{}'", host))
             })?;
             Ok(ResolvedRelay::Addr(SocketAddr::new(ip, port)))
         }
@@ -91,10 +85,7 @@ pub async fn resolve_relay_proxy(
                 })?
                 .next()
                 .ok_or_else(|| {
-                    NetworkError::DnsResolution(format!(
-                        "no addresses found for relay '{}'",
-                        relay
-                    ))
+                    NetworkError::DnsResolution(format!("no addresses found for relay '{}'", relay))
                 })?;
             Ok(ResolvedRelay::Addr(addr))
         }
@@ -173,7 +164,9 @@ mod tests {
             ResolvedRelay::Addr(addr) => {
                 assert_eq!(addr.to_string(), "129.146.114.5:4433");
             }
-            ResolvedRelay::Hostname { .. } => panic!("expected Addr for IP literal even with proxy"),
+            ResolvedRelay::Hostname { .. } => {
+                panic!("expected Addr for IP literal even with proxy")
+            }
         }
     }
 
@@ -191,7 +184,9 @@ mod tests {
             ResolvedRelay::Addr(addr) => {
                 assert_eq!(addr.to_string(), "129.146.114.5:4433");
             }
-            ResolvedRelay::Hostname { .. } => panic!("expected Addr for IP literal even with proxy"),
+            ResolvedRelay::Hostname { .. } => {
+                panic!("expected Addr for IP literal even with proxy")
+            }
         }
     }
 

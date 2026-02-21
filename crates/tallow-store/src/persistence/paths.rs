@@ -43,6 +43,11 @@ pub fn history_file() -> PathBuf {
     data_dir().join("history.json")
 }
 
+/// Get the chat history file path
+pub fn chat_history_file() -> PathBuf {
+    data_dir().join("chat_history.json")
+}
+
 /// Get the clipboard history file path
 pub fn clipboard_history_file() -> PathBuf {
     data_dir().join("clipboard_history.json")

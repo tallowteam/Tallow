@@ -55,9 +55,8 @@ pub async fn build_proxy_config(
 
     // Priority 2/3: --proxy flag (or TALLOW_PROXY env var, handled by clap)
     if let Some(ref url) = proxy {
-        let mut config = ProxyConfig::from_url(url).map_err(|e| {
-            io::Error::other(format!("Invalid proxy URL '{}': {}", url, e))
-        })?;
+        let mut config = ProxyConfig::from_url(url)
+            .map_err(|e| io::Error::other(format!("Invalid proxy URL '{}': {}", url, e)))?;
 
         // Heuristic: if the proxy is localhost:9050, treat it as Tor
         if config.socks5_addr.ip().is_loopback() && config.socks5_addr.port() == 9050 {

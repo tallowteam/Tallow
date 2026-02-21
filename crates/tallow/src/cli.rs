@@ -410,16 +410,44 @@ pub struct WatchArgs {
 
 #[derive(Args)]
 pub struct ChatArgs {
-    /// Peer ID or device name
-    pub peer: Option<String>,
+    /// Code phrase to join an existing chat room
+    pub code: Option<String>,
 
-    /// Room code to join
-    #[arg(short, long)]
-    pub room: Option<String>,
+    /// Use a custom code phrase
+    #[arg(short = 'c', long = "code")]
+    pub custom_code: Option<String>,
+
+    /// Number of words in generated code phrase (default: 4)
+    #[arg(long)]
+    pub words: Option<usize>,
+
+    /// Relay server address (also reads TALLOW_RELAY env var)
+    #[arg(long, default_value = "129.146.114.5:4433", env = "TALLOW_RELAY")]
+    pub relay: String,
 
     /// Relay password (also reads TALLOW_RELAY_PASS env var)
     #[arg(long = "relay-pass", env = "TALLOW_RELAY_PASS", hide_env_values = true)]
     pub relay_pass: Option<String>,
+
+    /// SOCKS5 proxy address (also reads TALLOW_PROXY env var)
+    #[arg(long, env = "TALLOW_PROXY")]
+    pub proxy: Option<String>,
+
+    /// Route through Tor (shortcut for --proxy socks5://127.0.0.1:9050)
+    #[arg(long)]
+    pub tor: bool,
+
+    /// Display verification string after key exchange for MITM detection
+    #[arg(long)]
+    pub verify: bool,
+
+    /// Display QR code for the join command
+    #[arg(long)]
+    pub qr: bool,
+
+    /// Do not copy join command to clipboard
+    #[arg(long)]
+    pub no_clipboard: bool,
 }
 
 #[derive(Args)]

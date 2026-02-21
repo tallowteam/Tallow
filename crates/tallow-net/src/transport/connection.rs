@@ -112,10 +112,7 @@ pub async fn establish_sender_connection(
                 return Ok((ConnectionResult::Direct(direct_conn), true));
             }
             Err(e) => {
-                tracing::warn!(
-                    "Direct LAN connection failed, falling back to relay: {}",
-                    e
-                );
+                tracing::warn!("Direct LAN connection failed, falling back to relay: {}", e);
             }
         }
     }
@@ -145,11 +142,7 @@ async fn try_sender_direct(
     tracing::info!("Direct listener bound on port {}", port);
 
     // Advertise via mDNS (RAII -- drops and unregisters on scope exit)
-    let _advertiser = crate::discovery::lan::LanAdvertiser::new(
-        port,
-        fingerprint_prefix,
-        room_id,
-    )?;
+    let _advertiser = crate::discovery::lan::LanAdvertiser::new(port, fingerprint_prefix, room_id)?;
 
     tracing::info!("mDNS advertisement active, waiting for receiver...");
 
@@ -209,16 +202,12 @@ pub async fn establish_receiver_connection(
 ///
 /// Browses mDNS for the sender matching the room code, then connects directly.
 #[cfg(feature = "quic")]
-async fn try_receiver_direct(
-    room_id: &[u8; 32],
-) -> Result<crate::transport::DirectConnection> {
+async fn try_receiver_direct(room_id: &[u8; 32]) -> Result<crate::transport::DirectConnection> {
     // Browse for sender via mDNS
     let peer = crate::discovery::lan::discover_sender(room_id, MDNS_BROWSE_TIMEOUT)
         .await?
         .ok_or_else(|| {
-            NetworkError::DiscoveryError(
-                "No matching sender found on LAN via mDNS".to_string(),
-            )
+            NetworkError::DiscoveryError("No matching sender found on LAN via mDNS".to_string())
         })?;
 
     tracing::info!(
@@ -248,14 +237,8 @@ mod tests {
 
         // This should fail because no relay is running, but importantly
         // it should fail with a connection error, NOT a discovery error.
-        let result = establish_sender_connection(
-            &room_id,
-            "abcd1234",
-            relay_addr,
-            None,
-            false,
-        )
-        .await;
+        let result =
+            establish_sender_connection(&room_id, "abcd1234", relay_addr, None, false).await;
 
         assert!(result.is_err());
         // Verify it's a connection failure, not a discovery error

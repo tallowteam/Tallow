@@ -258,9 +258,7 @@ fn render_size_warning(frame: &mut Frame) {
         Line::from(""),
         Line::from(Span::styled(
             "Terminal too small",
-            Style::default()
-                .fg(Color::Red)
-                .add_modifier(Modifier::BOLD),
+            Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
         )),
         Line::from(format!(
             "Need 60x16 minimum, current: {}x{}",

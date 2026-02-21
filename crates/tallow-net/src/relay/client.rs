@@ -320,10 +320,7 @@ mod tests {
         let client = RelayClient::new_with_proxy("relay.example.com", 4433, proxy);
         assert_eq!(client.relay_addr().port(), 4433);
         assert!(client.proxy_config.is_some());
-        assert_eq!(
-            client.relay_hostname.as_deref(),
-            Some("relay.example.com")
-        );
+        assert_eq!(client.relay_hostname.as_deref(), Some("relay.example.com"));
     }
 
     #[test]

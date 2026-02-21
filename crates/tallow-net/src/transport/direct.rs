@@ -68,12 +68,9 @@ impl crate::transport::PeerChannel for DirectConnection {
                 data.len()
             ))
         })?;
-        self.send
-            .write_all(&len.to_be_bytes())
-            .await
-            .map_err(|e| {
-                NetworkError::ConnectionFailed(format!("direct write len failed: {}", e))
-            })?;
+        self.send.write_all(&len.to_be_bytes()).await.map_err(|e| {
+            NetworkError::ConnectionFailed(format!("direct write len failed: {}", e))
+        })?;
 
         // Write payload
         self.send.write_all(data).await.map_err(|e| {
@@ -86,12 +83,9 @@ impl crate::transport::PeerChannel for DirectConnection {
     async fn receive_message(&mut self, buf: &mut [u8]) -> Result<usize> {
         // Read 4-byte BE length prefix
         let mut len_buf = [0u8; 4];
-        self.recv
-            .read_exact(&mut len_buf)
-            .await
-            .map_err(|e| {
-                NetworkError::ConnectionFailed(format!("direct read len failed: {}", e))
-            })?;
+        self.recv.read_exact(&mut len_buf).await.map_err(|e| {
+            NetworkError::ConnectionFailed(format!("direct read len failed: {}", e))
+        })?;
 
         let len = u32::from_be_bytes(len_buf) as usize;
         if len > buf.len() {
@@ -103,12 +97,9 @@ impl crate::transport::PeerChannel for DirectConnection {
         }
 
         // Read payload
-        self.recv
-            .read_exact(&mut buf[..len])
-            .await
-            .map_err(|e| {
-                NetworkError::ConnectionFailed(format!("direct read payload failed: {}", e))
-            })?;
+        self.recv.read_exact(&mut buf[..len]).await.map_err(|e| {
+            NetworkError::ConnectionFailed(format!("direct read payload failed: {}", e))
+        })?;
 
         Ok(len)
     }
@@ -157,9 +148,11 @@ impl DirectListener {
     /// The certificate is not verified by the peer -- E2E encryption
     /// handles confidentiality and authentication.
     pub fn bind() -> Result<Self> {
-        Self::bind_to("0.0.0.0:0".parse().map_err(|e| {
-            NetworkError::ConnectionFailed(format!("invalid bind addr: {}", e))
-        })?)
+        Self::bind_to(
+            "0.0.0.0:0"
+                .parse()
+                .map_err(|e| NetworkError::ConnectionFailed(format!("invalid bind addr: {}", e)))?,
+        )
     }
 
     /// Bind a QUIC listener on a specific address and random OS-assigned port.
@@ -260,10 +253,7 @@ impl DirectListener {
 /// Uses the same skip-server-verification TLS config as relay connections,
 /// justified by E2E encryption providing the actual security layer.
 #[cfg(feature = "quic")]
-pub async fn connect_direct(
-    peer_addr: SocketAddr,
-    timeout: Duration,
-) -> Result<DirectConnection> {
+pub async fn connect_direct(peer_addr: SocketAddr, timeout: Duration) -> Result<DirectConnection> {
     let client_config = super::tls_config::quinn_client_config()?;
 
     // Override with LAN-tuned transport config
@@ -278,9 +268,8 @@ pub async fn connect_direct(
         SocketAddr::new(std::net::IpAddr::V4(std::net::Ipv4Addr::UNSPECIFIED), 0)
     };
 
-    let mut endpoint = quinn::Endpoint::client(bind_addr).map_err(|e| {
-        NetworkError::ConnectionFailed(format!("direct client bind failed: {}", e))
-    })?;
+    let mut endpoint = quinn::Endpoint::client(bind_addr)
+        .map_err(|e| NetworkError::ConnectionFailed(format!("direct client bind failed: {}", e)))?;
 
     endpoint.set_default_client_config(lan_client_config);
 
@@ -292,20 +281,23 @@ pub async fn connect_direct(
     )
     .await
     .map_err(|_| NetworkError::Timeout)?
-    .map_err(|e| {
-        NetworkError::ConnectionFailed(format!("direct QUIC connection failed: {}", e))
-    })?;
+    .map_err(|e| NetworkError::ConnectionFailed(format!("direct QUIC connection failed: {}", e)))?;
 
     let remote_addr = connection.remote_address();
     tracing::info!("Direct connection established to {}", remote_addr);
 
     // Open a bidirectional stream
-    let (send, recv) = connection.open_bi().await.map_err(|e| {
-        NetworkError::ConnectionFailed(format!("direct open_bi failed: {}", e))
-    })?;
+    let (send, recv) = connection
+        .open_bi()
+        .await
+        .map_err(|e| NetworkError::ConnectionFailed(format!("direct open_bi failed: {}", e)))?;
 
     Ok(DirectConnection::new(
-        endpoint, connection, send, recv, remote_addr,
+        endpoint,
+        connection,
+        send,
+        recv,
+        remote_addr,
     ))
 }
 
@@ -339,10 +331,7 @@ mod tests {
         let addr = listener.local_addr();
 
         let server_handle = tokio::spawn(async move {
-            let mut server = listener
-                .accept_peer(Duration::from_secs(5))
-                .await
-                .unwrap();
+            let mut server = listener.accept_peer(Duration::from_secs(5)).await.unwrap();
 
             // Receive from client
             let mut buf = vec![0u8; 1024];
@@ -354,9 +343,7 @@ mod tests {
             server
         });
 
-        let mut client = connect_direct(addr, Duration::from_secs(5))
-            .await
-            .unwrap();
+        let mut client = connect_direct(addr, Duration::from_secs(5)).await.unwrap();
 
         // Write data immediately — this triggers the QUIC STREAM frame
         // that unblocks the server's accept_bi()
@@ -377,19 +364,14 @@ mod tests {
         let addr = listener.local_addr();
 
         let server_handle = tokio::spawn(async move {
-            let mut server = listener
-                .accept_peer(Duration::from_secs(10))
-                .await
-                .unwrap();
+            let mut server = listener.accept_peer(Duration::from_secs(10)).await.unwrap();
 
             let mut buf = vec![0u8; 1_100_000];
             let n = server.receive_message(&mut buf).await.unwrap();
             (server, n, buf)
         });
 
-        let mut client = connect_direct(addr, Duration::from_secs(5))
-            .await
-            .unwrap();
+        let mut client = connect_direct(addr, Duration::from_secs(5)).await.unwrap();
 
         // Send a 1MB payload
         let payload: Vec<u8> = (0..1_000_000).map(|i| (i % 256) as u8).collect();
@@ -416,19 +398,14 @@ mod tests {
         let addr = listener.local_addr();
 
         let server_handle = tokio::spawn(async move {
-            let mut server = listener
-                .accept_peer(Duration::from_secs(5))
-                .await
-                .unwrap();
+            let mut server = listener.accept_peer(Duration::from_secs(5)).await.unwrap();
 
             let mut buf = vec![0u8; 1024];
             let n = server.receive_message(&mut buf).await.unwrap();
             (server, n)
         });
 
-        let mut client = connect_direct(addr, Duration::from_secs(5))
-            .await
-            .unwrap();
+        let mut client = connect_direct(addr, Duration::from_secs(5)).await.unwrap();
 
         // Send 0-byte payload — still triggers STREAM frame via length prefix
         client.send_message(&[]).await.unwrap();
@@ -446,10 +423,7 @@ mod tests {
         let addr = listener.local_addr();
 
         let server_handle = tokio::spawn(async move {
-            let mut server = listener
-                .accept_peer(Duration::from_secs(5))
-                .await
-                .unwrap();
+            let mut server = listener.accept_peer(Duration::from_secs(5)).await.unwrap();
 
             let mut buf = vec![0u8; 1024];
             for i in 0u32..100 {
@@ -460,9 +434,7 @@ mod tests {
             server
         });
 
-        let mut client = connect_direct(addr, Duration::from_secs(5))
-            .await
-            .unwrap();
+        let mut client = connect_direct(addr, Duration::from_secs(5)).await.unwrap();
 
         // Send 100 messages in sequence
         for i in 0u32..100 {
@@ -481,10 +453,7 @@ mod tests {
         let addr = listener.local_addr();
 
         let server_handle = tokio::spawn(async move {
-            let mut server = listener
-                .accept_peer(Duration::from_secs(5))
-                .await
-                .unwrap();
+            let mut server = listener.accept_peer(Duration::from_secs(5)).await.unwrap();
 
             // Server receives from client, then sends
             let mut buf = vec![0u8; 1024];
@@ -495,9 +464,7 @@ mod tests {
             server
         });
 
-        let mut client = connect_direct(addr, Duration::from_secs(5))
-            .await
-            .unwrap();
+        let mut client = connect_direct(addr, Duration::from_secs(5)).await.unwrap();
 
         // Client sends first (triggers stream), then receives
         client.send_message(b"from-client").await.unwrap();

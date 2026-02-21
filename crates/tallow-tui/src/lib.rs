@@ -125,12 +125,10 @@ pub async fn run_async(
     // Check terminal size
     let (cols, rows) = crossterm::terminal::size()?;
     if cols < 60 || rows < 16 {
-        return Err(io::Error::other(
-            format!(
-                "Terminal too small ({}x{}, need 60x16 minimum). Resize and try again.",
-                cols, rows
-            ),
-        ));
+        return Err(io::Error::other(format!(
+            "Terminal too small ({}x{}, need 60x16 minimum). Resize and try again.",
+            cols, rows
+        )));
     }
 
     // Install panic handler for secure cleanup

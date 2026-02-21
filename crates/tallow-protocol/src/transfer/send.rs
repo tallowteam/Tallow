@@ -97,9 +97,11 @@ impl FileChunkReader {
         let mut total_read = 0;
         // Read exactly chunk_size bytes (or less at EOF)
         while total_read < self.chunk_size {
-            let n = self.file.read(&mut self.buffer[total_read..]).await.map_err(|e| {
-                ProtocolError::TransferFailed(format!("read chunk: {}", e))
-            })?;
+            let n = self
+                .file
+                .read(&mut self.buffer[total_read..])
+                .await
+                .map_err(|e| ProtocolError::TransferFailed(format!("read chunk: {}", e)))?;
             if n == 0 {
                 self.done = true;
                 break;
@@ -249,8 +251,7 @@ impl SendPipeline {
                 let metadata = tokio::fs::metadata(&file_path).await.map_err(|e| {
                     ProtocolError::TransferFailed(format!("stat {}: {}", file_path.display(), e))
                 })?;
-                let hash =
-                    Self::hash_file_streaming(&file_path, self.chunk_config.size).await?;
+                let hash = Self::hash_file_streaming(&file_path, self.chunk_config.size).await?;
                 let relative = file_path
                     .strip_prefix(base)
                     .unwrap_or(&file_path)
@@ -281,8 +282,7 @@ impl SendPipeline {
                     .metadata()
                     .await
                     .map_err(|e| ProtocolError::TransferFailed(format!("stat: {}", e)))?;
-                let hash =
-                    Self::hash_file_streaming(&path, self.chunk_config.size).await?;
+                let hash = Self::hash_file_streaming(&path, self.chunk_config.size).await?;
                 let relative = path.strip_prefix(base).unwrap_or(&path).to_path_buf();
 
                 self.manifest.add_file(relative, metadata.len(), hash);

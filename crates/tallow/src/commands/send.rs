@@ -70,9 +70,8 @@ fn determine_source(args: &SendArgs) -> io::Result<SendSource> {
 /// Execute send command
 pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
     // Build proxy config from CLI flags
-    let proxy_config = crate::commands::proxy::build_proxy_config(
-        args.tor, &args.proxy, json,
-    ).await?;
+    let proxy_config =
+        crate::commands::proxy::build_proxy_config(args.tor, &args.proxy, json).await?;
 
     // Suppress LAN discovery when proxy is active (broadcasts local IP)
     if proxy_config.is_some() && args.discover && !json {
@@ -250,10 +249,9 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
     // Parse bandwidth throttle
     let throttle_bps = parse_throttle(&args.throttle)?;
 
-    let mut pipeline =
-        tallow_protocol::transfer::SendPipeline::new(transfer_id, placeholder_key)
-            .with_compression(compression)
-            .with_exclusion(exclusion);
+    let mut pipeline = tallow_protocol::transfer::SendPipeline::new(transfer_id, placeholder_key)
+        .with_compression(compression)
+        .with_exclusion(exclusion);
 
     // Prepare transfer based on source — with content type hint
     let (offer_messages, source_files) = match &source {
@@ -353,9 +351,9 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
     let fingerprint_prefix = identity.fingerprint_prefix(8);
     let (mut channel, is_direct) = if let Some(ref proxy) = proxy_config {
         // Proxy active: resolve via DoH/hostname, skip LAN discovery entirely
-        let resolved = tallow_net::relay::resolve_relay_proxy(
-            &args.relay, proxy_config.as_ref(),
-        ).await.map_err(|e| io::Error::other(format!("Relay resolution failed: {}", e)))?;
+        let resolved = tallow_net::relay::resolve_relay_proxy(&args.relay, proxy_config.as_ref())
+            .await
+            .map_err(|e| io::Error::other(format!("Relay resolution failed: {}", e)))?;
 
         let mut relay = match resolved {
             tallow_net::relay::ResolvedRelay::Addr(addr) => {
@@ -368,14 +366,21 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
             }
         };
 
-        relay.connect(&room_id, pw_ref).await
+        relay
+            .connect(&room_id, pw_ref)
+            .await
             .map_err(|e| io::Error::other(format!("Connection failed: {}", e)))?;
         if !relay.peer_present() {
-            relay.wait_for_peer().await
+            relay
+                .wait_for_peer()
+                .await
                 .map_err(|e| io::Error::other(format!("Waiting for peer failed: {}", e)))?;
         }
 
-        (tallow_net::transport::ConnectionResult::Relay(Box::new(relay)), false)
+        (
+            tallow_net::transport::ConnectionResult::Relay(Box::new(relay)),
+            false,
+        )
     } else {
         // No proxy: use direct LAN / relay fallback strategy
         let relay_addr: std::net::SocketAddr = resolve_relay(&args.relay)?;
@@ -491,9 +496,7 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
                 Some(Message::HandshakeComplete { confirmation }) => {
                     handshake
                         .verify_receiver_confirmation(&confirmation)
-                        .map_err(|e| {
-                            io::Error::other(format!("Key confirmation failed: {}", e))
-                        })?;
+                        .map_err(|e| io::Error::other(format!("Key confirmation failed: {}", e)))?;
                 }
                 other => {
                     channel.close().await;
@@ -659,8 +662,7 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
                 }
                 Some(Message::TransferError { error, .. }) => {
                     progress.finish();
-                    let safe_error =
-                        tallow_protocol::transfer::sanitize::sanitize_display(&error);
+                    let safe_error = tallow_protocol::transfer::sanitize::sanitize_display(&error);
                     return Err(io::Error::other(format!(
                         "Transfer error from receiver: {}",
                         safe_error
@@ -717,19 +719,14 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
         SendSource::Files(_) => {
             // File mode: streaming I/O with per-chunk compress+encrypt
             for file in &source_files {
-                let mut reader = pipeline
-                    .open_file_reader(file)
-                    .await
-                    .map_err(|e| {
-                        io::Error::other(format!(
-                            "Failed to open {}: {}",
-                            file.display(),
-                            e
-                        ))
-                    })?;
+                let mut reader = pipeline.open_file_reader(file).await.map_err(|e| {
+                    io::Error::other(format!("Failed to open {}: {}", file.display(), e))
+                })?;
 
                 // Find this file's chunk count from the manifest
-                let file_name = file.file_name().map(|n| n.to_string_lossy().to_string())
+                let file_name = file
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
                     .unwrap_or_default();
                 let _file_chunk_count = pipeline
                     .manifest()
@@ -743,19 +740,11 @@ pub async fn execute(args: SendArgs, json: bool) -> io::Result<()> {
                 while let Some(raw_chunk) = reader.next_chunk().await.map_err(|e| {
                     io::Error::other(format!("Read chunk from {}: {}", file.display(), e))
                 })? {
-                    let is_last_chunk_overall =
-                        chunk_index + 1 == total_chunks;
+                    let is_last_chunk_overall = chunk_index + 1 == total_chunks;
 
                     let msg = pipeline
-                        .encrypt_chunk(
-                            &raw_chunk,
-                            chunk_index,
-                            total_chunks,
-                            is_last_chunk_overall,
-                        )
-                        .map_err(|e| {
-                            io::Error::other(format!("Encrypt chunk failed: {}", e))
-                        })?;
+                        .encrypt_chunk(&raw_chunk, chunk_index, total_chunks, is_last_chunk_overall)
+                        .map_err(|e| io::Error::other(format!("Encrypt chunk failed: {}", e)))?;
 
                     batch.push(msg);
                     chunk_index += 1;

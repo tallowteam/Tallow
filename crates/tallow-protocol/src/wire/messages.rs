@@ -172,6 +172,29 @@ pub enum Message {
         /// Generic failure reason
         reason: String,
     },
+    /// Encrypted chat text message
+    ChatText {
+        /// Unique message ID for read receipts (random 16 bytes)
+        message_id: [u8; 16],
+        /// Monotonic sequence number for ordering
+        sequence: u64,
+        /// AES-256-GCM encrypted plaintext
+        ciphertext: Vec<u8>,
+        /// 12-byte nonce used for encryption
+        nonce: [u8; 12],
+    },
+    /// Typing indicator (reserved for future use)
+    TypingIndicator {
+        /// true = started typing, false = stopped typing
+        typing: bool,
+    },
+    /// Read receipt acknowledging messages (reserved for future use)
+    ReadReceipt {
+        /// Message IDs confirmed as read
+        message_ids: Vec<[u8; 16]>,
+    },
+    /// Graceful chat session termination
+    ChatEnd,
 }
 
 #[cfg(test)]
@@ -274,6 +297,18 @@ mod tests {
             Message::HandshakeFailed {
                 reason: "handshake failed".to_string(),
             },
+            Message::ChatText {
+                message_id: [0xAA; 16],
+                sequence: 1,
+                ciphertext: vec![0xDE, 0xAD],
+                nonce: [0xBB; 12],
+            },
+            Message::TypingIndicator { typing: true },
+            Message::TypingIndicator { typing: false },
+            Message::ReadReceipt {
+                message_ids: vec![[0xCC; 16], [0xDD; 16]],
+            },
+            Message::ChatEnd,
         ];
 
         for msg in &messages {
@@ -290,6 +325,50 @@ mod tests {
         assert!(
             bytes.len() <= 2,
             "Ping should be compact, got {} bytes",
+            bytes.len()
+        );
+    }
+
+    #[test]
+    fn test_chat_message_roundtrips() {
+        let messages = vec![
+            Message::ChatText {
+                message_id: [0xAA; 16],
+                sequence: 0,
+                ciphertext: vec![0xDE, 0xAD, 0xBE, 0xEF],
+                nonce: [0xBB; 12],
+            },
+            Message::ChatText {
+                message_id: [0xFF; 16],
+                sequence: u64::MAX,
+                ciphertext: vec![],
+                nonce: [0x00; 12],
+            },
+            Message::TypingIndicator { typing: true },
+            Message::TypingIndicator { typing: false },
+            Message::ReadReceipt {
+                message_ids: vec![],
+            },
+            Message::ReadReceipt {
+                message_ids: vec![[0x11; 16], [0x22; 16], [0x33; 16]],
+            },
+            Message::ChatEnd,
+        ];
+
+        for msg in &messages {
+            let bytes = postcard::to_stdvec(msg).expect("encode");
+            let decoded: Message = postcard::from_bytes(&bytes).expect("decode");
+            assert_eq!(&decoded, msg);
+        }
+    }
+
+    #[test]
+    fn test_chat_end_compact() {
+        // ChatEnd should be very small (just a discriminant byte), like Ping
+        let bytes = postcard::to_stdvec(&Message::ChatEnd).unwrap();
+        assert!(
+            bytes.len() <= 2,
+            "ChatEnd should be compact, got {} bytes",
             bytes.len()
         );
     }

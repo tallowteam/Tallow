@@ -42,7 +42,7 @@ async fn main() {
     let result = match cli.command {
         cli::Commands::Send(args) => commands::send::execute(args, json_output).await,
         cli::Commands::Receive(args) => commands::receive::execute(args, json_output).await,
-        cli::Commands::Chat(args) => commands::chat::execute(args).await,
+        cli::Commands::Chat(args) => commands::chat::execute(args, json_output).await,
         cli::Commands::Sync(args) => commands::sync::execute(args, json_output).await,
         cli::Commands::Watch(args) => commands::watch::execute(args, json_output).await,
         cli::Commands::Stream(args) => commands::send::execute(args, json_output).await,

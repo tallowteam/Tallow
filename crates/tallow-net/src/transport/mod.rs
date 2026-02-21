@@ -21,16 +21,18 @@ pub mod tls_config;
 use crate::Result;
 use std::net::SocketAddr;
 
+#[cfg(feature = "quic")]
+pub use connection::{
+    establish_receiver_connection, establish_sender_connection, ConnectionResult,
+};
+#[cfg(feature = "quic")]
+pub use direct::{connect_direct, DirectConnection, DirectListener};
 pub use fallback::{ActiveTransport, FallbackTransport};
 pub use peer_channel::PeerChannel;
 pub use proxied::ProxiedTcpTlsTransport;
 #[cfg(feature = "quic")]
 pub use quic::QuicTransport;
 pub use tcp_tls::TcpTlsTransport;
-#[cfg(feature = "quic")]
-pub use direct::{DirectConnection, DirectListener, connect_direct};
-#[cfg(feature = "quic")]
-pub use connection::{establish_sender_connection, establish_receiver_connection, ConnectionResult};
 
 /// Transport layer abstraction
 ///

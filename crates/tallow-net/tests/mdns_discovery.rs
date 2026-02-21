@@ -54,7 +54,10 @@ mod mdns_tests {
             .await
             .expect("browse should not error");
 
-        assert!(peer.is_none(), "Should NOT discover sender for different room code");
+        assert!(
+            peer.is_none(),
+            "Should NOT discover sender for different room code"
+        );
     }
 
     /// Test that browse times out cleanly when no advertiser exists.

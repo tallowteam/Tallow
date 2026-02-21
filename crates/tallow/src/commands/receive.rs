@@ -5,8 +5,8 @@ use crate::output;
 use bytes::BytesMut;
 use std::io::{self, IsTerminal, Write};
 use std::path::PathBuf;
-use tallow_protocol::transfer::manifest::TransferType;
 use tallow_net::transport::PeerChannel;
+use tallow_protocol::transfer::manifest::TransferType;
 use tallow_protocol::wire::{codec::TallowCodec, Message};
 
 /// Maximum receive buffer size (256 KB)
@@ -15,9 +15,8 @@ const RECV_BUF_SIZE: usize = 256 * 1024;
 /// Execute receive command
 pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
     // Build proxy config from CLI flags
-    let proxy_config = crate::commands::proxy::build_proxy_config(
-        args.tor, &args.proxy, json,
-    ).await?;
+    let proxy_config =
+        crate::commands::proxy::build_proxy_config(args.tor, &args.proxy, json).await?;
 
     // Suppress LAN advertise when proxy is active (broadcasts local IP)
     if proxy_config.is_some() && args.advertise && !json {
@@ -125,9 +124,9 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
     // Establish connection: proxy-aware relay or direct LAN with fallback
     let (mut channel, is_direct) = if let Some(ref proxy) = proxy_config {
         // Proxy active: resolve via DoH/hostname, skip LAN discovery entirely
-        let resolved = tallow_net::relay::resolve_relay_proxy(
-            &args.relay, proxy_config.as_ref(),
-        ).await.map_err(|e| io::Error::other(format!("Relay resolution failed: {}", e)))?;
+        let resolved = tallow_net::relay::resolve_relay_proxy(&args.relay, proxy_config.as_ref())
+            .await
+            .map_err(|e| io::Error::other(format!("Relay resolution failed: {}", e)))?;
 
         let mut relay = match resolved {
             tallow_net::relay::ResolvedRelay::Addr(addr) => {
@@ -140,22 +139,26 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
             }
         };
 
-        relay.connect(&room_id, pw_ref).await
+        relay
+            .connect(&room_id, pw_ref)
+            .await
             .map_err(|e| io::Error::other(format!("Connection failed: {}", e)))?;
         if !relay.peer_present() {
-            relay.wait_for_peer().await
+            relay
+                .wait_for_peer()
+                .await
                 .map_err(|e| io::Error::other(format!("Waiting for peer failed: {}", e)))?;
         }
 
-        (tallow_net::transport::ConnectionResult::Relay(Box::new(relay)), false)
+        (
+            tallow_net::transport::ConnectionResult::Relay(Box::new(relay)),
+            false,
+        )
     } else {
         // No proxy: use direct LAN / relay fallback strategy
         let relay_addr: std::net::SocketAddr = resolve_relay(&args.relay)?;
         tallow_net::transport::establish_receiver_connection(
-            &room_id,
-            relay_addr,
-            pw_ref,
-            args.local,
+            &room_id, relay_addr, pw_ref, args.local,
         )
         .await
         .map_err(|e| io::Error::other(format!("Connection failed: {}", e)))?
@@ -252,9 +255,7 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
                 }) => {
                     let (complete_msg, session_key_result) = handshake
                         .process_kem(&kem_ciphertext, &confirmation)
-                        .map_err(|e| {
-                            io::Error::other(format!("Handshake KEM failed: {}", e))
-                        })?;
+                        .map_err(|e| io::Error::other(format!("Handshake KEM failed: {}", e)))?;
 
                     // Step 4: Send HandshakeComplete
                     encode_buf.clear();
@@ -266,9 +267,7 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
                     channel
                         .send_message(&encode_buf)
                         .await
-                        .map_err(|e| {
-                            io::Error::other(format!("Send HandshakeComplete: {}", e))
-                        })?;
+                        .map_err(|e| io::Error::other(format!("Send HandshakeComplete: {}", e)))?;
 
                     session_key = session_key_result;
                 }
@@ -597,10 +596,7 @@ pub async fn execute(args: ReceiveArgs, json: bool) -> io::Result<()> {
                 // Verify Merkle root if provided
                 if let Some(sender_root) = merkle_root {
                     if let Some(receiver_root) = pipeline.merkle_root() {
-                        if !tallow_crypto::mem::constant_time::ct_eq(
-                            &sender_root,
-                            &receiver_root,
-                        ) {
+                        if !tallow_crypto::mem::constant_time::ct_eq(&sender_root, &receiver_root) {
                             progress.finish();
                             channel.close().await;
                             return Err(io::Error::other(

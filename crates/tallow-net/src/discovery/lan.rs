@@ -47,11 +47,7 @@ impl LanAdvertiser {
     /// * `port` - The QUIC listener port to advertise
     /// * `fingerprint_prefix` - First 8 hex chars of the identity fingerprint
     /// * `room_code_hash` - BLAKE3 hash of the room code (32 bytes)
-    pub fn new(
-        port: u16,
-        fingerprint_prefix: &str,
-        room_code_hash: &[u8; 32],
-    ) -> Result<Self> {
+    pub fn new(port: u16, fingerprint_prefix: &str, room_code_hash: &[u8; 32]) -> Result<Self> {
         let daemon = ServiceDaemon::new().map_err(|e| {
             NetworkError::DiscoveryError(format!("Failed to create mDNS daemon: {}", e))
         })?;
@@ -67,10 +63,7 @@ impl LanAdvertiser {
         let mut properties = HashMap::new();
         properties.insert("v".to_string(), "1".to_string());
         properties.insert("fp".to_string(), fingerprint_prefix.to_string());
-        properties.insert(
-            "rc".to_string(),
-            hex::encode(&room_code_hash[..8]),
-        );
+        properties.insert("rc".to_string(), hex::encode(&room_code_hash[..8]));
         let ts = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
@@ -135,9 +128,9 @@ pub async fn discover_sender(
         NetworkError::DiscoveryError(format!("Failed to create mDNS daemon: {}", e))
     })?;
 
-    let receiver = daemon.browse(SERVICE_TYPE).map_err(|e| {
-        NetworkError::DiscoveryError(format!("Failed to start mDNS browse: {}", e))
-    })?;
+    let receiver = daemon
+        .browse(SERVICE_TYPE)
+        .map_err(|e| NetworkError::DiscoveryError(format!("Failed to start mDNS browse: {}", e)))?;
 
     let deadline = tokio::time::Instant::now() + timeout;
     let poll_interval = Duration::from_millis(100);
@@ -175,10 +168,7 @@ pub async fn discover_sender(
                             fingerprint,
                         };
 
-                        info!(
-                            "Found matching sender: {} at {}",
-                            peer.name, peer.addr
-                        );
+                        info!("Found matching sender: {} at {}", peer.name, peer.addr);
 
                         let _ = daemon.shutdown();
                         return Ok(Some(peer));
@@ -196,18 +186,16 @@ pub async fn discover_sender(
 ///
 /// Used for the `--discover` flag to list all available peers.
 /// Returns after the timeout expires.
-pub async fn discover_all_senders(
-    timeout: Duration,
-) -> Result<Vec<DiscoveredPeer>> {
+pub async fn discover_all_senders(timeout: Duration) -> Result<Vec<DiscoveredPeer>> {
     info!("Browsing mDNS for all Tallow senders...");
 
     let daemon = ServiceDaemon::new().map_err(|e| {
         NetworkError::DiscoveryError(format!("Failed to create mDNS daemon: {}", e))
     })?;
 
-    let receiver = daemon.browse(SERVICE_TYPE).map_err(|e| {
-        NetworkError::DiscoveryError(format!("Failed to start mDNS browse: {}", e))
-    })?;
+    let receiver = daemon
+        .browse(SERVICE_TYPE)
+        .map_err(|e| NetworkError::DiscoveryError(format!("Failed to start mDNS browse: {}", e)))?;
 
     let mut peers: Vec<DiscoveredPeer> = Vec::new();
     let mut seen_names: HashSet<String> = HashSet::new();
@@ -338,10 +326,7 @@ mod tests {
         let result = prefer_ipv4(&addrs);
         assert!(result.is_some());
         assert!(result.unwrap().is_ipv4());
-        assert_eq!(
-            result.unwrap(),
-            IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1))
-        );
+        assert_eq!(result.unwrap(), IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1)));
     }
 
     #[test]
@@ -369,16 +354,12 @@ mod tests {
     #[test]
     fn test_prefer_ipv4_global_v6() {
         let mut addrs = HashSet::new();
-        addrs.insert(IpAddr::V6(Ipv6Addr::new(
-            0x2001, 0x0db8, 0, 0, 0, 0, 0, 1,
-        )));
+        addrs.insert(IpAddr::V6(Ipv6Addr::new(0x2001, 0x0db8, 0, 0, 0, 0, 0, 1)));
 
         let result = prefer_ipv4(&addrs);
         assert_eq!(
             result,
-            Some(IpAddr::V6(Ipv6Addr::new(
-                0x2001, 0x0db8, 0, 0, 0, 0, 0, 1,
-            )))
+            Some(IpAddr::V6(Ipv6Addr::new(0x2001, 0x0db8, 0, 0, 0, 0, 0, 1,)))
         );
     }
 
@@ -393,9 +374,7 @@ mod tests {
     fn test_prefer_ipv4_global_v6_over_link_local() {
         let mut addrs = HashSet::new();
         addrs.insert(IpAddr::V6(Ipv6Addr::new(0xfe80, 0, 0, 0, 0, 0, 0, 1)));
-        addrs.insert(IpAddr::V6(Ipv6Addr::new(
-            0x2001, 0x0db8, 0, 0, 0, 0, 0, 1,
-        )));
+        addrs.insert(IpAddr::V6(Ipv6Addr::new(0x2001, 0x0db8, 0, 0, 0, 0, 0, 1)));
 
         let result = prefer_ipv4(&addrs);
         // Should prefer global IPv6 over link-local

@@ -31,10 +31,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
     } else {
         Line::from(vec![
             Span::raw(" "),
-            Span::styled(
-                spinner_text.as_str(),
-                Style::default().fg(Color::Yellow),
-            ),
+            Span::styled(spinner_text.as_str(), Style::default().fg(Color::Yellow)),
             Span::styled("Disconnected", Style::default().fg(Color::Red)),
         ])
     };

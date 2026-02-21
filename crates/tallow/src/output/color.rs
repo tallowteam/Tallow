@@ -143,6 +143,9 @@ pub fn fallback_to_relay(relay: &str) {
             relay
         );
     } else {
-        eprintln!("Warning: LAN peer not found, connected via relay ({})", relay);
+        eprintln!(
+            "Warning: LAN peer not found, connected via relay ({})",
+            relay
+        );
     }
 }

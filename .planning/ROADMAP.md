@@ -29,6 +29,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 15: End-to-End Testing & Hardening** - Integration tests with real relay, cross-platform smoke tests, transfer resume, large file stress tests
 - [x] **Phase 16: Rich Clipboard Sharing** - `tallow clip` command for text/image/URL clipboard sharing, content type detection, clipboard watch mode, unlimited searchable history, arboard integration
 - [x] **Phase 17: Real E2E Transfer Pipeline** - Streaming I/O, per-chunk compression, sliding window sender (8-chunk batches), Merkle tree integrity verification, resume negotiation, stress tests (10GB/100GB/1TB)
+- [ ] **Phase 18: Encrypted Chat Over Relay** - Real-time E2E encrypted text chat between peers using existing relay rooms, chat sessions, message history, typing indicators, read receipts
 
 ## Phase Details
 
