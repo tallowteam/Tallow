@@ -6,6 +6,9 @@
 
 pub mod codec;
 pub mod crypto;
+pub mod file_io;
+pub mod transfer;
+pub mod transport;
 
 use wasm_bindgen::prelude::*;
 

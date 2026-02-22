@@ -4467,6 +4467,7 @@ dependencies = [
  "postcard",
  "serde",
  "serde-wasm-bindgen",
+ "serde_json",
  "tallow-crypto",
  "tallow-protocol",
  "wasm-bindgen",
