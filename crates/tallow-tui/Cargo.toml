@@ -21,7 +21,7 @@ tokio.workspace = true
 futures.workspace = true
 
 # Screen clearing
-clearscreen = "3"
+clearscreen = "4"
 
 # Utilities
 tracing.workspace = true
