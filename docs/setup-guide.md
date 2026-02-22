@@ -48,7 +48,7 @@ Before installing tallow, make sure you have:
 curl -sSf https://raw.githubusercontent.com/tallowteam/tallow/master/scripts/install.sh | sh
 
 # Windows (Scoop)
-scoop bucket add tallow https://github.com/tallowteam/scoop-tallow && scoop install tallow
+scoop bucket add tallow https://github.com/tallowteam/Tallow && scoop install tallow
 
 # Any platform with Rust
 cargo install --git https://github.com/tallowteam/Tallow tallow
@@ -100,7 +100,7 @@ brew tap tallowteam/tap && brew install tallow
 ### Install via Scoop (Windows)
 
 ```powershell
-scoop bucket add tallow https://github.com/tallowteam/scoop-tallow
+scoop bucket add tallow https://github.com/tallowteam/Tallow
 scoop install tallow
 ```
 
@@ -162,7 +162,7 @@ Version:   0.1.0
 [+] Entropy: OK — OS entropy source available
 [+] Crypto: OK — BLAKE3, AES-256-GCM, ML-KEM available
 [+] DNS: OK — DNS resolution working
-[+] Relay: OK — Relay relay.tallow.app:4433 is resolvable
+[+] Relay: OK — Relay 129.146.114.5:4433 is reachable
 
 All checks passed
 ```

@@ -210,7 +210,7 @@ brew tap tallowteam/tap && brew install tallow
 <br>
 
 ```powershell
-scoop bucket add tallow https://github.com/tallowteam/scoop-tallow
+scoop bucket add tallow https://github.com/tallowteam/Tallow
 scoop install tallow
 ```
 

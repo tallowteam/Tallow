@@ -536,7 +536,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
 
 # Add the tallow bucket and install
-scoop bucket add tallow https://github.com/tallowteam/scoop-tallow
+scoop bucket add tallow https://github.com/tallowteam/Tallow
 scoop install tallow
 ```
 
