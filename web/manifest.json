@@ -1,0 +1,10 @@
+{
+    "name": "Tallow",
+    "short_name": "Tallow",
+    "description": "Post-Quantum Encrypted File Transfer",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0f172a",
+    "theme_color": "#3b82f6",
+    "icons": []
+}

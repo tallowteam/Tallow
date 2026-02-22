@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tallow &mdash; Post-Quantum Encrypted File Transfer</title>
+    <meta name="description" content="Send files with post-quantum encryption. No install needed. End-to-end encrypted with ML-KEM-1024 + AES-256-GCM.">
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Open Graph / social sharing -->
+    <meta property="og:title" content="Tallow &mdash; Post-Quantum Encrypted File Transfer">
+    <meta property="og:description" content="Send files securely with quantum-resistant encryption. Works in your browser. No install needed.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://tallow.manisahome.com">
+
+    <!-- CSP: strict, no inline scripts, WASM from self only -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' wss://tallow.manisahome.com ws://localhost:4434 ws://127.0.0.1:4434; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;">
+
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f512;</text></svg>">
+</head>
+<body>
+    <!-- Theme toggle (top-right corner) -->
+    <button class="settings-toggle" id="btn-settings" aria-label="Settings" title="Settings">&#x2699;</button>
+    <button class="theme-toggle" id="btn-theme" aria-label="Toggle theme" title="Toggle theme">&#x263D;</button>
+
+    <!-- Offline banner -->
+    <div id="offline-banner" class="offline-banner hidden" role="alert">
+        You are offline. Reconnecting...
+    </div>
+
+    <!-- Landing / Hero section -->
+    <section id="landing" class="landing">
+        <header class="hero">
+            <h1>Tallow</h1>
+            <p class="tagline">Post-Quantum Encrypted File Transfer</p>
+            <div class="security-badges">
+                <span class="badge">ML-KEM-1024</span>
+                <span class="badge">AES-256-GCM</span>
+                <span class="badge">Zero Knowledge Relay</span>
+            </div>
+            <p class="hero-description">
+                Send files, share clipboard, and chat &mdash; all end-to-end encrypted
+                with quantum-resistant cryptography. No install needed.
+            </p>
+        </header>
+
+        <!-- Features overview -->
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">&#x1f510;</div>
+                <h3>Post-Quantum Secure</h3>
+                <p>ML-KEM-1024 + X25519 hybrid encryption protects against future quantum attacks.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#x1f4e1;</div>
+                <h3>Zero Knowledge</h3>
+                <p>The relay never sees your files. All encryption happens in your browser.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#x1f4bb;</div>
+                <h3>CLI Interoperable</h3>
+                <p>Works with the Tallow CLI. Send from terminal, receive in browser &mdash; or vice versa.</p>
+            </div>
+        </div>
+
+        <!-- Action area -->
+        <div class="action-area">
+            <div class="role-selection">
+                <button id="btn-send" class="role-btn primary">Send Files</button>
+                <button id="btn-receive" class="role-btn secondary">Receive Files</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Code phrase entry/generation -->
+    <section id="code-section" class="code-section hidden">
+        <a class="back-link" id="btn-back-landing">&#x2190; Back</a>
+        <div class="code-tabs">
+            <button class="tab active" data-tab="enter">Enter a Code</button>
+            <button class="tab" data-tab="generate">Generate a Code</button>
+        </div>
+        <div id="tab-enter" class="tab-panel">
+            <input type="text" id="code-input" placeholder="e.g., 7-gamma-bravo" autocomplete="off" aria-label="Code phrase" spellcheck="false">
+            <button id="btn-connect">Connect</button>
+        </div>
+        <div id="tab-generate" class="tab-panel hidden">
+            <div id="generated-code" class="generated-code"></div>
+            <div id="qr-code" class="qr-code"></div>
+            <p class="hint">Share this code with your peer</p>
+            <button id="btn-wait">Wait for Peer</button>
+        </div>
+    </section>
+
+    <!-- Handshake progress -->
+    <section id="handshake-section" class="handshake-section hidden">
+        <div class="handshake-steps">
+            <div class="step active" data-step="connect">
+                <span class="step-icon"></span>
+                <span class="step-label">Connecting to Relay</span>
+            </div>
+            <div class="step" data-step="waiting">
+                <span class="step-icon"></span>
+                <span class="step-label">Waiting for Peer</span>
+            </div>
+            <div class="step" data-step="kex">
+                <span class="step-icon"></span>
+                <span class="step-label">Key Exchange</span>
+            </div>
+            <div class="step" data-step="ready">
+                <span class="step-icon"></span>
+                <span class="step-label">PQ Encryption Active</span>
+            </div>
+        </div>
+        <div class="connection-dot connecting" id="connection-dot"></div>
+    </section>
+
+    <!-- Dashboard (visible after handshake) -->
+    <section id="dashboard" class="dashboard hidden">
+        <div class="dashboard-header">
+            <h2>Secure Session Active</h2>
+            <div class="connection-info">
+                <span class="connection-dot connected" id="dash-connection-dot"></span>
+                <span id="dash-status">Connected</span>
+            </div>
+        </div>
+
+        <!-- All 3 modes visible at once -->
+        <div class="dashboard-grid">
+            <!-- File transfer panel -->
+            <div class="panel panel-files">
+                <h2>Files</h2>
+                <!-- Drop zone (sender) -->
+                <div id="drop-zone" class="drop-zone">
+                    <div class="upload-icon">&#x1f4c1;</div>
+                    <p>Drop files here or click to browse</p>
+                    <input type="file" id="file-input" multiple hidden>
+                    <input type="file" id="folder-input" webkitdirectory hidden>
+                    <div class="upload-actions">
+                        <button id="btn-add-files">Add Files</button>
+                        <button id="btn-add-folder">Add Folder</button>
+                    </div>
+                </div>
+
+                <!-- File list -->
+                <div id="file-list" class="file-list hidden"></div>
+                <div id="file-size-warning" class="hidden"></div>
+                <div id="send-controls" class="send-controls hidden">
+                    <label><input type="checkbox" id="compress-toggle" checked> Compress</label>
+                    <button id="btn-send-files" class="primary">Send</button>
+                </div>
+
+                <!-- Receive: accept/reject -->
+                <div id="receive-offer" class="receive-offer hidden">
+                    <div id="offer-details"></div>
+                    <div class="offer-actions">
+                        <button id="btn-accept" class="primary">Accept</button>
+                        <button id="btn-reject" class="danger">Reject</button>
+                    </div>
+                </div>
+
+                <!-- Progress -->
+                <div id="transfer-progress" class="transfer-progress hidden">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="progress-bar"></div>
+                    </div>
+                    <div class="progress-stats">
+                        <span id="progress-percent">0%</span>
+                        <span id="progress-speed">0 MB/s</span>
+                        <span id="progress-eta">--:--</span>
+                    </div>
+                </div>
+
+                <!-- Transfer complete summary -->
+                <div id="transfer-summary" class="transfer-summary hidden"></div>
+
+                <!-- Transfer history -->
+                <details class="transfer-history" id="transfer-history">
+                    <summary>Transfer History</summary>
+                    <div id="history-list" class="history-list"></div>
+                </details>
+            </div>
+
+            <!-- Clipboard panel -->
+            <div class="panel panel-clipboard">
+                <h2>Clipboard</h2>
+                <button id="btn-share-clipboard">Share Clipboard</button>
+                <div id="clipboard-status"></div>
+            </div>
+
+            <!-- Chat panel -->
+            <div class="panel panel-chat">
+                <h2>Chat</h2>
+                <div id="chat-messages" class="chat-messages"></div>
+                <div id="typing-indicator" class="typing-indicator hidden">Peer is typing...</div>
+                <div class="chat-input-area">
+                    <input type="text" id="chat-input" placeholder="Type a message..." aria-label="Chat message">
+                    <button id="btn-send-chat">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Peer info (expandable) -->
+        <details class="peer-info">
+            <summary>Verify Peer</summary>
+            <div id="peer-fingerprint">Not yet verified</div>
+        </details>
+    </section>
+
+    <!-- Settings panel (overlay) -->
+    <div id="settings-backdrop" class="settings-backdrop hidden"></div>
+    <div id="settings-panel" class="settings-panel hidden">
+        <h2>Settings</h2>
+        <label>Relay URL
+            <input type="text" id="setting-relay" value="ws://localhost:4434">
+        </label>
+        <label>Theme
+            <select id="setting-theme">
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+            </select>
+        </label>
+        <label>
+            <div style="flex-direction: row; display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="setting-compression" checked>
+                Enable compression
+            </div>
+        </label>
+        <div class="shortcuts-display">
+            <h3>Keyboard Shortcuts</h3>
+            <p>Ctrl+K &mdash; Command palette</p>
+            <p>Ctrl+S &mdash; Send files</p>
+            <p>Ctrl+V &mdash; Paste clipboard</p>
+            <p>Escape &mdash; Close panel</p>
+        </div>
+        <button id="btn-close-settings">Close</button>
+    </div>
+
+    <!-- Command palette (Ctrl+K) -->
+    <div id="cmd-backdrop" class="cmd-backdrop hidden"></div>
+    <div id="command-palette" class="command-palette hidden">
+        <input type="text" id="cmd-search" placeholder="Type a command..." aria-label="Command search">
+        <div id="cmd-results" class="cmd-results"></div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <a href="https://github.com/tallowteam/Tallow">GitHub</a>
+        <span>|</span>
+        <span>CLI: <code>cargo install tallow</code></span>
+        <span>|</span>
+        <span>AGPL-3.0</span>
+    </footer>
+
+    <!-- Scripts -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
