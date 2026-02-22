@@ -10,6 +10,7 @@ mod config;
 mod rate_limit;
 mod room;
 mod server;
+mod websocket;
 
 use clap::{Parser, Subcommand};
 use config::RelayConfig;
@@ -51,6 +52,10 @@ enum Commands {
         /// Relay password (use TALLOW_RELAY_PASS env var for production)
         #[arg(long = "pass", env = "TALLOW_RELAY_PASS", hide_env_values = true)]
         pass: Option<String>,
+
+        /// WebSocket bind address for browser clients (empty to disable)
+        #[arg(long, default_value = "0.0.0.0:4434")]
+        ws_addr: String,
     },
 }
 
@@ -76,6 +81,7 @@ async fn main() -> anyhow::Result<()> {
             room_timeout,
             max_peers_per_room,
             pass,
+            ws_addr,
         } => {
             let mut relay_config = if let Some(cfg_path) = config {
                 let content = tokio::fs::read_to_string(&cfg_path).await?;
@@ -99,6 +105,7 @@ async fn main() -> anyhow::Result<()> {
             }
 
             relay_config.password = pass.unwrap_or_default();
+            relay_config.ws_bind_addr = ws_addr;
             relay_config.validate();
 
             let server = RelayServer::new(relay_config);

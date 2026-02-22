@@ -46,6 +46,8 @@ impl RelayServer {
     ///
     /// Binds to the configured address, accepts QUIC connections,
     /// and spawns a task per connection for room pairing and data forwarding.
+    /// If `ws_bind_addr` is configured, also starts a WebSocket listener
+    /// for browser clients on a separate HTTP port.
     pub async fn start(&self) -> anyhow::Result<()> {
         let addr: SocketAddr = self
             .config
@@ -61,7 +63,28 @@ impl RelayServer {
             .map_err(|e| anyhow::anyhow!("quinn server config failed: {}", e))?;
 
         let endpoint = quinn::Endpoint::server(server_config, addr)?;
-        info!("relay server listening on {}", addr);
+        info!("relay server listening on {} (QUIC)", addr);
+
+        // Start WebSocket listener if configured
+        if !self.config.ws_bind_addr.is_empty() {
+            let ws_addr: SocketAddr = self
+                .config
+                .ws_bind_addr
+                .parse()
+                .map_err(|e| anyhow::anyhow!("invalid ws_bind_addr: {}", e))?;
+            let ws_state = Arc::new(crate::websocket::WsState {
+                room_manager: Arc::clone(&self.room_manager),
+                password: self.config.password.clone(),
+            });
+            let app = crate::websocket::ws_router(ws_state);
+            let listener = tokio::net::TcpListener::bind(ws_addr).await?;
+            info!("WebSocket listener on {} (HTTP)", ws_addr);
+            tokio::spawn(async move {
+                if let Err(e) = axum::serve(listener, app).await {
+                    warn!("WebSocket server error: {}", e);
+                }
+            });
+        }
 
         // Spawn stale room cleanup task
         let room_manager_cleanup = Arc::clone(&self.room_manager);
