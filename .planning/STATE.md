@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-19)
 ## Current Position
 
 Phase: 21 (Web UI / Browser Client)
-Plan: 2 of 5
-Status: Phase 21 IN PROGRESS (plan 02 complete)
-Last activity: 2026-02-22 — Plan 21-02 complete (Relay WebSocket transport)
+Plan: 3 of 5
+Status: Phase 21 IN PROGRESS (plan 03 complete)
+Last activity: 2026-02-22 — Plan 21-03 complete (Browser file transfer UI)
 
-Progress: [====......] 40% (2/5 plans)
+Progress: [======....] 60% (3/5 plans)
 
 ## Performance Metrics
 
@@ -36,6 +36,7 @@ Progress: [====......] 40% (2/5 plans)
 | 20 | 3/3 | ~44m | ~15 min |
 
 **Recent Trend:**
+- Phase 21 Plan 03 complete (Browser file transfer UI + dark theme + KEM handshake)
 - Phase 21 Plan 02 complete (Relay WebSocket transport + WS-QUIC bridging)
 - Phase 21 Plan 01 complete (WASM crate + feature gates + crypto/codec wrappers)
 - Phase 20 Plan 03 complete (P2P testing) -- Phase 20 DONE
@@ -44,6 +45,7 @@ Progress: [====......] 40% (2/5 plans)
 - Trend: Active
 
 *Updated after each plan completion*
+| Phase 21 P03 | 15min | 2 tasks | 13 files |
 | Phase 21 P02 | 43min | 2 tasks | 5 files |
 | Phase 21 P01 | 37min | 2 tasks | 11 files |
 | Phase 20 P03 | 12min | 2 tasks | 5 files |
@@ -77,6 +79,10 @@ Recent decisions affecting current work:
 - [Phase 21-02]: Permissive CORS — security from E2E encryption, not origin checking
 - [Phase 21-02]: 4-byte BE length prefix bridging between WS and QUIC room channels
 - [Phase 21-02]: Shared RoomManager Arc between QUIC and WS listeners
+- [Phase 21-03]: Plain TypeScript with tsc (no bundler) -- app is small per CONTEXT.md discretion
+- [Phase 21-03]: AAD = transfer_id || chunk_index.to_be_bytes() -- exact match with CLI chunking.rs
+- [Phase 21-03]: WasmFileManifest in file_io.rs -- FileManifest behind 'full' gate needs WASM-compatible type
+- [Phase 21-03]: SPA state machine: landing -> code-entry -> connecting -> waiting -> handshake -> dashboard
 
 ### Pending Todos
 
@@ -91,5 +97,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 21-02-PLAN.md (Relay WebSocket transport + WS-QUIC bridging)
+Stopped at: Completed 21-03-PLAN.md (Browser file transfer UI + dark theme)
 Resume file: None

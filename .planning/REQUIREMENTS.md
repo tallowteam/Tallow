@@ -163,11 +163,11 @@ Deferred to future release. Tracked but not in current roadmap.
 - [x] **WEB-04**: Relay server accepts WebSocket connections alongside QUIC for browser clients
 - [x] **WEB-05**: WebSocket-to-QUIC message bridging: relay adds/strips 4-byte length prefix when forwarding between transports
 - [x] **WEB-06**: CORS headers on WebSocket endpoint allow cross-origin browser connections
-- [ ] **WEB-07**: Browser WebSocket transport connects to relay, joins room, and exchanges postcard-encoded messages
-- [ ] **WEB-08**: Browser performs full KEM handshake (HandshakeInit/Response/Kem/Complete) with CLI peer via WASM crypto
-- [ ] **WEB-09**: Browser can send files via drag-and-drop with 64KB chunked AES-256-GCM encryption matching CLI wire format
-- [ ] **WEB-10**: Browser can receive files from CLI peer with progressive decryption and download
-- [ ] **WEB-11**: Browser displays real-time transfer progress (speed, percentage, ETA)
+- [x] **WEB-07**: Browser WebSocket transport connects to relay, joins room, and exchanges postcard-encoded messages
+- [x] **WEB-08**: Browser performs full KEM handshake (HandshakeInit/Response/Kem/Complete) with CLI peer via WASM crypto
+- [x] **WEB-09**: Browser can send files via drag-and-drop with 64KB chunked AES-256-GCM encryption matching CLI wire format
+- [x] **WEB-10**: Browser can receive files from CLI peer with progressive decryption and download
+- [x] **WEB-11**: Browser displays real-time transfer progress (speed, percentage, ETA)
 - [ ] **WEB-12**: Browser clipboard sharing sends text/images E2E encrypted, interoperable with `tallow clip` (uses FileOffer+Chunk pipeline, not a special message variant)
 - [ ] **WEB-13**: Received clipboard content auto-copies to browser clipboard via Clipboard API
 - [ ] **WEB-14**: Browser chat sends/receives E2E encrypted messages interoperable with `tallow chat` using Message::ChatText with AES-256-GCM (nonce: [0u8;4]||counter.to_be_bytes(), AAD: b"tallow-chat-v1", counter increments by 2)
