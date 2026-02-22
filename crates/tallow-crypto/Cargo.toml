@@ -45,7 +45,7 @@ subtle.workspace = true
 # Randomness
 rand.workspace = true
 getrandom.workspace = true
-rand_core = "0.6"
+rand_core = "0.9"
 
 # Serialization
 serde.workspace = true
