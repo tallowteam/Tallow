@@ -62,6 +62,15 @@ pub fn prepare_clipboard_manifest(
     content_type: &str,
     data_size: u64,
 ) -> Result<Vec<u8>, JsValue> {
+    // Validate content_type against allowlist to prevent JSON injection
+    let valid_types = ["text", "url", "code", "image/png"];
+    if !valid_types.contains(&content_type) {
+        return Err(JsValue::from_str(&format!(
+            "invalid clipboard content type: {}",
+            content_type
+        )));
+    }
+
     // Build a JSON manifest that identifies this as a clipboard transfer.
     // The CLI recognizes clipboard transfers by the presence of
     // `is_clipboard: true` and `content_type` fields.

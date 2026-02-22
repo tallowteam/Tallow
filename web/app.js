@@ -19,9 +19,10 @@ const ctx = {
     transferId: null,
     peerFingerprint: '',
     chatCounter: 0,
-    relayUrl: 'ws://localhost:4434',
+    relayUrl: 'wss://tallow.manisahome.com/ws',
     reconnectAttempts: 0,
     maxReconnectAttempts: 5,
+    expectedPeerConfirm: null,
 };
 // Expose context for transfer.ts
 export function getContext() {
@@ -190,8 +191,23 @@ function wireEventListeners() {
     const settingRelay = document.getElementById('setting-relay');
     if (settingRelay)
         settingRelay.addEventListener('change', () => {
-            ctx.relayUrl = settingRelay.value;
-            localStorage.setItem('tallow-relay', settingRelay.value);
+            const url = settingRelay.value.trim();
+            // Reject cleartext ws:// on HTTPS pages to prevent downgrade
+            if (location.protocol === 'https:' && url.startsWith('ws://')) {
+                const statusEl = document.getElementById('clipboard-status');
+                if (statusEl) {
+                    statusEl.textContent = 'Cleartext ws:// relay URLs are not allowed on HTTPS pages. Use wss://.';
+                    statusEl.style.color = 'var(--error)';
+                }
+                settingRelay.value = ctx.relayUrl;
+                return;
+            }
+            if (!url.startsWith('ws://') && !url.startsWith('wss://')) {
+                settingRelay.value = ctx.relayUrl;
+                return;
+            }
+            ctx.relayUrl = url;
+            localStorage.setItem('tallow-relay', url);
         });
     const settingTheme = document.getElementById('setting-theme');
     if (settingTheme)
@@ -425,6 +441,8 @@ function onHandshakeResponse(resp) {
     ctx.sessionKey = sessionKey;
     // Compute confirmation (BLAKE3 keyed hash of shared secret)
     const confirmation = blake3Hash(new Uint8Array([...sharedSecret, ...new TextEncoder().encode('sender-confirm')]));
+    // Pre-compute expected receiver confirmation for verification in onHandshakeComplete
+    ctx.expectedPeerConfirm = blake3Hash(new Uint8Array([...sharedSecret, ...new TextEncoder().encode('receiver-confirm')]));
     // Send HandshakeKem with ciphertext and confirmation
     const kemMsg = encodeHandshakeKem(ciphertext, confirmation);
     sendWsBytes(kemMsg);
@@ -437,6 +455,15 @@ function onHandshakeKem(kem) {
         return;
     const ciphertext = new Uint8Array(kem.kem_ciphertext);
     const sharedSecret = ctx.keypair.decapsulate(ciphertext);
+    // Verify sender's confirmation before accepting session key
+    const expectedSenderConfirm = blake3Hash(new Uint8Array([...sharedSecret, ...new TextEncoder().encode('sender-confirm')]));
+    const peerConfirm = new Uint8Array(kem.confirmation);
+    if (peerConfirm.length !== expectedSenderConfirm.length ||
+        !peerConfirm.every((b, i) => b === expectedSenderConfirm[i])) {
+        console.error('Handshake confirmation mismatch — possible MITM');
+        ctx.sessionKey = null;
+        return;
+    }
     // Derive session key
     const sessionKey = hkdfDerive(sharedSecret, new Uint8Array(0), new TextEncoder().encode('tallow-session-key-v2'), 32);
     ctx.sessionKey = sessionKey;
@@ -449,7 +476,18 @@ function onHandshakeKem(kem) {
     finishHandshake();
 }
 function onHandshakeComplete(complete) {
-    // Sender: handshake complete
+    // Sender: verify receiver's confirmation tag
+    if (ctx.expectedPeerConfirm) {
+        const peerConfirm = new Uint8Array(complete.confirmation);
+        const expected = ctx.expectedPeerConfirm;
+        ctx.expectedPeerConfirm = null; // Clear after use
+        if (peerConfirm.length !== expected.length ||
+            !peerConfirm.every((b, i) => b === expected[i])) {
+            console.error('Handshake confirmation mismatch — possible MITM');
+            ctx.sessionKey = null;
+            return;
+        }
+    }
     finishHandshake();
 }
 function finishHandshake() {
@@ -537,15 +575,18 @@ function updateConnectionDot(status) {
 // Code Generation
 // ============================================================================
 function generateCodePhrase() {
-    // Simple code phrase generation using random numbers and words
-    const adjectives = ['alpha', 'beta', 'gamma', 'delta', 'echo', 'foxtrot',
+    // NATO phonetic alphabet words for code phrases
+    const words = ['alpha', 'beta', 'gamma', 'delta', 'echo', 'foxtrot',
         'golf', 'hotel', 'india', 'juliet', 'kilo', 'lima', 'mike',
         'november', 'oscar', 'papa', 'quebec', 'romeo', 'sierra',
         'tango', 'uniform', 'victor', 'whiskey', 'xray', 'yankee', 'zulu'];
-    const num = Math.floor(Math.random() * 100);
-    const w1 = adjectives[Math.floor(Math.random() * adjectives.length)];
-    const w2 = adjectives[Math.floor(Math.random() * adjectives.length)];
-    const code = `${num}-${w1}-${w2}`;
+    // Use crypto.getRandomValues() for secure randomness
+    const rand = new Uint32Array(3);
+    crypto.getRandomValues(rand);
+    const num = rand[0] % 1000; // 0-999
+    const w1 = words[rand[1] % words.length];
+    const w2 = words[rand[2] % words.length];
+    const code = `${num}-${w1}-${w2}`; // 1000 × 26 × 26 = 676,000 codes
     const codeEl = document.getElementById('generated-code');
     if (codeEl)
         codeEl.textContent = code;
@@ -600,10 +641,16 @@ function toggleSettings(show) {
 function loadSettings() {
     const relay = localStorage.getItem('tallow-relay');
     if (relay) {
-        ctx.relayUrl = relay;
-        const input = document.getElementById('setting-relay');
-        if (input)
-            input.value = relay;
+        // Reject cleartext ws:// on HTTPS pages
+        if (location.protocol === 'https:' && relay.startsWith('ws://')) {
+            localStorage.removeItem('tallow-relay');
+        }
+        else if (relay.startsWith('ws://') || relay.startsWith('wss://')) {
+            ctx.relayUrl = relay;
+            const input = document.getElementById('setting-relay');
+            if (input)
+                input.value = relay;
+        }
     }
 }
 // ============================================================================
