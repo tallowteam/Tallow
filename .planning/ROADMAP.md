@@ -327,4 +327,4 @@ Phases execute in numeric order: 1 → 2 → ... → 10 → 11 → 12 → 13 →
 | 18. Encrypted Chat Over Relay | - | Complete | 2026-02-21 |
 | 19. Multi-Peer Rooms | - | Complete | 2026-02-21 |
 | 20. QUIC Hole Punching / P2P Direct | 3/3 | Complete    | 2026-02-21 |
-| 21. Web UI / Browser Client | 3/5 | In Progress|  |
+| 21. Web UI / Browser Client | 4/5 | In Progress|  |

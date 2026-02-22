@@ -168,11 +168,11 @@ Deferred to future release. Tracked but not in current roadmap.
 - [x] **WEB-09**: Browser can send files via drag-and-drop with 64KB chunked AES-256-GCM encryption matching CLI wire format
 - [x] **WEB-10**: Browser can receive files from CLI peer with progressive decryption and download
 - [x] **WEB-11**: Browser displays real-time transfer progress (speed, percentage, ETA)
-- [ ] **WEB-12**: Browser clipboard sharing sends text/images E2E encrypted, interoperable with `tallow clip` (uses FileOffer+Chunk pipeline, not a special message variant)
-- [ ] **WEB-13**: Received clipboard content auto-copies to browser clipboard via Clipboard API
-- [ ] **WEB-14**: Browser chat sends/receives E2E encrypted messages interoperable with `tallow chat` using Message::ChatText with AES-256-GCM (nonce: [0u8;4]||counter.to_be_bytes(), AAD: b"tallow-chat-v1", counter increments by 2)
-- [ ] **WEB-15**: All received text sanitized via sanitize_display() before rendering (ANSI stripped, control chars removed)
-- [ ] **WEB-16**: Typing indicators sent/received between browser and CLI chat peers via Message::TypingIndicator
+- [x] **WEB-12**: Browser clipboard sharing sends text/images E2E encrypted, interoperable with `tallow clip` (uses FileOffer+Chunk pipeline, not a special message variant)
+- [x] **WEB-13**: Received clipboard content auto-copies to browser clipboard via Clipboard API
+- [x] **WEB-14**: Browser chat sends/receives E2E encrypted messages interoperable with `tallow chat` using Message::ChatText with AES-256-GCM (nonce: [0u8;4]||counter.to_be_bytes(), AAD: b"tallow-chat-v1", counter increments by 2)
+- [x] **WEB-15**: All received text sanitized via sanitize_display() before rendering (ANSI stripped, control chars removed)
+- [x] **WEB-16**: Typing indicators sent/received between browser and CLI chat peers via Message::TypingIndicator
 - [ ] **WEB-17**: Web app installable as PWA (manifest.json, service worker for offline shell caching)
 - [x] **WEB-18**: WASM crypto produces identical output to native for KEM, AES-GCM, BLAKE3 — verified by cargo test on native target
 

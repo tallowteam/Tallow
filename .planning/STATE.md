@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-19)
 ## Current Position
 
 Phase: 21 (Web UI / Browser Client)
-Plan: 3 of 5
-Status: Phase 21 IN PROGRESS (plan 03 complete)
-Last activity: 2026-02-22 — Plan 21-03 complete (Browser file transfer UI)
+Plan: 4 of 5
+Status: Phase 21 IN PROGRESS (plan 04 complete)
+Last activity: 2026-02-22 — Plan 21-04 complete (Clipboard sharing + encrypted chat)
 
-Progress: [======....] 60% (3/5 plans)
+Progress: [========..] 80% (4/5 plans)
 
 ## Performance Metrics
 
@@ -36,6 +36,7 @@ Progress: [======....] 60% (3/5 plans)
 | 20 | 3/3 | ~44m | ~15 min |
 
 **Recent Trend:**
+- Phase 21 Plan 04 complete (Clipboard sharing + encrypted chat + typing indicators)
 - Phase 21 Plan 03 complete (Browser file transfer UI + dark theme + KEM handshake)
 - Phase 21 Plan 02 complete (Relay WebSocket transport + WS-QUIC bridging)
 - Phase 21 Plan 01 complete (WASM crate + feature gates + crypto/codec wrappers)
@@ -45,6 +46,7 @@ Progress: [======....] 60% (3/5 plans)
 - Trend: Active
 
 *Updated after each plan completion*
+| Phase 21 P04 | 18min | 2 tasks | 10 files |
 | Phase 21 P03 | 15min | 2 tasks | 13 files |
 | Phase 21 P02 | 43min | 2 tasks | 5 files |
 | Phase 21 P01 | 37min | 2 tasks | 11 files |
@@ -83,6 +85,11 @@ Recent decisions affecting current work:
 - [Phase 21-03]: AAD = transfer_id || chunk_index.to_be_bytes() -- exact match with CLI chunking.rs
 - [Phase 21-03]: WasmFileManifest in file_io.rs -- FileManifest behind 'full' gate needs WASM-compatible type
 - [Phase 21-03]: SPA state machine: landing -> code-entry -> connecting -> waiting -> handshake -> dashboard
+- [Phase 21-04]: ChatSession uses stateful counters (send += 2, recv += 2) matching CLI chat encryption exactly
+- [Phase 21-04]: Clipboard sends as FileOffer+Chunk pipeline (same wire format as file transfer) for CLI interop
+- [Phase 21-04]: Chat history in sessionStorage only (never localStorage) per WEB-14 security
+- [Phase 21-04]: Module delegation: app.ts delegates chat/clipboard to dedicated modules (chat.ts, clipboard.ts)
+- [Phase 21-04]: decryptMessageWithNonce() takes explicit nonce from wire for CLI interop
 
 ### Pending Todos
 
@@ -97,5 +104,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 21-03-PLAN.md (Browser file transfer UI + dark theme)
+Stopped at: Completed 21-04-PLAN.md (Clipboard sharing + encrypted chat)
 Resume file: None
