@@ -32,7 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 18: Encrypted Chat Over Relay** - Real-time E2E encrypted text chat between peers using existing relay rooms, chat sessions, message history, typing indicators, read receipts
 - [x] **Phase 19: Multi-Peer Rooms** - Group transfers and chat with 3+ peers in a single room, fan-out message delivery, per-peer KEM handshakes, group key agreement, presence notifications, room capacity management
 - [x] **Phase 20: WebRTC / P2P Direct** - Browser-based peer-to-peer transfers using WebRTC data channels, signaling via relay server, STUN/TURN NAT traversal, direct peer connections without relay forwarding, fallback to relay when P2P fails (completed 2026-02-21)
-- [ ] **Phase 21: Web UI / Browser Client** - Browser-based sender/receiver using WebAssembly + WebCrypto, no install needed — users visit a URL, enter a code phrase, and send/receive files with the same E2E encryption as the CLI
+- [x] **Phase 21: Web UI / Browser Client** - Browser-based sender/receiver using WebAssembly + WebCrypto, no install needed — users visit a URL, enter a code phrase, and send/receive files with the same E2E encryption as the CLI
 
 ## Phase Details
 
@@ -327,4 +327,4 @@ Phases execute in numeric order: 1 → 2 → ... → 10 → 11 → 12 → 13 →
 | 18. Encrypted Chat Over Relay | - | Complete | 2026-02-21 |
 | 19. Multi-Peer Rooms | - | Complete | 2026-02-21 |
 | 20. QUIC Hole Punching / P2P Direct | 3/3 | Complete    | 2026-02-21 |
-| 21. Web UI / Browser Client | 4/5 | In Progress|  |
+| 21. Web UI / Browser Client | 5/5 | Complete | 2026-02-22 |

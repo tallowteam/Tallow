@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-19)
 ## Current Position
 
 Phase: 21 (Web UI / Browser Client)
-Plan: 4 of 5
-Status: Phase 21 IN PROGRESS (plan 04 complete)
-Last activity: 2026-02-22 — Plan 21-04 complete (Clipboard sharing + encrypted chat)
+Plan: 5 of 5
+Status: Phase 21 COMPLETE (all plans done)
+Last activity: 2026-02-22 — Plan 21-05 complete (PWA + testing + deploy pipeline)
 
-Progress: [========..] 80% (4/5 plans)
+Progress: [==========] 100% (5/5 plans)
 
 ## Performance Metrics
 
@@ -36,6 +36,7 @@ Progress: [========..] 80% (4/5 plans)
 | 20 | 3/3 | ~44m | ~15 min |
 
 **Recent Trend:**
+- Phase 21 Plan 05 complete (PWA + testing + deploy pipeline) -- Phase 21 DONE
 - Phase 21 Plan 04 complete (Clipboard sharing + encrypted chat + typing indicators)
 - Phase 21 Plan 03 complete (Browser file transfer UI + dark theme + KEM handshake)
 - Phase 21 Plan 02 complete (Relay WebSocket transport + WS-QUIC bridging)
@@ -46,6 +47,7 @@ Progress: [========..] 80% (4/5 plans)
 - Trend: Active
 
 *Updated after each plan completion*
+| Phase 21 P05 | 13min | 2 tasks | 12 files |
 | Phase 21 P04 | 18min | 2 tasks | 10 files |
 | Phase 21 P03 | 15min | 2 tasks | 13 files |
 | Phase 21 P02 | 43min | 2 tasks | 5 files |
@@ -90,6 +92,10 @@ Recent decisions affecting current work:
 - [Phase 21-04]: Chat history in sessionStorage only (never localStorage) per WEB-14 security
 - [Phase 21-04]: Module delegation: app.ts delegates chat/clipboard to dedicated modules (chat.ts, clipboard.ts)
 - [Phase 21-04]: decryptMessageWithNonce() takes explicit nonce from wire for CLI interop
+- [Phase 21-05]: Separate tsconfig.worker.json for service worker (WebWorker lib vs DOM lib)
+- [Phase 21-05]: wasm-bindgen-cli@0.2.108 pinned in CI to match Cargo.lock resolved version
+- [Phase 21-05]: Crypto compat tests in tallow-crypto (Approach A) -- cdylib cannot run integration tests
+- [Phase 21-05]: Plausible analytics (no cookies, GDPR-compliant) added with CSP allowlist
 
 ### Pending Todos
 
@@ -104,5 +110,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 21-04-PLAN.md (Clipboard sharing + encrypted chat)
+Stopped at: Completed 21-05-PLAN.md (PWA + testing + deploy pipeline) -- Phase 21 DONE
 Resume file: None

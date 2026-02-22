@@ -173,7 +173,7 @@ Deferred to future release. Tracked but not in current roadmap.
 - [x] **WEB-14**: Browser chat sends/receives E2E encrypted messages interoperable with `tallow chat` using Message::ChatText with AES-256-GCM (nonce: [0u8;4]||counter.to_be_bytes(), AAD: b"tallow-chat-v1", counter increments by 2)
 - [x] **WEB-15**: All received text sanitized via sanitize_display() before rendering (ANSI stripped, control chars removed)
 - [x] **WEB-16**: Typing indicators sent/received between browser and CLI chat peers via Message::TypingIndicator
-- [ ] **WEB-17**: Web app installable as PWA (manifest.json, service worker for offline shell caching)
+- [x] **WEB-17**: Web app installable as PWA (manifest.json, service worker for offline shell caching)
 - [x] **WEB-18**: WASM crypto produces identical output to native for KEM, AES-GCM, BLAKE3 — verified by cargo test on native target
 
 ### P2P Direct Transfer (P2P) — Phase 20
@@ -336,7 +336,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | WEB-14 | Phase 21 | Not Started |
 | WEB-15 | Phase 21 | Not Started |
 | WEB-16 | Phase 21 | Not Started |
-| WEB-17 | Phase 21 | Not Started |
+| WEB-17 | Phase 21 | Done |
 | WEB-18 | Phase 21 | Done |
 
 **Coverage:**
