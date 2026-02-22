@@ -7,6 +7,10 @@ max_rooms = 5000
 rate_limit = 100
 room_timeout_secs = 600
 
+# WebSocket listener for browser clients (Phase 21)
+# Set to empty string "" to disable WebSocket support
+ws_bind_addr = "0.0.0.0:4434"
+
 # TLS: self-signed by default (auto-generated)
 # For Let's Encrypt certs, set these:
 # tls_cert = "/etc/letsencrypt/live/relay.yourdomain.com/fullchain.pem"
