@@ -494,7 +494,9 @@ function assembleAndDownload(): void {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = file.path || file.name || `file_${chunkOffset}`;
+        // Strip path separators from peer-controlled filename (defense-in-depth)
+        const rawName = file.path || file.name || `file_${chunkOffset}`;
+        a.download = rawName.replace(/[/\\]/g, '_');
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -617,13 +619,22 @@ function renderTransferHistory(): void {
 
     listEl.innerHTML = '';
     for (const record of state.transferHistory.slice(0, 10)) {
+        // Validate numeric fields from localStorage (defense against XSS via storage poisoning)
+        const files = typeof record.files === 'number' ? record.files : 0;
+        const totalSize = typeof record.totalSize === 'number' ? record.totalSize : 0;
+        const arrow = record.direction === 'sent' ? '\u{2B06}' : '\u{2B07}';
+
         const item = document.createElement('div');
         item.className = 'history-item';
         const date = new Date(record.timestamp);
-        item.innerHTML = `
-            <span>${record.direction === 'sent' ? '\u{2B06}' : '\u{2B07}'} ${record.files} file${record.files !== 1 ? 's' : ''} (${formatBytes(record.totalSize)})</span>
-            <span>${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-        `;
+
+        const info = document.createElement('span');
+        info.textContent = `${arrow} ${files} file${files !== 1 ? 's' : ''} (${formatBytes(totalSize)})`;
+        const time = document.createElement('span');
+        time.textContent = `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+
+        item.appendChild(info);
+        item.appendChild(time);
         listEl.appendChild(item);
     }
 }

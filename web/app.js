@@ -37,9 +37,10 @@ export function getWebSocket() {
 async function init() {
     // Load settings from localStorage
     loadSettings();
-    // Check for deep link ?code=...
-    const params = new URLSearchParams(window.location.search);
-    const deepCode = params.get('code');
+    // Check for deep link #code=... (fragment, not query — never sent to server/analytics)
+    const fragment = window.location.hash.replace(/^#/, '');
+    const fragParams = new URLSearchParams(fragment);
+    const deepCode = fragParams.get('code');
     // Initialize WASM
     try {
         await initWasm();
@@ -593,17 +594,18 @@ function generateCodePhrase() {
     // Generate QR code (simple SVG-based)
     const qrEl = document.getElementById('qr-code');
     if (qrEl) {
-        const deepLink = `https://tallow.manisahome.com?code=${encodeURIComponent(code)}`;
+        const deepLink = `https://tallow.manisahome.com#code=${encodeURIComponent(code)}`;
         qrEl.innerHTML = generateQRPlaceholder(deepLink);
     }
 }
 function generateQRPlaceholder(url) {
     // Simple placeholder — in production, use a proper QR library
-    // For now, show the URL as a styled link
+    // Escape URL to prevent innerHTML injection
+    const safe = url.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     return `<div style="padding: 0.5rem; text-align: center; font-size: 0.75rem; color: #64748b; background: #f1f5f9; border-radius: 8px; max-width: 200px;">
         <div style="font-size: 2rem; margin-bottom: 0.5rem;">&#x25A3;</div>
         <div>QR Code</div>
-        <div style="word-break: break-all; margin-top: 0.25rem;">${url}</div>
+        <div style="word-break: break-all; margin-top: 0.25rem;">${safe}</div>
     </div>`;
 }
 // ============================================================================
@@ -772,7 +774,15 @@ function disconnect() {
         ctx.ws.close();
         ctx.ws = null;
     }
-    ctx.sessionKey = null;
+    // Best-effort zeroing of key material before dropping references
+    if (ctx.sessionKey) {
+        ctx.sessionKey.fill(0);
+        ctx.sessionKey = null;
+    }
+    if (ctx.expectedPeerConfirm) {
+        ctx.expectedPeerConfirm.fill(0);
+        ctx.expectedPeerConfirm = null;
+    }
     ctx.transferSession = null;
     ctx.keypair = null;
     ctx.transferId = null;
