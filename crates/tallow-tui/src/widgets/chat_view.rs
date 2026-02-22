@@ -8,7 +8,7 @@
 
 use ratatui::{
     buffer::Buffer,
-    layout::{Alignment, Rect},
+    layout::{HorizontalAlignment, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph, StatefulWidget, Widget, Wrap},
@@ -287,7 +287,7 @@ impl<'a> ChatView<'a> {
                     .add_modifier(Modifier::ITALIC),
             );
 
-            let para = Paragraph::new(Line::from(content)).alignment(Alignment::Center);
+            let para = Paragraph::new(Line::from(content)).alignment(HorizontalAlignment::Center);
 
             let msg_area = Rect {
                 x: area.x,

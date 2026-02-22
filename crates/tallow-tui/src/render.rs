@@ -272,7 +272,7 @@ fn render_size_warning(frame: &mut Frame) {
     ];
 
     let paragraph = Paragraph::new(lines)
-        .alignment(ratatui::layout::Alignment::Center)
+        .alignment(ratatui::layout::HorizontalAlignment::Center)
         .block(Block::default());
     frame.render_widget(paragraph, area);
 }

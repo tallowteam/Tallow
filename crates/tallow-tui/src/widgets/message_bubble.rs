@@ -8,7 +8,7 @@
 
 use ratatui::{
     buffer::Buffer,
-    layout::{Alignment, Rect},
+    layout::{HorizontalAlignment, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph, Widget, Wrap},
@@ -207,7 +207,7 @@ impl<'a> Widget for MessageBubble<'a> {
                         .fg(Color::DarkGray)
                         .add_modifier(Modifier::ITALIC)
                 }))
-                .alignment(Alignment::Center);
+                .alignment(HorizontalAlignment::Center);
 
             para.render(area, buf);
             return;
