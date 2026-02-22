@@ -420,7 +420,7 @@ mod tests {
 [network]
 enable_mdns = true
 enable_relay = true
-relay_servers = ["relay.tallow.app:443"]
+relay_servers = ["129.146.114.5:4433"]
 stun_servers = ["stun.l.google.com:19302"]
 turn_servers = []
 

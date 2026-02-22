@@ -275,7 +275,7 @@ async fn check_tor() -> DiagCheck {
 
 async fn check_relay() -> DiagCheck {
     // Try to connect to the default relay
-    let relay_addr = "relay.tallow.app:4433";
+    let relay_addr = "129.146.114.5:4433";
     match tokio::net::lookup_host(relay_addr).await {
         Ok(mut addrs) => {
             if addrs.next().is_some() {

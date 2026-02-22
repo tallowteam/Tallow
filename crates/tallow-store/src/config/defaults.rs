@@ -8,7 +8,7 @@ impl Default for NetworkConfig {
         Self {
             enable_mdns: true,
             enable_relay: true,
-            relay_servers: vec!["relay.tallow.app:443".to_string()],
+            relay_servers: vec!["129.146.114.5:4433".to_string()],
             stun_servers: vec!["stun.l.google.com:19302".to_string()],
             turn_servers: Vec::new(),
         }
