@@ -45,7 +45,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-      - uses: Swatinem/rust-cache@v2
+      # No cargo cache for release builds — stale artifacts from dependency
+      # changes (e.g. ring→aws-lc-rs) cause SIGILL crashes
 
       - name: Install cross-compilation tools
         if: matrix.target == 'aarch64-unknown-linux-gnu'
@@ -114,7 +115,11 @@ jobs:
         shell: bash
         run: |
           for f in tallow-${{ env.RELEASE_TAG }}-*; do
-            sha256sum "$f" > "$f.sha256"
+            if command -v sha256sum >/dev/null 2>&1; then
+              sha256sum "$f" > "$f.sha256"
+            else
+              shasum -a 256 "$f" > "$f.sha256"
+            fi
           done
 
       - uses: actions/upload-artifact@v4
