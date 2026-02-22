@@ -74,7 +74,7 @@ impl RelayServer {
                 .map_err(|e| anyhow::anyhow!("invalid ws_bind_addr: {}", e))?;
             let ws_state = Arc::new(crate::websocket::WsState {
                 room_manager: Arc::clone(&self.room_manager),
-                password: self.config.password.clone(),
+                password: zeroize::Zeroizing::new(self.config.password.clone()),
             });
             let app = crate::websocket::ws_router(ws_state);
             let listener = tokio::net::TcpListener::bind(ws_addr).await?;

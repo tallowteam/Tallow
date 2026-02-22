@@ -115,6 +115,14 @@ impl TransferSession {
         index: u64,
         encrypted_data: &[u8],
     ) -> Result<Vec<u8>, JsValue> {
+        // Enforce monotonicity — reject replayed or out-of-order chunks
+        if index < self.chunk_index {
+            return Err(JsValue::from_str(&format!(
+                "chunk index {} already processed (expected >= {})",
+                index, self.chunk_index
+            )));
+        }
+
         // Build AAD and nonce identically to encryption
         let aad = build_chunk_aad(&self.transfer_id, index);
         let nonce = build_chunk_nonce(index);

@@ -39,8 +39,9 @@ const MAX_WS_MESSAGE_SIZE: usize = 16 * 1024 * 1024;
 pub struct WsState {
     /// Room manager shared with QUIC path
     pub room_manager: Arc<RoomManager>,
-    /// Relay password (empty = open relay, no authentication required)
-    pub password: String,
+    /// Relay password (empty = open relay, no authentication required).
+    /// Wrapped in `Zeroizing` so the password is wiped from memory on drop.
+    pub password: zeroize::Zeroizing<String>,
 }
 
 /// Create the axum Router for WebSocket connections
