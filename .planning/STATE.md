@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-19)
 ## Current Position
 
 Phase: 21 (Web UI / Browser Client)
-Plan: 0 of 5
-Status: Phase 21 PLANNED (5 plans in 4 waves, ready for execution)
-Last activity: 2026-02-21 — Phase 21 plans created
+Plan: 1 of 5
+Status: Phase 21 IN PROGRESS (plan 01 complete)
+Last activity: 2026-02-21 — Plan 21-01 complete (WASM crate + feature gates)
 
-Progress: [..........] 0% (0/5 plans)
+Progress: [==........] 20% (1/5 plans)
 
 ## Performance Metrics
 
@@ -36,12 +36,14 @@ Progress: [..........] 0% (0/5 plans)
 | 20 | 3/3 | ~44m | ~15 min |
 
 **Recent Trend:**
+- Phase 21 Plan 01 complete (WASM crate + feature gates + crypto/codec wrappers)
 - Phase 20 Plan 03 complete (P2P testing) -- Phase 20 DONE
 - Phase 20 Plan 02 complete (P2P negotiation module)
 - Phase 20 Plan 01 complete (P2P foundation)
 - Trend: Active
 
 *Updated after each plan completion*
+| Phase 21 P01 | 37min | 2 tasks | 11 files |
 | Phase 20 P03 | 12min | 2 tasks | 5 files |
 
 ## Accumulated Context
@@ -65,6 +67,10 @@ Recent decisions affecting current work:
 - [Phase 20-02]: Quinn endpoint reuse for hole punching (single UDP socket for both accept and connect)
 - [Phase 20-03]: 30 new tests verifying P2P local connection, hole punch endpoint reuse, binary protocol encoding, candidate validation, and wire protocol backward compatibility
 - [Phase 20]: 30 new P2P tests using binary protocol tags (not TallowCodec), MockChannel for no_p2p guard, TEST-NET-1 for timeouts
+- [Phase 21-01]: Feature-gate tallow-protocol: 'full' (default) vs 'wasm' (wire messages + sanitize only)
+- [Phase 21-01]: tallow-web cdylib crate with wasm-bindgen, getrandom js, bincode for KEM serialization
+- [Phase 21-01]: WASM ANSI stripping uses state machine fallback (no VTE/strip-ansi-escapes dep)
+- [Phase 21-01]: postcard with alloc feature (not use-std) in tallow-web for wasm32 compatibility
 
 ### Pending Todos
 
@@ -79,5 +85,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Phase 21 planning complete — 5 plans in 4 waves created
+Stopped at: Completed 21-01-PLAN.md (WASM crate + feature gates + crypto/codec)
 Resume file: None

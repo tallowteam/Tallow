@@ -157,9 +157,9 @@ Deferred to future release. Tracked but not in current roadmap.
 
 ### Web UI / Browser Client (WEB) — Phase 21
 
-- [ ] **WEB-01**: tallow-crypto compiles to wasm32-unknown-unknown target without errors
-- [ ] **WEB-02**: tallow-web cdylib crate with wasm-bindgen exports for hybrid KEM, AES-256-GCM, BLAKE3, HKDF
-- [ ] **WEB-03**: tallow-protocol feature-gated (`wasm` feature) so wire module (Message enum + postcard) compiles for WASM without heavy deps (tokio, zstd, etc.)
+- [x] **WEB-01**: tallow-crypto compiles to wasm32-unknown-unknown target without errors
+- [x] **WEB-02**: tallow-web cdylib crate with wasm-bindgen exports for hybrid KEM, AES-256-GCM, BLAKE3, HKDF
+- [x] **WEB-03**: tallow-protocol feature-gated (`wasm` feature) so wire module (Message enum + postcard) compiles for WASM without heavy deps (tokio, zstd, etc.)
 - [ ] **WEB-04**: Relay server accepts WebSocket connections alongside QUIC for browser clients
 - [ ] **WEB-05**: WebSocket-to-QUIC message bridging: relay adds/strips 4-byte length prefix when forwarding between transports
 - [ ] **WEB-06**: CORS headers on WebSocket endpoint allow cross-origin browser connections
@@ -174,7 +174,7 @@ Deferred to future release. Tracked but not in current roadmap.
 - [ ] **WEB-15**: All received text sanitized via sanitize_display() before rendering (ANSI stripped, control chars removed)
 - [ ] **WEB-16**: Typing indicators sent/received between browser and CLI chat peers via Message::TypingIndicator
 - [ ] **WEB-17**: Web app installable as PWA (manifest.json, service worker for offline shell caching)
-- [ ] **WEB-18**: WASM crypto produces identical output to native for KEM, AES-GCM, BLAKE3 — verified by cargo test on native target
+- [x] **WEB-18**: WASM crypto produces identical output to native for KEM, AES-GCM, BLAKE3 — verified by cargo test on native target
 
 ### P2P Direct Transfer (P2P) — Phase 20
 - [x] **P2P-01**: ICE candidate exchange via relay signaling (CandidateOffer/CandidatesDone wire messages)
