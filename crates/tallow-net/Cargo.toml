@@ -36,7 +36,7 @@ hex = "0.4"
 tokio-socks = "0.5"
 
 # UPnP
-igd-next = { version = "0.15", features = ["aio_tokio"] }
+igd-next = { version = "0.16", features = ["aio_tokio"] }
 
 # Async
 tokio.workspace = true
