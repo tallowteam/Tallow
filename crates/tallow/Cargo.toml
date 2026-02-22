@@ -97,7 +97,7 @@ bytesize = { version = "2", features = ["serde"] }
 # Linux sandbox (Landlock + Seccomp)
 [target.'cfg(target_os = "linux")'.dependencies]
 landlock = "0.4"
-seccompiler = "0.4"
+seccompiler = "0.5"
 libc = "0.2"
 
 [dev-dependencies]
