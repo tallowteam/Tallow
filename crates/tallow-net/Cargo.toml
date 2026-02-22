@@ -14,17 +14,17 @@ onion = []
 tallow-crypto = { path = "../tallow-crypto" }
 
 # QUIC Transport
-quinn = { version = "0.11", optional = true }
+quinn = { version = "0.11", optional = true, default-features = false, features = ["runtime-tokio", "rustls-aws-lc-rs"] }
 
-# TLS
-rustls = { version = "0.23", features = ["ring"] }
+# TLS (aws-lc-rs backend — ring has compile-time assertion bug on macOS ARM)
+rustls = { version = "0.23", default-features = false, features = ["std", "tls12", "aws_lc_rs"] }
 rustls-pemfile = "2"
 webpki-roots = "0.26"
 tokio-rustls = "0.26"
-rcgen = "0.13"
+rcgen = { version = "0.13", default-features = false, features = ["aws_lc_rs"] }
 
-# DNS
-hickory-resolver = { version = "0.24", features = ["dns-over-https-rustls"] }
+# DNS (v0.25 uses rustls 0.23/aws-lc-rs, removing ring dependency)
+hickory-resolver = { version = "0.25", default-features = false, features = ["https-aws-lc-rs", "tokio"] }
 
 # Local Discovery
 mdns-sd = "0.11"

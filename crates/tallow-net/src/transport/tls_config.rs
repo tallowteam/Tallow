@@ -64,7 +64,7 @@ pub fn quinn_server_config(identity: &TlsIdentity) -> Result<quinn::ServerConfig
 /// so connections survive while waiting for peers.
 #[cfg(feature = "quic")]
 pub fn quinn_client_config() -> Result<quinn::ClientConfig> {
-    let provider = Arc::new(rustls::crypto::ring::default_provider());
+    let provider = Arc::new(rustls::crypto::aws_lc_rs::default_provider());
     let crypto = rustls::ClientConfig::builder_with_provider(provider)
         .with_safe_default_protocol_versions()
         .map_err(|e| NetworkError::TlsError(format!("TLS protocol versions: {}", e)))?
@@ -92,7 +92,7 @@ pub fn quinn_client_config() -> Result<quinn::ClientConfig> {
 
 /// Build a rustls ServerConfig from a TLS identity (for TCP+TLS)
 pub fn rustls_server_config(identity: &TlsIdentity) -> Result<Arc<rustls::ServerConfig>> {
-    let provider = Arc::new(rustls::crypto::ring::default_provider());
+    let provider = Arc::new(rustls::crypto::aws_lc_rs::default_provider());
     let config = rustls::ServerConfig::builder_with_provider(provider)
         .with_safe_default_protocol_versions()
         .map_err(|e| NetworkError::TlsError(format!("TLS protocol versions: {}", e)))?
@@ -108,7 +108,7 @@ pub fn rustls_server_config(identity: &TlsIdentity) -> Result<Arc<rustls::Server
 
 /// Build a rustls ClientConfig that accepts any server certificate (for TCP+TLS)
 pub fn rustls_client_config() -> Result<Arc<rustls::ClientConfig>> {
-    let provider = Arc::new(rustls::crypto::ring::default_provider());
+    let provider = Arc::new(rustls::crypto::aws_lc_rs::default_provider());
     let config = rustls::ClientConfig::builder_with_provider(provider)
         .with_safe_default_protocol_versions()
         .map_err(|e| NetworkError::TlsError(format!("TLS protocol versions: {}", e)))?
@@ -164,7 +164,7 @@ impl rustls::client::danger::ServerCertVerifier for SkipServerVerification {
     }
 
     fn supported_verify_schemes(&self) -> Vec<rustls::SignatureScheme> {
-        rustls::crypto::ring::default_provider()
+        rustls::crypto::aws_lc_rs::default_provider()
             .signature_verification_algorithms
             .supported_schemes()
     }

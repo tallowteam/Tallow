@@ -34,22 +34,27 @@ impl DohResolver {
     /// All DNS queries go over HTTPS, preventing plaintext DNS leaks.
     pub async fn resolve(&self, hostname: &str) -> Result<Vec<IpAddr>> {
         use hickory_resolver::config::{ResolverConfig, ResolverOpts};
-        use hickory_resolver::TokioAsyncResolver;
+        use hickory_resolver::name_server::TokioConnectionProvider;
+        use hickory_resolver::TokioResolver;
 
         let mut opts = ResolverOpts::default();
-        opts.use_hosts_file = false;
+        opts.use_hosts_file = hickory_resolver::config::ResolveHosts::Never;
         opts.cache_size = 64;
 
-        let resolver = if self.endpoint.contains("cloudflare") {
-            TokioAsyncResolver::tokio(ResolverConfig::cloudflare_https(), opts)
+        let config = if self.endpoint.contains("cloudflare") {
+            ResolverConfig::cloudflare_https()
         } else if self.endpoint.contains("google") {
-            TokioAsyncResolver::tokio(ResolverConfig::google_https(), opts)
+            ResolverConfig::google_https()
         } else if self.endpoint.contains("quad9") {
-            TokioAsyncResolver::tokio(ResolverConfig::quad9_https(), opts)
+            ResolverConfig::quad9_https()
         } else {
             // Fall back to cloudflare for unknown endpoints
-            TokioAsyncResolver::tokio(ResolverConfig::cloudflare_https(), opts)
+            ResolverConfig::cloudflare_https()
         };
+
+        let resolver = TokioResolver::builder_with_config(config, TokioConnectionProvider::default())
+            .with_options(opts)
+            .build();
 
         let response = resolver.lookup_ip(hostname).await.map_err(|e| {
             NetworkError::DnsResolution(format!("DoH resolution failed for '{}': {}", hostname, e))
