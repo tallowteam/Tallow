@@ -592,7 +592,7 @@ mod tests {
         let room_manager = Arc::new(RoomManager::new_with_multi_capacity(100, 10));
         let state = Arc::new(WsState {
             room_manager,
-            password: String::new(),
+            password: String::new().into(),
         });
         // Should not panic
         let _router = ws_router(state);
@@ -607,7 +607,7 @@ mod tests {
         let room_manager = Arc::new(RoomManager::new_with_multi_capacity(100, 10));
         let state = Arc::new(WsState {
             room_manager,
-            password: String::new(),
+            password: String::new().into(),
         });
         let app = ws_router(state);
 
@@ -679,7 +679,7 @@ mod tests {
         let rm_ptr = Arc::as_ptr(&room_manager);
         let state = Arc::new(WsState {
             room_manager: Arc::clone(&room_manager),
-            password: String::new(),
+            password: String::new().into(),
         });
         // Verify same Arc instance
         assert_eq!(Arc::as_ptr(&state.room_manager), rm_ptr);
@@ -694,7 +694,7 @@ mod tests {
         let room_manager = Arc::new(RoomManager::new_with_multi_capacity(100, 10));
         let state = Arc::new(WsState {
             room_manager,
-            password: String::new(),
+            password: String::new().into(),
         });
         let app = ws_router(state);
 
