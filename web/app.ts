@@ -8,22 +8,13 @@ import {
     blake3DeriveRoomId,
     blake3Hash,
     hkdfDerive,
-    encryptChatMessage,
-    decryptChatMessage,
-    sanitizeDisplayText,
-    WsTransport,
     TransferSession,
-    computeFileManifest,
-    parseFileManifest,
     encodeRoomJoin,
     encodeHandshakeInit,
     encodeHandshakeResponse,
     encodeHandshakeKem,
     encodeHandshakeComplete,
     encodePing,
-    encodeFileAccept,
-    encodeChatText,
-    encodeTypingIndicator,
     decodeMessage,
 } from './wasm.js';
 
@@ -35,6 +26,18 @@ import {
     handleFileOffer,
     formatBytes,
 } from './transfer.js';
+
+import {
+    initChatUI,
+    destroyChatUI,
+    receiveMessage as chatReceiveMessage,
+    handlePeerTyping,
+} from './chat.js';
+
+import {
+    initClipboardUI,
+    shareClipboard as clipboardShare,
+} from './clipboard.js';
 
 // ============================================================================
 // Types
@@ -269,16 +272,7 @@ function wireEventListeners(): void {
         setTheme(settingTheme.value);
     });
 
-    // Chat
-    const btnSendChat = document.getElementById('btn-send-chat');
-    const chatInput = document.getElementById('chat-input') as HTMLInputElement;
-    if (btnSendChat) btnSendChat.addEventListener('click', sendChatMessage);
-    if (chatInput) {
-        chatInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') sendChatMessage();
-        });
-        chatInput.addEventListener('input', () => sendTypingIndicator(true));
-    }
+    // Chat event listeners are wired by chat.ts initChatUI() after handshake
 
     // Clipboard
     const btnClipboard = document.getElementById('btn-share-clipboard');
@@ -577,6 +571,14 @@ function finishHandshake(): void {
         ctx.transferSession = new TransferSession(ctx.sessionKey, ctx.transferId);
     }
 
+    // Initialize chat with session key
+    if (ctx.sessionKey) {
+        initChatUI(ctx.sessionKey);
+    }
+
+    // Initialize clipboard UI
+    initClipboardUI();
+
     // Update peer fingerprint display
     const fpEl = document.getElementById('peer-fingerprint');
     if (fpEl) fpEl.textContent = ctx.peerFingerprint || 'Connected (fingerprint pending)';
@@ -585,113 +587,23 @@ function finishHandshake(): void {
 }
 
 // ============================================================================
-// Chat
+// Chat (delegated to chat.ts module)
 // ============================================================================
 
-function sendChatMessage(): void {
-    const input = document.getElementById('chat-input') as HTMLInputElement;
-    if (!input || !input.value.trim() || !ctx.sessionKey) return;
-
-    const text = input.value.trim();
-    input.value = '';
-
-    // Encrypt
-    const counter = BigInt(ctx.chatCounter);
-    ctx.chatCounter += 2; // Even for sender
-
-    const ciphertext = encryptChatMessage(ctx.sessionKey, counter, text);
-
-    // Generate message ID and nonce
-    const messageId = new Uint8Array(16);
-    crypto.getRandomValues(messageId);
-    const nonce = new Uint8Array(12);
-    nonce.set(new Uint8Array(new BigUint64Array([counter]).buffer).slice(0, 8), 4);
-
-    // Encode and send
-    const chatMsg = encodeChatText(messageId, Number(counter), ciphertext, nonce);
-    sendWsBytes(chatMsg);
-
-    // Display locally
-    addChatMessage(text, 'sent');
-    sendTypingIndicator(false);
-}
-
 function onChatReceived(chatData: any): void {
-    if (!ctx.sessionKey) return;
-
-    try {
-        const counter = BigInt(chatData.sequence);
-        const ciphertext = new Uint8Array(chatData.ciphertext);
-        const plaintext = decryptChatMessage(ctx.sessionKey, counter, ciphertext);
-        const sanitized = sanitizeDisplayText(plaintext);
-        addChatMessage(sanitized, 'received');
-    } catch (e) {
-        console.error('Failed to decrypt chat message:', e);
-    }
-}
-
-function addChatMessage(text: string, direction: 'sent' | 'received'): void {
-    const container = document.getElementById('chat-messages');
-    if (!container) return;
-
-    const msgEl = document.createElement('div');
-    msgEl.className = `chat-msg ${direction}`;
-
-    const textEl = document.createElement('div');
-    textEl.textContent = text;
-    msgEl.appendChild(textEl);
-
-    const timeEl = document.createElement('div');
-    timeEl.className = 'msg-time';
-    timeEl.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    msgEl.appendChild(timeEl);
-
-    container.appendChild(msgEl);
-    container.scrollTop = container.scrollHeight;
-}
-
-function sendTypingIndicator(typing: boolean): void {
-    try {
-        const msg = encodeTypingIndicator(typing);
-        sendWsBytes(msg);
-    } catch (e) {
-        // Ignore errors for optional typing indicators
-    }
+    chatReceiveMessage(chatData);
 }
 
 function onTypingIndicator(data: any): void {
-    const el = document.getElementById('typing-indicator');
-    if (el) el.classList.toggle('hidden', !data.typing);
+    handlePeerTyping(data);
 }
 
 // ============================================================================
-// Clipboard
+// Clipboard (delegated to clipboard.ts module)
 // ============================================================================
 
 async function shareClipboard(): Promise<void> {
-    const statusEl = document.getElementById('clipboard-status');
-    try {
-        const text = await navigator.clipboard.readText();
-        if (!text || !ctx.sessionKey) {
-            if (statusEl) statusEl.textContent = 'Clipboard is empty or not connected.';
-            return;
-        }
-
-        // Encrypt and send as chat message with marker
-        const counter = BigInt(ctx.chatCounter);
-        ctx.chatCounter += 2;
-        const ciphertext = encryptChatMessage(ctx.sessionKey, counter, `[clipboard] ${text}`);
-        const messageId = new Uint8Array(16);
-        crypto.getRandomValues(messageId);
-        const nonce = new Uint8Array(12);
-        nonce.set(new Uint8Array(new BigUint64Array([counter]).buffer).slice(0, 8), 4);
-        const chatMsg = encodeChatText(messageId, Number(counter), ciphertext, nonce);
-        sendWsBytes(chatMsg);
-
-        if (statusEl) statusEl.textContent = 'Clipboard shared!';
-    } catch (e) {
-        if (statusEl) statusEl.textContent = 'Clipboard access denied. Please allow clipboard permissions.';
-    }
+    await clipboardShare();
 }
 
 // ============================================================================
@@ -953,6 +865,7 @@ function disconnect(): void {
     ctx.transferSession = null;
     ctx.keypair = null;
     ctx.transferId = null;
+    destroyChatUI();
     setState('landing');
 }
 

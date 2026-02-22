@@ -202,7 +202,7 @@ export async function receiveClipboard(
                 statusEl.style.color = 'var(--success)';
             }
         } else if (contentType.startsWith('image')) {
-            const blob = new Blob([decryptedData], { type: 'image/png' });
+            const blob = new Blob([decryptedData as BlobPart], { type: 'image/png' });
             const item = new ClipboardItem({ 'image/png': blob });
             await navigator.clipboard.write([item]);
             if (statusEl) {
@@ -270,7 +270,7 @@ function showReceivedContent(data: Uint8Array, contentType: string): void {
     receivedEl.classList.remove('hidden');
 
     if (contentType.startsWith('image')) {
-        const blob = new Blob([data], { type: 'image/png' });
+        const blob = new Blob([data as BlobPart], { type: 'image/png' });
         const url = URL.createObjectURL(blob);
         receivedEl.innerHTML = `<img src="${url}" alt="Received clipboard image" style="max-width: 100%; border-radius: var(--radius-md);">`;
     } else {

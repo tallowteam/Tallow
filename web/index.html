@@ -184,18 +184,37 @@
             <!-- Clipboard panel -->
             <div class="panel panel-clipboard">
                 <h2>Clipboard</h2>
-                <button id="btn-share-clipboard">Share Clipboard</button>
-                <div id="clipboard-status"></div>
+                <button id="btn-share-clipboard" class="clipboard-share-btn">Share Clipboard</button>
+                <div id="clipboard-status" class="clipboard-status"></div>
+                <!-- Fallback textarea (shown when Clipboard API denied) -->
+                <div id="clipboard-fallback" class="clipboard-fallback hidden">
+                    <p class="clipboard-fallback-hint">Paste content here (Ctrl+V):</p>
+                    <textarea id="clipboard-fallback-area" class="clipboard-fallback-area" placeholder="Paste here..." rows="3"></textarea>
+                </div>
+                <!-- Received clipboard content display -->
+                <div id="clipboard-received" class="clipboard-received hidden"></div>
             </div>
 
             <!-- Chat panel -->
             <div class="panel panel-chat">
                 <h2>Chat</h2>
                 <div id="chat-messages" class="chat-messages"></div>
-                <div id="typing-indicator" class="typing-indicator hidden">Peer is typing...</div>
+                <div id="typing-indicator" class="typing-indicator hidden">
+                    <span class="typing-dots">
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                    </span>
+                    Peer is typing
+                </div>
+                <!-- Emoji picker (fallback grid) -->
+                <div id="emoji-picker" class="emoji-picker hidden">
+                    <div id="emoji-grid" class="emoji-grid"></div>
+                </div>
                 <div class="chat-input-area">
-                    <input type="text" id="chat-input" placeholder="Type a message..." aria-label="Chat message">
-                    <button id="btn-send-chat">Send</button>
+                    <input type="text" id="chat-input" placeholder="Type a message..." aria-label="Chat message" autocomplete="off">
+                    <button id="btn-emoji" class="btn-emoji" title="Emoji" aria-label="Open emoji picker">&#x1f60a;</button>
+                    <button id="btn-send-chat" title="Send message">Send</button>
                 </div>
             </div>
         </div>
