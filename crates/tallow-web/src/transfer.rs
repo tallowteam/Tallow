@@ -87,10 +87,10 @@ impl TransferSession {
         // Encrypt with AES-256-GCM
         let encrypted =
             tallow_crypto::symmetric::aes_encrypt(&self.session_key, &nonce, plaintext, &aad)
-                .map_err(|e| JsValue::from_str(&format!("chunk encryption failed: {}", e)))?;
+                .map_err(|_| JsValue::from_str("encryption failed"))?;
 
-        // Update internal index tracker
-        self.chunk_index = index + 1;
+        // Update internal index tracker (checked to prevent overflow)
+        self.chunk_index = index.checked_add(1).unwrap_or(index);
 
         // Encode as Chunk message
         let msg = Message::Chunk {
@@ -130,10 +130,10 @@ impl TransferSession {
         // Decrypt with AES-256-GCM
         let plaintext =
             tallow_crypto::symmetric::aes_decrypt(&self.session_key, &nonce, encrypted_data, &aad)
-                .map_err(|e| JsValue::from_str(&format!("chunk decryption failed: {}", e)))?;
+                .map_err(|_| JsValue::from_str("decryption failed"))?;
 
-        // Update internal index tracker
-        self.chunk_index = index + 1;
+        // Update internal index tracker (checked to prevent overflow)
+        self.chunk_index = index.checked_add(1).unwrap_or(index);
 
         Ok(plaintext)
     }
