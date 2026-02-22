@@ -28,7 +28,7 @@ ed25519-dalek = { version = "2", features = ["rand_core"] }
 # Symmetric Encryption
 aes-gcm = "0.10"
 chacha20poly1305 = "0.10"
-aegis = { version = "0.6", optional = true }
+aegis = { version = "0.9", optional = true }
 
 # Hashing & KDF
 blake3.workspace = true
