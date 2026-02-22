@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-19)
 ## Current Position
 
 Phase: 21 (Web UI / Browser Client)
-Plan: 1 of 5
-Status: Phase 21 IN PROGRESS (plan 01 complete)
-Last activity: 2026-02-21 — Plan 21-01 complete (WASM crate + feature gates)
+Plan: 2 of 5
+Status: Phase 21 IN PROGRESS (plan 02 complete)
+Last activity: 2026-02-22 — Plan 21-02 complete (Relay WebSocket transport)
 
-Progress: [==........] 20% (1/5 plans)
+Progress: [====......] 40% (2/5 plans)
 
 ## Performance Metrics
 
@@ -36,6 +36,7 @@ Progress: [==........] 20% (1/5 plans)
 | 20 | 3/3 | ~44m | ~15 min |
 
 **Recent Trend:**
+- Phase 21 Plan 02 complete (Relay WebSocket transport + WS-QUIC bridging)
 - Phase 21 Plan 01 complete (WASM crate + feature gates + crypto/codec wrappers)
 - Phase 20 Plan 03 complete (P2P testing) -- Phase 20 DONE
 - Phase 20 Plan 02 complete (P2P negotiation module)
@@ -43,6 +44,7 @@ Progress: [==........] 20% (1/5 plans)
 - Trend: Active
 
 *Updated after each plan completion*
+| Phase 21 P02 | 43min | 2 tasks | 5 files |
 | Phase 21 P01 | 37min | 2 tasks | 11 files |
 | Phase 20 P03 | 12min | 2 tasks | 5 files |
 
@@ -71,6 +73,10 @@ Recent decisions affecting current work:
 - [Phase 21-01]: tallow-web cdylib crate with wasm-bindgen, getrandom js, bincode for KEM serialization
 - [Phase 21-01]: WASM ANSI stripping uses state machine fallback (no VTE/strip-ansi-escapes dep)
 - [Phase 21-01]: postcard with alloc feature (not use-std) in tallow-web for wasm32 compatibility
+- [Phase 21-02]: axum 0.8 for WebSocket support — dual-transport relay (QUIC 4433 + WS 4434)
+- [Phase 21-02]: Permissive CORS — security from E2E encryption, not origin checking
+- [Phase 21-02]: 4-byte BE length prefix bridging between WS and QUIC room channels
+- [Phase 21-02]: Shared RoomManager Arc between QUIC and WS listeners
 
 ### Pending Todos
 
@@ -84,6 +90,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-02-21
-Stopped at: Completed 21-01-PLAN.md (WASM crate + feature gates + crypto/codec)
+Last session: 2026-02-22
+Stopped at: Completed 21-02-PLAN.md (Relay WebSocket transport + WS-QUIC bridging)
 Resume file: None

@@ -160,9 +160,9 @@ Deferred to future release. Tracked but not in current roadmap.
 - [x] **WEB-01**: tallow-crypto compiles to wasm32-unknown-unknown target without errors
 - [x] **WEB-02**: tallow-web cdylib crate with wasm-bindgen exports for hybrid KEM, AES-256-GCM, BLAKE3, HKDF
 - [x] **WEB-03**: tallow-protocol feature-gated (`wasm` feature) so wire module (Message enum + postcard) compiles for WASM without heavy deps (tokio, zstd, etc.)
-- [ ] **WEB-04**: Relay server accepts WebSocket connections alongside QUIC for browser clients
-- [ ] **WEB-05**: WebSocket-to-QUIC message bridging: relay adds/strips 4-byte length prefix when forwarding between transports
-- [ ] **WEB-06**: CORS headers on WebSocket endpoint allow cross-origin browser connections
+- [x] **WEB-04**: Relay server accepts WebSocket connections alongside QUIC for browser clients
+- [x] **WEB-05**: WebSocket-to-QUIC message bridging: relay adds/strips 4-byte length prefix when forwarding between transports
+- [x] **WEB-06**: CORS headers on WebSocket endpoint allow cross-origin browser connections
 - [ ] **WEB-07**: Browser WebSocket transport connects to relay, joins room, and exchanges postcard-encoded messages
 - [ ] **WEB-08**: Browser performs full KEM handshake (HandshakeInit/Response/Kem/Complete) with CLI peer via WASM crypto
 - [ ] **WEB-09**: Browser can send files via drag-and-drop with 64KB chunked AES-256-GCM encryption matching CLI wire format
@@ -320,12 +320,12 @@ Deferred to future release. Tracked but not in current roadmap.
 | P2P-08 | Phase 20 | Done |
 | ANET-01 | Phase 20 | Done |
 | ANET-02 | Phase 20 | Done |
-| WEB-01 | Phase 21 | Not Started |
-| WEB-02 | Phase 21 | Not Started |
-| WEB-03 | Phase 21 | Not Started |
-| WEB-04 | Phase 21 | Not Started |
-| WEB-05 | Phase 21 | Not Started |
-| WEB-06 | Phase 21 | Not Started |
+| WEB-01 | Phase 21 | Done |
+| WEB-02 | Phase 21 | Done |
+| WEB-03 | Phase 21 | Done |
+| WEB-04 | Phase 21 | Done |
+| WEB-05 | Phase 21 | Done |
+| WEB-06 | Phase 21 | Done |
 | WEB-07 | Phase 21 | Not Started |
 | WEB-08 | Phase 21 | Not Started |
 | WEB-09 | Phase 21 | Not Started |
@@ -337,7 +337,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | WEB-15 | Phase 21 | Not Started |
 | WEB-16 | Phase 21 | Not Started |
 | WEB-17 | Phase 21 | Not Started |
-| WEB-18 | Phase 21 | Not Started |
+| WEB-18 | Phase 21 | Done |
 
 **Coverage:**
 - v1 requirements: 87 total
