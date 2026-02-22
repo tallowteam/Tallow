@@ -22,6 +22,7 @@ console_error_panic_hook = "0.1"
 # Serialization (WASM-compatible, no std)
 serde = { version = "1", features = ["derive"] }
 postcard = { version = "1.1", default-features = false, features = ["alloc"] }
+bincode = "1.3"
 
 # Crypto randomness in browser — CRITICAL: "js" feature wires crypto.getRandomValues()
 # This is getrandom 0.2 — the feature name is "js" (NOT "wasm_js" which is 0.3+)
