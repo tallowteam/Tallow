@@ -873,4 +873,11 @@ function disconnect(): void {
 // Start
 // ============================================================================
 
+// Register service worker for PWA / offline shell caching
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/worker.js').catch(err => {
+        console.warn('Service worker registration failed:', err);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', init);

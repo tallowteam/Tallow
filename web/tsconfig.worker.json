@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "target": "ES2020",
+        "module": "ES2020",
+        "moduleResolution": "node",
+        "strict": true,
+        "declaration": false,
+        "sourceMap": false,
+        "lib": ["ES2020", "WebWorker"],
+        "outDir": "./build"
+    },
+    "include": ["worker.ts"]
+}

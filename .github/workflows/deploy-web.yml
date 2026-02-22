@@ -1,0 +1,68 @@
+name: Deploy Web UI
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'crates/tallow-web/**'
+      - 'web/**'
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache cargo registry + build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: wasm-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: wasm-
+
+      - name: Install wasm-bindgen-cli
+        run: cargo install wasm-bindgen-cli@0.2.108
+
+      - name: Install wasm-opt
+        run: |
+          curl -L https://github.com/WebAssembly/binaryen/releases/download/version_119/binaryen-version_119-x86_64-linux.tar.gz | tar xz
+          sudo cp binaryen-version_119/bin/wasm-opt /usr/local/bin/
+
+      - name: Build WASM
+        run: cargo build -p tallow-web --release --target wasm32-unknown-unknown
+
+      - name: Generate JS bindings
+        run: |
+          wasm-bindgen --target web \
+            ./target/wasm32-unknown-unknown/release/tallow_web.wasm \
+            --out-dir ./web/pkg
+
+      - name: Optimize WASM
+        run: wasm-opt -Oz ./web/pkg/tallow_web_bg.wasm -o ./web/pkg/tallow_web_bg.wasm
+
+      - name: Compile TypeScript
+        run: |
+          npm install -g typescript
+          cd web && tsc
+          tsc -p tsconfig.worker.json
+          cp build/worker.js . && rm -rf build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: tallow
+          directory: web
