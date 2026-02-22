@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Files transfer securely between two parties where the relay never sees plaintext, with post-quantum cryptography protecting against future quantum attacks.
-**Current focus:** Phase 21 - Web UI / Browser Client
+**Current focus:** Phase 21 complete — deployment pending
 
 ## Current Position
 
 Phase: 21 (Web UI / Browser Client)
 Plan: 5 of 5
 Status: Phase 21 COMPLETE (all plans done)
-Last activity: 2026-02-22 — Plan 21-05 complete (PWA + testing + deploy pipeline)
+Last activity: 2026-02-22 — Phase 21 security audit complete (4 agents, 50+ findings, all fixed)
 
 Progress: [==========] 100% (5/5 plans)
 
@@ -110,5 +110,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 21-05-PLAN.md (PWA + testing + deploy pipeline) -- Phase 21 DONE
+Stopped at: Phase 21 fully complete — code + security audit + PWA assets. Pending: relay redeploy + Cloudflare Pages setup.
 Resume file: None
