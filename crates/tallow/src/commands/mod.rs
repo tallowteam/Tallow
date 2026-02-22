@@ -17,5 +17,7 @@ pub mod speed_test;
 pub mod ssh_setup;
 pub mod sync;
 pub mod tui_cmd;
+#[cfg(feature = "self-update")]
+pub mod update;
 pub mod version;
 pub mod watch;

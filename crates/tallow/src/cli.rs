@@ -91,6 +91,9 @@ pub enum Commands {
     /// Persistent receive mode (drop box) -- auto-accept from trusted contacts
     DropBox(DropBoxArgs),
 
+    /// Check for updates and install the latest version
+    Update(UpdateArgs),
+
     /// Generate man pages (hidden, for packaging)
     #[command(hide = true)]
     ManPages {
@@ -830,4 +833,20 @@ pub struct DropBoxArgs {
     /// Display verification string after key exchange for MITM detection
     #[arg(long)]
     pub verify: bool,
+}
+
+/// Arguments for the `tallow update` command
+#[derive(Args)]
+pub struct UpdateArgs {
+    /// Only check for updates, don't install
+    #[arg(long)]
+    pub check: bool,
+
+    /// Force update even if already on latest version
+    #[arg(long)]
+    pub force: bool,
+
+    /// Skip confirmation prompt
+    #[arg(short = 'y', long)]
+    pub yes: bool,
 }

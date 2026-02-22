@@ -24,6 +24,10 @@ use std::io;
 
 #[tokio::main]
 async fn main() {
+    // Clean up old binary from previous self-update (Windows)
+    #[cfg(windows)]
+    cleanup_old_binary();
+
     let cli = Cli::parse();
 
     // Initialize logging
@@ -83,6 +87,20 @@ async fn main() {
         cli::Commands::SshSetup(args) => commands::ssh_setup::execute(args, json_output).await,
         cli::Commands::DropBox(args) => commands::drop_box::execute(args, json_output).await,
         cli::Commands::History(args) => commands::history::execute(args, json_output).await,
+        cli::Commands::Update(args) => {
+            #[cfg(feature = "self-update")]
+            {
+                commands::update::execute(args, json_output).await
+            }
+            #[cfg(not(feature = "self-update"))]
+            {
+                let _ = args;
+                Err(io::Error::other(
+                    "Self-update not available (compiled without 'self-update' feature). \
+                     Rebuild with: cargo build --features self-update",
+                ))
+            }
+        }
         cli::Commands::ManPages { out_dir } => commands::man_pages::execute(&out_dir),
         cli::Commands::CompleteCode { prefix } => {
             // Tab completion for code phrase words
@@ -96,7 +114,21 @@ async fn main() {
         }
     };
 
-    // Handle result with granular exit codes
+    // Handle result with exit codes
+    handle_result(result, json_output);
+}
+
+#[cfg(windows)]
+fn cleanup_old_binary() {
+    if let Ok(exe) = std::env::current_exe() {
+        let old = exe.with_extension("exe.old");
+        if old.exists() {
+            let _ = std::fs::remove_file(&old);
+        }
+    }
+}
+
+fn handle_result(result: Result<(), io::Error>, json_output: bool) -> ! {
     match result {
         Ok(()) => std::process::exit(exit_codes::SUCCESS),
         Err(e) => {
