@@ -4,6 +4,8 @@
 //! The browser uses identical cryptographic code paths to the CLI.
 #![forbid(unsafe_code)]
 
+pub mod chat;
+pub mod clipboard;
 pub mod codec;
 pub mod crypto;
 pub mod file_io;

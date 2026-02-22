@@ -386,6 +386,11 @@ function sendWsBytes(bytes: Uint8Array): void {
     }
 }
 
+// Export for use by clipboard.ts and chat.ts
+export function sendWsBytesExport(bytes: Uint8Array): void {
+    sendWsBytes(bytes);
+}
+
 // ============================================================================
 // Message Dispatch
 // ============================================================================

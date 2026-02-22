@@ -68,3 +68,21 @@ export class TransferSession {
 // File I/O
 export function computeFileManifest(filesJson: string): Uint8Array;
 export function parseFileManifest(manifestBytes: Uint8Array): any;
+
+// Clipboard
+export function detectContentType(text: string): string;
+export function prepareClipboardManifest(contentType: string, dataSize: number): Uint8Array;
+export function parseClipboardContent(manifestBytes: Uint8Array): any;
+
+// Chat session (stateful)
+export class ChatSession {
+    constructor(sessionKey: Uint8Array);
+    encryptMessage(text: string): Uint8Array;
+    decryptMessage(ciphertext: Uint8Array): string;
+    decryptMessageWithNonce(ciphertext: Uint8Array, nonce: Uint8Array): string;
+    prepareChatText(messageId: Uint8Array, sequence: number, ciphertext: Uint8Array, nonce: Uint8Array): Uint8Array;
+    prepareTypingIndicator(typing: boolean): Uint8Array;
+    sendCounter(): number;
+    receiveCounter(): number;
+    currentSendNonce(): Uint8Array;
+}

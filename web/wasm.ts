@@ -42,6 +42,12 @@ import init, {
     // File I/O
     computeFileManifest,
     parseFileManifest,
+    // Clipboard
+    detectContentType,
+    prepareClipboardManifest,
+    parseClipboardContent,
+    // Chat session
+    ChatSession,
 } from './pkg/tallow_web.js';
 
 let initialized = false;
@@ -102,4 +108,10 @@ export {
     // File I/O
     computeFileManifest,
     parseFileManifest,
+    // Clipboard
+    detectContentType,
+    prepareClipboardManifest,
+    parseClipboardContent,
+    // Chat session
+    ChatSession,
 };
