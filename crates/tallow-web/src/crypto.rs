@@ -5,6 +5,7 @@
 //! cryptographic code paths ensure browser and native produce matching output.
 
 use wasm_bindgen::prelude::*;
+use zeroize::Zeroize;
 
 // ---------------------------------------------------------------------------
 // Hybrid KEM (ML-KEM-1024 + X25519)
@@ -74,6 +75,13 @@ impl WasmEncapsulated {
     #[wasm_bindgen(js_name = "sharedSecret")]
     pub fn shared_secret(&self) -> Vec<u8> {
         self.ss_bytes.clone()
+    }
+}
+
+/// Zeroize shared secret on drop to prevent key material from lingering in memory.
+impl Drop for WasmEncapsulated {
+    fn drop(&mut self) {
+        self.ss_bytes.zeroize();
     }
 }
 
@@ -243,6 +251,9 @@ pub fn decrypt_chat_message(
     let plaintext = tallow_crypto::symmetric::aes_decrypt(key, &nonce, ciphertext, aad)
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
 
-    String::from_utf8(plaintext)
-        .map_err(|e| JsValue::from_str(&format!("invalid UTF-8 in decrypted message: {}", e)))
+    let text = String::from_utf8(plaintext)
+        .map_err(|e| JsValue::from_str(&format!("invalid UTF-8 in decrypted message: {}", e)))?;
+
+    // Sanitize peer-sourced text before returning to JS (defense-in-depth)
+    Ok(tallow_protocol::transfer::sanitize::sanitize_display(&text))
 }

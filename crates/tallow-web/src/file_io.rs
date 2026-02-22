@@ -9,8 +9,8 @@
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
-/// Default chunk size (64 KiB) — must match CLI's DEFAULT_CHUNK_SIZE
-const DEFAULT_CHUNK_SIZE: usize = 65536;
+/// Default chunk size (256 KiB) — matches CLI's DEFAULT_CHUNK_SIZE in chunking.rs
+const DEFAULT_CHUNK_SIZE: usize = 256 * 1024;
 
 /// Transfer content type — mirrors `tallow_protocol::transfer::manifest::TransferType`
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

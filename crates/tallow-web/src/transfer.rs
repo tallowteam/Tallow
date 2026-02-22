@@ -8,6 +8,7 @@
 
 use tallow_protocol::wire::Message;
 use wasm_bindgen::prelude::*;
+use zeroize::Zeroize;
 
 /// File transfer session with chunk encryption/decryption.
 ///
@@ -207,6 +208,13 @@ impl TransferSession {
     #[wasm_bindgen(js_name = "transferId")]
     pub fn transfer_id(&self) -> Vec<u8> {
         self.transfer_id.to_vec()
+    }
+}
+
+/// Zeroize session key on drop to prevent key material from lingering in memory.
+impl Drop for TransferSession {
+    fn drop(&mut self) {
+        self.session_key.zeroize();
     }
 }
 

@@ -6,6 +6,7 @@
 //! counter increments by 2 (even for sender, odd for receiver).
 
 use wasm_bindgen::prelude::*;
+use zeroize::Zeroize;
 
 /// Domain separation AAD for chat messages (must match CLI exactly)
 const CHAT_AAD: &[u8] = b"tallow-chat-v1";
@@ -72,7 +73,10 @@ impl ChatSession {
         )
         .map_err(|e| JsValue::from_str(&format!("chat encrypt failed: {}", e)))?;
 
-        self.send_counter += 2;
+        self.send_counter = self
+            .send_counter
+            .checked_add(2)
+            .ok_or_else(|| JsValue::from_str("send counter overflow — session must be rotated"))?;
 
         Ok(ciphertext)
     }
@@ -96,10 +100,16 @@ impl ChatSession {
         )
         .map_err(|e| JsValue::from_str(&format!("chat decrypt failed: {}", e)))?;
 
-        self.recv_counter += 2;
+        self.recv_counter = self
+            .recv_counter
+            .checked_add(2)
+            .ok_or_else(|| JsValue::from_str("recv counter overflow — session must be rotated"))?;
 
-        String::from_utf8(plaintext_bytes)
-            .map_err(|e| JsValue::from_str(&format!("invalid UTF-8 in decrypted message: {}", e)))
+        let text = String::from_utf8(plaintext_bytes)
+            .map_err(|e| JsValue::from_str(&format!("invalid UTF-8 in decrypted message: {}", e)))?;
+
+        // Sanitize peer-sourced text before returning to JS (defense-in-depth)
+        Ok(tallow_protocol::transfer::sanitize::sanitize_display(&text))
     }
 
     /// Decrypt a chat message using an explicit nonce (for interop with CLI
@@ -125,8 +135,11 @@ impl ChatSession {
         )
         .map_err(|e| JsValue::from_str(&format!("chat decrypt failed: {}", e)))?;
 
-        String::from_utf8(plaintext_bytes)
-            .map_err(|e| JsValue::from_str(&format!("invalid UTF-8 in decrypted message: {}", e)))
+        let text = String::from_utf8(plaintext_bytes)
+            .map_err(|e| JsValue::from_str(&format!("invalid UTF-8 in decrypted message: {}", e)))?;
+
+        // Sanitize peer-sourced text before returning to JS (defense-in-depth)
+        Ok(tallow_protocol::transfer::sanitize::sanitize_display(&text))
     }
 
     /// Encode a ChatText wire message from encrypted data.
@@ -171,6 +184,13 @@ impl ChatSession {
     #[wasm_bindgen(js_name = "currentSendNonce")]
     pub fn current_send_nonce(&self) -> Vec<u8> {
         build_nonce(self.send_counter).to_vec()
+    }
+}
+
+/// Zeroize session key on drop to prevent key material from lingering in memory.
+impl Drop for ChatSession {
+    fn drop(&mut self) {
+        self.session_key.zeroize();
     }
 }
 

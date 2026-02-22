@@ -115,7 +115,7 @@ async function sendClipboardText(text: string): Promise<void> {
     const data = new TextEncoder().encode(text);
 
     // Build clipboard manifest
-    const manifest = prepareClipboardManifest(contentType, data.length);
+    const manifest = prepareClipboardManifest(contentType, BigInt(data.length));
 
     // Generate transfer ID for this clipboard transfer
     const clipTransferId = new Uint8Array(16);
@@ -152,7 +152,7 @@ async function sendClipboardImage(imageData: Uint8Array): Promise<void> {
     if (!ctx.sessionKey || !ctx.transferId) return;
 
     // Build clipboard manifest for image
-    const manifest = prepareClipboardManifest('image/png', imageData.length);
+    const manifest = prepareClipboardManifest('image/png', BigInt(imageData.length));
 
     // Generate transfer ID
     const clipTransferId = new Uint8Array(16);
