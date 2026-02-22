@@ -388,9 +388,17 @@ export function handleFileOffer(offer: any): void {
 
     try {
         const manifest = parseFileManifest(manifestBytes);
+
+        // Validate manifest size against browser memory limits
+        const totalSize = manifest.total_size || 0;
+        if (totalSize > SIZE_BLOCK) {
+            console.error(`Transfer too large: ${totalSize} bytes exceeds ${SIZE_BLOCK} byte limit`);
+            return;
+        }
+
         state.receiveManifest = manifest;
         state.totalChunks = manifest.total_chunks || 0;
-        state.totalSize = manifest.total_size || 0;
+        state.totalSize = totalSize;
         state.receivedChunks.clear();
         state.chunksTransferred = 0;
         state.isReceiving = true;

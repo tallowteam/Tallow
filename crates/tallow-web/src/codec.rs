@@ -24,9 +24,19 @@ pub fn encode_message(msg: JsValue) -> Result<Vec<u8>, JsValue> {
         .map_err(|e| JsValue::from_str(&format!("postcard encode: {}", e)))
 }
 
+/// Maximum wire message size accepted by the WASM decoder (1 MiB).
+///
+/// Prevents memory exhaustion from oversized messages sent by a malicious
+/// relay or peer. Normal messages are well under this limit (largest is
+/// a Chunk at ~256 KiB + overhead).
+const MAX_MESSAGE_SIZE: usize = 1024 * 1024;
+
 /// Decode postcard bytes to a Message (returned as JsValue).
 #[wasm_bindgen(js_name = "decodeMessage")]
 pub fn decode_message(bytes: &[u8]) -> Result<JsValue, JsValue> {
+    if bytes.len() > MAX_MESSAGE_SIZE {
+        return Err(JsValue::from_str("message too large"));
+    }
     let message: Message = postcard::from_bytes(bytes)
         .map_err(|e| JsValue::from_str(&format!("postcard decode: {}", e)))?;
     serde_wasm_bindgen::to_value(&message)

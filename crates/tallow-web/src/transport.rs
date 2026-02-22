@@ -76,6 +76,9 @@ impl WsTransport {
     /// - `{type: "Unknown", raw: string}` for other message types
     #[wasm_bindgen(js_name = "parseRoomResponse")]
     pub fn parse_room_response(&self, data: &[u8]) -> Result<JsValue, JsValue> {
+        if data.len() > 1024 * 1024 {
+            return Err(JsValue::from_str("message too large"));
+        }
         let message: Message = postcard::from_bytes(data)
             .map_err(|e| JsValue::from_str(&format!("decode message: {}", e)))?;
 

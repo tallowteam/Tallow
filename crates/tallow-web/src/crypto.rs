@@ -27,7 +27,7 @@ impl WasmKeyPair {
     #[wasm_bindgen]
     pub fn generate() -> Result<WasmKeyPair, JsValue> {
         let (public, secret) = tallow_crypto::kem::HybridKem::keygen()
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+            .map_err(|_| JsValue::from_str("key generation failed"))?;
         Ok(WasmKeyPair { public, secret })
     }
 
@@ -51,7 +51,7 @@ impl WasmKeyPair {
         let ct: tallow_crypto::kem::hybrid::Ciphertext = bincode::deserialize(ciphertext)
             .map_err(|e| JsValue::from_str(&format!("deserialize ciphertext: {}", e)))?;
         let ss = tallow_crypto::kem::HybridKem::decapsulate(&self.secret, &ct)
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+            .map_err(|_| JsValue::from_str("decapsulation failed"))?;
         Ok(ss.expose_secret().to_vec())
     }
 }
@@ -96,7 +96,7 @@ pub fn kem_encapsulate(public_key: &[u8]) -> Result<WasmEncapsulated, JsValue> {
     let pk: tallow_crypto::kem::hybrid::PublicKey = bincode::deserialize(public_key)
         .map_err(|e| JsValue::from_str(&format!("deserialize public key: {}", e)))?;
     let (ct, ss) = tallow_crypto::kem::HybridKem::encapsulate(&pk)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        .map_err(|_| JsValue::from_str("encapsulation failed"))?;
     let ct_bytes = bincode::serialize(&ct)
         .map_err(|e| JsValue::from_str(&format!("serialize ciphertext: {}", e)))?;
     Ok(WasmEncapsulated {
@@ -130,7 +130,7 @@ pub fn encrypt_chunk(
     nonce[4..12].copy_from_slice(&nonce_counter.to_be_bytes());
 
     tallow_crypto::symmetric::aes_encrypt(key, &nonce, plaintext, aad)
-        .map_err(|e| JsValue::from_str(&e.to_string()))
+        .map_err(|_| JsValue::from_str("encryption failed"))
 }
 
 /// Decrypt a data chunk with AES-256-GCM.
@@ -153,7 +153,7 @@ pub fn decrypt_chunk(
     nonce[4..12].copy_from_slice(&nonce_counter.to_be_bytes());
 
     tallow_crypto::symmetric::aes_decrypt(key, &nonce, ciphertext, aad)
-        .map_err(|e| JsValue::from_str(&e.to_string()))
+        .map_err(|_| JsValue::from_str("decryption failed"))
 }
 
 // ---------------------------------------------------------------------------
@@ -195,7 +195,7 @@ pub fn hkdf_derive(
     output_len: u32,
 ) -> Result<Vec<u8>, JsValue> {
     tallow_crypto::kdf::hkdf::derive(salt, ikm, info, output_len as usize)
-        .map_err(|e| JsValue::from_str(&e.to_string()))
+        .map_err(|_| JsValue::from_str("key derivation failed"))
 }
 
 // ---------------------------------------------------------------------------
@@ -225,7 +225,7 @@ pub fn encrypt_chat_message(
     let aad = b"tallow-chat-v1";
 
     tallow_crypto::symmetric::aes_encrypt(key, &nonce, plaintext.as_bytes(), aad)
-        .map_err(|e| JsValue::from_str(&e.to_string()))
+        .map_err(|_| JsValue::from_str("encryption failed"))
 }
 
 /// Decrypt a chat message with AES-256-GCM.
@@ -249,7 +249,7 @@ pub fn decrypt_chat_message(
     let aad = b"tallow-chat-v1";
 
     let plaintext = tallow_crypto::symmetric::aes_decrypt(key, &nonce, ciphertext, aad)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        .map_err(|_| JsValue::from_str("decryption failed"))?;
 
     let text = String::from_utf8(plaintext)
         .map_err(|e| JsValue::from_str(&format!("invalid UTF-8 in decrypted message: {}", e)))?;
